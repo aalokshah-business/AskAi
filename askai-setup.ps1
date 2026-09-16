@@ -327,6 +327,35 @@ if (-not ($settings.PSObject.Properties.Name -contains 'autoCompactWindow')) {
     Write-Host "Set autoCompactWindow = 150000"
 }
 
+# skill listing trim -- only skills unrelated to code/book-writing work, set to name-only
+# (name stays visible and still invocable, just the description is dropped from every turn's context).
+# Only ADDS missing entries -- never overrides a value you've already set for a given skill.
+$defaultSkillTrim = [ordered]@{
+    'anthropic-skills:xlsx'                = 'name-only'
+    'anthropic-skills:pptx'                = 'name-only'
+    'anthropic-skills:morning'             = 'name-only'
+    'anthropic-skills:setup-writing-style' = 'name-only'
+    'anthropic-skills:import-memory'       = 'name-only'
+    'anthropic-skills:skill-creator'       = 'name-only'
+    'keybindings-help'                     = 'name-only'
+    'artifact-design'                      = 'name-only'
+    'artifact-diagramming'                 = 'name-only'
+    'artifact-capabilities'                = 'name-only'
+    'anthropic-skills:consolidate-memory'  = 'name-only'
+}
+if (-not ($settings.PSObject.Properties.Name -contains 'skillOverrides')) {
+    $settings | Add-Member -MemberType NoteProperty -Name 'skillOverrides' -Value ([pscustomobject]@{})
+}
+$addedSkills = 0
+foreach ($skillName in $defaultSkillTrim.Keys) {
+    if (-not ($settings.skillOverrides.PSObject.Properties.Name -contains $skillName)) {
+        $settings.skillOverrides | Add-Member -MemberType NoteProperty -Name $skillName -Value $defaultSkillTrim[$skillName]
+        $addedSkills++
+    }
+}
+if ($addedSkills -gt 0) { Write-Host "Set skillOverrides for $addedSkills skill(s) (name-only)" }
+else { Write-Host "skillOverrides already present for all defaults -- left as-is" }
+
 $settings | ConvertTo-Json -Depth 10 | Set-Content -Path $settingsPath -Encoding utf8
 Write-Host "Merged into: $settingsPath"
 
