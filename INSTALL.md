@@ -65,13 +65,19 @@ not global infrastructure:
 
 ## What this does day to day
 
-- `/askai <task>` always confirms scope (area / extra items / answer length)
-  before doing anything, with defaults pre-filled.
+- `/askai <task>` always confirms scope (area / extra items / answer length /
+  effort level) before doing anything, with defaults pre-filled — or, for
+  skill-authoring tasks (creating/editing a Claude skill itself), hands off
+  straight to the `skill-creator` skill instead.
 - Every prompt in every project gets the same scoping check automatically
   for new tasks — quietly, no interruption for follow-ups or short replies.
 - Every N prompts (or a wrap-up phrase like "done for today", or a burst of
   tool output), Claude asks which feature the work belongs to, files a
   summary to disk, and clears the session — but only once you've confirmed
   it's a good stopping point, never mid-task.
+- If tool-output volume alone crosses the threshold mid-turn, the checkpoint
+  fires that same turn instead of waiting for your next prompt. If a clear
+  is already pending when that happens again, it just files a silent note
+  instead of asking, so nothing grows unbounded while a clear sits deferred.
 - Tag a prompt with `#feature-slug` to switch context instantly; add
   `!noscope` to a throwaway prompt to skip all of the above for that one message.

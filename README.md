@@ -13,6 +13,27 @@ re-run `askai-setup.ps1` (or manually copy) to push changes out to `~/.claude/`.
   on whatever machine it's run on (safe to re-run, won't duplicate entries or
   touch unrelated settings)
 
+## What the hook does
+
+- `UserPromptSubmit` — scoping reminder for new/distinct tasks, injects the
+  session's tracked feature summary, `#slug` tagging, a pending-clear
+  reminder, and the checkpoint trigger (every N prompts, a wrap-up phrase,
+  or accumulated tool-output volume).
+- `PostToolUse` — accumulates tool-output volume per session; if volume alone
+  crosses the threshold mid-turn, it now fires a same-turn checkpoint
+  instruction instead of waiting for the next prompt. If a clear is already
+  pending when volume crosses again, it files a lightweight silent note
+  instead, so bytes don't grow unbounded while the clear is deferred.
+- `PreCompact` — writes a brief safety-net note before context compaction.
+
+## `/askai <task>`
+
+Confirms four things before touching anything: area, extra scope, answer
+length, and a recommended effort level (`low`/`medium`/`high`/`xhigh` —
+never `max` unless you've separately said this task calls for it). Tasks
+about creating/editing a Claude skill itself are routed to the
+`skill-creator` skill instead of this scoping flow.
+
 ## Updating a deployed machine after editing this repo
 
 ```
