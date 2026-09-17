@@ -34,7 +34,7 @@ re-run `askai-setup.ps1` (or manually copy) to push changes out to `~/.claude/`.
 ## `/askai <task>`
 
 Confirms four things before touching anything: area, extra scope, answer
-length, and a recommended effort level (`low`/`medium`/`high`/`xhigh` —
+length, and a recommended effort level (`medium`/`high`/`xhigh` —
 never `max` unless you've separately said this task calls for it). Tasks
 about creating/editing a Claude skill itself are routed to the
 `skill-creator` skill instead of this scoping flow.
