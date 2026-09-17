@@ -111,7 +111,15 @@ try {
             catch { $responseLength = ([string]$data.tool_response).Length }
         }
         $current = Read-IntFile $bytesFile 0 0 2147483647
-        Set-Content -Path $bytesFile -Value ($current + $responseLength) -NoNewline -Encoding utf8
+        $newTotal = $current + $responseLength
+        Set-Content -Path $bytesFile -Value $newTotal -NoNewline -Encoding utf8
+
+        # same-turn fallback -- don't wait for a UserPromptSubmit that might never come
+        $volumeThreshold = Read-IntFile $volumeThresholdFile 80000 10000 2000000
+        if ($newTotal -ge $volumeThreshold) {
+            Emit-Context 'PostToolUse' "Tool-output volume just crossed $volumeThreshold chars mid-turn (no need to wait for your next prompt). Before writing your final reply this turn, run the checkpoint closing steps now: read '$featuresFile' if present, judge/confirm the feature via AskUserQuestion, append a checkpoint summary, write the slug to '$currentFeatureFile', write '1' to '$pendingClearFile', and decide explicitly whether to call clear_session('self') now or hold it and say so."
+            Set-Content -Path $bytesFile -Value '0' -NoNewline -Encoding utf8
+        }
         exit 0
     }
 
@@ -207,6 +215,8 @@ try {
     $bytesSinceCheckpoint = Read-IntFile $bytesFile 0 0 2147483647
     $isVolumeTrigger = $bytesSinceCheckpoint -ge $volumeThreshold
     $shouldCheckpoint = (-not $noscope) -and (-not $pendingClear) -and (($count % $interval -eq 0) -or $isWrapUp -or $isVolumeTrigger)
+    # fires only when the full checkpoint is blocked by a stuck pending-clear -- keeps volume capped either way
+    $shouldVolumeNote = (-not $noscope) -and $pendingClear -and $isVolumeTrigger
 
     if ($shouldCheckpoint) {
         $reason = "prompt #$count reached the every-$interval checkpoint"
@@ -224,6 +234,16 @@ try {
             "(8) Then decide explicitly, out loud to the user: if now is a reasonable stopping point, call clear_session('self') as your last tool call this turn (it will still ask the user to approve) and then write '0' to '$pendingClearFile'. If the user is clearly mid-task, it is fine to hold the clear -- but say so explicitly ('holding the clear for now since you're still working') rather than silently doing nothing; the pending-clear reminder will resurface on your next reply either way, so it is never silently forgotten.")
 
         # optimistic reset -- a checkpoint is about to consolidate things
+        Set-Content -Path $bytesFile -Value '0' -NoNewline -Encoding utf8
+    } elseif ($shouldVolumeNote) {
+        $slug = if ($currentSlug) { $currentSlug } else { 'general' }
+        $targetFile = "askai/$slug.md"
+        if ($features -and $slug -ne 'general') {
+            $entry = $features.features | Where-Object { $_.slug -eq $slug } | Select-Object -First 1
+            if ($entry) { $targetFile = $entry.file }
+        }
+        $targetPath = Join-Path $claudeDir $targetFile
+        $contextParts.Add("Volume safety note: roughly $bytesSinceCheckpoint characters of tool output have accumulated while a clear is still pending (threshold: $volumeThreshold). The full checkpoint stays deferred until the pending clear is resolved, but silently append 2-4 bullets of the most important recent progress to '$targetPath' under a new '## Volume note <UTC timestamp>' heading (create it with a top-level '# $slug -- Checkpoint Summary' heading first if it doesn't exist) so nothing is lost, then continue normally -- no AskUserQuestion needed for this.")
         Set-Content -Path $bytesFile -Value '0' -NoNewline -Encoding utf8
     }
 
