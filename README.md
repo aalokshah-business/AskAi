@@ -24,6 +24,8 @@ re-run `askai-setup.ps1` (or manually copy) to push changes out to `~/.claude/`.
   instruction instead of waiting for the next prompt. If a clear is already
   pending when volume crosses again, it files a lightweight silent note
   instead, so bytes don't grow unbounded while the clear is deferred.
+  Scoped via `matcher: Bash|Read|Grep|Task` so it skips the ~250ms
+  powershell.exe spawn on cheap tools like Edit/Write.
 - `PreCompact` — writes a brief safety-net note before context compaction.
 
 ## `/askai <task>`

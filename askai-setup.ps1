@@ -294,9 +294,11 @@ Write-Host "Installed: $commandsDir\askai.md"
 # ============================================================================
 $hookScriptPath = Join-Path $hooksDir 'askai.ps1'
 
+$postToolUseMatcher = 'Bash|Read|Grep|Task'
+
 function New-HookGroup([string]$eventName) {
     $cmd = "powershell.exe -NoProfile -ExecutionPolicy Bypass -File `"$hookScriptPath`" -Event $eventName"
-    return [pscustomobject]@{
+    $group = [pscustomobject]@{
         hooks = @(
             [pscustomobject]@{
                 type          = 'command'
@@ -306,6 +308,11 @@ function New-HookGroup([string]$eventName) {
             }
         )
     }
+    if ($eventName -eq 'PostToolUse') {
+        # Scope to high-output tools only -- skips a ~250ms powershell.exe spawn on cheap tools like Edit/Write
+        $group | Add-Member -MemberType NoteProperty -Name 'matcher' -Value $postToolUseMatcher
+    }
+    return $group
 }
 
 function Test-HasAskaiHook($eventArray, [string]$eventName) {
@@ -337,6 +344,27 @@ foreach ($eventName in @('UserPromptSubmit', 'PostToolUse', 'PreCompact')) {
     if (-not (Test-HasAskaiHook $existing $eventName)) {
         $settings.hooks.$eventName = $existing + (New-HookGroup $eventName)
         Write-Host "Registered $eventName hook"
+    } elseif ($eventName -eq 'PostToolUse') {
+        # Upgrade an already-registered PostToolUse hook that predates the matcher optimization
+        $updated = $false
+        foreach ($group in $existing) {
+            foreach ($h in $group.hooks) {
+                if ($h.command -and $h.command -like "*askai.ps1*-Event PostToolUse*") {
+                    if (-not ($group.PSObject.Properties.Name -contains 'matcher')) {
+                        $group | Add-Member -MemberType NoteProperty -Name 'matcher' -Value $postToolUseMatcher
+                        $updated = $true
+                    } elseif ($group.matcher -ne $postToolUseMatcher) {
+                        $group.matcher = $postToolUseMatcher
+                        $updated = $true
+                    }
+                }
+            }
+        }
+        if ($updated) {
+            Write-Host "Updated PostToolUse hook matcher -> $postToolUseMatcher"
+        } else {
+            Write-Host "$eventName hook already present -- left as-is"
+        }
     } else {
         Write-Host "$eventName hook already present -- left as-is"
     }
