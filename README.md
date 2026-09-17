@@ -24,8 +24,11 @@ re-run `askai-setup.ps1` (or manually copy) to push changes out to `~/.claude/`.
   instruction instead of waiting for the next prompt. If a clear is already
   pending when volume crosses again, it files a lightweight silent note
   instead, so bytes don't grow unbounded while the clear is deferred.
-  Scoped via `matcher: Bash|Read|Grep|Task` so it skips the ~250ms
-  powershell.exe spawn on cheap tools like Edit/Write.
+  Scoped via `matcher: Bash|Read|Grep|Agent|Task` so it skips the ~250ms
+  powershell.exe spawn on cheap tools like Edit/Write (the `Agent`/`Task`
+  pair covers the subagent-dispatch tool under both its CLI name `Task`
+  and its SDK/desktop name `Agent` -- verified against real transcripts
+  that only `Agent` actually appears in this environment).
 - `PreCompact` — writes a brief safety-net note before context compaction.
 
 ## `/askai <task>`

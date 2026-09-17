@@ -27,9 +27,10 @@ It installs, under that machine's own user profile:
 - Merges into `~/.claude/settings.json` (creates it if missing, preserves
   anything already there):
   - hook registrations for `UserPromptSubmit`, `PostToolUse`, `PreCompact`
-    (`PostToolUse` is scoped with a `matcher` to `Bash|Read|Grep|Task` only,
-    to skip the process-spawn cost on cheap tools like Edit/Write; re-running
-    the installer upgrades an older registration that lacks this matcher)
+    (`PostToolUse` is scoped with a `matcher` to `Bash|Read|Grep|Agent|Task`
+    only, to skip the process-spawn cost on cheap tools like Edit/Write;
+    re-running the installer upgrades an older registration that lacks
+    this matcher, or one still on the older `Task`-only tool name)
   - `autoCompactEnabled: true`, `autoCompactWindow: 150000`
   - `skillOverrides` trimming 11 skills unrelated to code/book-writing work
     to name-only (only adds ones not already set — never overrides a choice

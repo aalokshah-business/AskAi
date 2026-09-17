@@ -294,7 +294,7 @@ Write-Host "Installed: $commandsDir\askai.md"
 # ============================================================================
 $hookScriptPath = Join-Path $hooksDir 'askai.ps1'
 
-$postToolUseMatcher = 'Bash|Read|Grep|Task'
+$postToolUseMatcher = 'Bash|Read|Grep|Agent|Task'
 
 function New-HookGroup([string]$eventName) {
     $cmd = "powershell.exe -NoProfile -ExecutionPolicy Bypass -File `"$hookScriptPath`" -Event $eventName"
