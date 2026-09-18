@@ -8,7 +8,8 @@ re-run `askai-setup.ps1` (or manually copy) to push changes out to `~/.claude/`.
 
 - `hooks/askai.ps1` — the unified hook script (UserPromptSubmit + PostToolUse + PreCompact)
 - `commands/askai.md` — the `/askai` slash command
-- `askai-setup.ps1` — portable installer; copies the two files above into
+- `hooks/askai-report.js` + `commands/askai-report.md` — evidence report (`/askai-report [hours]`, or `node ~/.claude/hooks/askai-report.js --hours 6 [--json]`); needs Node.js at run time
+- `askai-setup.ps1` — portable installer; copies the four files above into
   `~/.claude/` and merges the hook registrations into `~/.claude/settings.json`
   on whatever machine it's run on (safe to re-run, won't duplicate entries or
   touch unrelated settings)
@@ -16,7 +17,7 @@ re-run `askai-setup.ps1` (or manually copy) to push changes out to `~/.claude/`.
 ## What the hook does
 
 - `UserPromptSubmit` — scoping reminder for new/distinct tasks (area,
-  additional items, answer length, and a recommended effort level), injects
+  additional items, answer length), injects
   the session's tracked feature summary, `#slug` tagging, a pending-clear
   reminder, and the checkpoint trigger (every N prompts, a wrap-up phrase,
   or accumulated tool-output volume).
@@ -34,9 +35,8 @@ re-run `askai-setup.ps1` (or manually copy) to push changes out to `~/.claude/`.
 
 ## `/askai <task>`
 
-Confirms four things before touching anything: area, extra scope, answer
-length, and a recommended effort level (`medium`/`high`/`xhigh` —
-never `max` unless you've separately said this task calls for it). Tasks
+Confirms three things before touching anything: area, extra scope, and
+answer length. Tasks
 about creating/editing a Claude skill itself are routed to the
 `skill-creator` skill instead of this scoping flow.
 
@@ -78,6 +78,12 @@ content rather than reading `hooks/`/`commands/` at run time — if you edit the
 scripts here, regenerate the installer's embedded copies to match (or just
 copy `hooks/askai.ps1` and `commands/askai.md` directly to `~/.claude/hooks/`
 and `~/.claude/commands/`, which is simpler for a single-machine update).
+
+## Evidence report and A/B test
+
+`askai-report.js` reads Claude Code transcripts (`~/.claude/projects/**/*.jsonl`, including subagents) and opens with a **token savings ledger**: tokens saved per feature (caveman, answer-length budget, scoping, feature summaries, skill name-only overrides, checkpoint + clear, compaction), askai's own cost, and NET. Each row is labelled MEASURED (A/B arms), COMPUTED (config arithmetic), OBSERVED (on/off comparison, correlation only) or unmeasurable (0 credited). `--hours 168` / `--hours 720` give a 7- or 30-day view. It then reports: where tokens went (main vs subagents), askai hook-injection overhead, scoping/answer-length compliance, trigger noise vs completed checkpoint cycles, caveman on/off comparison (observational only) and tool-output volume. Cost units are relative (input + 1.25*cache-create + 0.1*cache-read + 5*output), not billing.
+
+Without a baseline, savings cannot be proven. To get one, put `on` in `<project>/.claude/askai/ab.txt` (or `~/.claude/askai-ab.txt`): each NEW session is randomly assigned `control` (no caveman directive, no scoping reminder) or `treatment` (normal askai), sticky in `sessions/<sid>.arm.txt`. Sessions already running are never assigned. Section 5 of the report compares cost/prompt between arms. Default is off; delete the file or set anything other than `on` to stop.
 
 ## Per-project configuration (not in this repo)
 

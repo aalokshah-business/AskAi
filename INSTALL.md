@@ -24,6 +24,8 @@ It installs, under that machine's own user profile:
 
 - `~/.claude/hooks/askai.ps1` — the hook script
 - `~/.claude/commands/askai.md` — the `/askai` slash command
+- `~/.claude/hooks/askai-report.js` + `~/.claude/commands/askai-report.md` —
+  the `/askai-report [hours]` token savings report (needs Node.js when run)
 - Merges into `~/.claude/settings.json` (creates it if missing, preserves
   anything already there):
   - hook registrations for `UserPromptSubmit`, `PostToolUse`, `PreCompact`
@@ -69,8 +71,8 @@ not global infrastructure:
 
 ## What this does day to day
 
-- `/askai <task>` always confirms scope (area / extra items / answer length /
-  effort level) before doing anything, with defaults pre-filled — or, for
+- `/askai <task>` always confirms scope (area / extra items / answer length)
+  before doing anything, with defaults pre-filled — or, for
   skill-authoring tasks (creating/editing a Claude skill itself), hands off
   straight to the `skill-creator` skill instead.
 - Every prompt in every project gets the same scoping check automatically

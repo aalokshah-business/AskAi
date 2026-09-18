@@ -143,6 +143,25 @@ try {
     $isTrivial = $noscope -or ($trimmed.Length -le 3) -or
         ($trimmed -imatch '^(ok|okay|k|thanks|thank you|thx|yes|no|yep|nope|sure|got it|great|good|nice|cool|continue|go ahead|proceed|sounds good|looks good|lgtm)[.!]*$')
 
+    # opt-in A/B (askai/ab.txt or ~/.claude/askai-ab.txt containing 'on'): each new session gets a sticky random arm, kept in
+    # <sid>.arm.txt. Control sessions skip the caveman directive and the scoping reminder (memory/checkpoint features still run)
+    # so askai-report.js can compare cost per prompt between arms. Anything but 'on' -> everyone is treatment, arm files ignored.
+    $userProfile = [Environment]::GetFolderPath('UserProfile')
+    $abOn = $false
+    foreach ($cfg in @((Join-Path $askaiDir 'ab.txt'), (Join-Path $userProfile '.claude\askai-ab.txt'))) {
+        if (Test-Path $cfg) { $abOn = ((Get-Content $cfg -Raw -ErrorAction SilentlyContinue) -as [string]).Trim().ToLower() -eq 'on'; break }
+    }
+    $isControl = $false
+    if ($abOn) {
+        $armFile = Join-Path $sessionsDir "$safeSessionId.arm.txt"
+        # only brand-new sessions get an arm (no counter yet); a session already running with caveman on is never flipped mid-way
+        if (-not (Test-Path $armFile) -and -not (Test-Path $counterFile)) {
+            Set-Content -Path $armFile -Value $(if ((Get-Random -Maximum 2) -eq 0) { 'control' } else { 'treatment' }) -NoNewline -Encoding ascii
+        }
+        $isControl = ((Get-Content $armFile -Raw -ErrorAction SilentlyContinue) -as [string]).Trim() -eq 'control'
+        if ($isControl) { $isTrivial = $true }   # $isTrivial only gates the scoping reminder
+    }
+
     $count = Read-IntFile $counterFile 0 0 2147483647
     if (-not $noscope) {
         $count = $count + 1
@@ -155,7 +174,6 @@ try {
     # every prompt would pile up), re-injected only if the level changes or after a PreCompact. Level: off|lite|full|ultra,
     # project override <project>/.claude/askai/caveman.txt, else ~/.claude/askai-caveman.txt, else 'full'.
     $cavemanLevel = 'full'
-    $userProfile = [Environment]::GetFolderPath('UserProfile')
     foreach ($cfg in @((Join-Path $askaiDir 'caveman.txt'), (Join-Path $userProfile '.claude\askai-caveman.txt'))) {
         if (Test-Path $cfg) {
             $v = Get-Content $cfg -Raw -ErrorAction SilentlyContinue
@@ -165,6 +183,7 @@ try {
             }
         }
     }
+    if ($isControl) { $cavemanLevel = 'off' }   # A/B control arm
     $cavemanSeen = ''
     if (Test-Path $cavemanFile) {
         $cavemanSeen = Get-Content $cavemanFile -Raw -ErrorAction SilentlyContinue
@@ -241,17 +260,16 @@ try {
 
     # --- scoping reminder (formerly askai-auto-ask.ps1) ---
     if (-not $isTrivial -and (Test-Seen $seenFile 'scope')) {
-        $contextParts.Add("Scoping reminder: apply the scoping rules given earlier this session (new distinct task -> one 4-question AskUserQuestion; follow-ups and short replies skip it).")
+        $contextParts.Add("Scoping reminder: apply the scoping rules given earlier this session (new distinct task -> one 3-question AskUserQuestion; follow-ups and short replies skip it).")
     } elseif (-not $isTrivial) {
         Mark-Seen $seenFile 'scope'
         $contextParts.Add("Token-efficient scoping reminder (applies to every project; the full rules are sent once per session, later prompts get a short pointer): first judge whether this prompt is a NEW, DISTINCT task/request, or an obvious follow-up/continuation/short reply within the current conversation. " +
             "If it's clearly a follow-up or continuation, proceed normally -- do not ask anything extra. " +
-            "If it's a new, distinct task, BEFORE doing any exploration, confirm four things via one AskUserQuestion call, pre-filling your best guess as the recommended option in each: " +
+            "If it's a new, distinct task, BEFORE doing any exploration, confirm three things via one AskUserQuestion call, pre-filling your best guess as the recommended option in each: " +
             "(1) Area -- the specific file(s)/directory/topic this task is scoped to (offer your best guess, or 'no specific area -- general question' if none applies); stay inside the confirmed scope, don't explore beyond it unless truly necessary. " +
             "(2) Additional items -- anything extra to pull in beyond the area (default option: 'none'). " +
             "(3) Answer length -- max characters for the final reply (default option: '500 characters'); keep the answer at or under the confirmed budget, cutting explanation before the direct answer. " +
-            "(4) Effort level -- judge how demanding the task actually is and pre-fill your recommendation as the default: 'medium' for a straightforward ask, 'xhigh' for genuine complexity, 'high' for everything typical in between (lean toward 'high' for most real work). Offer exactly medium/high/xhigh; never offer or recommend 'max' unless the user has separately, explicitly said this task calls for it. This session cannot change its own effort level (self-effort changes are refused by design) -- if the confirmed level differs from the session's current one, say so in one line and tell the user to apply it themselves via the app's effort-level selector; don't claim to have applied it. " +
-            "Skip asking only if the user's request already explicitly states all four itself -- then just state what you're using in one line instead.")
+            "Skip asking only if the user's request already explicitly states all three itself -- then just state what you're using in one line instead.")
     }
 
     # --- pending-clear: a prior checkpoint was filed but the actual clear was never confirmed done ---
