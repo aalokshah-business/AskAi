@@ -11,6 +11,15 @@ function Read-IntFile([string]$path, [int]$default, [int]$min, [int]$max) {
     return $default
 }
 
+# Hook context persists in message history and is re-sent every turn, so long instruction blocks go out ONCE per
+# session (tracked in $seenFile, cleared on PreCompact) and later prompts get only a short pointer.
+function Test-Seen([string]$file, [string]$key) {
+    (Test-Path $file) -and (@(Get-Content $file -ErrorAction SilentlyContinue) -contains $key)
+}
+function Mark-Seen([string]$file, [string]$key) {
+    Add-Content -Path $file -Value $key -Encoding ascii
+}
+
 function Emit-Context([string]$eventName, [string]$context) {
     $output = [ordered]@{
         hookSpecificOutput = [ordered]@{
@@ -41,7 +50,18 @@ try {
     if ($data -and $data.session_id) { $sessionId = [string]$data.session_id }
     $safeSessionId = ($sessionId -replace '[^a-zA-Z0-9_-]', '_')
 
-    $claudeDir   = Join-Path $cwd '.claude'
+    # resolve one stable project root so a session started in a subdirectory doesn't spawn a stray .claude\askai there:
+    # nearest ancestor with .git, else nearest ancestor that already has .claude\askai, else cwd
+    $projectRoot = $null
+    foreach ($marker in @('.git', '.claude\askai')) {
+        for ($d = $cwd; $d; $d = Split-Path $d -Parent -ErrorAction SilentlyContinue) {
+            if (Test-Path (Join-Path $d $marker)) { $projectRoot = $d; break }
+        }
+        if ($projectRoot) { break }
+    }
+    if (-not $projectRoot) { $projectRoot = $cwd }
+
+    $claudeDir   = Join-Path $projectRoot '.claude'
     $askaiDir    = Join-Path $claudeDir 'askai'
     $sessionsDir = Join-Path $askaiDir 'sessions'
     if (-not (Test-Path $sessionsDir)) { New-Item -ItemType Directory -Path $sessionsDir -Force | Out-Null }
@@ -51,6 +71,9 @@ try {
     $currentFeatureFile = Join-Path $sessionsDir "$safeSessionId.current-feature.txt"
     $bytesFile          = Join-Path $sessionsDir "$safeSessionId.bytes.txt"
     $pendingClearFile   = Join-Path $sessionsDir "$safeSessionId.pending-clear.txt"
+    $cavemanFile        = Join-Path $sessionsDir "$safeSessionId.caveman.txt"
+    $seenFile           = Join-Path $sessionsDir "$safeSessionId.seen.txt"     # long instruction blocks already sent this session
+    $summaryFlagFile    = Join-Path $sessionsDir "$safeSessionId.summary.txt"  # slug (or '(index)') whose summary is already in context
     # project-wide config/registry
     $featuresFile        = Join-Path $askaiDir 'features.json'
     $intervalFile        = Join-Path $askaiDir 'interval.txt'
@@ -98,6 +121,9 @@ try {
         }
         $targetPath = Join-Path $claudeDir $targetFile
         $note = "Context is about to be compacted (real context size threshold, not a fixed prompt count). Before anything else this turn, silently append 2-4 bullet points capturing the most important recent progress/state to '$targetPath' under a new '## Pre-compact note <UTC timestamp>' heading (create the file with a top-level '# $slug -- Checkpoint Summary' heading first if it doesn't exist). Keep it brief -- this is a safety net so nothing important is lost to compaction, not a full checkpoint. Do not ask the user anything and do not call clear_session for this -- just write the note and continue normally."
+        # compaction may summarize away the caveman directive -- re-arm it so the next prompt injects it again
+        # (same for the once-per-session instruction blocks and the injected feature summary)
+        Remove-Item -Path $cavemanFile, $seenFile, $summaryFlagFile -Force -ErrorAction SilentlyContinue
         Emit-Context 'PreCompact' $note
         exit 0
     }
@@ -125,6 +151,40 @@ try {
 
     $contextParts = New-Object System.Collections.Generic.List[string]
 
+    # --- caveman terse-output mode: injected ONCE per session (hook context persists in history, so re-sending it
+    # every prompt would pile up), re-injected only if the level changes or after a PreCompact. Level: off|lite|full|ultra,
+    # project override <project>/.claude/askai/caveman.txt, else ~/.claude/askai-caveman.txt, else 'full'.
+    $cavemanLevel = 'full'
+    $userProfile = [Environment]::GetFolderPath('UserProfile')
+    foreach ($cfg in @((Join-Path $askaiDir 'caveman.txt'), (Join-Path $userProfile '.claude\askai-caveman.txt'))) {
+        if (Test-Path $cfg) {
+            $v = Get-Content $cfg -Raw -ErrorAction SilentlyContinue
+            if ($v) {
+                $v = $v.Trim().ToLower()
+                if ($v -in 'off', 'lite', 'full', 'ultra') { $cavemanLevel = $v; break }
+            }
+        }
+    }
+    $cavemanSeen = ''
+    if (Test-Path $cavemanFile) {
+        $cavemanSeen = Get-Content $cavemanFile -Raw -ErrorAction SilentlyContinue
+        if ($cavemanSeen) { $cavemanSeen = $cavemanSeen.Trim() }
+    }
+    if ($cavemanLevel -ne $cavemanSeen) {
+        $cavemanKeep = "Keep technical terms, numbers, units, code blocks, commands and quoted errors exact; never drop not/no/never/only/except. Commit messages, PR text, code comments and file contents stay in normal style. Use full clear sentences for security warnings, destructive/irreversible-action confirmations and AskUserQuestion option text. Compression is style only -- never omit needed information, and never make output longer to sound like a caveman."
+        $cavemanText = @{
+            lite  = "Caveman mode (lite, set by askai; user says 'stop caveman' or 'normal mode' to end it): no filler (just/really/basically), pleasantries or hedging; keep full sentences and articles. $cavemanKeep"
+            full  = "Caveman mode (full, set by askai; user says 'stop caveman' or 'normal mode' to end it): reply terse -- drop articles, filler (just/really/basically), pleasantries and hedging; fragments OK; short synonyms; no tool-call narration, decorative tables or emoji. $cavemanKeep"
+            ultra = "Caveman mode (ultra, set by askai; user says 'stop caveman' or 'normal mode' to end it): maximum terseness -- fragments, drop articles/filler/pleasantries/hedging/connectors when meaning stays clear, well-known abbreviations only (DB, API, HTTP), no tool-call narration, decorative tables or emoji. $cavemanKeep"
+        }
+        if ($cavemanLevel -eq 'off') {
+            if ($cavemanSeen) { $contextParts.Add("Caveman mode is now off -- reply in normal style again.") }
+        } else {
+            $contextParts.Add($cavemanText[$cavemanLevel])
+        }
+        Set-Content -Path $cavemanFile -Value $cavemanLevel -NoNewline -Encoding utf8
+    }
+
     # --- '#slug' tag anywhere in the prompt switches THIS session's active feature immediately ---
     $taggedSlug = $null
     if ($features -and $features.features -and $prompt) {
@@ -141,25 +201,50 @@ try {
     }
 
     # --- inject only THIS SESSION's current feature summary, or a cheap index if none is set yet ---
-    if ($currentSlug -and $features) {
-        $entry = $features.features | Where-Object { $_.slug -eq $currentSlug } | Select-Object -First 1
-        if ($entry) {
-            $summaryPath = Join-Path $claudeDir $entry.file
-            if (Test-Path $summaryPath) {
-                $summary = Get-Content $summaryPath -Raw -ErrorAction SilentlyContinue
-                if ($summary -and $summary.Trim().Length -gt 0) {
-                    $contextParts.Add("Feature checkpoint summary -- '$($entry.name)' ($($entry.file)), for continuity across session clears:`n" + $summary)
+    # Injected once per session (and again after PreCompact, or when a '#slug' tag switches feature), capped to the most
+    # recent $summaryMax chars -- history already carries it, so re-sending every prompt would only pile up.
+    $summaryMax = Read-IntFile (Join-Path $askaiDir 'summary-max-chars.txt') 6000 1000 200000
+    $summaryKey = if ($currentSlug) { $currentSlug } else { '(index)' }
+    $summaryFlagSeen = ''
+    $summaryFlagExists = Test-Path $summaryFlagFile
+    if ($summaryFlagExists) { $summaryFlagSeen = (Get-Content $summaryFlagFile -Raw -ErrorAction SilentlyContinue); if ($summaryFlagSeen) { $summaryFlagSeen = $summaryFlagSeen.Trim() } }
+    # inject when nothing was sent yet this session, or the user explicitly switched feature via '#slug'.
+    # A slug set by this session's own checkpoint is already in context, so only the flag is updated.
+    $injectSummary = (-not $summaryFlagExists) -or ($taggedSlug -and $summaryKey -ne $summaryFlagSeen)
+    if ($summaryKey -ne $summaryFlagSeen) { Set-Content -Path $summaryFlagFile -Value $summaryKey -NoNewline -Encoding ascii }
+
+    if ($injectSummary) {
+        if ($currentSlug -and $features) {
+            $entry = $features.features | Where-Object { $_.slug -eq $currentSlug } | Select-Object -First 1
+            if ($entry) {
+                $summaryPath = Join-Path $claudeDir $entry.file
+                if (Test-Path $summaryPath) {
+                    $summary = Get-Content $summaryPath -Raw -ErrorAction SilentlyContinue
+                    if ($summary -and $summary.Trim().Length -gt 0) {
+                        $head = "Feature checkpoint summary -- '$($entry.name)' ($($entry.file)), for continuity across session clears:`n"
+                        if ($summary.Length -gt $summaryMax) {
+                            $tail = $summary.Substring($summary.Length - $summaryMax)
+                            $cut = $tail.IndexOf("`n## ")
+                            if ($cut -ge 0) { $tail = $tail.Substring($cut + 1) }
+                            $head = "Feature checkpoint summary -- '$($entry.name)' ($($entry.file)), most recent $($tail.Length) of $($summary.Length) chars only (read '$summaryPath' if older detail is needed), for continuity across session clears:`n"
+                            $summary = $tail
+                        }
+                        $contextParts.Add($head + $summary)
+                    }
                 }
             }
+        } elseif (-not $currentSlug -and $features -and $features.features -and $features.features.Count -gt 0) {
+            $lines = $features.features | ForEach-Object { "- $($_.slug): $($_.name) -- $($_.file)" }
+            $contextParts.Add("Tracked feature summaries exist (none loaded yet this session). If the prompt is about one, read its file now, or tag the prompt with e.g. '#$($features.features[0].slug)' to load it:`n" + [string]::Join("`n", $lines))
         }
-    } elseif (-not $currentSlug -and $features -and $features.features -and $features.features.Count -gt 0) {
-        $lines = $features.features | ForEach-Object { "- $($_.slug): $($_.name) -- $($_.file)" }
-        $contextParts.Add("This project has tracked feature summaries from earlier sessions (no checkpoint has run yet in THIS session, so nothing is auto-loaded). If the user's prompt below is about one of these, read the matching file yourself right away rather than waiting for the next checkpoint (or tag your prompt with e.g. '#$($features.features[0].slug)' to switch instantly):`n" + [string]::Join("`n", $lines))
     }
 
     # --- scoping reminder (formerly askai-auto-ask.ps1) ---
-    if (-not $isTrivial) {
-        $contextParts.Add("Token-efficient scoping reminder (applies to every project): first judge whether this prompt is a NEW, DISTINCT task/request, or an obvious follow-up/continuation/short reply within the current conversation. " +
+    if (-not $isTrivial -and (Test-Seen $seenFile 'scope')) {
+        $contextParts.Add("Scoping reminder: apply the scoping rules given earlier this session (new distinct task -> one 4-question AskUserQuestion; follow-ups and short replies skip it).")
+    } elseif (-not $isTrivial) {
+        Mark-Seen $seenFile 'scope'
+        $contextParts.Add("Token-efficient scoping reminder (applies to every project; the full rules are sent once per session, later prompts get a short pointer): first judge whether this prompt is a NEW, DISTINCT task/request, or an obvious follow-up/continuation/short reply within the current conversation. " +
             "If it's clearly a follow-up or continuation, proceed normally -- do not ask anything extra. " +
             "If it's a new, distinct task, BEFORE doing any exploration, confirm four things via one AskUserQuestion call, pre-filling your best guess as the recommended option in each: " +
             "(1) Area -- the specific file(s)/directory/topic this task is scoped to (offer your best guess, or 'no specific area -- general question' if none applies); stay inside the confirmed scope, don't explore beyond it unless truly necessary. " +
@@ -172,7 +257,10 @@ try {
     # --- pending-clear: a prior checkpoint was filed but the actual clear was never confirmed done ---
     $pendingClear = (Test-Path $pendingClearFile) -and ((Get-Content $pendingClearFile -Raw -ErrorAction SilentlyContinue).Trim() -eq '1')
 
-    if ($pendingClear -and -not $noscope) {
+    if ($pendingClear -and -not $noscope -and (Test-Seen $seenFile 'pending')) {
+        $contextParts.Add("Pending clear still owed (flag file '$pendingClearFile' = 1): decide again this turn as described earlier -- get_usage('self'), append the metrics line to '$metricsFile' (trigger 'pending-clear reminder', outcome cleared/declined/blocked/held), then clear_session('self') last, or hold and say why in one line.")
+    } elseif ($pendingClear -and -not $noscope) {
+        Mark-Seen $seenFile 'pending'
         $contextParts.Add("Reminder: a checkpoint from an earlier prompt in this session filed its summary but the clear_session('self') call was never confirmed done (file: '$pendingClearFile'). Decide again this turn, explicitly, and log the decision: call get_usage('self') for this session's current tokens_used/percent_used, then append one JSON line to '$metricsFile' (create it if it doesn't exist; one object per line, no trailing comma) with fields {`"ts`":`"<UTC ISO8601>`",`"session`":`"$safeSessionId`",`"slug`":`"<current feature slug or 'general'>`",`"trigger`":`"pending-clear reminder`",`"tokens_used`":<number>,`"percent_used`":<number>,`"outcome`":`"<see below>`"}. (a) If now is a reasonable stopping point, after answering, call clear_session('self') as your last action: outcome 'cleared' if it's confirmed to have run (then also write '0' to '$pendingClearFile'), 'declined' if the user declines the approval prompt, or 'blocked' if a permission/classifier error prevents it (leave '$pendingClearFile' at '1' for 'declined'/'blocked' so this reminder resurfaces). (b) Otherwise, outcome 'held', and tell the user in one short line that you're still holding the pending clear and why -- do not just silently drop it again.")
     }
 
@@ -190,6 +278,10 @@ try {
         if ($isWrapUp) { $reason = "you said something that sounds like wrapping up for now" }
         elseif ($isVolumeTrigger) { $reason = "this session has accumulated roughly $bytesSinceCheckpoint characters of tool output since the last checkpoint (threshold: $volumeThreshold)" }
 
+        if (Test-Seen $seenFile 'checkpoint') {
+            $contextParts.Add("Checkpoint triggered ($reason). After fully answering, run the same 9 closing steps given earlier this session (features.json '$featuresFile' -> confirm feature via AskUserQuestion -> append summary under '$askaiDir' -> write slug to '$currentFeatureFile' -> write '1' to '$pendingClearFile' -> get_usage('self') + metrics line to '$metricsFile' -> decide clear_session('self') or hold, out loud).")
+        } else {
+        Mark-Seen $seenFile 'checkpoint'
         $contextParts.Add("Checkpoint triggered ($reason). After fully answering the user's actual request below, do these closing steps in the same turn: " +
             "(1) Read '$featuresFile' if it exists (it may not yet, on an early checkpoint) -- it holds {`"features`":[{`"slug`",`"name`",`"file`":`"askai/<slug>.md`"}]} (a project-wide registry, shared by all sessions). " +
             "(2) Based on roughly the recent exchanges, judge which existing feature(s) this work belongs to, or whether it's project-general, or whether it looks like a new feature not yet tracked. " +
@@ -200,6 +292,7 @@ try {
             "(7) Tell the user in one short line which feature(s) the checkpoint was filed under. " +
             "(8) Call get_usage('self') for this session's current tokens_used/percent_used (this is the pre-clear reading -- the whole point of logging it). Append one JSON line to '$metricsFile' (create the file if it doesn't exist; append-only, one JSON object per line, no trailing comma, no surrounding array) with fields {`"ts`":`"<UTC ISO8601 timestamp>`",`"session`":`"$safeSessionId`",`"slug`":`"<the confirmed feature slug from step 5, or 'general'>`",`"trigger`":`"$reason`",`"tokens_used`":<number from get_usage>,`"percent_used`":<number from get_usage>,`"outcome`":`"<see below>`"}. " +
             "(9) Then decide explicitly, out loud to the user, and set that line's outcome accordingly: if now is a reasonable stopping point, call clear_session('self') as your last tool call this turn (it will still ask the user to approve) -- outcome 'cleared' if it's confirmed to have run (then also write '0' to '$pendingClearFile'), 'declined' if the user declines the approval prompt, or 'blocked' if a permission/classifier error prevents the call (leave '$pendingClearFile' at '1' for 'declined'/'blocked' so the pending-clear reminder resurfaces). If the user is clearly mid-task, it is fine to hold the clear -- set outcome 'held' and say so explicitly ('holding the clear for now since you're still working') rather than silently doing nothing; the pending-clear reminder will resurface on your next reply either way, so it is never silently forgotten.")
+        }
 
         # optimistic reset -- a checkpoint is about to consolidate things
         Set-Content -Path $bytesFile -Value '0' -NoNewline -Encoding utf8
