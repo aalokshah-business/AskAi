@@ -15,8 +15,9 @@ re-run `askai-setup.ps1` (or manually copy) to push changes out to `~/.claude/`.
 
 ## What the hook does
 
-- `UserPromptSubmit` — scoping reminder for new/distinct tasks, injects the
-  session's tracked feature summary, `#slug` tagging, a pending-clear
+- `UserPromptSubmit` — scoping reminder for new/distinct tasks (area,
+  additional items, answer length, and a recommended effort level), injects
+  the session's tracked feature summary, `#slug` tagging, a pending-clear
   reminder, and the checkpoint trigger (every N prompts, a wrap-up phrase,
   or accumulated tool-output volume).
 - `PostToolUse` — accumulates tool-output volume per session; if volume alone
@@ -58,5 +59,6 @@ Each project using askai has its own tuning, checked into that project instead:
 - `.claude/settings.json` (`bashOutputMaxChars`, `taskOutputMaxChars`, `effortLevel`, `permissions.allow`)
 - `CLAUDE.md` conventions
 - `.claude/askai/*.md` — accumulated feature summaries (project memory, not infrastructure)
+- `.claude/askai/metrics.jsonl` — append-only log of checkpoint/clear events (timestamp, session, feature slug, trigger, pre-clear tokens/percent used, and outcome: cleared/held/blocked/declined), written by the agent per the checkpoint-closing instructions; ask the agent to summarize it for a read on real token savings over time
 
 See the full writeup for how the system works day to day.

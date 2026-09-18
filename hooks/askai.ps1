@@ -55,6 +55,7 @@ try {
     $featuresFile        = Join-Path $askaiDir 'features.json'
     $intervalFile        = Join-Path $askaiDir 'interval.txt'
     $volumeThresholdFile = Join-Path $askaiDir 'volume-threshold.txt'
+    $metricsFile         = Join-Path $askaiDir 'metrics.jsonl'
 
     $features = $null
     if (Test-Path $featuresFile) {
@@ -81,7 +82,7 @@ try {
         # same-turn fallback -- don't wait for a UserPromptSubmit that might never come
         $volumeThreshold = Read-IntFile $volumeThresholdFile 80000 10000 2000000
         if ($newTotal -ge $volumeThreshold) {
-            Emit-Context 'PostToolUse' "Tool-output volume just crossed $volumeThreshold chars mid-turn (no need to wait for your next prompt). Before writing your final reply this turn, run the checkpoint closing steps now: read '$featuresFile' if present, judge/confirm the feature via AskUserQuestion, append a checkpoint summary, write the slug to '$currentFeatureFile', write '1' to '$pendingClearFile', and decide explicitly whether to call clear_session('self') now or hold it and say so."
+            Emit-Context 'PostToolUse' "Tool-output volume just crossed $volumeThreshold chars mid-turn (no need to wait for your next prompt). Before writing your final reply this turn, run the checkpoint closing steps now: read '$featuresFile' if present, judge/confirm the feature via AskUserQuestion, append a checkpoint summary, write the slug to '$currentFeatureFile', write '1' to '$pendingClearFile', call get_usage('self') for a pre-clear tokens_used/percent_used reading and log it plus the outcome as one JSON line to '$metricsFile' (see the interval-checkpoint instructions for the exact fields), and decide explicitly whether to call clear_session('self') now or hold it and say so."
             Set-Content -Path $bytesFile -Value '0' -NoNewline -Encoding utf8
         }
         exit 0
@@ -160,18 +161,19 @@ try {
     if (-not $isTrivial) {
         $contextParts.Add("Token-efficient scoping reminder (applies to every project): first judge whether this prompt is a NEW, DISTINCT task/request, or an obvious follow-up/continuation/short reply within the current conversation. " +
             "If it's clearly a follow-up or continuation, proceed normally -- do not ask anything extra. " +
-            "If it's a new, distinct task, BEFORE doing any exploration, confirm three things via one AskUserQuestion call, pre-filling your best guess as the recommended option in each: " +
+            "If it's a new, distinct task, BEFORE doing any exploration, confirm four things via one AskUserQuestion call, pre-filling your best guess as the recommended option in each: " +
             "(1) Area -- the specific file(s)/directory/topic this task is scoped to (offer your best guess, or 'no specific area -- general question' if none applies); stay inside the confirmed scope, don't explore beyond it unless truly necessary. " +
             "(2) Additional items -- anything extra to pull in beyond the area (default option: 'none'). " +
             "(3) Answer length -- max characters for the final reply (default option: '500 characters'); keep the answer at or under the confirmed budget, cutting explanation before the direct answer. " +
-            "Skip asking only if the user's request already explicitly states all three itself -- then just state what you're using in one line instead.")
+            "(4) Effort level -- judge how demanding the task actually is and pre-fill your recommendation as the default: 'medium' for a straightforward ask, 'xhigh' for genuine complexity, 'high' for everything typical in between (lean toward 'high' for most real work). Offer exactly medium/high/xhigh; never offer or recommend 'max' unless the user has separately, explicitly said this task calls for it. This session cannot change its own effort level (self-effort changes are refused by design) -- if the confirmed level differs from the session's current one, say so in one line and tell the user to apply it themselves via the app's effort-level selector; don't claim to have applied it. " +
+            "Skip asking only if the user's request already explicitly states all four itself -- then just state what you're using in one line instead.")
     }
 
     # --- pending-clear: a prior checkpoint was filed but the actual clear was never confirmed done ---
     $pendingClear = (Test-Path $pendingClearFile) -and ((Get-Content $pendingClearFile -Raw -ErrorAction SilentlyContinue).Trim() -eq '1')
 
     if ($pendingClear -and -not $noscope) {
-        $contextParts.Add("Reminder: a checkpoint from an earlier prompt in this session filed its summary but the clear_session('self') call was never confirmed done (file: '$pendingClearFile'). Decide again this turn, explicitly: (a) if now is a reasonable stopping point, after answering, call clear_session('self') as your last action and then write '0' to '$pendingClearFile'; (b) otherwise, tell the user in one short line that you're still holding the pending clear and why -- do not just silently drop it again.")
+        $contextParts.Add("Reminder: a checkpoint from an earlier prompt in this session filed its summary but the clear_session('self') call was never confirmed done (file: '$pendingClearFile'). Decide again this turn, explicitly, and log the decision: call get_usage('self') for this session's current tokens_used/percent_used, then append one JSON line to '$metricsFile' (create it if it doesn't exist; one object per line, no trailing comma) with fields {`"ts`":`"<UTC ISO8601>`",`"session`":`"$safeSessionId`",`"slug`":`"<current feature slug or 'general'>`",`"trigger`":`"pending-clear reminder`",`"tokens_used`":<number>,`"percent_used`":<number>,`"outcome`":`"<see below>`"}. (a) If now is a reasonable stopping point, after answering, call clear_session('self') as your last action: outcome 'cleared' if it's confirmed to have run (then also write '0' to '$pendingClearFile'), 'declined' if the user declines the approval prompt, or 'blocked' if a permission/classifier error prevents it (leave '$pendingClearFile' at '1' for 'declined'/'blocked' so this reminder resurfaces). (b) Otherwise, outcome 'held', and tell the user in one short line that you're still holding the pending clear and why -- do not just silently drop it again.")
     }
 
     # --- checkpoint decision: interval count, an explicit wrap-up phrase, or accumulated tool-output volume ---
@@ -196,7 +198,8 @@ try {
             "(5) Write the confirmed feature's slug to '$currentFeatureFile' (create the file if needed; this is THIS session's own pointer, other concurrent sessions are unaffected) -- if more than one feature was confirmed, pick the most central one to write there. " +
             "(6) Write '1' to '$pendingClearFile' right after the summary file write succeeds -- this marks the clear as owed until it's actually confirmed done. " +
             "(7) Tell the user in one short line which feature(s) the checkpoint was filed under. " +
-            "(8) Then decide explicitly, out loud to the user: if now is a reasonable stopping point, call clear_session('self') as your last tool call this turn (it will still ask the user to approve) and then write '0' to '$pendingClearFile'. If the user is clearly mid-task, it is fine to hold the clear -- but say so explicitly ('holding the clear for now since you're still working') rather than silently doing nothing; the pending-clear reminder will resurface on your next reply either way, so it is never silently forgotten.")
+            "(8) Call get_usage('self') for this session's current tokens_used/percent_used (this is the pre-clear reading -- the whole point of logging it). Append one JSON line to '$metricsFile' (create the file if it doesn't exist; append-only, one JSON object per line, no trailing comma, no surrounding array) with fields {`"ts`":`"<UTC ISO8601 timestamp>`",`"session`":`"$safeSessionId`",`"slug`":`"<the confirmed feature slug from step 5, or 'general'>`",`"trigger`":`"$reason`",`"tokens_used`":<number from get_usage>,`"percent_used`":<number from get_usage>,`"outcome`":`"<see below>`"}. " +
+            "(9) Then decide explicitly, out loud to the user, and set that line's outcome accordingly: if now is a reasonable stopping point, call clear_session('self') as your last tool call this turn (it will still ask the user to approve) -- outcome 'cleared' if it's confirmed to have run (then also write '0' to '$pendingClearFile'), 'declined' if the user declines the approval prompt, or 'blocked' if a permission/classifier error prevents the call (leave '$pendingClearFile' at '1' for 'declined'/'blocked' so the pending-clear reminder resurfaces). If the user is clearly mid-task, it is fine to hold the clear -- set outcome 'held' and say so explicitly ('holding the clear for now since you're still working') rather than silently doing nothing; the pending-clear reminder will resurface on your next reply either way, so it is never silently forgotten.")
 
         # optimistic reset -- a checkpoint is about to consolidate things
         Set-Content -Path $bytesFile -Value '0' -NoNewline -Encoding utf8
