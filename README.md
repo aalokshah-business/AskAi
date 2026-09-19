@@ -6,7 +6,7 @@ re-run `askai-setup.ps1` (or manually copy) to push changes out to `~/.claude/`.
 
 ## Contents
 
-- `hooks/askai.ps1` — the unified hook script (UserPromptSubmit + PostToolUse + PreCompact)
+- `hooks/askai.ps1` — the unified hook script (UserPromptSubmit + PreToolUse + PreCompact)
 - `commands/askai.md` — the `/askai` slash command
 - `hooks/askai-report.js` + `commands/askai-report.md` — evidence report (`/askai-report [hours]`, or `node ~/.claude/hooks/askai-report.js --hours 6 [--json]`); needs Node.js at run time
 - `askai-setup.ps1` — portable installer; copies the four files above into
@@ -19,19 +19,25 @@ re-run `askai-setup.ps1` (or manually copy) to push changes out to `~/.claude/`.
 - `UserPromptSubmit` — scoping rule for new/distinct tasks (state area,
   additional items, answer length in one line; no question is asked), injects
   the session's tracked feature summary, `#slug` tagging, and the checkpoint
-  trigger (every N prompts, a wrap-up phrase, or accumulated tool-output
-  volume; default volume threshold 150000 chars). Checkpoints are filed
-  silently -- no AskUserQuestion -- and `clear_session` is only attempted when
-  you say you are wrapping up.
-- `PostToolUse` — accumulates tool-output volume per session; if volume alone
-  crosses the threshold mid-turn, it fires a same-turn checkpoint
-  instruction instead of waiting for the next prompt.
-  Scoped via `matcher: Bash|Read|Grep|Agent|Task` so it skips the ~250ms
-  powershell.exe spawn on cheap tools like Edit/Write (the `Agent`/`Task`
-  pair covers the subagent-dispatch tool under both its CLI name `Task`
-  and its SDK/desktop name `Agent` -- verified against real transcripts
-  that only `Agent` actually appears in this environment).
-- `PreCompact` — writes a brief safety-net note before context compaction.
+  trigger (every N prompts or a wrap-up phrase). Checkpoints are filed
+  silently -- no AskUserQuestion -- with ONE tool call (the hook appends the
+  metrics row itself), and `clear_session` is only attempted when you say you
+  are wrapping up.
+  - **Context guard**: reads the real context size from the transcript's last
+    usage block; past 120K tokens (`askai/context-guard.txt` overrides, 20K-2M)
+    it nudges once per +40K to start a fresh session and delegate searches to
+    Explore-on-haiku.
+  - **Connector manager**: a prompt that mentions Claude Docs or
+    visualize/mockup/interactive widgets gets a hint to enable that connector for
+    the session (`set_session_connector_enabled`), and the next prompt gets a hint
+    to switch it back off. Short replies never trigger it. (A hook cannot toggle
+    connectors itself; it only tells the model to.)
+- `PreToolUse` (`matcher: Agent|Task`) — subagent budget guard. Subagents were
+  ~70% of measured spend, so an Agent launch whose prompt lacks a tool-call limit
+  or a reply-size limit is denied once with the reason; an identical resend, or a
+  prompt containing `!nolimit`, passes. No other tool pays a hook spawn.
+- `PreCompact` — writes a brief safety-net note before context compaction and
+  re-arms the once-per-session injections.
 
 ## `/askai <task>`
 
@@ -70,7 +76,7 @@ The `/caveman` skill only takes effect once you invoke it. So the askai hook als
 Hook context persists in message history and is re-sent on every later turn, so anything injected per prompt compounds. The hook therefore:
 
 - Sends the **feature summary once per session** (again after PreCompact, or when a `#slug` tag switches feature), capped to the most recent 6000 chars (override: `.claude/askai/summary-max-chars.txt`, 1000-200000) with a pointer to the full file. Previously a 40 KB summary was re-injected on every prompt.
-- Sends the **full scoping rule and checkpoint steps once per session**; later prompts get nothing (scoping) or a ~200 char pointer (checkpoint). The pending-clear reminders and volume-note were removed: they re-injected text every prompt for little value. State lives in `sessions/<sid>.seen.txt` / `.summary.txt`, both cleared on PreCompact.
+- Sends the **full scoping rule and checkpoint steps once per session**; later prompts get nothing (scoping) or a ~200 char pointer (checkpoint). The pending-clear reminders, the volume-note and the PostToolUse volume tracker were removed (v2): they re-injected text every prompt or spawned PowerShell per tool call for little value. State lives in `sessions/<sid>.seen.txt` / `.summary.txt`, both cleared on PreCompact.
 - Resolves one **project root** (nearest `.git`, else nearest existing `.claude/askai`, else cwd) so sessions started in subdirectories no longer create stray `.claude/askai/` folders.
 
 Note: `askai-setup.ps1` currently embeds its own copy of `askai.ps1`/`askai.md`
@@ -88,10 +94,10 @@ Without a baseline, savings cannot be proven. To get one, put `on` in `<project>
 ## Per-project configuration (not in this repo)
 
 Each project using askai has its own tuning, checked into that project instead:
-- `.claude/askai/interval.txt`, `.claude/askai/volume-threshold.txt`
-- `.claude/settings.json` (`bashOutputMaxChars`, `taskOutputMaxChars`, `effortLevel`, `permissions.allow`)
+- `.claude/askai/interval.txt`, `.claude/askai/context-guard.txt`
+- `.claude/settings.json` (`bashOutputMaxChars`, `effortLevel`, `permissions.allow`)
 - `CLAUDE.md` conventions
 - `.claude/askai/*.md` — accumulated feature summaries (project memory, not infrastructure)
-- `.claude/askai/metrics.jsonl` — append-only log of checkpoint/clear events (timestamp, session, feature slug, trigger, pre-clear tokens/percent used, and outcome: cleared/held/blocked/declined), written by the agent per the checkpoint-closing instructions; ask the agent to summarize it for a read on real token savings over time
+- `.claude/askai/metrics.jsonl` — append-only log of checkpoint/clear events (timestamp, session, feature slug, trigger, pre-clear tokens/percent used, and outcome: cleared/held/blocked/declined), appended by the hook itself when it fires a checkpoint (trigger, context tokens, outcome `held`); ask the agent to summarize it for a read on real token savings over time
 
 See the full writeup for how the system works day to day.

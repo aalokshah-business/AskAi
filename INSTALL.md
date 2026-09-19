@@ -28,14 +28,14 @@ It installs, under that machine's own user profile:
   the `/askai-report [hours]` token savings report (needs Node.js when run)
 - Merges into `~/.claude/settings.json` (creates it if missing, preserves
   anything already there):
-  - hook registrations for `UserPromptSubmit`, `PostToolUse`, `PreCompact`
-    (`PostToolUse` is scoped with a `matcher` to `Bash|Read|Grep|Agent|Task`
-    only, to skip the process-spawn cost on cheap tools like Edit/Write;
-    re-running the installer upgrades an older registration that lacks
-    this matcher, or one still on the older `Task`-only tool name)
+  - hook registrations for `UserPromptSubmit`, `PreToolUse`, `PreCompact`
+    (`PreToolUse` is scoped with a `matcher` to `Agent|Task` only, so only
+    subagent launches pay the process-spawn cost; the old `PostToolUse`
+    registration is retired and re-running the installer removes it)
   - `autoCompactEnabled: true`, `autoCompactWindow: 150000`
-  - `skillOverrides` trimming 11 skills unrelated to code/book-writing work
-    to name-only (only adds ones not already set — never overrides a choice
+  - `env.CLAUDE_CODE_SUBAGENT_MODEL: sonnet` (only if unset; a per-call `model` still wins)
+  - `skillOverrides` setting rarely used bundled skills to name-only (plugin skills
+    such as `anthropic-skills:*` ignore it; manage those with `/plugin`; only adds ones not already set — never overrides a choice
     you've made for a specific skill)
 
 Safe to re-run any time — it won't duplicate hooks or clobber unrelated
@@ -56,12 +56,12 @@ not global infrastructure:
 1. `.claude/askai/interval.txt` — a number 2-50 (checkpoint every N prompts;
    omit this file to just use the default of 5; heavier coding projects
    tend to want a higher number, e.g. 8, so hard-clears don't fire mid-task)
-2. `.claude/askai/volume-threshold.txt` — optional, a character count
-   (default 150000 if omitted; checkpoint fires early once accumulated tool
-   output crosses this since the last checkpoint)
+2. `.claude/askai/context-guard.txt` — optional, a token count 20000-2000000
+   (default 120000 if omitted; past it the hook nudges you to start a fresh
+   session, again every +40K)
 3. `.claude/settings.json` — optionally add:
    ```json
-   { "bashOutputMaxChars": 15000, "taskOutputMaxChars": 15000, "effortLevel": "medium" }
+   { "bashOutputMaxChars": 15000, "effortLevel": "medium" }
    ```
 4. `CLAUDE.md` — optionally note conventions like delegating broad
    multi-file exploration to the Explore subagent
@@ -77,11 +77,14 @@ not global infrastructure:
   straight to the `skill-creator` skill instead.
 - Every prompt in every project gets the same scoping rule automatically
   for new tasks — quietly, no interruption for follow-ups or short replies.
-- Every N prompts (or a wrap-up phrase like "done for today", or a burst of
-  tool output), Claude silently picks the feature the work belongs to and
-  files a summary to disk. It only tries to clear the session when you say
+- Every N prompts (or a wrap-up phrase like "done for today"), Claude
+  silently picks the feature the work belongs to and files a summary to disk
+  with one tool call. It only tries to clear the session when you say
   you're wrapping up (and you still approve the clear).
-- If tool-output volume alone crosses the threshold mid-turn, the checkpoint
-  fires that same turn instead of waiting for your next prompt.
+- An Agent launch without a tool-call limit and a reply-size limit is denied
+  once (subagents were ~70% of spend); resend unchanged or add `!nolimit` to
+  pass.
+- Mentioning Claude Docs or visualize/mockups makes Claude enable that
+  connector for the session and switch it back off on your next message.
 - Tag a prompt with `#feature-slug` to switch context instantly; add
   `!noscope` to a throwaway prompt to skip all of the above for that one message.

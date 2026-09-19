@@ -441,7 +441,7 @@ L.push('3. ASKAI BEHAVIOUR');
 L.push(`  Prompts that received the scoping reminder: ${eligible.length}; AskUserQuestion scoping asked: ${asked.length} (${pct(asked.length, eligible.length)}; follow-ups are meant to skip, so <100% is expected).`);
 L.push(`  Answer-length budget set on ${budgeted.length} turns; final reply within budget (+10%): ${withinBudget.length} (${pct(withinBudget.length, budgeted.length)}).` + (budgeted.length ? ` Median reply/budget = ${(median(budgeted.map(b => b.chars / b.budget))).toFixed(2)}.` : ''));
 const nk = k => (kindStats[k] || { n: 0 }).n;
-L.push(`  Triggers fired: ${nk('checkpoint')} checkpoint, ${nk('volume')} volume-note, ${nk('pending-clear')} pending-clear reminders.  Completed cycle: ${metrics.length} metrics lines, ${R.askai.clear_calls} clear_session calls.` + (metrics.length ? ` Pre-clear context: ${metrics.map(m => (m.percent_used ?? '?') + '%').join(', ')}.` : ''));
+L.push(`  Triggers fired: ${nk('checkpoint')} checkpoint reminders (v2: volume-note and pending-clear retired).  Completed cycle: ${metrics.length} metrics lines, ${R.askai.clear_calls} clear_session calls.` + (metrics.length ? ` Context at checkpoint: ${metrics.map(m => (m.tokens_used != null ? Math.round(m.tokens_used/1000) + 'K' : (m.percent_used ?? '?') + '%')).join(', ')}.` : ''));
 L.push('');
 
 L.push('4. CAVEMAN (observational: responses grouped by whether caveman mode was active when produced)');

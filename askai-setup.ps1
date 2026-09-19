@@ -2,7 +2,7 @@
 Portable installer for the "askai" token-optimization hook system (Claude Code / Desktop app).
 
 Installs, under the CURRENT user's home directory (works regardless of Windows username):
-  - ~/.claude/hooks/askai.ps1        the unified hook script (UserPromptSubmit + PostToolUse + PreCompact)
+  - ~/.claude/hooks/askai.ps1        the unified hook script (UserPromptSubmit + PreToolUse + PreCompact)
   - ~/.claude/commands/askai.md      the /askai slash command
   - ~/.claude/hooks/askai-report.js  token savings report (needs Node.js when run)
   - ~/.claude/commands/askai-report.md  the /askai-report [hours] slash command
@@ -10,8 +10,8 @@ Installs, under the CURRENT user's home directory (works regardless of Windows u
     (existing content is preserved; safe to re-run -- it will not duplicate entries)
 
 NOT installed by this script (these are per-project, not global infrastructure):
-  - .claude/askai/interval.txt, volume-threshold.txt (checkpoint tuning for a specific project)
-  - .claude/settings.json's bashOutputMaxChars / taskOutputMaxChars / effortLevel
+  - .claude/askai/interval.txt, context-guard.txt (checkpoint / context-guard tuning for a specific project)
+  - .claude/settings.json's bashOutputMaxChars / effortLevel
   - CLAUDE.md conventions (e.g. delegate exploration to the Explore subagent)
   - the accumulated .claude/askai/*.md feature-summary content itself (that's project work
     history, not infrastructure -- copy the project's .claude/askai folder by hand if you want
@@ -88,6 +88,27 @@ function Emit-Context([string]$eventName, [string]$context) {
     Write-Output ($output | ConvertTo-Json -Depth 6 -Compress)
 }
 
+# Current context size = input + cache tokens of the LAST usage record in the session transcript (reads only the file tail).
+# Returns 0 when unknown; every guard below treats 0 as 'no signal'.
+function Get-ContextTokens([string]$path) {
+    try {
+        if (-not $path -or -not (Test-Path $path)) { return 0 }
+        $fs = [IO.File]::Open($path, [IO.FileMode]::Open, [IO.FileAccess]::Read, [IO.FileShare]::ReadWrite)
+        try {
+            $len = $fs.Length
+            $take = [int][Math]::Min($len, 400000)
+            [void]$fs.Seek($len - $take, [IO.SeekOrigin]::Begin)
+            $buf = New-Object byte[] $take
+            $got = $fs.Read($buf, 0, $take)
+            $txt = [Text.Encoding]::UTF8.GetString($buf, 0, $got)
+        } finally { $fs.Dispose() }
+        $ms = [regex]::Matches($txt, '"input_tokens":(\d+),"cache_creation_input_tokens":(\d+),"cache_read_input_tokens":(\d+)')
+        if ($ms.Count -eq 0) { return 0 }
+        $m = $ms[$ms.Count - 1]
+        return ([int]$m.Groups[1].Value + [int]$m.Groups[2].Value + [int]$m.Groups[3].Value)
+    } catch { return 0 }
+}
+
 try {
     $stdin = [Console]::In.ReadToEnd()
     $data = $null
@@ -127,14 +148,14 @@ try {
     # per-session state -- concurrent sessions in the same project never clobber each other
     $counterFile        = Join-Path $sessionsDir "$safeSessionId.counter.txt"
     $currentFeatureFile = Join-Path $sessionsDir "$safeSessionId.current-feature.txt"
-    $bytesFile          = Join-Path $sessionsDir "$safeSessionId.bytes.txt"
     $cavemanFile        = Join-Path $sessionsDir "$safeSessionId.caveman.txt"
+    $ctxNudgeFile       = Join-Path $sessionsDir "$safeSessionId.ctxnudge.txt"  # context size at the last size nudge
+    $connFile           = Join-Path $sessionsDir "$safeSessionId.conn.txt"      # connector(s) whose enable set a task aside
     $seenFile           = Join-Path $sessionsDir "$safeSessionId.seen.txt"     # long instruction blocks already sent this session
     $summaryFlagFile    = Join-Path $sessionsDir "$safeSessionId.summary.txt"  # slug (or '(index)') whose summary is already in context
     # project-wide config/registry
     $featuresFile        = Join-Path $askaiDir 'features.json'
     $intervalFile        = Join-Path $askaiDir 'interval.txt'
-    $volumeThresholdFile = Join-Path $askaiDir 'volume-threshold.txt'
     $metricsFile         = Join-Path $askaiDir 'metrics.jsonl'
 
     $features = $null
@@ -149,21 +170,32 @@ try {
     }
 
     # ================= PostToolUse: accumulate tool-output volume =================
-    if ($Event -eq 'PostToolUse') {
-        $responseLength = 0
-        if ($data.tool_response) {
-            try { $responseLength = ($data.tool_response | ConvertTo-Json -Depth 10 -Compress).Length }
-            catch { $responseLength = ([string]$data.tool_response).Length }
-        }
-        $current = Read-IntFile $bytesFile 0 0 2147483647
-        $newTotal = $current + $responseLength
-        Set-Content -Path $bytesFile -Value $newTotal -NoNewline -Encoding utf8
+    # retired in v2: tool-output volume tracking cost a PowerShell spawn per tool call and only forced extra checkpoints
+    if ($Event -eq 'PostToolUse') { exit 0 }
 
-        # same-turn fallback -- don't wait for a UserPromptSubmit that might never come
-        $volumeThreshold = Read-IntFile $volumeThresholdFile 150000 10000 2000000
-        if ($newTotal -ge $volumeThreshold) {
-            Emit-Context 'PostToolUse' "Tool-output volume crossed $volumeThreshold chars mid-turn. Before your final reply this turn, silently run the checkpoint closing steps, no AskUserQuestion: read '$featuresFile' if present, pick the matching feature (or 'general'), append 2-5 bullets under '## Checkpoint <UTC timestamp>' in its file under '$askaiDir', write the slug to '$currentFeatureFile', call get_usage('self') and append one JSON line {ts, session, slug, trigger, tokens_used, percent_used, outcome:'held'} to '$metricsFile'. Hold clear_session unless the user is wrapping up."
-        Set-Content -Path $bytesFile -Value '0' -NoNewline -Encoding utf8
+    # ================= PreToolUse (Agent): subagents were ~70% of spend, so each launch must carry explicit limits =================
+    # Denies ONCE per distinct prompt when a tool-call limit or reply-size limit is missing; an identical resend or '!nolimit'
+    # in the prompt passes, so this can never loop.
+    if ($Event -eq 'PreToolUse') {
+        $ti = $data.tool_input
+        $ap = ''
+        if ($ti -and $ti.prompt) { $ap = [string]$ti.prompt }
+        if ($ap -and $ap -notmatch '!nolimit') {
+            $needCalls = $ap -notmatch '(?i)(\d+\s*(tool[- ]?calls?|calls|turns|steps)\b|(tool[- ]?calls?|turns)\s*(limit|max|budget|cap))'
+            $needReply = $ap -notmatch '(?i)((under|below|within|max(imum)?|at most|no more than|limit(ed)? to|<)\s*~?\d[\d,]*\s*(chars|characters|words|lines|tokens|bullets)|(reply|report|answer|response)\s*(size|length|limit|budget))'
+            if ($needCalls -or $needReply) {
+                $sha = [Security.Cryptography.SHA1]::Create()
+                $key = 'agentdeny:' + ([BitConverter]::ToString($sha.ComputeHash([Text.Encoding]::UTF8.GetBytes($ap))).Replace('-', '').Substring(0, 12))
+                if (-not (Test-Seen $seenFile $key)) {
+                    Mark-Seen $seenFile $key
+                    $missing = @()
+                    if ($needCalls) { $missing += "a tool-call limit (e.g. 'at most 15 tool calls; stop and report what was found if reached')" }
+                    if ($needReply) { $missing += "a reply size limit (e.g. 'reply under 1500 characters, paths and line numbers first, no file dumps')" }
+                    $reason = "askai subagent budget: subagents are ~70% of spend. Add " + ($missing -join ' and ') + " to the agent prompt and resend (use Explore with model haiku for search). An identical resend or '!nolimit' in the prompt passes."
+                    $deny = [ordered]@{ hookSpecificOutput = [ordered]@{ hookEventName = 'PreToolUse'; permissionDecision = 'deny'; permissionDecisionReason = $reason } }
+                    Write-Output ($deny | ConvertTo-Json -Depth 5 -Compress)
+                }
+            }
         }
         exit 0
     }
@@ -180,7 +212,7 @@ try {
         $note = "Context is about to be compacted (real context size threshold, not a fixed prompt count). Before anything else this turn, silently append 2-4 bullet points capturing the most important recent progress/state to '$targetPath' under a new '## Pre-compact note <UTC timestamp>' heading (create the file with a top-level '# $slug -- Checkpoint Summary' heading first if it doesn't exist). Keep it brief -- this is a safety net so nothing important is lost to compaction, not a full checkpoint. Do not ask the user anything and do not call clear_session for this -- just write the note and continue normally."
         # compaction may summarize away the caveman directive -- re-arm it so the next prompt injects it again
         # (same for the once-per-session instruction blocks and the injected feature summary)
-        Remove-Item -Path $cavemanFile, $seenFile, $summaryFlagFile -Force -ErrorAction SilentlyContinue
+        Remove-Item -Path $cavemanFile, $seenFile, $summaryFlagFile, $ctxNudgeFile -Force -ErrorAction SilentlyContinue
         Emit-Context 'PreCompact' $note
         exit 0
     }
@@ -190,8 +222,8 @@ try {
     if ($data -and $data.prompt) { $prompt = [string]$data.prompt }
     $trimmed = $prompt.Trim()
 
-    $interval        = Read-IntFile $intervalFile 5 2 50
-    $volumeThreshold = Read-IntFile $volumeThresholdFile 150000 10000 2000000
+    $interval = Read-IntFile $intervalFile 5 2 50
+    $ctx = Get-ContextTokens ([string]$data.transcript_path)
 
     # '!noscope' -- opt this one prompt out of counting, checkpointing and scoping questions
     $noscope = $trimmed -imatch '!noscope'
@@ -199,6 +231,8 @@ try {
     # cheap trivial-reply filter (skips the scoping reminder only)
     $isTrivial = $noscope -or ($trimmed.Length -le 3) -or
         ($trimmed -imatch '^(ok|okay|k|thanks|thank you|thx|yes|no|yep|nope|sure|got it|great|good|nice|cool|continue|go ahead|proceed|sounds good|looks good|lgtm)[.!]*$')
+
+    $isShortReply = $isTrivial   # arm-independent copy: the A/B control arm overrides $isTrivial below, but v2 guards apply to both arms
 
     # opt-in A/B (askai/ab.txt or ~/.claude/askai-ab.txt containing 'on'): each new session gets a sticky random arm, kept in
     # <sid>.arm.txt. Control sessions skip the caveman directive and the scoping reminder (memory/checkpoint features still run)
@@ -324,30 +358,56 @@ try {
 
     # --- checkpoint decision: interval count, an explicit wrap-up phrase, or accumulated tool-output volume ---
     $isWrapUp = $trimmed -imatch "(done for (today|now|the day)|that's (all|it) for (now|today)|stopping here|wrapping up|calling it a day)"
-    $bytesSinceCheckpoint = Read-IntFile $bytesFile 0 0 2147483647
-    $isVolumeTrigger = $bytesSinceCheckpoint -ge $volumeThreshold
-    $shouldCheckpoint = (-not $noscope) -and (($count % $interval -eq 0) -or $isWrapUp -or $isVolumeTrigger)
+    $shouldCheckpoint = (-not $noscope) -and (($count % $interval -eq 0) -or $isWrapUp)
 
     if ($shouldCheckpoint) {
         $reason = "prompt #$count reached the every-$interval checkpoint"
         if ($isWrapUp) { $reason = "you said something that sounds like wrapping up for now" }
-        elseif ($isVolumeTrigger) { $reason = "this session has accumulated roughly $bytesSinceCheckpoint characters of tool output since the last checkpoint (threshold: $volumeThreshold)" }
+
+        # the hook logs the metrics row itself from the transcript -- the model no longer spends a get_usage call + append on it
+        $row = [ordered]@{ ts = (Get-Date).ToUniversalTime().ToString('yyyy-MM-ddTHH:mm:ssZ'); session = $safeSessionId; slug = $(if ($currentSlug) { $currentSlug } else { 'general' }); trigger = $reason; tokens_used = $ctx; outcome = 'held' }
+        Add-Content -Path $metricsFile -Value ($row | ConvertTo-Json -Compress) -Encoding ascii
 
         if (Test-Seen $seenFile 'checkpoint') {
-            $contextParts.Add("Checkpoint due ($reason). After answering, run the same closing steps given earlier this session, no AskUserQuestion (features '$featuresFile', slug pointer '$currentFeatureFile', metrics '$metricsFile').")
+            $contextParts.Add("Checkpoint due ($reason). After answering, file it the same one-call way as earlier this session (feature files under '$askaiDir', pointer '$currentFeatureFile').")
         } else {
-        Mark-Seen $seenFile 'checkpoint'
-        $contextParts.Add("Checkpoint due ($reason). After fully answering the user's request, do these closing steps in the same turn, silently and WITHOUT AskUserQuestion: " +
-            "(1) Read '$featuresFile' if it exists -- {`"features`":[{`"slug`",`"name`",`"file`":`"askai/<slug>.md`"}]}, a project-wide registry. " +
-            "(2) Judge which existing feature this work belongs to, else 'general' (file 'askai/general.md'), else a new feature: add {slug, name, file: 'askai/<slug>.md'} to features.json (create it if missing) and create the md under '$askaiDir' with a '# <Feature Name> -- Checkpoint Summary' heading. " +
-            "(3) Append 2-5 bullets of the relevant progress under a new '## Checkpoint <UTC timestamp>' heading in that feature's file. " +
-            "(4) Write the slug to '$currentFeatureFile' (this session's own pointer). " +
-            "(5) Call get_usage('self') and append one JSON line to '$metricsFile' (create if missing; one object per line): {`"ts`":`"<UTC ISO8601>`",`"session`":`"$safeSessionId`",`"slug`":`"<slug>`",`"trigger`":`"$reason`",`"tokens_used`":<n>,`"percent_used`":<n>,`"outcome`":`"held`"}. " +
-            "(6) Tell the user in one short line which feature it was filed under. Call clear_session('self') only if the user is clearly wrapping up (it asks them to approve); then set outcome to 'cleared', 'declined' or 'blocked' instead of 'held'. Otherwise hold it and do not mention it again.")
+            Mark-Seen $seenFile 'checkpoint'
+            $slugList = ''
+            if ($features -and $features.features) { $slugList = ' Known slugs: ' + (($features.features | ForEach-Object { $_.slug }) -join ', ') + '.' }
+            $contextParts.Add("Checkpoint due ($reason). After fully answering, file it silently with exactly ONE tool call (a single PowerShell/Bash command doing both writes; no AskUserQuestion, no get_usage, no metrics -- the hook logs those): (a) append 2-5 bullets of progress under a new '## Checkpoint <UTC timestamp>' heading in the matching feature file '$askaiDir\<slug>.md' (else 'general'; create it with a '# <Feature Name> -- Checkpoint Summary' heading if missing, and for a genuinely new feature also add {slug, name, file:'askai/<slug>.md'} to '$featuresFile'); (b) write the slug to '$currentFeatureFile'.$slugList Then one short line saying which feature it went under. Call clear_session('self') only if the user is clearly wrapping up (it asks them to approve); otherwise hold it and do not mention it again.")
         }
+    }
 
-        # a checkpoint is about to consolidate things
-        Set-Content -Path $bytesFile -Value '0' -NoNewline -Encoding utf8
+    # --- context-size guard: every turn re-reads the whole context, so cost grows with size. One short nudge each time it
+    # grows another 40K past the threshold (default 120K; askai/context-guard.txt overrides); the counter resets on PreCompact.
+    $ctxGuard = Read-IntFile (Join-Path $askaiDir 'context-guard.txt') 120000 20000 2000000
+    if ($ctx -ge $ctxGuard) {
+        $lastNudge = Read-IntFile $ctxNudgeFile 0 0 2147483647
+        if ($ctx -ge ($lastNudge + 40000) -or $lastNudge -eq 0) {
+            Set-Content -Path $ctxNudgeFile -Value $ctx -NoNewline -Encoding ascii
+            $contextParts.Add("Context is ~$([int]($ctx / 1000))K tokens and every turn re-reads all of it. When this step is done, say so in one line and suggest a fresh session for the next task (checkpoints are saved); do search/exploration through an Explore agent on haiku (at most 15 tool calls) instead of reading files here.")
+        }
+    }
+
+    # --- connector manager: Claude Docs + visualize are kept OFF by default (their tool list rides every turn, ~1.7K units).
+    # A hook cannot flip a connector, so it hands the model the recipe: enable -> end turn -> next prompt resumes -> disable again.
+    if (Test-Path $connFile) {
+        $names = "$(Get-Content $connFile -Raw -ErrorAction SilentlyContinue)".Trim()
+        Remove-Item $connFile -Force -ErrorAction SilentlyContinue
+        if ($names) {
+            $contextParts.Add("askai connector: an earlier task in this session was set aside to enable [$names]. If those tools are now in your tool list, do that task now and, in the SAME turn, turn the connector off again with set_session_connector_enabled (it applies when the turn ends). If they are still missing, say so in one line and do the task without them.")
+        }
+    } elseif (-not $isShortReply) {
+        $need = @()
+        if ($trimmed -imatch '\b(claude (code )?docs?|docs\.claude\.com|docs\.anthropic\.com)\b') { $need += 'Claude Docs' }
+        if ($trimmed -imatch '\b(visuali[sz]e|show_widget|mockup|interactive (chart|diagram|widget))\b') { $need += 'visualize' }
+        if ($need.Count -gt 0) {
+            $conn = [string]::Join(' + ', $need)
+            $big = ''
+            if ($ctx -ge 80000) { $big = " Context is ~$([int]($ctx / 1000))K tokens, so each toggle rewrites the cached prompt (about 1.25x the context): tell the user a fresh session makes this cheap." }
+            Set-Content -Path $connFile -Value $conn -NoNewline -Encoding ascii
+            $contextParts.Add("askai connector: this prompt may need [$conn], which askai keeps OFF by default. If its tools are NOT in your tool list: load mcp__ccd_connectors__set_session_connector_enabled (and session_connectors_status for the exact name) via ToolSearch, enable it, then end the turn with one line asking the user to send any message (e.g. 'go') -- the enable takes effect next turn and the hook will remind you to switch it off afterwards. If the task can be done without it, do that instead.$big")
+        }
     }
 
     if ($contextParts.Count -gt 0) {
@@ -839,7 +899,7 @@ L.push('3. ASKAI BEHAVIOUR');
 L.push(`  Prompts that received the scoping reminder: ${eligible.length}; AskUserQuestion scoping asked: ${asked.length} (${pct(asked.length, eligible.length)}; follow-ups are meant to skip, so <100% is expected).`);
 L.push(`  Answer-length budget set on ${budgeted.length} turns; final reply within budget (+10%): ${withinBudget.length} (${pct(withinBudget.length, budgeted.length)}).` + (budgeted.length ? ` Median reply/budget = ${(median(budgeted.map(b => b.chars / b.budget))).toFixed(2)}.` : ''));
 const nk = k => (kindStats[k] || { n: 0 }).n;
-L.push(`  Triggers fired: ${nk('checkpoint')} checkpoint, ${nk('volume')} volume-note, ${nk('pending-clear')} pending-clear reminders.  Completed cycle: ${metrics.length} metrics lines, ${R.askai.clear_calls} clear_session calls.` + (metrics.length ? ` Pre-clear context: ${metrics.map(m => (m.percent_used ?? '?') + '%').join(', ')}.` : ''));
+L.push(`  Triggers fired: ${nk('checkpoint')} checkpoint reminders (v2: volume-note and pending-clear retired).  Completed cycle: ${metrics.length} metrics lines, ${R.askai.clear_calls} clear_session calls.` + (metrics.length ? ` Context at checkpoint: ${metrics.map(m => (m.tokens_used != null ? Math.round(m.tokens_used/1000) + 'K' : (m.percent_used ?? '?') + '%')).join(', ')}.` : ''));
 L.push('');
 
 L.push('4. CAVEMAN (observational: responses grouped by whether caveman mode was active when produced)');
@@ -898,7 +958,7 @@ Write-Host "Installed: $commandsDir\askai-report.md"
 # ============================================================================
 $hookScriptPath = Join-Path $hooksDir 'askai.ps1'
 
-$postToolUseMatcher = 'Bash|Read|Grep|Agent|Task'
+$preToolUseMatcher = 'Agent|Task'
 
 function New-HookGroup([string]$eventName) {
     $cmd = "powershell.exe -NoProfile -ExecutionPolicy Bypass -File `"$hookScriptPath`" -Event $eventName"
@@ -907,14 +967,14 @@ function New-HookGroup([string]$eventName) {
             [pscustomobject]@{
                 type          = 'command'
                 command       = $cmd
-                timeout       = if ($eventName -eq 'PreCompact') { 20 } elseif ($eventName -eq 'PostToolUse') { 10 } else { 15 }
+                timeout       = if ($eventName -eq 'PreCompact') { 20 } elseif ($eventName -eq 'PreToolUse') { 10 } else { 15 }
                 statusMessage = 'askai'
             }
         )
     }
-    if ($eventName -eq 'PostToolUse') {
-        # Scope to high-output tools only -- skips a ~250ms powershell.exe spawn on cheap tools like Edit/Write
-        $group | Add-Member -MemberType NoteProperty -Name 'matcher' -Value $postToolUseMatcher
+    if ($eventName -eq 'PreToolUse') {
+        # Agent launches only -- the subagent-budget guard denies (once) an Agent call that lacks tool-call and reply-size limits
+        $group | Add-Member -MemberType NoteProperty -Name 'matcher' -Value $preToolUseMatcher
     }
     return $group
 }
@@ -940,7 +1000,7 @@ if (-not ($settings.PSObject.Properties.Name -contains 'hooks')) {
     $settings | Add-Member -MemberType NoteProperty -Name 'hooks' -Value ([pscustomobject]@{})
 }
 
-foreach ($eventName in @('UserPromptSubmit', 'PostToolUse', 'PreCompact')) {
+foreach ($eventName in @('UserPromptSubmit', 'PreToolUse', 'PreCompact')) {
     if (-not ($settings.hooks.PSObject.Properties.Name -contains $eventName)) {
         $settings.hooks | Add-Member -MemberType NoteProperty -Name $eventName -Value @()
     }
@@ -948,29 +1008,25 @@ foreach ($eventName in @('UserPromptSubmit', 'PostToolUse', 'PreCompact')) {
     if (-not (Test-HasAskaiHook $existing $eventName)) {
         $settings.hooks.$eventName = $existing + (New-HookGroup $eventName)
         Write-Host "Registered $eventName hook"
-    } elseif ($eventName -eq 'PostToolUse') {
-        # Upgrade an already-registered PostToolUse hook that predates the matcher optimization
-        $updated = $false
-        foreach ($group in $existing) {
-            foreach ($h in $group.hooks) {
-                if ($h.command -and $h.command -like "*askai.ps1*-Event PostToolUse*") {
-                    if (-not ($group.PSObject.Properties.Name -contains 'matcher')) {
-                        $group | Add-Member -MemberType NoteProperty -Name 'matcher' -Value $postToolUseMatcher
-                        $updated = $true
-                    } elseif ($group.matcher -ne $postToolUseMatcher) {
-                        $group.matcher = $postToolUseMatcher
-                        $updated = $true
-                    }
-                }
-            }
-        }
-        if ($updated) {
-            Write-Host "Updated PostToolUse hook matcher -> $postToolUseMatcher"
-        } else {
-            Write-Host "$eventName hook already present -- left as-is"
-        }
+    
     } else {
         Write-Host "$eventName hook already present -- left as-is"
+    }
+}
+
+# v2 retired the PostToolUse hook (it cost a PowerShell spawn per tool call). Drop askai's own old
+# registration on re-run; other tools' PostToolUse hooks are left alone.
+if ($settings.hooks.PSObject.Properties.Name -contains 'PostToolUse') {
+    $kept = @(); $removed = $false
+    foreach ($group in @($settings.hooks.PostToolUse)) {
+        $rest = @($group.hooks | Where-Object { -not ($_.command -and $_.command -like '*askai.ps1*-Event PostToolUse*') })
+        if ($rest.Count -eq @($group.hooks).Count) { $kept += $group }
+        else { $removed = $true; if ($rest.Count -gt 0) { $group.hooks = $rest; $kept += $group } }
+    }
+    if ($removed) {
+        if ($kept.Count -eq 0) { $settings.hooks.PSObject.Properties.Remove('PostToolUse') }
+        else { $settings.hooks.PostToolUse = $kept }
+        Write-Host "Removed retired askai PostToolUse hook registration"
     }
 }
 
@@ -983,21 +1039,37 @@ if (-not ($settings.PSObject.Properties.Name -contains 'autoCompactWindow')) {
     Write-Host "Set autoCompactWindow = 150000"
 }
 
-# skill listing trim -- only skills unrelated to code/book-writing work, set to name-only
+# subagents were ~70% of spend: default them to sonnet unless a call or agent definition names a model
+# (a per-call `model`, e.g. haiku for Explore, still wins). Only set when absent.
+if (-not ($settings.PSObject.Properties.Name -contains 'env')) {
+    $settings | Add-Member -MemberType NoteProperty -Name 'env' -Value ([pscustomobject]@{})
+}
+if (-not ($settings.env.PSObject.Properties.Name -contains 'CLAUDE_CODE_SUBAGENT_MODEL')) {
+    $settings.env | Add-Member -MemberType NoteProperty -Name 'CLAUDE_CODE_SUBAGENT_MODEL' -Value 'sonnet'
+    Write-Host "Set env.CLAUDE_CODE_SUBAGENT_MODEL = sonnet"
+}
+
+# skill listing trim -- plugin skills (anthropic-skills:*) ignore skillOverrides, so only bundled/user skills are listed.
+# only skills unrelated to code/book-writing work, set to name-only
 # (name stays visible and still invocable, just the description is dropped from every turn's context).
 # Only ADDS missing entries -- never overrides a value you've already set for a given skill.
 $defaultSkillTrim = [ordered]@{
-    'anthropic-skills:xlsx'                = 'name-only'
-    'anthropic-skills:pptx'                = 'name-only'
-    'anthropic-skills:morning'             = 'name-only'
-    'anthropic-skills:setup-writing-style' = 'name-only'
-    'anthropic-skills:import-memory'       = 'name-only'
-    'anthropic-skills:skill-creator'       = 'name-only'
     'keybindings-help'                     = 'name-only'
     'artifact-design'                      = 'name-only'
     'artifact-diagramming'                 = 'name-only'
     'artifact-capabilities'                = 'name-only'
-    'anthropic-skills:consolidate-memory'  = 'name-only'
+    'claude-api'                           = 'name-only'
+    'dataviz'                              = 'name-only'
+    'workflow-authoring'                   = 'name-only'
+    'loop'                                 = 'name-only'
+    'schedule'                             = 'name-only'
+    'fewer-permission-prompts'             = 'name-only'
+    'init'                                 = 'name-only'
+    'security-review'                      = 'name-only'
+    'simplify'                             = 'name-only'
+    'run'                                  = 'name-only'
+    'update-config'                        = 'name-only'
+    'code-review'                          = 'name-only'
     # secondary caveman skills -- rarely needed, so keep their descriptions out of every turn's context
     'caveman-commit'                       = 'name-only'
     'caveman-compress'                     = 'name-only'
@@ -1079,12 +1151,12 @@ PER-PROJECT SETUP (do this separately, inside each project you want it active in
    is absent, so you only need this file to override it -- e.g. write "8" for a
    heavy coding project).
 
-2. Optionally create .claude/askai/volume-threshold.txt containing a character count
-   (default 80000 if absent) -- checkpoint fires early if accumulated tool output
-   crosses this since the last checkpoint, regardless of prompt count.
+2. Optionally create .claude/askai/context-guard.txt containing a token count
+   (default 120000 if absent, range 20000-2000000) -- past it the hook nudges you
+   to start a fresh session, again every +40K.
 
 3. Optionally add to that project's .claude/settings.json:
-     { "bashOutputMaxChars": 15000, "taskOutputMaxChars": 15000, "effortLevel": "medium" }
+     { "bashOutputMaxChars": 15000, "effortLevel": "medium" }
    (trims verbose command/test output and drops reasoning effort for routine work;
    tune to taste -- these are project-specific judgment calls, not required.)
 
