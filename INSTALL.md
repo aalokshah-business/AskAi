@@ -57,7 +57,7 @@ not global infrastructure:
    omit this file to just use the default of 5; heavier coding projects
    tend to want a higher number, e.g. 8, so hard-clears don't fire mid-task)
 2. `.claude/askai/volume-threshold.txt` — optional, a character count
-   (default 80000 if omitted; checkpoint fires early once accumulated tool
+   (default 150000 if omitted; checkpoint fires early once accumulated tool
    output crosses this since the last checkpoint)
 3. `.claude/settings.json` — optionally add:
    ```json
@@ -71,19 +71,17 @@ not global infrastructure:
 
 ## What this does day to day
 
-- `/askai <task>` always confirms scope (area / extra items / answer length)
-  before doing anything, with defaults pre-filled — or, for
+- `/askai <task>` states scope (area / extra items / answer length) in one
+  line before doing anything, with defaults, no question asked — or, for
   skill-authoring tasks (creating/editing a Claude skill itself), hands off
   straight to the `skill-creator` skill instead.
-- Every prompt in every project gets the same scoping check automatically
+- Every prompt in every project gets the same scoping rule automatically
   for new tasks — quietly, no interruption for follow-ups or short replies.
 - Every N prompts (or a wrap-up phrase like "done for today", or a burst of
-  tool output), Claude asks which feature the work belongs to, files a
-  summary to disk, and clears the session — but only once you've confirmed
-  it's a good stopping point, never mid-task.
+  tool output), Claude silently picks the feature the work belongs to and
+  files a summary to disk. It only tries to clear the session when you say
+  you're wrapping up (and you still approve the clear).
 - If tool-output volume alone crosses the threshold mid-turn, the checkpoint
-  fires that same turn instead of waiting for your next prompt. If a clear
-  is already pending when that happens again, it just files a silent note
-  instead of asking, so nothing grows unbounded while a clear sits deferred.
+  fires that same turn instead of waiting for your next prompt.
 - Tag a prompt with `#feature-slug` to switch context instantly; add
   `!noscope` to a throwaway prompt to skip all of the above for that one message.

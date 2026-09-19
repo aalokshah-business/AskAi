@@ -5,13 +5,13 @@ argument-hint: <task description>
 
 First check: is this task about creating, drafting, editing, or improving a Claude skill itself (a SKILL.md, its bundled scripts/references, or its triggering description) — as opposed to using an existing skill to do unrelated work? If so, skip everything below and instead invoke the `skill-creator` skill, giving it the task in `$ARGUMENTS` verbatim as its starting context. Skill authoring is a multi-step interview/draft/test loop that the area/length scoping below doesn't fit, so don't apply it here. Once skill-creator's process concludes (skill drafted, tested, or packaged per the user's request), stop — don't fall through to the steps below for the same task.
 
-Otherwise, handle this task in token-efficient mode. Before doing any exploration, always confirm three things with the user via one AskUserQuestion call — even when they're inferable or a default would obviously apply. Pre-fill each question's options with your best guess (including the relevant default) so confirming is one click, but still ask:
+Otherwise, handle this task in token-efficient mode. Do not ask the user to confirm scope with AskUserQuestion; a round trip costs more than it saves. Before any exploration, state in ONE line the three things you are assuming, inferring each from the task text:
 
-1. **Area** — the specific file(s), directory, or topic this task is scoped to (offer your best guess as an option, e.g. inferred from the task text or "no specific area — general question"). Stay inside the confirmed scope; do not explore the wider codebase/project unless answering truly requires it.
-2. **Additional items** — anything extra to pull into scope beyond the area (e.g. "also the tests", "and the config file"). Offer "none" as the default option.
-3. **Answer length** — max characters for your final reply. Offer "500 characters (default)" plus a couple of other sizes as options.
+1. **Area** -- the specific file(s), directory, or topic this task is scoped to (or "no specific area" for a general question). Stay inside it; do not explore the wider codebase/project unless answering truly requires it.
+2. **Additional items** -- anything extra pulled into scope beyond the area. Default: none.
+3. **Answer length** -- max characters for your final reply. Default: 500 characters.
 
-Only skip the question entirely if the user's request already explicitly pins down all three (e.g. they named the file, said what else to include, and gave a character limit) — in that case state what you're using in one line instead of asking.
+If the user's request already pins any of these down, use theirs. Ask (one short question) only if the task is genuinely ambiguous or expensive to get wrong.
 
 Then do the task:
 - Read/search only within area + additional items — no broader exploration.

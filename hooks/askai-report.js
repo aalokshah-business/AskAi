@@ -25,11 +25,11 @@ const readJson = p => { try { return JSON.parse(fs.readFileSync(p, 'utf8').repla
 const KINDS = [
   ['caveman', /Caveman mode \(|Caveman mode is now off/g],
   ['summary', /Feature checkpoint summary --|Tracked feature summaries exist|This project has tracked feature summaries/g],
-  ['scope-full', /Token-efficient scoping reminder \(applies/g],
+  ['scope-full', /Token-efficient scoping reminder \(applies|Scoping \(new, distinct/g],
   ['scope-short', /Scoping reminder: apply/g],
-  ['checkpoint', /Checkpoint triggered|Prompt tag '#/g],
+  ['checkpoint', /Checkpoint triggered|Checkpoint due|Prompt tag '#/g],
   ['pending-clear', /Pending clear still owed|Reminder: a checkpoint from an earlier/g],
-  ['volume', /Volume safety note|Tool-output volume just crossed/g],
+  ['volume', /Volume safety note|Tool-output volume (?:just )?crossed/g],
   ['precompact', /Context is about to be compacted/g],
 ];
 function segments(text) {

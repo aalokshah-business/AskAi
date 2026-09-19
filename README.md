@@ -16,16 +16,16 @@ re-run `askai-setup.ps1` (or manually copy) to push changes out to `~/.claude/`.
 
 ## What the hook does
 
-- `UserPromptSubmit` — scoping reminder for new/distinct tasks (area,
-  additional items, answer length), injects
-  the session's tracked feature summary, `#slug` tagging, a pending-clear
-  reminder, and the checkpoint trigger (every N prompts, a wrap-up phrase,
-  or accumulated tool-output volume).
+- `UserPromptSubmit` — scoping rule for new/distinct tasks (state area,
+  additional items, answer length in one line; no question is asked), injects
+  the session's tracked feature summary, `#slug` tagging, and the checkpoint
+  trigger (every N prompts, a wrap-up phrase, or accumulated tool-output
+  volume; default volume threshold 150000 chars). Checkpoints are filed
+  silently -- no AskUserQuestion -- and `clear_session` is only attempted when
+  you say you are wrapping up.
 - `PostToolUse` — accumulates tool-output volume per session; if volume alone
-  crosses the threshold mid-turn, it now fires a same-turn checkpoint
-  instruction instead of waiting for the next prompt. If a clear is already
-  pending when volume crosses again, it files a lightweight silent note
-  instead, so bytes don't grow unbounded while the clear is deferred.
+  crosses the threshold mid-turn, it fires a same-turn checkpoint
+  instruction instead of waiting for the next prompt.
   Scoped via `matcher: Bash|Read|Grep|Agent|Task` so it skips the ~250ms
   powershell.exe spawn on cheap tools like Edit/Write (the `Agent`/`Task`
   pair covers the subagent-dispatch tool under both its CLI name `Task`
@@ -35,8 +35,8 @@ re-run `askai-setup.ps1` (or manually copy) to push changes out to `~/.claude/`.
 
 ## `/askai <task>`
 
-Confirms three things before touching anything: area, extra scope, and
-answer length. Tasks
+States three assumptions in one line before touching anything: area, extra
+scope, and answer length (asks only if the task is genuinely ambiguous). Tasks
 about creating/editing a Claude skill itself are routed to the
 `skill-creator` skill instead of this scoping flow.
 
@@ -70,7 +70,7 @@ The `/caveman` skill only takes effect once you invoke it. So the askai hook als
 Hook context persists in message history and is re-sent on every later turn, so anything injected per prompt compounds. The hook therefore:
 
 - Sends the **feature summary once per session** (again after PreCompact, or when a `#slug` tag switches feature), capped to the most recent 6000 chars (override: `.claude/askai/summary-max-chars.txt`, 1000-200000) with a pointer to the full file. Previously a 40 KB summary was re-injected on every prompt.
-- Sends the **full scoping rules, pending-clear text and checkpoint steps once per session**; later prompts get a ~150-350 char pointer. State lives in `sessions/<sid>.seen.txt` / `.summary.txt`, both cleared on PreCompact.
+- Sends the **full scoping rule and checkpoint steps once per session**; later prompts get nothing (scoping) or a ~200 char pointer (checkpoint). The pending-clear reminders and volume-note were removed: they re-injected text every prompt for little value. State lives in `sessions/<sid>.seen.txt` / `.summary.txt`, both cleared on PreCompact.
 - Resolves one **project root** (nearest `.git`, else nearest existing `.claude/askai`, else cwd) so sessions started in subdirectories no longer create stray `.claude/askai/` folders.
 
 Note: `askai-setup.ps1` currently embeds its own copy of `askai.ps1`/`askai.md`

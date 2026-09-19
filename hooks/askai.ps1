@@ -70,7 +70,6 @@ try {
     $counterFile        = Join-Path $sessionsDir "$safeSessionId.counter.txt"
     $currentFeatureFile = Join-Path $sessionsDir "$safeSessionId.current-feature.txt"
     $bytesFile          = Join-Path $sessionsDir "$safeSessionId.bytes.txt"
-    $pendingClearFile   = Join-Path $sessionsDir "$safeSessionId.pending-clear.txt"
     $cavemanFile        = Join-Path $sessionsDir "$safeSessionId.caveman.txt"
     $seenFile           = Join-Path $sessionsDir "$safeSessionId.seen.txt"     # long instruction blocks already sent this session
     $summaryFlagFile    = Join-Path $sessionsDir "$safeSessionId.summary.txt"  # slug (or '(index)') whose summary is already in context
@@ -103,10 +102,10 @@ try {
         Set-Content -Path $bytesFile -Value $newTotal -NoNewline -Encoding utf8
 
         # same-turn fallback -- don't wait for a UserPromptSubmit that might never come
-        $volumeThreshold = Read-IntFile $volumeThresholdFile 80000 10000 2000000
+        $volumeThreshold = Read-IntFile $volumeThresholdFile 150000 10000 2000000
         if ($newTotal -ge $volumeThreshold) {
-            Emit-Context 'PostToolUse' "Tool-output volume just crossed $volumeThreshold chars mid-turn (no need to wait for your next prompt). Before writing your final reply this turn, run the checkpoint closing steps now: read '$featuresFile' if present, judge/confirm the feature via AskUserQuestion, append a checkpoint summary, write the slug to '$currentFeatureFile', write '1' to '$pendingClearFile', call get_usage('self') for a pre-clear tokens_used/percent_used reading and log it plus the outcome as one JSON line to '$metricsFile' (see the interval-checkpoint instructions for the exact fields), and decide explicitly whether to call clear_session('self') now or hold it and say so."
-            Set-Content -Path $bytesFile -Value '0' -NoNewline -Encoding utf8
+            Emit-Context 'PostToolUse' "Tool-output volume crossed $volumeThreshold chars mid-turn. Before your final reply this turn, silently run the checkpoint closing steps, no AskUserQuestion: read '$featuresFile' if present, pick the matching feature (or 'general'), append 2-5 bullets under '## Checkpoint <UTC timestamp>' in its file under '$askaiDir', write the slug to '$currentFeatureFile', call get_usage('self') and append one JSON line {ts, session, slug, trigger, tokens_used, percent_used, outcome:'held'} to '$metricsFile'. Hold clear_session unless the user is wrapping up."
+        Set-Content -Path $bytesFile -Value '0' -NoNewline -Encoding utf8
         }
         exit 0
     }
@@ -134,7 +133,7 @@ try {
     $trimmed = $prompt.Trim()
 
     $interval        = Read-IntFile $intervalFile 5 2 50
-    $volumeThreshold = Read-IntFile $volumeThresholdFile 80000 10000 2000000
+    $volumeThreshold = Read-IntFile $volumeThresholdFile 150000 10000 2000000
 
     # '!noscope' -- opt this one prompt out of counting, checkpointing and scoping questions
     $noscope = $trimmed -imatch '!noscope'
@@ -258,38 +257,18 @@ try {
         }
     }
 
-    # --- scoping reminder (formerly askai-auto-ask.ps1) ---
-    if (-not $isTrivial -and (Test-Seen $seenFile 'scope')) {
-        $contextParts.Add("Scoping reminder: apply the scoping rules given earlier this session (new distinct task -> one 3-question AskUserQuestion; follow-ups and short replies skip it).")
-    } elseif (-not $isTrivial) {
+    # --- scoping: state the assumption in one line instead of asking (an AskUserQuestion round trip cost more than it saved) ---
+    # Full rule sent once per session (and again after PreCompact); later prompts get nothing -- history already carries it.
+    if (-not $isTrivial -and -not (Test-Seen $seenFile 'scope')) {
         Mark-Seen $seenFile 'scope'
-        $contextParts.Add("Token-efficient scoping reminder (applies to every project; the full rules are sent once per session, later prompts get a short pointer): first judge whether this prompt is a NEW, DISTINCT task/request, or an obvious follow-up/continuation/short reply within the current conversation. " +
-            "If it's clearly a follow-up or continuation, proceed normally -- do not ask anything extra. " +
-            "If it's a new, distinct task, BEFORE doing any exploration, confirm three things via one AskUserQuestion call, pre-filling your best guess as the recommended option in each: " +
-            "(1) Area -- the specific file(s)/directory/topic this task is scoped to (offer your best guess, or 'no specific area -- general question' if none applies); stay inside the confirmed scope, don't explore beyond it unless truly necessary. " +
-            "(2) Additional items -- anything extra to pull in beyond the area (default option: 'none'). " +
-            "(3) Answer length -- max characters for the final reply (default option: '500 characters'); keep the answer at or under the confirmed budget, cutting explanation before the direct answer. " +
-            "Skip asking only if the user's request already explicitly states all three itself -- then just state what you're using in one line instead.")
-    }
-
-    # --- pending-clear: a prior checkpoint was filed but the actual clear was never confirmed done ---
-    $pendingClear = (Test-Path $pendingClearFile) -and ((Get-Content $pendingClearFile -Raw -ErrorAction SilentlyContinue).Trim() -eq '1')
-
-    if ($pendingClear -and -not $noscope -and (Test-Seen $seenFile 'pending')) {
-        $contextParts.Add("Pending clear still owed (flag file '$pendingClearFile' = 1): decide again this turn as described earlier -- get_usage('self'), append the metrics line to '$metricsFile' (trigger 'pending-clear reminder', outcome cleared/declined/blocked/held), then clear_session('self') last, or hold and say why in one line.")
-    } elseif ($pendingClear -and -not $noscope) {
-        Mark-Seen $seenFile 'pending'
-        $contextParts.Add("Reminder: a checkpoint from an earlier prompt in this session filed its summary but the clear_session('self') call was never confirmed done (file: '$pendingClearFile'). Decide again this turn, explicitly, and log the decision: call get_usage('self') for this session's current tokens_used/percent_used, then append one JSON line to '$metricsFile' (create it if it doesn't exist; one object per line, no trailing comma) with fields {`"ts`":`"<UTC ISO8601>`",`"session`":`"$safeSessionId`",`"slug`":`"<current feature slug or 'general'>`",`"trigger`":`"pending-clear reminder`",`"tokens_used`":<number>,`"percent_used`":<number>,`"outcome`":`"<see below>`"}. (a) If now is a reasonable stopping point, after answering, call clear_session('self') as your last action: outcome 'cleared' if it's confirmed to have run (then also write '0' to '$pendingClearFile'), 'declined' if the user declines the approval prompt, or 'blocked' if a permission/classifier error prevents it (leave '$pendingClearFile' at '1' for 'declined'/'blocked' so this reminder resurfaces). (b) Otherwise, outcome 'held', and tell the user in one short line that you're still holding the pending clear and why -- do not just silently drop it again.")
+        $contextParts.Add("Scoping (new, distinct tasks only; follow-ups and short replies skip it): before exploring, state in ONE line the area (files/dir/topic), extras (default none) and max answer length (default 500 chars) you are assuming, then stay inside that scope and keep the final reply within the budget, cutting explanation before the direct answer. Do NOT call AskUserQuestion for this; ask only if the request is genuinely ambiguous or costly to get wrong.")
     }
 
     # --- checkpoint decision: interval count, an explicit wrap-up phrase, or accumulated tool-output volume ---
-    # suppressed while a clear is already pending -- don't pile up a second classification before the first is resolved
     $isWrapUp = $trimmed -imatch "(done for (today|now|the day)|that's (all|it) for (now|today)|stopping here|wrapping up|calling it a day)"
     $bytesSinceCheckpoint = Read-IntFile $bytesFile 0 0 2147483647
     $isVolumeTrigger = $bytesSinceCheckpoint -ge $volumeThreshold
-    $shouldCheckpoint = (-not $noscope) -and (-not $pendingClear) -and (($count % $interval -eq 0) -or $isWrapUp -or $isVolumeTrigger)
-    # fires only when the full checkpoint is blocked by a stuck pending-clear -- keeps volume capped either way
-    $shouldVolumeNote = (-not $noscope) -and $pendingClear -and $isVolumeTrigger
+    $shouldCheckpoint = (-not $noscope) -and (($count % $interval -eq 0) -or $isWrapUp -or $isVolumeTrigger)
 
     if ($shouldCheckpoint) {
         $reason = "prompt #$count reached the every-$interval checkpoint"
@@ -297,32 +276,19 @@ try {
         elseif ($isVolumeTrigger) { $reason = "this session has accumulated roughly $bytesSinceCheckpoint characters of tool output since the last checkpoint (threshold: $volumeThreshold)" }
 
         if (Test-Seen $seenFile 'checkpoint') {
-            $contextParts.Add("Checkpoint triggered ($reason). After fully answering, run the same 9 closing steps given earlier this session (features.json '$featuresFile' -> confirm feature via AskUserQuestion -> append summary under '$askaiDir' -> write slug to '$currentFeatureFile' -> write '1' to '$pendingClearFile' -> get_usage('self') + metrics line to '$metricsFile' -> decide clear_session('self') or hold, out loud).")
+            $contextParts.Add("Checkpoint due ($reason). After answering, run the same closing steps given earlier this session, no AskUserQuestion (features '$featuresFile', slug pointer '$currentFeatureFile', metrics '$metricsFile').")
         } else {
         Mark-Seen $seenFile 'checkpoint'
-        $contextParts.Add("Checkpoint triggered ($reason). After fully answering the user's actual request below, do these closing steps in the same turn: " +
-            "(1) Read '$featuresFile' if it exists (it may not yet, on an early checkpoint) -- it holds {`"features`":[{`"slug`",`"name`",`"file`":`"askai/<slug>.md`"}]} (a project-wide registry, shared by all sessions). " +
-            "(2) Based on roughly the recent exchanges, judge which existing feature(s) this work belongs to, or whether it's project-general, or whether it looks like a new feature not yet tracked. " +
-            "(3) Confirm with the user via AskUserQuestion: offer your best-guess existing feature(s) as options (if any matched), plus a 'General / project-wide' option -- the user can pick 'Other' to type a new feature name, and you can set multiSelect if more than one plausibly applies. " +
-            "(4) For each confirmed feature: if new, choose a short kebab-case slug, add {slug, name, file: 'askai/<slug>.md'} to features.json's features array (create features.json with an empty features array first if it doesn't exist), and create the feature's md file under '$askaiDir' with a top-level '# <Feature Name> -- Checkpoint Summary' heading if it doesn't exist yet. If 'General / project-wide' was chosen, use slug 'general' and file 'askai/general.md'. Append a short bullet-point summary of the relevant exchanges under a new '## Checkpoint <UTC timestamp>' heading in each confirmed feature's file. " +
-            "(5) Write the confirmed feature's slug to '$currentFeatureFile' (create the file if needed; this is THIS session's own pointer, other concurrent sessions are unaffected) -- if more than one feature was confirmed, pick the most central one to write there. " +
-            "(6) Write '1' to '$pendingClearFile' right after the summary file write succeeds -- this marks the clear as owed until it's actually confirmed done. " +
-            "(7) Tell the user in one short line which feature(s) the checkpoint was filed under. " +
-            "(8) Call get_usage('self') for this session's current tokens_used/percent_used (this is the pre-clear reading -- the whole point of logging it). Append one JSON line to '$metricsFile' (create the file if it doesn't exist; append-only, one JSON object per line, no trailing comma, no surrounding array) with fields {`"ts`":`"<UTC ISO8601 timestamp>`",`"session`":`"$safeSessionId`",`"slug`":`"<the confirmed feature slug from step 5, or 'general'>`",`"trigger`":`"$reason`",`"tokens_used`":<number from get_usage>,`"percent_used`":<number from get_usage>,`"outcome`":`"<see below>`"}. " +
-            "(9) Then decide explicitly, out loud to the user, and set that line's outcome accordingly: if now is a reasonable stopping point, call clear_session('self') as your last tool call this turn (it will still ask the user to approve) -- outcome 'cleared' if it's confirmed to have run (then also write '0' to '$pendingClearFile'), 'declined' if the user declines the approval prompt, or 'blocked' if a permission/classifier error prevents the call (leave '$pendingClearFile' at '1' for 'declined'/'blocked' so the pending-clear reminder resurfaces). If the user is clearly mid-task, it is fine to hold the clear -- set outcome 'held' and say so explicitly ('holding the clear for now since you're still working') rather than silently doing nothing; the pending-clear reminder will resurface on your next reply either way, so it is never silently forgotten.")
+        $contextParts.Add("Checkpoint due ($reason). After fully answering the user's request, do these closing steps in the same turn, silently and WITHOUT AskUserQuestion: " +
+            "(1) Read '$featuresFile' if it exists -- {`"features`":[{`"slug`",`"name`",`"file`":`"askai/<slug>.md`"}]}, a project-wide registry. " +
+            "(2) Judge which existing feature this work belongs to, else 'general' (file 'askai/general.md'), else a new feature: add {slug, name, file: 'askai/<slug>.md'} to features.json (create it if missing) and create the md under '$askaiDir' with a '# <Feature Name> -- Checkpoint Summary' heading. " +
+            "(3) Append 2-5 bullets of the relevant progress under a new '## Checkpoint <UTC timestamp>' heading in that feature's file. " +
+            "(4) Write the slug to '$currentFeatureFile' (this session's own pointer). " +
+            "(5) Call get_usage('self') and append one JSON line to '$metricsFile' (create if missing; one object per line): {`"ts`":`"<UTC ISO8601>`",`"session`":`"$safeSessionId`",`"slug`":`"<slug>`",`"trigger`":`"$reason`",`"tokens_used`":<n>,`"percent_used`":<n>,`"outcome`":`"held`"}. " +
+            "(6) Tell the user in one short line which feature it was filed under. Call clear_session('self') only if the user is clearly wrapping up (it asks them to approve); then set outcome to 'cleared', 'declined' or 'blocked' instead of 'held'. Otherwise hold it and do not mention it again.")
         }
 
-        # optimistic reset -- a checkpoint is about to consolidate things
-        Set-Content -Path $bytesFile -Value '0' -NoNewline -Encoding utf8
-    } elseif ($shouldVolumeNote) {
-        $slug = if ($currentSlug) { $currentSlug } else { 'general' }
-        $targetFile = "askai/$slug.md"
-        if ($features -and $slug -ne 'general') {
-            $entry = $features.features | Where-Object { $_.slug -eq $slug } | Select-Object -First 1
-            if ($entry) { $targetFile = $entry.file }
-        }
-        $targetPath = Join-Path $claudeDir $targetFile
-        $contextParts.Add("Volume safety note: roughly $bytesSinceCheckpoint characters of tool output have accumulated while a clear is still pending (threshold: $volumeThreshold). The full checkpoint stays deferred until the pending clear is resolved, but silently append 2-4 bullets of the most important recent progress to '$targetPath' under a new '## Volume note <UTC timestamp>' heading (create it with a top-level '# $slug -- Checkpoint Summary' heading first if it doesn't exist) so nothing is lost, then continue normally -- no AskUserQuestion needed for this.")
+        # a checkpoint is about to consolidate things
         Set-Content -Path $bytesFile -Value '0' -NoNewline -Encoding utf8
     }
 
