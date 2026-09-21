@@ -1,18 +1,25 @@
 ﻿<#
-Portable installer for the "askai" token-optimization hook system (Claude Code / Desktop app).
+Portable installer for the lean "askai" token setup (Claude Code / Desktop app).
 
-Installs, under the CURRENT user's home directory (works regardless of Windows username):
+Default (lean) install, under the CURRENT user's home directory (works regardless of Windows username):
+  - ~/.claude/CLAUDE.md      appends the caveman terse-output directive once (skipped if already present)
+  - ~/.claude/settings.json  merges autoCompactEnabled/autoCompactWindow, env.CLAUDE_CODE_SUBAGENT_MODEL and
+    skillOverrides (existing content and values are preserved; safe to re-run -- it will not duplicate entries)
+  - removes askai hook registrations that an earlier install left in settings.json (other tools' hooks stay)
+No hook is registered, so nothing runs per prompt: the 7-day /askai-report ledger showed the hooks cost far more
+tokens than they saved (net -2.6% of spend). CLAUDE.md and settings carry the same rules with no per-turn cost.
+
+-WithHooks restores the legacy v2 install (net negative in that ledger; use it only to re-measure):
   - ~/.claude/hooks/askai.ps1        the unified hook script (UserPromptSubmit + PreToolUse + PreCompact)
   - ~/.claude/commands/askai.md      the /askai slash command
   - ~/.claude/hooks/askai-report.js  token savings report (needs Node.js when run)
   - ~/.claude/commands/askai-report.md  the /askai-report [hours] slash command
-  - merges hook registrations + autoCompactEnabled/autoCompactWindow into ~/.claude/settings.json
-    (existing content is preserved; safe to re-run -- it will not duplicate entries)
+  - registers the hooks and writes ~/.claude/askai-caveman.txt (the hook injects caveman, so CLAUDE.md is left alone)
 
 NOT installed by this script (these are per-project, not global infrastructure):
-  - .claude/askai/interval.txt, context-guard.txt (checkpoint / context-guard tuning for a specific project)
+  - .claude/askai/interval.txt, context-guard.txt (checkpoint / context-guard tuning; only the -WithHooks hook reads them)
   - .claude/settings.json's bashOutputMaxChars / effortLevel
-  - CLAUDE.md conventions (e.g. delegate exploration to the Explore subagent)
+  - other CLAUDE.md conventions (e.g. delegate exploration to the Explore subagent)
   - the accumulated .claude/askai/*.md feature-summary content itself (that's project work
     history, not infrastructure -- copy the project's .claude/askai folder by hand if you want
     that continuity to carry over too)
@@ -27,16 +34,17 @@ Also installed by default (third-party, needs Node.js/npm; each can be skipped):
                  skip with -SkipCavemanProxy
   Both run AFTER the askai settings merge so the two don't clobber each other; a failure only warns.
 
-The askai hook itself also applies caveman terse-output mode: a ~700-char directive injected ONCE per
-session (not every prompt) and re-armed after a compaction. The level lives in ~/.claude/askai-caveman.txt
-(off|lite|full|ultra, default full; per-project override: <project>/.claude/askai/caveman.txt).
-  -CavemanMode <level>  writes that level (otherwise an existing file is kept; -SkipCaveman defaults it to off)
+Caveman terse-output level: -CavemanMode lite|full|ultra picks the directive written to CLAUDE.md (default full;
+-SkipCaveman without -CavemanMode, or -CavemanMode off, writes none). With -WithHooks the level lives in
+~/.claude/askai-caveman.txt instead (the hook injects it once per session and re-arms it after a compaction;
+per-project override: <project>/.claude/askai/caveman.txt).
 
 Usage: copy this file to the new laptop and run it (PowerShell 5.1+, Windows):
-  powershell -ExecutionPolicy Bypass -File askai-setup.ps1 [-SkipCaveman] [-SkipCavemanProxy] [-CavemanMode off|lite|full|ultra]
+  powershell -ExecutionPolicy Bypass -File askai-setup.ps1 [-WithHooks] [-SkipCaveman] [-SkipCavemanProxy] [-CavemanMode off|lite|full|ultra]
 #>
 
 param(
+    [switch]$WithHooks,
     [switch]$SkipCaveman,
     [switch]$SkipCavemanProxy,
     [ValidateSet('off', 'lite', 'full', 'ultra')][string]$CavemanMode
@@ -45,10 +53,16 @@ param(
 $ErrorActionPreference = 'Stop'
 
 $homeDir      = $env:USERPROFILE
-$hooksDir     = Join-Path $homeDir '.claude\hooks'
-$commandsDir  = Join-Path $homeDir '.claude\commands'
-$settingsPath = Join-Path $homeDir '.claude\settings.json'
+$claudeDir    = Join-Path $homeDir '.claude'
+$hooksDir     = Join-Path $claudeDir 'hooks'
+$commandsDir  = Join-Path $claudeDir 'commands'
+$settingsPath = Join-Path $claudeDir 'settings.json'
 
+New-Item -ItemType Directory -Path $claudeDir -Force | Out-Null
+
+# Sections 1, 2 and 2b below install the legacy hook system and run only with -WithHooks. They are not
+# indented because the here-string bodies must stay at column 0; the block ends at the "end -WithHooks" line.
+if ($WithHooks) {
 New-Item -ItemType Directory -Path $hooksDir -Force | Out-Null
 New-Item -ItemType Directory -Path $commandsDir -Force | Out-Null
 
@@ -952,9 +966,11 @@ Do not recompute or re-round the script's numbers. Do not edit any files. For a 
 '@
 Set-Content -Path (Join-Path $commandsDir 'askai-report.md') -Value $askaiReportMd -Encoding utf8
 Write-Host "Installed: $commandsDir\askai-report.md"
+} # end -WithHooks (sections 1, 2, 2b)
 
 # ============================================================================
-# 3. merge hook registrations + autoCompact tuning into settings.json
+# 3. merge settings.json: token settings always; askai hook registrations only with -WithHooks
+#    (the lean default removes any askai registrations an earlier install left behind)
 # ============================================================================
 $hookScriptPath = Join-Path $hooksDir 'askai.ps1'
 
@@ -989,6 +1005,28 @@ function Test-HasAskaiHook($eventArray, [string]$eventName) {
     return $false
 }
 
+# Remove askai's own hook registrations (commands that run askai.ps1) from settings.hooks -- from every event,
+# or just $onlyEvent. Other tools' hooks stay; an event, or the hooks key, left empty is dropped.
+function Remove-AskaiHooks($settings, [string]$onlyEvent = '') {
+    if (-not ($settings.PSObject.Properties.Name -contains 'hooks') -or -not $settings.hooks) { return }
+    $events = if ($onlyEvent) { @($onlyEvent) } else { @($settings.hooks.PSObject.Properties.Name) }
+    foreach ($eventName in $events) {
+        if (-not ($settings.hooks.PSObject.Properties.Name -contains $eventName)) { continue }
+        $kept = @(); $removed = $false
+        foreach ($group in @($settings.hooks.$eventName)) {
+            $all  = @($group.hooks)
+            $rest = @($all | Where-Object { -not ($_.command -and $_.command -like '*askai.ps1*') })
+            if ($rest.Count -eq $all.Count) { $kept += $group }
+            else { $removed = $true; if ($rest.Count -gt 0) { $group.hooks = $rest; $kept += $group } }
+        }
+        if (-not $removed) { continue }
+        if ($kept.Count -eq 0) { $settings.hooks.PSObject.Properties.Remove($eventName) }
+        else { $settings.hooks.$eventName = $kept }
+        Write-Host "Removed askai $eventName hook registration"
+    }
+    if (@($settings.hooks.PSObject.Properties).Count -eq 0) { $settings.PSObject.Properties.Remove('hooks') }
+}
+
 $settings = $null
 if (Test-Path $settingsPath) {
     $raw = Get-Content $settingsPath -Raw
@@ -996,38 +1034,30 @@ if (Test-Path $settingsPath) {
 }
 if (-not $settings) { $settings = [pscustomobject]@{} }
 
-if (-not ($settings.PSObject.Properties.Name -contains 'hooks')) {
-    $settings | Add-Member -MemberType NoteProperty -Name 'hooks' -Value ([pscustomobject]@{})
-}
+if ($WithHooks) {
+    if (-not ($settings.PSObject.Properties.Name -contains 'hooks')) {
+        $settings | Add-Member -MemberType NoteProperty -Name 'hooks' -Value ([pscustomobject]@{})
+    }
 
-foreach ($eventName in @('UserPromptSubmit', 'PreToolUse', 'PreCompact')) {
-    if (-not ($settings.hooks.PSObject.Properties.Name -contains $eventName)) {
-        $settings.hooks | Add-Member -MemberType NoteProperty -Name $eventName -Value @()
+    foreach ($eventName in @('UserPromptSubmit', 'PreToolUse', 'PreCompact')) {
+        if (-not ($settings.hooks.PSObject.Properties.Name -contains $eventName)) {
+            $settings.hooks | Add-Member -MemberType NoteProperty -Name $eventName -Value @()
+        }
+        $existing = @($settings.hooks.$eventName)
+        if (-not (Test-HasAskaiHook $existing $eventName)) {
+            $settings.hooks.$eventName = $existing + (New-HookGroup $eventName)
+            Write-Host "Registered $eventName hook"
+        } else {
+            Write-Host "$eventName hook already present -- left as-is"
+        }
     }
-    $existing = @($settings.hooks.$eventName)
-    if (-not (Test-HasAskaiHook $existing $eventName)) {
-        $settings.hooks.$eventName = $existing + (New-HookGroup $eventName)
-        Write-Host "Registered $eventName hook"
-    
-    } else {
-        Write-Host "$eventName hook already present -- left as-is"
-    }
-}
 
-# v2 retired the PostToolUse hook (it cost a PowerShell spawn per tool call). Drop askai's own old
-# registration on re-run; other tools' PostToolUse hooks are left alone.
-if ($settings.hooks.PSObject.Properties.Name -contains 'PostToolUse') {
-    $kept = @(); $removed = $false
-    foreach ($group in @($settings.hooks.PostToolUse)) {
-        $rest = @($group.hooks | Where-Object { -not ($_.command -and $_.command -like '*askai.ps1*-Event PostToolUse*') })
-        if ($rest.Count -eq @($group.hooks).Count) { $kept += $group }
-        else { $removed = $true; if ($rest.Count -gt 0) { $group.hooks = $rest; $kept += $group } }
-    }
-    if ($removed) {
-        if ($kept.Count -eq 0) { $settings.hooks.PSObject.Properties.Remove('PostToolUse') }
-        else { $settings.hooks.PostToolUse = $kept }
-        Write-Host "Removed retired askai PostToolUse hook registration"
-    }
+    # v2 retired the PostToolUse hook (it cost a PowerShell spawn per tool call). Drop askai's own old
+    # registration on re-run; other tools' PostToolUse hooks are left alone.
+    Remove-AskaiHooks $settings 'PostToolUse'
+} else {
+    # lean default: no askai hook runs. Take out any registration a previous, hook-based install left behind.
+    Remove-AskaiHooks $settings
 }
 
 if (-not ($settings.PSObject.Properties.Name -contains 'autoCompactEnabled')) {
@@ -1092,15 +1122,42 @@ else { Write-Host "skillOverrides already present for all defaults -- left as-is
 $settings | ConvertTo-Json -Depth 10 | Set-Content -Path $settingsPath -Encoding utf8
 Write-Host "Merged into: $settingsPath"
 
-# caveman terse-output level read by the askai hook (hooks/askai.ps1). Keeps an existing file unless
-# -CavemanMode is passed explicitly; without either, -SkipCaveman means 'off' and the default is 'full'.
-$cavemanCfg = Join-Path $homeDir '.claude\askai-caveman.txt'
-if ($PSBoundParameters.ContainsKey('CavemanMode') -or -not (Test-Path $cavemanCfg)) {
-    $cavemanLevel = if ($CavemanMode) { $CavemanMode } elseif ($SkipCaveman) { 'off' } else { 'full' }
-    Set-Content -Path $cavemanCfg -Value $cavemanLevel -Encoding ascii
-    Write-Host "askai caveman mode: $cavemanLevel ($cavemanCfg)"
+# Caveman terse-output level: the requested -CavemanMode, else 'off' with -SkipCaveman, else 'full'.
+$cavemanLevel = if ($CavemanMode) { $CavemanMode } elseif ($SkipCaveman) { 'off' } else { 'full' }
+
+if ($WithHooks) {
+    # the hook (hooks/askai.ps1) reads the level from a file. Keeps an existing file unless -CavemanMode
+    # is passed explicitly.
+    $cavemanCfg = Join-Path $claudeDir 'askai-caveman.txt'
+    if ($PSBoundParameters.ContainsKey('CavemanMode') -or -not (Test-Path $cavemanCfg)) {
+        Set-Content -Path $cavemanCfg -Value $cavemanLevel -Encoding ascii
+        Write-Host "askai caveman mode: $cavemanLevel ($cavemanCfg)"
+    } else {
+        Write-Host "askai caveman mode: kept existing setting in $cavemanCfg"
+    }
 } else {
-    Write-Host "askai caveman mode: kept existing setting in $cavemanCfg"
+    # lean default: the directive is plain text in ~/.claude/CLAUDE.md, loaded once per session with no hook.
+    # An existing directive is never rewritten -- edit CLAUDE.md by hand to change its level.
+    $claudeMd = Join-Path $claudeDir 'CLAUDE.md'
+    $mdText   = if (Test-Path $claudeMd) { [System.IO.File]::ReadAllText($claudeMd) } else { '' }
+    if ($cavemanLevel -eq 'off') {
+        Write-Host "caveman directive: off -- $claudeMd left untouched"
+    } elseif ($mdText -match '# Terse output \(caveman') {
+        Write-Host "caveman directive already in $claudeMd -- left as-is"
+    } else {
+        $cavemanLead = @{
+            lite  = 'Reply terse -- no filler (just/really/basically), pleasantries or hedging; keep full sentences and articles.'
+            full  = 'Reply terse -- drop articles, filler (just/really/basically), pleasantries and hedging; fragments OK; short synonyms; no tool-call narration, decorative tables or emoji.'
+            ultra = 'Reply maximally terse -- fragments; drop articles, filler, pleasantries, hedging and connectors when meaning stays clear; well-known abbreviations only (DB, API, HTTP); no tool-call narration, decorative tables or emoji.'
+        }
+        $cavemanKeep = 'Keep technical terms, numbers, units, code blocks, commands and quoted errors exact; never drop not/no/never/only/except. Commit messages, PR text, code comments and file contents stay in normal style. Use full clear sentences for security warnings, destructive/irreversible-action confirmations and AskUserQuestion option text. Compression is style only -- never omit needed information, and never make output longer to sound like a caveman. User says "stop caveman" or "normal mode" to end it.'
+        $nl    = if ($mdText -match "`r`n") { "`r`n" } else { "`n" }
+        $block = "# Terse output (caveman, $cavemanLevel)$nl$nl$($cavemanLead[$cavemanLevel]) $cavemanKeep$nl"
+        $join  = if (-not $mdText) { '' } elseif ($mdText.EndsWith("`n")) { $nl } else { "$nl$nl" }
+        # UTF-8 without a BOM; AppendAllText appends to an existing file and creates a missing one
+        [System.IO.File]::AppendAllText($claudeMd, $join + $block, (New-Object System.Text.UTF8Encoding($false)))
+        Write-Host "Added caveman directive ($cavemanLevel) to $claudeMd"
+    }
 }
 
 # ============================================================================
@@ -1140,8 +1197,13 @@ if (-not ($SkipCaveman -and $SkipCavemanProxy)) {
 }
 
 Write-Host ""
-Write-Host "Done. Restart Claude Code (or open /hooks once) for the new hooks to take effect."
-Write-Host "See the PER-PROJECT SETUP comment block at the top of this script for what to add per-project."
+if ($WithHooks) {
+    Write-Host "Done. Restart Claude Code (or open /hooks once) for the new hooks to take effect."
+    Write-Host "See the PER-PROJECT SETUP comment block at the bottom of this script for what to add per-project."
+} else {
+    Write-Host "Done (lean install, no hooks). Settings and CLAUDE.md are read at session start, so start a new session."
+    Write-Host "Add -WithHooks for the legacy askai hooks; their 7-day ledger measured net negative on tokens."
+}
 
 <#
 PER-PROJECT SETUP (do this separately, inside each project you want it active in):
