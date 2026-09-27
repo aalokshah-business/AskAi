@@ -3,7 +3,7 @@
 // plus askai's own files (metrics.jsonl, sessions/<sid>.arm.txt) and the settings that trim tokens.
 // Usage: node askai-report.js [--hours 6] [--json]      (cumulative view: --hours 168 = 7 days, --hours 720 = 30 days)
 // Transcripts carry no "without askai" baseline, so every saving is labelled by how it was obtained:
-//   MEASURED = opt-in A/B (askai/ab.txt = on) control vs treatment sessions;  COMPUTED = exact arithmetic on known config;
+//   MEASURED = A/B control vs treatment sessions (historic; the arms were assigned by the retired askai hooks);  COMPUTED = exact arithmetic on known config;
 //   OBSERVED = on/off comparison of different turns (confounded, not proof);  none = not measurable from transcripts.
 const fs = require('fs'), path = require('path'), os = require('os');
 
@@ -413,7 +413,7 @@ L.push('');
 L.push(`  NET  computed only:               ${sfmt(compU)} saved - ${fmt(costUnits)} cost = ${sfmt(compU - costUnits)} units (${(100 * net.share_computed).toFixed(2)}% of total spend)`);
 L.push(`  NET  incl. observed estimates:    ${sfmt(compU + obsU)} saved - ${fmt(costUnits)} cost = ${sfmt(compU + obsU - costUnits)} units (${(100 * net.share_all).toFixed(2)}% of total spend; reply-length rows counted once)`);
 if (abMeasured) L.push(`  MEASURED A/B (caveman + scoping): control ${fmt(abMeasured.per_prompt_control)} vs treatment ${fmt(abMeasured.per_prompt_treatment)} units/prompt -> ${sfmt(abMeasured.saved_per_prompt)}/prompt (${(100 * abMeasured.saved_share).toFixed(1)}%), ${sfmt(abMeasured.saved_total)} units over ${armStats.treatment.prompts} treatment prompts; ${abMeasured.sessions_control}/${abMeasured.sessions_treatment} sessions${abMeasured.trustworthy ? '' : ' -- too few sessions to trust (need >=8 per arm)'}.`);
-else L.push('  MEASURED A/B: none yet -- no proven savings. Put "on" in .claude/askai/ab.txt (or ~/.claude/askai-ab.txt) to start it for new sessions.');
+else L.push('  MEASURED A/B: none yet -- no proven savings. The A/B arms were assigned by the retired askai hooks, so no new arm data is being recorded.');
 L.push('');
 
 L.push('1. WHERE TOKENS WENT');
@@ -451,8 +451,8 @@ if (cmp.on.out.length > 20 && cmp.off.out.length > 20 && mean(cmp.off.final) && 
 else L.push('  Too few responses in one group to compare; widen --hours.');
 L.push('');
 
-L.push('5. A/B ARMS (askai/ab.txt = on: control sessions skip caveman + scoping reminder)');
-if (Object.keys(armStats).length < 2) L.push('  No two-arm data yet. Enable with: "on" in .claude/askai/ab.txt (or ~/.claude/askai-ab.txt); new sessions get a sticky random arm.');
+L.push('5. A/B ARMS (historic: assigned by the retired askai hooks; control sessions skipped caveman + scoping reminder)');
+if (Object.keys(armStats).length < 2) L.push('  No two-arm data in this window. The retired hooks assigned the arms, so none are being recorded now.');
 else {
   L.push(pad('  arm', 12) + lpad('sessions', 9) + lpad('prompts', 8) + lpad('out/prompt', 11) + lpad('cost/prompt', 12) + lpad('resp/prompt', 12));
   for (const [arm, a] of Object.entries(armStats)) row('  ' + pad(arm, 10), lpad(a.sessions, 9), lpad(a.prompts, 8), lpad(fmt(a.out / (a.prompts || 1)), 11), lpad(fmt(a.cost / (a.prompts || 1)), 12), lpad((a.resp / (a.prompts || 1)).toFixed(1), 12));
@@ -468,5 +468,5 @@ L.push(`  - Tokens saved (units): computed ${sfmt(compU)}${compU ? '' : ' (nothi
 L.push(net.all_units < 0 ? '  - On this evidence askai + caveman cost more than they saved; the savings that exist are too small to see against total spend.' : '  - Savings exceed cost only if the observed (confounded) rows are real; the A/B is the only proof.');
 L.push(`  - Subagents = ${pct(cost(S), cost(T))} of cost units; ${longAgents.length} of ${agentList.length} agents ran >100 turns (${pct(longAgents.reduce((a, x) => a + x.cr * 0.1 + x.out * 5, 0), cost(S))} of subagent cost). Biggest lever.`);
 L.push(`  - Scoping asked on ${asked.length}/${eligible.length} eligible prompts; answer budgets respected ${pct(withinBudget.length, budgeted.length)}.`);
-L.push(abMeasured ? `  - A/B data present: measured saving ${sfmt(abMeasured.saved_per_prompt)} units/prompt (${(100 * abMeasured.saved_share).toFixed(1)}%)${abMeasured.trustworthy ? '' : ', too few sessions to trust yet'}.` : '  - No proven savings: enable the A/B (section 5) to get a baseline.');
+L.push(abMeasured ? `  - A/B data present: measured saving ${sfmt(abMeasured.saved_per_prompt)} units/prompt (${(100 * abMeasured.saved_share).toFixed(1)}%)${abMeasured.trustworthy ? '' : ', too few sessions to trust yet'}.` : '  - No proven savings: there is no A/B data in this window (the retired hooks assigned the arms). Use `askai status` for what the tools themselves measure.');
 console.log(L.join('\n'));

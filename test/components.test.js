@@ -200,9 +200,14 @@ test('context-mode: a plugin the user installed is not removed without --force',
   assert.ok(forced.calls.some(x => x.includes('plugin uninstall context-mode@context-mode')));
 }));
 
-test('caveman-plugin is opt-in only', () => {
-  assert.strictEqual(c('caveman-plugin').optIn, true);
-  assert.ok(comps.ALL.filter(x => x.optIn).every(x => x.id === 'caveman-plugin'));
+test('opt-in components: caveman-plugin, markitdown, ccusage and rules; the Cursor mirrors are not opt-in', () => {
+  const optIn = comps.ALL.filter(x => x.optIn).map(x => x.id).sort();
+  assert.deepStrictEqual(optIn, ['caveman-plugin', 'ccusage', 'markitdown', 'rules']);
+  for (const id of ['caveman-plugin', 'markitdown', 'ccusage']) assert.ok(c(id).optInFlag, `${id} has a flag`);
+  for (const id of ['cursor-rtk', 'cursor-context-mode', 'cursor-serena']) {
+    assert.strictEqual(c(id).host, 'cursor');
+    assert.ok(!c(id).optIn);
+  }
 });
 
 test('serena: registers the MCP server at user scope with the dashboard off; uninstall only removes it when askai added it', () => withHome(home => {

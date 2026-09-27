@@ -23,14 +23,14 @@ test('parseArgs: flags, values, --opt=value, and errors', () => {
 });
 
 test('select: caveman-plugin only with --caveman-plugin or --only; unknown ids rejected; uninstall runs in reverse', () => {
-  const ids = o => select(o, false).map(c => c.id);
+  const ids = o => select(o, 'install').map(c => c.id);
   assert.ok(!ids({}).includes('caveman-plugin'));
   assert.ok(ids({ cavemanPlugin: true }).includes('caveman-plugin'));
   assert.deepStrictEqual(ids({ only: 'caveman-plugin' }), ['caveman-plugin']);
   assert.ok(!ids({ noStatusline: true }).includes('statusline'));
   assert.ok(!ids({ skip: 'serena' }).includes('serena'));
-  assert.throws(() => select({ only: 'nope' }, false), /unknown component "nope"/);
-  const un = select({}, true).map(c => c.id);
+  assert.throws(() => select({ only: 'nope' }, 'install'), /unknown component "nope"/);
+  const un = select({}, 'uninstall').map(c => c.id);
   assert.strictEqual(un[0], 'statusline');
   assert.strictEqual(un[un.length - 1], 'claude');
 });
@@ -149,21 +149,25 @@ test('status --json and doctor run read-only against an empty home', () => withH
   for (const f of ['askai', 'settings.json', 'CLAUDE.md', 'commands']) assert.ok(!fs.existsSync(path.join(home, f)), `${f} not created`);
 }));
 
-test('report prints status, health and spend sections and touches nothing of askai\'s', () => withHome(home => {
+test('report prints status, health, cache and spend sections and touches nothing of askai\'s', () => withHome(home => {
   const r = run(home, 'report', '1');
   assert.strictEqual(r.code, 0, r.out + r.err);
-  const at = [/1\/3 +TOOLS AND MEASURED SAVINGS/, /2\/3 +HEALTH/, /3\/3 +SPEND FROM TRANSCRIPTS, LAST 1h/].map(re => r.out.search(re));
-  assert.ok(at.every(i => i >= 0), `all three headings present: ${at}`);
+  // 4 sections, or 5 when ccusage happens to be on PATH: the total in the headings is dynamic.
+  const at = [/1\/[45] +TOOLS AND MEASURED SAVINGS/, /2\/[45] +HEALTH/, /3\/[45] +CACHE AND CONTEXT PER SESSION, LAST 1h/, /\d\/[45] +SPEND FROM TRANSCRIPTS, LAST 1h/].map(re => r.out.search(re));
+  assert.ok(at.every(i => i >= 0), `all four headings present: ${at}`);
   assert.deepStrictEqual([...at].sort((a, b) => a - b), at, 'sections appear in order');
   assert.match(r.out, /ok +node/, 'doctor rows are included');
   for (const f of ['askai', 'settings.json', 'CLAUDE.md', 'commands']) assert.ok(!fs.existsSync(path.join(home, f)), `${f} not created`);
 }));
 
-test('report --json is one JSON object with tools, health and spend', () => withHome(home => {
+test('report --json is one JSON object with tools, health, cache, hosts and spend', () => withHome(home => {
   const r = run(home, 'report', '--hours', '1', '--json');
   assert.strictEqual(r.code, 0, r.out + r.err);
   const j = JSON.parse(r.out);
   assert.strictEqual(j.hours, 1);
+  for (const k of ['hosts', 'cache', 'ccusage']) assert.ok(k in j, `${k} key present`);
+  assert.strictEqual(j.hosts.claude, true);
+  assert.strictEqual(j.hosts.cursor, false, 'a sandboxed run does not look at the real Cursor directory');
   assert.ok(Array.isArray(j.tools) && j.tools.length > 0);
   assert.ok(Array.isArray(j.health) && j.health.some(h => h.id === 'node'));
   assert.ok(j.spend && typeof j.spend === 'object' && !j.spend.error, JSON.stringify(j.spend).slice(0, 200));

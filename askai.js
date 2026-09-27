@@ -1,7 +1,8 @@
 #!/usr/bin/env node
 'use strict';
-// askai: installs and wires up existing token-saving tools (RTK, Context Mode, Serena, Caveman) for Claude Code and shows
-// the savings those tools measure. It registers no hooks of its own; see README.md.
+// askai: installs and wires up existing token-saving tools (RTK, Context Mode, Serena, markitdown, Caveman, path-scoped rules,
+// optionally ccusage) for Claude Code and Cursor, by kind of work (profiles), and shows the savings those tools measure. It
+// registers no hooks of its own; see README.md.
 const fs = require('fs');
 const path = require('path');
 const crypto = require('crypto');
@@ -9,45 +10,62 @@ const readline = require('readline');
 const cfg = require('./lib/claude-config');
 const S = require('./lib/sys');
 const comps = require('./lib/components');
+const cursor = require('./lib/cursor');
+const profiles = require('./lib/profiles');
+const suggestLib = require('./lib/suggest');
 const status = require('./lib/status');
 const winpath = require('./lib/winpath');
 
-const VERSION = '2.0.0';
+const VERSION = '2.1.0';
 const SRC = __dirname;
 
-const HELP = `askai ${VERSION}: install and wire up token-saving tools for Claude Code
+const HELP = `askai ${VERSION}: install and wire up token-saving tools for Claude Code and Cursor, by kind of work
 
 Usage: askai <command> [options]
 
 Commands
-  install     install/wire up RTK, Context Mode, Serena, Caveman block, status line (skips what is already ok)
-  update      upgrade the installed tools (winget upgrade, plugin update, uv tool upgrade)
-  status      per-tool state, what is wired where, and the savings the tools measure
+  install     install/wire up the tools of a profile (default: coding); skips what is already ok
+  update      upgrade the installed tools (winget upgrade, plugin update, uv tool upgrade, npm)
+  status      profile, per-tool state, what is wired where, and the savings the tools measure
   doctor      health checks (exit 1 on a failure)
-  report [h]  everything in one: tool status + measured savings, health checks, transcript spend for the last h hours (default 6)
+  report [h]  everything in one: tool status + measured savings, health checks, cache and context per session,
+              usage report (if ccusage is installed), transcript spend for the last h hours (default 6)
+  profiles    list the profiles and what each installs
+  suggest [dir]  which profile fits a directory (counts code and document files; read-only)
+  project [dir]  Cursor: write the token rules into dir/.cursor/rules (default: the current directory);
+              --print shows them, --remove deletes the ones askai wrote
   uninstall   remove only what askai added (backups are kept)
-  restore [stamp]  list backups, or restore settings.json / CLAUDE.md / .claude.json from one
+  restore [stamp]  list backups, or restore settings.json / CLAUDE.md / .claude.json / mcp.json / hooks.json from one
   statusline  one line for Claude Code's statusLine (reads session JSON on stdin)
 
 Options
   --yes, -y            do not ask for confirmation
   --dry-run            show what would happen; nothing is written or installed
-  --only a,b           only these components (claude,baseline,rtk,context-mode,serena,caveman,caveman-plugin,statusline)
+  --target WHERE       auto | claude | cursor | both (default auto: Claude Code, plus Cursor when it is installed)
+  --profile NAME       minimal | coding | docs | full (default coding; the last install's profile is kept)
+  --only a,b           only these components (claude,baseline,rtk,context-mode,serena,markitdown,ccusage,caveman,caveman-plugin,rules,statusline,
+                       cursor-rtk,cursor-context-mode,cursor-serena)
   --skip a,b           skip these components
-  --caveman LEVEL      lite | full | ultra | off (default full): terse-output directive in the CLAUDE.md block
+  --markitdown         add markitdown (PDF/Office to Markdown) to the profile
+  --ccusage            add ccusage (third-party usage report) to the profile
+  --caveman LEVEL      lite | full | ultra | off (default full): terse-output directive in the CLAUDE.md block and the Cursor rules
   --caveman-plugin     also install the Caveman plugin (adds its own hooks; off by default)
   --no-statusline      do not set the status line
   --no-path            do not add askai to the user PATH
-  --tools              uninstall: also remove tools askai installed with winget/uv
-  --force              install: re-run components that already look ok; uninstall: also remove tools askai did not add
+  --tools              uninstall: also remove tools askai installed with winget/uv/npm
+  --force              install: re-run components that already look ok; uninstall: also remove tools askai did not add;
+                       project: also overwrite a rules file askai did not write
+  --print, --remove    project: show the rules instead of writing them; delete the rules askai wrote
   --claude-home DIR    use DIR instead of ~/.claude (testing aid; RTK's own \`init -g\` may still write to ~/.claude)
-  --json               machine-readable output (status, doctor)
+  --cursor-home DIR    use DIR instead of ~/.cursor (needed for a Cursor run together with --claude-home; RTK's \`init -g --agent cursor\`
+                       may still write to the real ~/.cursor)
+  --json               machine-readable output (status, doctor, report, profiles, suggest)
   --hours N            report window in hours
 `;
 
 // ---- args --------------------------------------------------------------------------------------------------------
-const BOOL = { yes: 'yes', y: 'yes', 'dry-run': 'dry', json: 'json', 'no-statusline': 'noStatusline', 'no-path': 'noPath', 'caveman-plugin': 'cavemanPlugin', tools: 'tools', force: 'force', help: 'help', h: 'help' };
-const VAL = { only: 'only', skip: 'skip', caveman: 'caveman', 'claude-home': 'claudeHome', hours: 'hours' };
+const BOOL = { yes: 'yes', y: 'yes', 'dry-run': 'dry', json: 'json', 'no-statusline': 'noStatusline', 'no-path': 'noPath', 'caveman-plugin': 'cavemanPlugin', markitdown: 'markitdown', ccusage: 'ccusage', tools: 'tools', force: 'force', print: 'print', remove: 'remove', help: 'help', h: 'help' };
+const VAL = { only: 'only', skip: 'skip', caveman: 'caveman', profile: 'profile', target: 'target', 'claude-home': 'claudeHome', 'cursor-home': 'cursorHome', hours: 'hours' };
 const has = (o, k) => Object.prototype.hasOwnProperty.call(o, k);
 
 function parseArgs(argv) {
@@ -65,6 +83,8 @@ function parseArgs(argv) {
     } else throw new Error(`unknown option ${a} (see askai help)`);
   }
   if (o.caveman !== undefined && !['lite', 'full', 'ultra', 'off'].includes(o.caveman)) throw new Error('--caveman must be lite, full, ultra or off');
+  if (o.profile !== undefined) profiles.get(o.profile); // throws with the known names
+  if (o.target !== undefined && !cursor.TARGETS.includes(o.target)) throw new Error(`--target must be one of: ${cursor.TARGETS.join(', ')}`);
   return o;
 }
 const list = s => String(s || '').split(',').map(x => x.trim()).filter(Boolean);
@@ -92,8 +112,25 @@ function buildCtx(o, quiet) {
   let manifest;
   try { manifest = cfg.loadManifest(paths); } catch (e) { log.warn(`${e.message}; starting a fresh manifest`); manifest = { version: 1, runs: [], settings: [], components: {} }; }
 
+  // Cursor's config directory: --cursor-home, else the real ~/.cursor. A sandboxed run without --cursor-home has none (null), so it
+  // can never touch the real one by accident.
+  const cursorHome = o.cursorHome ? path.resolve(o.cursorHome) : (sandbox ? null : cursor.defaultCursorHome());
+
+  // Read-modify-write of one JSON file under a config directory: nothing is written when fn changes nothing; dry-run only logs.
+  const editJson = (file, fn) => {
+    const j = cfg.readJson(file);
+    const before = JSON.stringify(j);
+    fn(j);
+    if (JSON.stringify(j) === before) return false;
+    if (dry) { log.plan(`update ${file}`); return true; }
+    backup(file);
+    cfg.writeJson(file, j);
+    return true;
+  };
+
   const ctx = {
-    paths, opts: o, dry, env, log, sandbox, manifest, backup,
+    paths, opts: o, dry, env, log, sandbox, manifest, backup, editJson,
+    cursorPaths: cursorHome ? cursor.cursorPaths(cursorHome) : null,
     nodeVersion: process.versions.node,
     which: S.which,
     claudeBin: () => S.findClaude(),
@@ -105,16 +142,7 @@ function buildCtx(o, quiet) {
       return S.run(cmd, args, { env, ...opts });
     },
     settings: () => cfg.readJson(paths.settings),
-    editSettings(fn) {
-      const s = cfg.readJson(paths.settings);
-      const before = JSON.stringify(s);
-      fn(s);
-      if (JSON.stringify(s) === before) return false;
-      if (dry) { log.plan(`update ${paths.settings}`); return true; }
-      backup(paths.settings);
-      cfg.writeJson(paths.settings, s);
-      return true;
-    },
+    editSettings: fn => editJson(paths.settings, fn),
     // Add/remove one dir on the Windows user PATH. Returns 'changed' | 'unchanged' | 'planned' | 'skipped (...)' | 'error: ...'.
     editPath(dir, add) {
       if (!S.IS_WIN) return 'skipped (not Windows)';
@@ -143,14 +171,27 @@ function preflight(ctx) {
   if (fs.existsSync(ctx.paths.userJson)) cfg.readJson(ctx.paths.userJson);
 }
 
-function select(o, forUninstall) {
+// Which components a command works on. mode 'install': --only, else the profile (--profile, else the one the last install
+// recorded, else the default) plus the opt-in flags, limited to the hosts in play (hostSel = { claude, cursor } from
+// cursor.hosts; omitted = Claude Code only). A Cursor component is in a profile when the Claude tool it mirrors is.
+// 'update' and 'uninstall': every component (update skips what is not installed, uninstall only removes what askai added),
+// narrowed by --only / --skip; uninstall runs in reverse order.
+function select(o, mode, recordedProfile, hostSel) {
   const known = comps.ALL.map(c => c.id);
   const only = list(o.only), skip = list(o.skip);
   for (const id of [...only, ...skip]) if (!known.includes(id)) throw new Error(`unknown component "${id}" (known: ${known.join(', ')})`);
-  let sel = comps.ALL.filter(c => only.length ? only.includes(c.id) : (forUninstall || !c.optIn || o.cavemanPlugin));
+  const on = hostSel || { claude: true, cursor: false };
+  let sel;
+  if (only.length) sel = comps.ALL.filter(c => only.includes(c.id));
+  else if (mode === 'install') {
+    const prof = profiles.get(o.profile || recordedProfile);
+    const inProfile = c => prof.components.includes(c.id) || (c.mirrors && prof.components.includes(c.mirrors)) || (c.optInFlag && o[c.optInFlag]);
+    const onHost = c => c.host === 'any' || on[c.host || 'claude'];
+    sel = comps.ALL.filter(c => inProfile(c) && onHost(c));
+  } else sel = [...comps.ALL];
   if (o.noStatusline && !only.length) sel = sel.filter(c => c.id !== 'statusline');
   sel = sel.filter(c => !skip.includes(c.id));
-  return forUninstall ? [...sel].reverse() : sel;
+  return mode === 'uninstall' ? [...sel].reverse() : sel;
 }
 
 function safeDetect(c, ctx) {
@@ -235,32 +276,46 @@ const pathStep = (ctx, add) => ctx.editPath(ctx.paths.bin, add);
 
 // ---- commands ----------------------------------------------------------------------------------------------------
 const pad = (s, n) => String(s).padEnd(n);
+const CCUSAGE_LINES = 60;
+const firstLineOf = s => String(s || '').split(/\r?\n/).map(x => x.trim()).find(Boolean) || '';
+
+// The profile name the last install recorded, if it is still a known one.
+function recordedProfile(ctx) {
+  try { profiles.get(ctx.manifest.profile); return ctx.manifest.profile; } catch (_) { return undefined; }
+}
+
+// One line naming the hosts a command works on.
+const hostLine = (ctx, h) => [h.claude && `Claude Code (${ctx.paths.home})`, h.cursor && `Cursor (${ctx.cursorPaths.home})`].filter(Boolean).join(' + ');
 
 async function cmdInstall(o) {
   const ctx = buildCtx(o);
   preflight(ctx);
-  const sel = select(o, false);
+  const hosts = cursor.hosts(ctx);
+  const sel = select(o, 'install', recordedProfile(ctx), hosts);
+  const prof = profiles.get(o.profile || recordedProfile(ctx));
   const rows = sel.map(c => {
     const d = safeDetect(c, ctx);
     const skip = d.state === 'other' || (d.state === 'ok' && !o.force && !(c.id === 'caveman' && o.caveman));
     return { c, d, skip };
   });
 
-  console.log(`askai install${o.dry ? ' (dry-run: nothing is written or installed)' : ''}   claude home: ${ctx.paths.home}\n`);
+  console.log(`askai install${o.dry ? ' (dry-run: nothing is written or installed)' : ''}   for ${hostLine(ctx, hosts)}`);
+  console.log(list(o.only).length ? `components chosen with --only; the ${prof.name} profile is not applied\n` : `profile: ${prof.name}: ${prof.summary}\n`);
+  if (!rows.length) { console.log('Nothing selected.'); return 0; }
   const w = Math.max(...rows.map(r => r.c.id.length));
   for (const r of rows) {
     console.log(`  ${pad(r.c.id, w)}  ${pad(r.d.state, 7)}  ${r.skip ? `skip: ${r.d.detail}` : `will install/wire: ${r.c.plan}`}`);
   }
-  console.log(`  ${pad('askai', w)}          copy to ${ctx.paths.app}, shim in ${ctx.paths.bin}${o.noPath || ctx.sandbox || !S.IS_WIN ? '' : ' (added to user PATH)'}, /askai-status and /askai-report commands`);
-  console.log('\nBacks up settings.json, CLAUDE.md and .claude.json before every change; existing keys and hooks are kept.');
+  console.log(`  ${pad('askai', w)}          copy to ${ctx.paths.app}, shim in ${ctx.paths.bin}${o.noPath || ctx.sandbox || !S.IS_WIN ? '' : ' (added to user PATH)'}${hosts.claude ? ', /askai-status and /askai-report commands' : ''}`);
+  console.log(`\nBacks up ${hosts.claude ? 'settings.json, CLAUDE.md and .claude.json' : ''}${hosts.claude && hosts.cursor ? ' and ' : ''}${hosts.cursor ? 'mcp.json and hooks.json' : ''} before every change; existing keys, entries and hooks are kept.`);
   if (!await confirm(o, '\nProceed?')) { console.log('Aborted, nothing changed.'); return 1; }
 
   const results = [];
-  console.log('\n[askai] app, shim, commands');
+  console.log(`\n[askai] app, shim${hosts.claude ? ', commands' : ''}`);
   try {
     console.log(`  app: ${copyApp(ctx)}`);
     writeShim(ctx);
-    console.log(`  slash commands: ${installCommands(ctx)} written`);
+    if (hosts.claude) console.log(`  slash commands: ${installCommands(ctx)} written`);
     console.log(`  user PATH: ${pathStep(ctx, true)}`);
     results.push({ id: 'askai', result: o.dry ? 'planned' : 'ok' });
   } catch (e) { console.error(`  failed: ${e.message}`); results.push({ id: 'askai', result: 'failed', detail: e.message }); }
@@ -273,6 +328,9 @@ async function cmdInstall(o) {
   }
 
   const failed = results.filter(r => r.result === 'failed');
+  // The profile is remembered so later runs (install, status, doctor) judge the machine against it; --only is a partial run.
+  if (!o.dry && !list(o.only).length) ctx.manifest.profile = prof.name;
+  try { comps.refreshDerived(ctx); } catch (e) { ctx.log.warn(`could not refresh derived files: ${e.message}`); }
   try { saveManifest(ctx, 'install', results); } catch (e) { console.error(`could not save manifest: ${e.message}`); }
 
   console.log('\nSummary');
@@ -282,8 +340,11 @@ async function cmdInstall(o) {
   }
   if (o.dry) console.log('\nDry-run only. Re-run without --dry-run to apply.');
   else if (failed.length) console.log(`\n${failed.length} component(s) failed. Fix the cause and re-run \`askai install\`: finished components are skipped.`);
-  else console.log('\nDone. Open a NEW Claude Code session so hooks, plugins and MCP servers load, then run /askai-status.');
-  if (!o.dry && !ctx.sandbox) console.log('Verify auto-firing: run any shell command in Claude Code, then `rtk gain`; `/context-mode:ctx-stats` shows Context Mode\'s numbers.');
+  else {
+    console.log(`\nDone. Open a NEW ${[hosts.claude && 'Claude Code', hosts.cursor && 'Cursor'].filter(Boolean).join(' / ')} session so hooks, plugins and MCP servers load${hosts.claude ? ', then run /askai-status' : ''}.`);
+    if (hosts.cursor) console.log('Cursor has no user-level rules file: run `askai project` in each project to add the token rules (.cursor/rules/askai-*.mdc).');
+  }
+  if (!o.dry && !ctx.sandbox && hosts.claude) console.log('Verify auto-firing: run any shell command in Claude Code, then `rtk gain`; `/context-mode:ctx-stats` shows Context Mode\'s numbers.');
   return failed.length ? 1 : 0;
 }
 
@@ -293,12 +354,15 @@ async function cmdUpdate(o) {
   console.log(`askai update${o.dry ? ' (dry-run)' : ''}\n`);
   let failed = 0;
   if (!o.dry) { try { copyApp(ctx); installCommands(ctx); } catch (e) { console.error(`  app refresh failed: ${e.message}`); failed++; } }
-  for (const c of select(o, false)) {
+  for (const c of select(o, 'update')) {
     const d = safeDetect(c, ctx);
     if (d.state === 'missing') { console.log(`[${c.id}] not installed, skipped`); continue; }
+    // Cursor wiring is touched only where askai set it up.
+    if (c.host === 'cursor' && !ctx.manifest.components[c.id]) { console.log(`[${c.id}] not set up by askai, skipped`); continue; }
     console.log(`[${c.id}]`);
     try { c.update(ctx); } catch (e) { console.error(`  failed: ${e.message}`); failed++; }
   }
+  try { comps.refreshDerived(ctx); } catch (e) { ctx.log.warn(`could not refresh derived files: ${e.message}`); }
   saveManifest(ctx, 'update', []);
   console.log(failed ? `\n${failed} failure(s).` : '\nDone. To update askai itself, pull its repo and re-run install.ps1.');
   return failed ? 1 : 0;
@@ -331,8 +395,81 @@ function cmdDoctor(o) {
   return res.some(r => r.level === 'fail') ? 1 : 0;
 }
 
-// One view of everything: tool status and measured savings, health checks, then the transcript-based spend ledger.
-// Each part is independent, so one failing does not hide the others.
+// The profiles and what each installs; the one in effect is marked.
+function cmdProfiles(o) {
+  const ctx = buildCtx(o, true);
+  const cur = status.profileInfo(ctx);
+  const rows = profiles.names().map(n => ({ ...profiles.get(n), current: n === cur.name }));
+  if (o.json) { console.log(JSON.stringify({ current: cur.name, source: cur.source, profiles: rows }, null, 2)); return 0; }
+  console.log(`profile in effect: ${cur.name} (${cur.source})\n`);
+  for (const p of rows) {
+    console.log(`${p.current ? '*' : ' '} ${pad(p.name, 8)} ${p.summary}`);
+    console.log(`  ${pad('', 8)} installs: ${p.components.join(', ')}`);
+    console.log(`  ${pad('', 8)} path rules: ${p.rules.length ? p.rules.join(' + ') : 'none'}`);
+  }
+  console.log('\nInstall one with `askai install --profile NAME`; `askai suggest [dir]` picks by what a directory holds.');
+  console.log('A profile only adds: switching to a smaller one never uninstalls tools; it keeps what is there and removes only the rule files it no longer wants.');
+  console.log('For Cursor, cursor-rtk / cursor-context-mode / cursor-serena follow rtk / context-mode / serena, and `askai project` writes the profile\'s rules into a project.');
+  return 0;
+}
+
+// Read-only: which profile fits a directory.
+function cmdSuggest(o) {
+  const dir = path.resolve(o._[1] || process.cwd());
+  let isDir = false;
+  try { isDir = fs.statSync(dir).isDirectory(); } catch (_) { /* missing */ }
+  if (!isDir) { console.error(`askai: ${dir} is not a directory`); return 1; }
+  const r = suggestLib.suggest(dir);
+  if (o.json) { console.log(JSON.stringify(r, null, 2)); return 0; }
+  console.log(`${dir}\n  ${r.counts.code} code, ${r.counts.textDocs} text documents, ${r.counts.binaryDocs} PDF/Office files${r.counts.truncated ? ' (scan stopped at the entry limit)' : ''}`);
+  console.log(`  suggested profile: ${r.profile}: ${r.reason}`);
+  console.log(`\nClaude Code: askai install --profile ${r.profile}\nCursor:      askai project${o._[1] ? ` "${dir}"` : ''} --profile ${r.profile}`);
+  return 0;
+}
+
+// Cursor: write (or show, or remove) the token rules of a project in <dir>/.cursor/rules.
+function cmdProject(o) {
+  const ctx = buildCtx(o);
+  const dir = path.resolve(o._[1] || process.cwd());
+  let isDir = false;
+  try { isDir = fs.statSync(dir).isDirectory(); } catch (_) { /* missing */ }
+  if (!isDir) { console.error(`askai: ${dir} is not a directory`); return 1; }
+  const known = (ctx.manifest.cursorProjects || {})[dir];
+  const save = () => { try { saveManifest(ctx, 'project', []); } catch (e) { console.error(`could not save manifest: ${e.message}`); } };
+
+  if (o.remove) {
+    const gone = cursor.removeProject(ctx, dir);
+    console.log(gone.length ? `removed ${gone.join(', ')} from ${cursor.rulesDir(dir)}` : `no askai rules in ${cursor.rulesDir(dir)}`);
+    if (known && !o.dry) { delete ctx.manifest.cursorProjects[dir]; save(); }
+    return 0;
+  }
+
+  // --profile, else the one this project already has, else the one its files suggest.
+  let name = o.profile || (known && known.profile), why = o.profile ? '--profile' : 'set earlier for this project';
+  if (!name) { const s = suggestLib.suggest(dir); name = s.profile; why = `suggested: ${s.reason}`; }
+  const prof = profiles.get(name);
+
+  if (o.print) {
+    for (const f of comps.cursorProjectFiles(ctx, prof.name)) console.log(`--- ${path.join(cursor.rulesDir(dir), f.name)}\n${f.text}`);
+    return 0;
+  }
+  console.log(`askai project${o.dry ? ' (dry-run)' : ''}   ${dir}\n  profile: ${prof.name} (${why})`);
+  const res = comps.syncCursorProject(ctx, dir, prof.name, o.force);
+  for (const [label, names] of [['written', res.written], ['unchanged', res.unchanged], ['removed (no longer in the profile)', res.removed]]) {
+    if (names.length) console.log(`  ${label}: ${names.join(', ')}`);
+  }
+  if (res.skipped.length) console.log(`  skipped, not written by askai: ${res.skipped.join(', ')} (use --force to overwrite)`);
+  if (!o.dry && (res.written.length || res.unchanged.length)) {
+    ctx.manifest.cursorProjects = { ...(ctx.manifest.cursorProjects || {}), [dir]: { profile: prof.name } };
+    save();
+  }
+  console.log('\nCursor loads askai-tokens.mdc in every chat; the code and document rules only when matching files are in play. `askai project --remove` deletes them.');
+  return res.skipped.length && !res.written.length && !res.unchanged.length ? 1 : 0;
+}
+
+// One view of everything: tool status and measured savings, health checks, cache and context per session, the ccusage report
+// when that tool is installed, then the transcript-based spend ledger. Each part is independent, so one failing does not hide
+// the others.
 function cmdReport(o) {
   const hours = String(o.hours || o._[1] || '6');
   const ctx = buildCtx(o, true);
@@ -340,6 +477,16 @@ function cmdReport(o) {
   const part = fn => { try { return { ok: true, value: fn() }; } catch (e) { return { ok: false, error: e.message }; } };
   const st = part(() => status.renderStatus(ctx));
   const dr = part(() => status.doctor(ctx));
+  const ca = part(() => status.renderCache(ctx, hours));
+  const hs = part(() => cursor.hosts(ctx));
+  // ccusage prints its own table; its format is not parsed, only shown (first lines).
+  const cu = part(() => {
+    if (!ctx.which('ccusage')) return null;
+    const r = ctx.probe('ccusage', ['daily'], { timeout: 90000 });
+    if (!r.ok) throw new Error(firstLineOf(r.stderr || r.stdout) || 'ccusage failed');
+    const lines = String(r.stdout).replace(/\s+$/, '').split(/\r?\n/);
+    return { text: lines.slice(0, CCUSAGE_LINES).join('\n'), truncated: lines.length > CCUSAGE_LINES };
+  });
 
   const script = path.join(SRC, 'hooks', 'askai-report.js');
   let spend = { ok: false, error: 'hooks/askai-report.js not found next to askai.js' };
@@ -353,27 +500,46 @@ function cmdReport(o) {
     if (spend.ok) { try { spendJson = JSON.parse(spend.text); } catch (_) { spendJson = { raw: spend.text }; } }
     console.log(JSON.stringify({
       hours: Number(hours),
+      hosts: hs.ok ? hs.value : { error: hs.error },
       tools: st.ok ? st.value.rows : { error: st.error },
       health: dr.ok ? dr.value : { error: dr.error },
+      cache: ca.ok ? (ca.value ? ca.value.rows : null) : { error: ca.error },
+      ccusage: cu.ok ? cu.value : { error: cu.error },
       spend: spend.ok ? spendJson : { error: spend.error },
     }, null, 2));
     return spend.ok ? 0 : 1;
   }
 
-  const head = t => `\n${'='.repeat(78)}\n${t}\n${'='.repeat(78)}`;
-  console.log(head('1/3  TOOLS AND MEASURED SAVINGS  (askai status)'));
+  // Numbered as printed: the ccusage section exists only when that tool is installed.
+  let n = 0;
+  const showCu = !cu.ok || !!cu.value;
+  const total = 4 + (showCu ? 1 : 0);
+  const head = t => `\n${'='.repeat(78)}\n${++n}/${total}  ${t}\n${'='.repeat(78)}`;
+  console.log(head('TOOLS AND MEASURED SAVINGS  (askai status)'));
   console.log(st.ok ? st.value.lines.join('\n') : `unavailable: ${st.error}`);
-  console.log(head('2/3  HEALTH  (askai doctor)'));
+  console.log(head('HEALTH  (askai doctor)'));
   console.log(dr.ok ? doctorLines(dr.value).join('\n') : `unavailable: ${dr.error}`);
-  console.log(head(`3/3  SPEND FROM TRANSCRIPTS, LAST ${hours}h  (where tokens actually went)`));
+  console.log(head(`CACHE AND CONTEXT PER SESSION, LAST ${hours}h  (from the askai status line)`));
+  if (!ca.ok) console.log(`unavailable: ${ca.error}`);
+  else if (ca.value) console.log(ca.value.lines.join('\n'));
+  else console.log('No snapshots yet. The askai status line records cache hit and context use per session (Claude Code only); it fills in as sessions run.');
+  if (showCu) {
+    console.log(head('USAGE AND COST BY DAY  (ccusage, its own output)'));
+    if (!cu.ok) console.log(`unavailable: ${cu.error}`);
+    else console.log(cu.value.text + (cu.value.truncated ? `\n... first ${CCUSAGE_LINES} lines; run \`ccusage\` for the rest` : ''));
+  }
+  console.log(head(`SPEND FROM TRANSCRIPTS, LAST ${hours}h  (where tokens actually went)`));
   console.log(spend.ok ? spend.text.trimEnd() : `unavailable: ${spend.error}`);
+  if (hs.ok && hs.value.cursor) {
+    console.log('\nNote: Cursor is wired, but askai measures Claude Code only. The cache, ccusage and spend sections do not include Cursor usage; use Cursor\'s own usage view for that.');
+  }
   return spend.ok ? 0 : 1;
 }
 
 async function cmdUninstall(o) {
   const ctx = buildCtx(o);
   preflight(ctx);
-  const sel = select(o, true);
+  const sel = select(o, 'uninstall');
   const mine = (c, d) => {
     const rec = ctx.manifest.components[c.id] || {};
     if (c.id === 'baseline') return (ctx.manifest.settings || []).length > 0;
@@ -382,7 +548,7 @@ async function cmdUninstall(o) {
   };
   const rows = sel.map(c => { const d = safeDetect(c, ctx); return { c, d, mine: d.state !== 'missing' && mine(c, d) }; });
 
-  console.log(`askai uninstall${o.dry ? ' (dry-run)' : ''}   claude home: ${ctx.paths.home}\n`);
+  console.log(`askai uninstall${o.dry ? ' (dry-run)' : ''}   claude home: ${ctx.paths.home}${ctx.cursorPaths ? `   cursor home: ${ctx.cursorPaths.home}` : ''}\n`);
   const w = Math.max(...rows.map(r => r.c.id.length));
   for (const r of rows) {
     console.log(`  ${pad(r.c.id, w)}  ${pad(r.d.state, 7)}  ${r.mine ? 'remove' : 'keep (not added by askai, or not installed)'}`);
@@ -396,12 +562,24 @@ async function cmdUninstall(o) {
     console.log(`\n[${r.c.id}]`);
     try { r.c.uninstall(ctx); } catch (e) { console.error(`  failed: ${e.message}`); failed++; }
   }
+  // A full uninstall also removes the Cursor rule files `askai project` wrote (only files carrying askai's marker), before
+  // refreshDerived could rewrite them.
+  if (!list(o.only).length) {
+    for (const dir of Object.keys(ctx.manifest.cursorProjects || {})) {
+      try {
+        const gone = cursor.removeProject(ctx, dir);
+        console.log(`\n[cursor project] ${dir}: ${gone.length ? `removed ${gone.join(', ')}` : 'no askai rules there'}`);
+        if (!o.dry) delete ctx.manifest.cursorProjects[dir];
+      } catch (e) { console.error(`  failed: ${e.message}`); failed++; }
+    }
+  }
+  try { comps.refreshDerived(ctx); } catch (e) { ctx.log.warn(`could not refresh derived files: ${e.message}`); }
   console.log('\n[askai] commands, shim, PATH, app');
   try {
     removeCommands(ctx);
     console.log(`  user PATH: ${pathStep(ctx, false)}`);
     if (!o.dry) {
-      for (const d of [ctx.paths.bin, ctx.paths.cache]) fs.rmSync(d, { recursive: true, force: true });
+      for (const d of [ctx.paths.bin, ctx.paths.cache, ctx.paths.sessions]) fs.rmSync(d, { recursive: true, force: true });
       if (path.resolve(SRC) !== path.resolve(ctx.paths.app)) fs.rmSync(ctx.paths.app, { recursive: true, force: true });
       else scheduleSelfRemoval(ctx);
     }
@@ -426,6 +604,8 @@ async function cmdRestore(o) {
   }
   if (!stamps.includes(stamp)) { console.error(`no backup "${stamp}"; run \`askai restore\` to list them`); return 1; }
   const map = { 'settings.json': ctx.paths.settings, 'CLAUDE.md': ctx.paths.claudeMd, '.claude.json': ctx.paths.userJson };
+  // Cursor's files share the backup folder by basename; they can only be put back where the Cursor directory is known.
+  if (ctx.cursorPaths) { map['mcp.json'] = ctx.cursorPaths.mcp; map['hooks.json'] = ctx.cursorPaths.hooks; }
   const dir = path.join(ctx.paths.backups, stamp);
   const todo = fs.readdirSync(dir).filter(n => has(map, n));
   if (!todo.length) { console.error('nothing restorable in that backup'); return 1; }
@@ -465,6 +645,9 @@ async function main() {
     case 'status': return cmdStatus(o);
     case 'doctor': return cmdDoctor(o);
     case 'report': return cmdReport(o);
+    case 'profiles': return cmdProfiles(o);
+    case 'suggest': return cmdSuggest(o);
+    case 'project': return cmdProject(o);
     case 'uninstall': return cmdUninstall(o);
     case 'restore': return cmdRestore(o);
     case 'statusline': return cmdStatusline(o);

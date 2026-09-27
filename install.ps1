@@ -1,39 +1,62 @@
 <#
 .SYNOPSIS
   One-command setup of askai on Windows: makes sure Node.js is present, then runs `askai.js`, which installs and wires up
-  RTK, Context Mode, Serena and a terse-output block for Claude Code.
+  RTK, Context Mode, Serena and a terse-output block for Claude Code and, when it is present, Cursor. The set of tools
+  follows the kind of work (-Workflow).
 
 .DESCRIPTION
   Run from a checkout of this repo:
 
     powershell -ExecutionPolicy Bypass -File .\install.ps1
+    powershell -ExecutionPolicy Bypass -File .\install.ps1 -Workflow docs
+    powershell -ExecutionPolicy Bypass -File .\install.ps1 -Action suggest -Path C:\work\my-project
 
-  Safe to re-run: components that already look healthy are skipped. Nothing is written to Claude Code's settings without a
-  timestamped backup first (~/.claude/askai/backups). Use -DryRun to see the plan without changing anything.
+  Safe to re-run: components that already look healthy are skipped. Nothing is written to Claude Code's or Cursor's
+  config without a timestamped backup first (~/.claude/askai/backups). Use -DryRun to see the plan without changing anything.
 
 .PARAMETER Yes            Do not ask for confirmation (also skips the Node.js prompt).
 .PARAMETER DryRun         Show what would happen; nothing is installed or written.
-.PARAMETER Only           Comma-separated components: claude,baseline,rtk,context-mode,serena,caveman,caveman-plugin,statusline
+.PARAMETER Workflow       Kind of work: minimal | coding (default) | docs | full. Alias: -Profile.
+.PARAMETER Target         Where to wire the tools: auto (default: Claude Code, plus Cursor when installed) | claude | cursor | both.
+.PARAMETER Markitdown     Add markitdown (PDF and Office files to Markdown) to the workflow.
+.PARAMETER Ccusage        Add ccusage (third-party usage report) to the workflow.
+.PARAMETER Only           Comma-separated components: claude,baseline,rtk,context-mode,serena,markitdown,ccusage,caveman,caveman-plugin,rules,statusline,cursor-rtk,cursor-context-mode,cursor-serena
 .PARAMETER Skip           Comma-separated components to skip.
 .PARAMETER NoPath         Do not add the `askai` command to the user PATH.
-.PARAMETER Caveman        Terse-output level in the CLAUDE.md block: lite | full | ultra | off (default full).
+.PARAMETER Caveman        Terse-output level in the CLAUDE.md block and the Cursor rules: lite | full | ultra | off (default full).
 .PARAMETER ClaudeHome     Use this folder instead of ~/.claude (testing aid).
+.PARAMETER CursorHome     Use this folder instead of ~/.cursor (testing aid; RTK's own Cursor init may still write to the real one).
 .PARAMETER NoStatusline   Do not set Claude Code's status line.
 .PARAMETER CavemanPlugin  Also install the Caveman plugin (adds its own hooks; off by default).
-.PARAMETER Action         install (default) | update | status | doctor | uninstall
+.PARAMETER Tools          uninstall: also remove the tools askai installed (winget, uv, npm).
+.PARAMETER Force          Re-run components that already look fine; uninstall: also remove things askai did not add.
+.PARAMETER Path           Project folder for -Action suggest | project.
+.PARAMETER Print          With -Action project: show the Cursor rules instead of writing them.
+.PARAMETER Remove         With -Action project: delete the Cursor rules askai wrote.
+.PARAMETER Action         install (default) | update | status | doctor | report | profiles | suggest | project | restore | uninstall
 #>
 [CmdletBinding()]
 param(
   [switch]$Yes,
   [switch]$DryRun,
+  [Alias('Profile')][ValidateSet('minimal', 'coding', 'docs', 'full')][string]$Workflow,
+  [ValidateSet('auto', 'claude', 'cursor', 'both')][string]$Target,
+  [switch]$Markitdown,
+  [switch]$Ccusage,
   [string]$Only,
   [string]$Skip,
   [switch]$NoPath,
   [ValidateSet('lite', 'full', 'ultra', 'off')][string]$Caveman,
   [string]$ClaudeHome,
+  [string]$CursorHome,
   [switch]$NoStatusline,
   [switch]$CavemanPlugin,
-  [ValidateSet('install', 'update', 'status', 'doctor', 'uninstall')][string]$Action = 'install'
+  [switch]$Tools,
+  [switch]$Force,
+  [string]$Path,
+  [switch]$Print,
+  [switch]$Remove,
+  [ValidateSet('install', 'update', 'status', 'doctor', 'report', 'profiles', 'suggest', 'project', 'restore', 'uninstall')][string]$Action = 'install'
 )
 
 $ErrorActionPreference = 'Stop'
@@ -104,15 +127,25 @@ $script = Join-Path $PSScriptRoot 'askai.js'
 if (-not (Test-Path $script)) { throw "askai.js not found next to install.ps1 ($PSScriptRoot)." }
 
 $argv = @($Action)
+if ($Path) { $argv += $Path }
 if ($Yes) { $argv += '--yes' }
 if ($DryRun) { $argv += '--dry-run' }
+if ($Workflow) { $argv += @('--profile', $Workflow) }
+if ($Target) { $argv += @('--target', $Target) }
+if ($Markitdown) { $argv += '--markitdown' }
+if ($Ccusage) { $argv += '--ccusage' }
 if ($Only) { $argv += @('--only', $Only) }
 if ($Skip) { $argv += @('--skip', $Skip) }
 if ($NoPath) { $argv += '--no-path' }
 if ($Caveman) { $argv += @('--caveman', $Caveman) }
 if ($ClaudeHome) { $argv += @('--claude-home', $ClaudeHome) }
+if ($CursorHome) { $argv += @('--cursor-home', $CursorHome) }
 if ($NoStatusline) { $argv += '--no-statusline' }
 if ($CavemanPlugin) { $argv += '--caveman-plugin' }
+if ($Tools) { $argv += '--tools' }
+if ($Force) { $argv += '--force' }
+if ($Print) { $argv += '--print' }
+if ($Remove) { $argv += '--remove' }
 
 & $node $script @argv
 exit $LASTEXITCODE
