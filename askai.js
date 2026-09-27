@@ -115,6 +115,14 @@ function buildCtx(o, quiet) {
       cfg.writeJson(paths.settings, s);
       return true;
     },
+    // Add/remove one dir on the Windows user PATH. Returns 'changed' | 'unchanged' | 'planned' | 'skipped (...)' | 'error: ...'.
+    editPath(dir, add) {
+      if (!S.IS_WIN) return 'skipped (not Windows)';
+      if (o.noPath) return 'skipped (--no-path)';
+      if (sandbox) return 'skipped (custom claude home)';
+      if (dry) { log.plan(`${add ? 'add' : 'remove'} ${dir} ${add ? 'to' : 'from'} user PATH`); return 'planned'; }
+      return winpath.editUserPath(S.run, dir, add);
+    },
   };
   return ctx;
 }
@@ -130,6 +138,7 @@ function saveManifest(ctx, command, results) {
 
 // Refuse to touch a settings/.claude.json file we cannot parse.
 function preflight(ctx) {
+  ctx.refreshPath(); // a shell opened before winget/uv changed the user PATH would otherwise report the tools as missing
   cfg.readJson(ctx.paths.settings);
   if (fs.existsSync(ctx.paths.userJson)) cfg.readJson(ctx.paths.userJson);
 }
@@ -222,13 +231,7 @@ function removeCommands(ctx) {
   ctx.manifest.files = kept;
 }
 
-function pathStep(ctx, add) {
-  if (!S.IS_WIN) return 'skipped (not Windows)';
-  if (ctx.opts.noPath) return 'skipped (--no-path)';
-  if (ctx.sandbox) return 'skipped (custom claude home)';
-  if (ctx.dry) { ctx.log.plan(`${add ? 'add' : 'remove'} ${ctx.paths.bin} ${add ? 'to' : 'from'} user PATH`); return 'planned'; }
-  return winpath.editUserPath(S.run, ctx.paths.bin, add);
-}
+const pathStep = (ctx, add) => ctx.editPath(ctx.paths.bin, add);
 
 // ---- commands ----------------------------------------------------------------------------------------------------
 const pad = (s, n) => String(s).padEnd(n);
@@ -303,6 +306,7 @@ async function cmdUpdate(o) {
 
 function cmdStatus(o) {
   const ctx = buildCtx(o, false);
+  ctx.refreshPath();
   if (o.json) { console.log(JSON.stringify(status.collect(ctx), null, 2)); return 0; }
   console.log(status.renderStatus(ctx).lines.join('\n'));
   return 0;
@@ -320,6 +324,7 @@ function doctorLines(res) {
 
 function cmdDoctor(o) {
   const ctx = buildCtx(o, true);
+  ctx.refreshPath();
   const res = status.doctor(ctx);
   if (o.json) console.log(JSON.stringify(res, null, 2));
   else console.log(doctorLines(res).join('\n'));
@@ -331,6 +336,7 @@ function cmdDoctor(o) {
 function cmdReport(o) {
   const hours = String(o.hours || o._[1] || '6');
   const ctx = buildCtx(o, true);
+  ctx.refreshPath();
   const part = fn => { try { return { ok: true, value: fn() }; } catch (e) { return { ok: false, error: e.message }; } };
   const st = part(() => status.renderStatus(ctx));
   const dr = part(() => status.doctor(ctx));

@@ -23,7 +23,7 @@ The dry run prints every step and writes nothing. The real run shows the plan an
 3. Adds the baseline settings to `~/.claude/settings.json` (only keys you have not set).
 4. Installs RTK (winget `rtk-ai.rtk`), checks `rtk gain` works, registers its hook with `rtk init -g --auto-patch`.
 5. Installs the Context Mode plugin through Claude Code's plugin commands.
-6. Installs Serena (winget `astral-sh.uv` if needed, `uv tool install -p 3.13 serena-agent`, `serena init`) and registers it as a user-scope MCP server.
+6. Installs Serena (winget `astral-sh.uv` if needed, `uv tool install -p 3.13 serena-agent`, `serena init`), adds uv's tool bin dir to the user PATH (skipped with `-NoPath`), and registers it as a user-scope MCP server. If uv fails with "Missing expected target directory for Python minor version link", askai removes that stale link (only the link, never the Python folder it points at) and retries.
 7. Writes the managed terse-output and token-rules block into `~/.claude/CLAUDE.md`.
 8. Sets the status line (only if you have none).
 9. Copies askai to `~/.claude/askai/app`, adds the `askai` command to the user PATH, and installs the `/askai-status` and `/askai-report` slash commands.
