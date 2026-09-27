@@ -26,6 +26,7 @@ Token use in an agent session comes from a handful of sources, and each tool bel
 |---|---|---|---|
 | Shell command output | [RTK](https://github.com/rtk-ai/rtk) | Rewrites Bash commands so their output is filtered before the model reads it | **Yes, every profile** (default choice) |
 | | [Headroom](https://github.com/headroomlabs-ai/headroom) | Compression layer for context and tool output | No: overlaps RTK and Context Mode; not evaluated here |
+| | [Token Optimizer MCP](https://github.com/ooples/token-optimizer-mcp) | MCP proxy: caches/compresses tool output, AST-based code nav, SQLite-backed dedup | No: overlaps RTK, Context Mode and Serena all at once; savings are vendor self-reported (60-90%), not independently benchmarked |
 | Large tool output, logs, scraped pages | [Context Mode](https://github.com/mksglu/context-mode) | Runs and indexes large output in a sandbox, hands the model a summary; keeps session memory across compactions | **Yes, coding and docs** |
 | Session memory across sessions | claude-mem and similar | Records sessions and injects recalled context | No: adds hooks and a database; Context Mode already covers session continuity |
 | Reading whole source files | [Serena](https://github.com/oraios/serena) | Language-server symbol navigation: overview, find symbol, references | **Yes, coding** |
