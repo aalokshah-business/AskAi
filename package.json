@@ -1,0 +1,11 @@
+{
+  "name": "askai",
+  "version": "2.0.0",
+  "description": "Installs and wires up existing token-saving tools (RTK, Context Mode, Serena, Caveman) for Claude Code and shows the savings they measure.",
+  "private": true,
+  "bin": { "askai": "askai.js" },
+  "engines": { "node": ">=18" },
+  "scripts": {
+    "test": "node --test test/*.test.js"
+  }
+}

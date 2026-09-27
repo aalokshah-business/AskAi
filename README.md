@@ -1,123 +1,126 @@
-# askai — token-optimization setup for Claude Code
+# askai
 
-**Status: lean by default.** The 7-day `/askai-report 168` ledger measured the askai hook
-system as net negative on tokens: it cost 26.38M units against 248.6K computed savings
-(NET -26.14M, -2.60% of the 940.15M spent; subagents were 69.2% of spend). So
-`askai-setup.ps1` now installs **no hooks** unless you pass `-WithHooks`. It keeps only the
-levers that cost nothing per turn: a caveman directive in `~/.claude/CLAUDE.md`, sonnet
-subagents, `autoCompactWindow` and `skillOverrides`. The hook system is still in this repo
-as an opt-in legacy install (see "Legacy hook system" below).
+askai installs and wires up existing token-saving tools for Claude Code on a Windows machine, then shows the savings those tools measure. It does not ship hooks of its own.
 
-## What `askai-setup.ps1` installs
+Background: the earlier self-built askai hook system was measured net negative over 7 days (it cost 26.38M units against 248.6K computed savings, NET -26.14M, -2.60% of the 940.15M spent). Its files are kept in `legacy/` for reference only. This version installs tools other people maintain and registers them once, globally, so they work in every project without any per-prompt step.
 
-Default (lean, no hooks), under the current user's `~/.claude/`:
+## One command on a new laptop
 
-- `CLAUDE.md` — appends the caveman terse-output directive once (skipped if a `# Terse output (caveman` heading is already there).
-- `settings.json` — merges `autoCompactEnabled: true`, `autoCompactWindow: 150000`, `env.CLAUDE_CODE_SUBAGENT_MODEL: sonnet` (only if unset; a per-call `model` still wins) and `skillOverrides` (rarely used bundled skills set to `name-only`; only adds ones not already set). Existing content and values are never overridden.
-- Removes askai hook registrations that an earlier install left in `settings.json`; other tools' hooks stay.
-- Installs the third-party caveman skill and CLI (see below).
-
-Settings, `env` and `CLAUDE.md` are read at session start, so **start a new session** after running it. Sessions already open keep their old config.
-
-`-WithHooks` (legacy, opt-in): additionally copies `hooks/askai.ps1`, `commands/askai.md`, `hooks/askai-report.js` and `commands/askai-report.md` into `~/.claude/`, registers the `UserPromptSubmit` / `PreToolUse` / `PreCompact` hooks, and writes `~/.claude/askai-caveman.txt` (the hook injects caveman, so `CLAUDE.md` is left alone). Use it only to re-measure.
-
-## Contents
-
-- `askai-setup.ps1` — portable installer (safe to re-run, won't duplicate entries or touch unrelated settings). It embeds its own copy of the legacy hook and command files.
-- `hooks/askai.ps1` — the legacy unified hook script (UserPromptSubmit + PreToolUse + PreCompact); only installed with `-WithHooks`
-- `commands/askai.md` — the legacy `/askai` slash command; only installed with `-WithHooks`
-- `hooks/askai-report.js` + `commands/askai-report.md` — evidence report (`/askai-report [hours]`, or `node hooks/askai-report.js --hours 168 [--json]`); needs Node.js at run time. The installer copies them only with `-WithHooks`, but the script reads `~/.claude/projects/**/*.jsonl` and runs fine straight from this repo.
-
-## Updating a deployed machine after editing this repo
-
-```
-powershell -ExecutionPolicy Bypass -File askai-setup.ps1 [-WithHooks] [-SkipCaveman] [-SkipCavemanProxy] [-CavemanMode off|lite|full|ultra]
+```powershell
+git clone <this repo> askai; cd askai
+powershell -ExecutionPolicy Bypass -File .\install.ps1 -DryRun   # see the plan, changes nothing
+powershell -ExecutionPolicy Bypass -File .\install.ps1           # do it (asks once before changing anything)
 ```
 
-### Caveman (third-party, installed by default)
+`install.ps1` makes sure Node.js 22.5+ is present (winget `OpenJS.NodeJS.LTS`, with a prompt), then runs `askai.js install`. Open a new Claude Code session afterwards: settings, hooks, plugins, MCP servers and `CLAUDE.md` are read at session start.
 
-`askai-setup.ps1` also installs [caveman](https://github.com/JuliusBrussee/caveman) after the settings merge:
+## What it installs
 
-- **Skill:** `npx skills add JuliusBrussee/caveman -g -a claude-code -s caveman caveman-commit caveman-compress caveman-review caveman-stats -y --copy`. Only these 5 of the repo's ~20 skills are installed; every installed skill adds its description to each turn's context. Use `/caveman` to toggle terse output.
-- **CLI:** `npm install -g @caveman-ai/cli && caveman setup --install` (installs the companion binaries into `~/.caveman/bin`; needs Node 22.13+). In testing this did not modify `~/.claude/settings.json`.
-- Skip either with `-SkipCaveman` / `-SkipCavemanProxy`. Failures only warn; needs Node/npm on PATH.
-- The four secondary skills (`caveman-commit/-compress/-review/-stats`) are set to `name-only` in `skillOverrides`, so only `/caveman` itself carries a description in context.
+| Component | What it is | How it is delivered | Fires |
+|---|---|---|---|
+| `claude` | Claude Code CLI | winget `Anthropic.ClaudeCode`, only if missing | - |
+| `baseline` | The three zero-cost settings from the earlier install | `~/.claude/settings.json`: `autoCompactWindow` 150000, `env.CLAUDE_CODE_SUBAGENT_MODEL=sonnet`, `skillOverrides` (rarely used bundled skills to `name-only`). Added only when absent, never overriding your values. Also removes registrations of the retired askai hook. | Every session |
+| `rtk` | [RTK](https://github.com/rtk-ai/rtk): compresses the output of shell commands before the model reads it | winget `rtk-ai.rtk`, then `rtk init -g --auto-patch` (a PreToolUse hook on Bash calls) | Every Bash tool call, automatically |
+| `context-mode` | [Context Mode](https://github.com/mksglu/context-mode): keeps large tool output out of the context window, exposes `ctx_*` tools | `claude plugin marketplace add mksglu/context-mode`, `claude plugin install context-mode@context-mode` | Plugin hooks fire automatically; the model chooses when to call `ctx_*` tools |
+| `serena` | [Serena](https://github.com/oraios/serena): symbol-level code navigation instead of reading whole files | `uv tool install -p 3.13 serena-agent`, `serena init`, `claude mcp add --scope user serena ...` (dashboard off) | The model chooses to call its tools; the `CLAUDE.md` block nudges it |
+| `caveman` | Terse-output directive | Managed block in `~/.claude/CLAUDE.md` (level `--caveman lite\|full\|ultra\|off`, default `full`) | Every session, automatically |
+| `statusline` | One-line status: RTK's measured savings, plus Context Mode's line when its CLI exists | `statusLine` in `settings.json`, only if you have none | Every render |
+| `caveman-plugin` | The Caveman plugin | Opt-in only: `--caveman-plugin` | Plugin hooks |
 
-### Caveman terse mode (always-on, no skill call needed)
+The managed `CLAUDE.md` block also carries four short token rules: state a tool-call limit and a reply-size limit in every subagent prompt, Grep then Read with offset/limit, prefer `ctx_*` tools for large output, prefer Serena symbol tools over reading whole files. The block sits between `<!-- askai:begin ... -->` and `<!-- askai:end -->`; if your `CLAUDE.md` already has a `# Terse output (caveman` heading, the directive is not added a second time.
 
-The `/caveman` skill only takes effect once you invoke it, so the installer also makes terse output the default:
+### Not installed, on purpose
 
-- **Lean default:** the directive is plain text in `~/.claude/CLAUDE.md` (~700 chars: drop filler/articles/hedging, no tool-call narration; code, commands, errors, numbers and negations stay exact; commit/PR text, code comments and file contents stay normal; security warnings and destructive-action confirmations stay in full sentences). It is loaded once at session start, with no hook and no per-prompt injection.
-- Level: `-CavemanMode lite|full|ultra` (default `full`). `-CavemanMode off`, or `-SkipCaveman` on its own, writes none. An existing `# Terse output (caveman` block is never rewritten: edit `CLAUDE.md` by hand to change its level.
-- Say "stop caveman" or "normal mode" to end it for the session, or `/caveman` for the skill's own levels.
-- It only shortens the assistant's prose, not tool output. For that, the `caveman` CLI proxy above is the separate lever (not wired to Claude hooks here).
-- **With `-WithHooks`:** the hook injects the directive once per session instead (`PreCompact` re-arms it; a `clear_session` starts a new session id, which re-injects it). The level lives in `~/.claude/askai-caveman.txt` (`-CavemanMode ultra` writes it; an existing file is kept otherwise, and `-SkipCaveman` defaults it to `off`). Per-project override: `<project>/.claude/askai/caveman.txt`.
+- Serena's reminder hooks (extra per-prompt text).
+- The `@caveman-ai/cli` proxy and any `irm | iex` installer.
+- The Caveman plugin, unless you pass `--caveman-plugin` (it would double up with the `CLAUDE.md` directive).
+- Any hook written by askai.
 
-## Legacy hook system (`-WithHooks` only)
+## How it works with no manual step per prompt
 
-Measured net negative in the ledger above. Kept for re-measuring and as reference. The subagent limit rule that its `PreToolUse` guard enforced belongs in `CLAUDE.md` instead (state a tool-call limit and a reply-size limit in every Agent prompt).
+Claude Code reads user-scope configuration when a session starts, for every project:
 
-### What the hook does
+1. `~/.claude/settings.json` holds the RTK hook, the status line and the baseline values.
+2. Plugins (Context Mode) register their own hooks and MCP tools.
+3. `~/.claude.json` holds the user-scope Serena MCP server.
+4. `~/.claude/CLAUDE.md` holds the terse directive and token rules.
 
-- `UserPromptSubmit` — scoping rule for new/distinct tasks (state area,
-  additional items, answer length in one line; no question is asked), injects
-  the session's tracked feature summary, `#slug` tagging, and the checkpoint
-  trigger (every N prompts or a wrap-up phrase). Checkpoints are filed
-  silently -- no AskUserQuestion -- with ONE tool call (the hook appends the
-  metrics row itself), and `clear_session` is only attempted when you say you
-  are wrapping up.
-  - **Context guard**: reads the real context size from the transcript's last
-    usage block; past 120K tokens (`askai/context-guard.txt` overrides, 20K-2M)
-    it nudges once per +40K to start a fresh session and delegate searches to
-    Explore-on-haiku.
-  - **Connector manager**: a prompt that mentions Claude Docs or
-    visualize/mockup/interactive widgets gets a hint to enable that connector for
-    the session (`set_session_connector_enabled`), and the next prompt gets a hint
-    to switch it back off. Short replies never trigger it. (A hook cannot toggle
-    connectors itself; it only tells the model to.)
-- `PreToolUse` (`matcher: Agent|Task`) — subagent budget guard. Subagents were
-  ~70% of measured spend, so an Agent launch whose prompt lacks a tool-call limit
-  or a reply-size limit is denied once with the reason; an identical resend, or a
-  prompt containing `!nolimit`, passes. No other tool pays a hook spawn.
-- `PreCompact` — writes a brief safety-net note before context compaction and
-  re-arms the once-per-session injections.
+So once `install.ps1` has run and a new session is opened, RTK compresses Bash output and Context Mode's hooks run on their own. Serena and the `ctx_*` tools are used when the model decides to, which the `CLAUDE.md` block encourages. Sessions that were already open keep their old configuration.
 
-### `/askai <task>`
+## Seeing what is saved
 
-States three assumptions in one line before touching anything: area, extra
-scope, and answer length (asks only if the task is genuinely ambiguous). Tasks
-about creating/editing a Claude skill itself are routed to the
-`skill-creator` skill instead of this scoping flow.
+```powershell
+askai report [hours]  # everything in one: status + doctor + transcript spend (default 6h)
+askai status          # per-tool state, where it is wired, measured savings
+askai doctor          # health checks (exit 1 on failure)
+askai report --json   # {hours, tools, health, spend}; status --json and doctor --json also exist
+```
 
-### Token-cost design: send once, not every prompt
+Inside Claude Code: `/askai-report [hours]` (everything), `/askai-status` (tools only), and `/context-mode:ctx-stats` for the current session. The status line shows RTK's running total.
 
-Hook context persists in message history and is re-sent on every later turn, so anything injected per prompt compounds. The hook therefore:
+`askai report` prints three sections, each independent, so one failing does not hide the others: tool status and measured savings (same as `askai status`), health checks (same as `askai doctor`), and the transcript spend ledger. It exits 1 only when the spend part could not be produced; use `askai doctor` when you want a failing exit code for health.
 
-- Sends the **feature summary once per session** (again after PreCompact, or when a `#slug` tag switches feature), capped to the most recent 6000 chars (override: `.claude/askai/summary-max-chars.txt`, 1000-200000) with a pointer to the full file. Previously a 40 KB summary was re-injected on every prompt.
-- Sends the **full scoping rule and checkpoint steps once per session**; later prompts get nothing (scoping) or a ~200 char pointer (checkpoint). The pending-clear reminders, the volume-note and the PostToolUse volume tracker were removed (v2): they re-injected text every prompt or spawned PowerShell per tool call for little value. State lives in `sessions/<sid>.seen.txt` / `.summary.txt`, both cleared on PreCompact.
-- Resolves one **project root** (nearest `.git`, else nearest existing `.claude/askai`, else cwd) so sessions started in subdirectories no longer create stray `.claude/askai/` folders.
+Evidence labels used in `askai status`:
 
-Even with all of that, the 7-day ledger still came out net negative, which is why it is no longer the default.
+- **Measured by the tool**: RTK's `rtk gain` (cross-session total, using RTK's own token estimate).
+- **Tool-reported, per session**: Context Mode's `/context-mode:ctx-stats`. Its vendor's headline reduction figure is not verified here.
+- **Not measured**: Serena and Caveman have no counter, so askai shows no number for them.
 
-Note: `askai-setup.ps1` embeds its own copy of `askai.ps1`/`askai.md`
-content rather than reading `hooks/`/`commands/` at run time — if you edit the
-scripts here, regenerate the installer's embedded copies to match (or just
-copy `hooks/askai.ps1` and `commands/askai.md` directly to `~/.claude/hooks/`
-and `~/.claude/commands/`, which is simpler for a single-machine update).
+The net effect of the whole stack is unproven. The spend section of `askai report [hours]` reads the Claude Code transcripts and shows where tokens actually went; use it to check that the stack helps. Its ledger was written for the retired hook system, so rows for features that no longer exist read 0 with an evidence label of none.
 
-## Evidence report and A/B test
+## Commands
 
-`askai-report.js` reads Claude Code transcripts (`~/.claude/projects/**/*.jsonl`, including subagents) and opens with a **token savings ledger**: tokens saved per feature (caveman, answer-length budget, scoping, feature summaries, skill name-only overrides, checkpoint + clear, compaction), askai's own cost, and NET. Each row is labelled MEASURED (A/B arms), COMPUTED (config arithmetic), OBSERVED (on/off comparison, correlation only) or unmeasurable (0 credited). `--hours 168` / `--hours 720` give a 7- or 30-day view. It then reports: where tokens went (main vs subagents), askai hook-injection overhead, scoping/answer-length compliance, trigger noise vs completed checkpoint cycles, caveman on/off comparison (observational only) and tool-output volume. Cost units are relative (input + 1.25*cache-create + 0.1*cache-read + 5*output), not billing.
+```
+askai install [--only a,b] [--skip a,b] [--caveman LEVEL] [--caveman-plugin] [--no-statusline] [--no-path] [--yes] [--dry-run] [--force]
+askai update                       upgrade the installed tools
+askai report [hours] [--json]      status + doctor + transcript spend in one view
+askai status | doctor [--json]     the first two sections of report, on their own
+askai uninstall [--tools] [--force] [--yes]
+askai restore [stamp] [--yes]      list backups, or put a backed-up file back
+askai statusline                   what Claude Code's statusLine calls
+```
 
-Without a baseline, savings cannot be proven. To get one, put `on` in `<project>/.claude/askai/ab.txt` (or `~/.claude/askai-ab.txt`): each NEW session is randomly assigned `control` (no caveman directive, no scoping reminder) or `treatment` (normal askai), sticky in `sessions/<sid>.arm.txt`. Sessions already running are never assigned. Section 5 of the report compares cost/prompt between arms. Default is off; delete the file or set anything other than `on` to stop. The arms are assigned by the legacy hook, so they only exist with `-WithHooks`; with the lean install the "where tokens went" section is the useful part of the report.
+Components: `claude, baseline, rtk, context-mode, serena, caveman, caveman-plugin, statusline`. `install.ps1` takes the same switches (`-DryRun`, `-Yes`, `-Only`, `-Skip`, `-Caveman`, `-CavemanPlugin`, `-NoStatusline`, `-NoPath`, `-Action`).
 
-## Per-project configuration (not in this repo)
+`askai` is copied to `~/.claude/askai/app` and a shim is placed in `~/.claude/askai/bin` (added to the user PATH unless `--no-path`). To update askai itself, run `install.ps1` from a fresh checkout.
 
-Each project can carry its own tuning, checked into that project instead:
-- `.claude/settings.json` (`bashOutputMaxChars`, `effortLevel`, `permissions.allow`)
-- `CLAUDE.md` conventions (e.g. delegate broad multi-file exploration to the Explore subagent on haiku; give every Agent prompt a tool-call limit and a reply-size limit)
-- Legacy, `-WithHooks` only: `.claude/askai/interval.txt`, `.claude/askai/context-guard.txt`
-- Legacy, `-WithHooks` only: `.claude/askai/*.md` — accumulated feature summaries (project memory, not infrastructure)
-- Legacy, `-WithHooks` only: `.claude/askai/metrics.jsonl` — append-only log of checkpoint/clear events (timestamp, session, feature slug, trigger, pre-clear tokens/percent used, and outcome: cleared/held/blocked/declined), appended by the hook itself when it fires a checkpoint (trigger, context tokens, outcome `held`); ask the agent to summarize it for a read on real token savings over time
+## Safety
 
-See the full writeup for how the system works day to day.
+- Idempotent: components that already look healthy are skipped; `--force` re-runs them.
+- Existing tools are detected and never reinstalled.
+- Before `settings.json`, `CLAUDE.md` or `~/.claude.json` is changed, it is copied to `~/.claude/askai/backups/<timestamp>/`. `askai restore` lists and restores them.
+- An unparseable `settings.json` stops the run; askai never overwrites a file it could not read.
+- `askai uninstall` removes only what askai added, recorded in `~/.claude/askai/manifest.json`. A tool or hook you set up yourself is left in place and named; `--force` removes it too, `--tools` also uninstalls tools askai installed through winget or uv. Backups are kept.
+- Non-interactive runs refuse to change anything without `--yes`.
+- `RTK_TELEMETRY_DISABLED=1` is set for the RTK commands askai runs.
+
+## Known risks
+
+- RTK and Context Mode both hook Bash tool calls. Their interaction is unverified; `askai doctor` warns when more than one such hook is registered.
+- Serena and Context Mode each add tool definitions to every session. That is a per-session cost.
+- Serena writes a `.serena/` folder into projects it works in.
+- If you install the Caveman plugin as well as the `CLAUDE.md` directive, terse instructions are duplicated; `askai doctor` flags it.
+- RTK needs `rg` for some filters (`winget install BurntSushi.ripgrep.MSVC`).
+- Unverified until first real run: whether `serena init` prompts (it runs with stdin closed and a timeout, failure allowed), whether the `context-mode` CLI ends up on PATH, the shape of `claude plugin list --json` with plugins present, and whether `rtk init -g --uninstall` needs `--auto-patch` (askai falls back to removing the hook entry itself).
+- `--claude-home DIR` is a testing aid: RTK's own `init -g` may still write to `~/.claude`, and running status or doctor against it lets the real Claude CLI create its own files there.
+- askai's status, doctor and install call `claude plugin list --json`. The Claude CLI itself may migrate values in `settings.json` when it runs (observed on Claude Code 2.1.281: `"model": "opus"` became `"opus[1m]"`). That is the CLI's behaviour, not askai's, and it can happen before askai's own backup of that file.
+
+## Tests
+
+```powershell
+npm test        # node --test test/*.test.js, needs Node 21+ for the glob
+```
+
+42 tests against throwaway folders under the OS temp dir with fake process runners: nothing installs software, touches the network, or writes to your real `~/.claude`. The two `report` tests only read your real Claude Code transcripts (`~/.claude/projects`), because that is what the spend section reports on.
+
+## Repository layout
+
+- `install.ps1`: Windows entry point (Node check, then `askai.js`).
+- `askai.js`: CLI (install, update, status, doctor, report, uninstall, restore, statusline).
+- `lib/components.js`: one entry per tool (detect, install, uninstall).
+- `lib/claude-config.js`: safe edits of `settings.json` and `CLAUDE.md`, backups, manifest.
+- `lib/status.js`, `lib/sys.js`, `lib/winpath.js`: status/doctor views, process helpers, user PATH edit.
+- `hooks/askai-report.js`: transcript-based spend report used by `askai report`.
+- `commands/`: `/askai-status` and `/askai-report` slash commands (copied to `~/.claude/commands`).
+- `legacy/`: the retired self-built hook system and its installer. Not used by anything above.
+- `test/`: the test suite.
