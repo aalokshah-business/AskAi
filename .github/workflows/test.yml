@@ -1,0 +1,34 @@
+name: test
+on:
+  push:
+  pull_request:
+# A pull request from anyone can run the tests but cannot write to the repository.
+permissions:
+  contents: read
+jobs:
+  test:
+    strategy:
+      fail-fast: false
+      matrix:
+        os: [ubuntu-latest, macos-latest, windows-latest]
+        node: [20, 22]
+    runs-on: ${{ matrix.os }}
+    defaults:
+      run:
+        shell: bash
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: ${{ matrix.node }}
+      - name: Unit and CLI tests
+        run: node --test test/*.test.js
+      - name: Generated docs are current
+        run: node scripts/gen-docs.js --check
+      - name: Install previews on every OS and tool
+        if: runner.os != 'Windows'
+        run: bash scripts/preview-matrix.sh --quiet
+      - name: Windows self-test (install.ps1 in a temporary folder)
+        if: runner.os == 'Windows'
+        shell: pwsh
+        run: ./scripts/windows-selftest.ps1

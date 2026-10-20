@@ -1,0 +1,17 @@
+# .cursorignore — keep Cursor's index and agent away from noise and secrets (gitignore syntax)
+node_modules/
+dist/
+build/
+out/
+.next/
+coverage/
+target/
+vendor/
+*.min.js
+*.map
+*.log
+package-lock.json
+yarn.lock
+pnpm-lock.yaml
+.env
+.env.*

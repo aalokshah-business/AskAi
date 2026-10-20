@@ -1,0 +1,15 @@
+node_modules/
+dist/
+build/
+out/
+.next/
+coverage/
+target/
+vendor/
+*.min.js
+*.map
+package-lock.json
+yarn.lock
+pnpm-lock.yaml
+.env
+.env.*

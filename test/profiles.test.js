@@ -13,7 +13,7 @@ test('profiles: default is coding, unknown name throws and lists the valid ones'
   assert.strictEqual(profiles.DEFAULT, 'coding');
   assert.strictEqual(profiles.get().name, 'coding');
   assert.strictEqual(profiles.get('docs').name, 'docs');
-  assert.throws(() => profiles.get('nope'), /unknown profile "nope" \(known: minimal, coding, docs, full\)/);
+  assert.throws(() => profiles.get('nope'), /unknown profile "nope" \(known: minimal, coding, docs, full, max\)/);
   assert.throws(() => profiles.get('constructor'), /unknown profile/, 'prototype keys are not profiles');
 });
 
@@ -25,7 +25,7 @@ test('profiles: every profile lists real components and rule kinds, and rules is
     for (const id of p.components) assert.ok(known.includes(id), `${name}: ${id} is a component`);
     for (const k of p.rules) assert.ok(rules.kinds().includes(k), `${name}: ${k} is a rule kind`);
     assert.ok(p.components.includes('rules'), `${name} carries the rules component so a narrower profile can remove wider rule files`);
-    assert.ok(p.components.includes('rtk') && p.components.includes('caveman'), `${name} keeps the measured basics`);
+    assert.ok(p.components.includes('caveman') && p.components.includes('handoff') && (name === 'max' || !p.components.includes('rtk')), `${name} keeps the basics; RTK is opt-in outside max`);
   }
 });
 
@@ -34,13 +34,15 @@ test('profiles: work kinds differ the way the README says', () => {
   assert.ok(profiles.get('coding').components.includes('serena') && !profiles.get('coding').components.includes('markitdown'));
   assert.ok(profiles.get('docs').components.includes('markitdown') && !profiles.get('docs').components.includes('serena'));
   const full = profiles.get('full').components;
-  for (const id of ['serena', 'markitdown', 'ccusage', 'context-mode']) assert.ok(full.includes(id), `full has ${id}`);
+  for (const id of ['serena', 'markitdown', 'ccusage']) assert.ok(full.includes(id), `full has ${id}`);
+  assert.ok(!full.includes('context-mode') && !full.includes('rtk'), 'RTK and Context Mode are opt-in in every profile');
   assert.deepStrictEqual(profiles.get('full').rules, ['coding', 'docs']);
   assert.deepStrictEqual(profiles.get('minimal').rules, []);
 });
 
 test('select: a profile picks its components for install, opt-in flags add to it, --skip removes', () => {
-  assert.deepStrictEqual(ids({ profile: 'minimal' }), ['claude', 'baseline', 'rtk', 'caveman', 'rules', 'statusline']);
+  assert.deepStrictEqual(ids({ profile: 'minimal' }), ['token-kit', 'claude', 'baseline', 'caveman', 'rules', 'statusline', 'prompt-hooks', 'handoff', 'lean']);
+  assert.ok(ids({ profile: 'minimal', rtk: true }).includes('rtk') && ids({ contextMode: true }).includes('context-mode'), '--rtk and --context-mode opt in');
   assert.ok(ids({ profile: 'docs' }).includes('markitdown') && !ids({ profile: 'docs' }).includes('serena'));
   assert.ok(ids({}).includes('serena'), 'no profile means the default one (coding)');
   assert.ok(ids({ profile: 'minimal', markitdown: true, ccusage: true }).includes('markitdown'), 'flag adds markitdown');
@@ -77,13 +79,13 @@ test('select: Cursor twins follow the tool they mirror and only when Cursor is a
   const both = { claude: true, cursor: true };
   const cursorOnly = { claude: false, cursor: true };
   assert.ok(!ids({ profile: 'coding' }, 'install', undefined, claudeOnly).some(i => i.startsWith('cursor-')));
-  const b = ids({ profile: 'coding' }, 'install', undefined, both);
-  for (const i of ['cursor-rtk', 'cursor-context-mode', 'cursor-serena', 'serena', 'rtk']) assert.ok(b.includes(i), `both: ${i}`);
-  const m = ids({ profile: 'minimal' }, 'install', undefined, both);
-  assert.ok(m.includes('cursor-rtk') && !m.includes('cursor-serena') && !m.includes('cursor-context-mode'), 'minimal mirrors only rtk');
+  const b = ids({ profile: 'coding', rtk: true, contextMode: true }, 'install', undefined, both);
+  for (const i of ['cursor-rtk', 'cursor-context-mode', 'cursor-serena', 'cursor-rules', 'serena', 'rtk']) assert.ok(b.includes(i), `both: ${i}`);
+  const m = ids({ profile: 'minimal', rtk: true }, 'install', undefined, both);
+  assert.ok(m.includes('cursor-rtk') && m.includes('cursor-rules') && !m.includes('cursor-serena') && !m.includes('cursor-context-mode'), 'minimal mirrors rtk and the user rules');
   const c = ids({ profile: 'coding' }, 'install', undefined, cursorOnly);
-  assert.deepStrictEqual(c.filter(i => !i.startsWith('cursor-')), [], 'Claude-only components are left out when the target is cursor');
-  assert.ok(c.includes('cursor-serena'));
+  assert.deepStrictEqual(c.filter(i => !i.startsWith('cursor-') && !['handoff', 'token-kit'].includes(i)), [], 'Claude-only components are left out when the target is cursor (handoff and token-kit are host-neutral)');
+  assert.ok(c.includes('cursor-serena') && c.includes('cursor-rules'));
   const d = ids({ profile: 'docs', markitdown: true }, 'install', undefined, cursorOnly);
   assert.ok(d.includes('markitdown'), 'markitdown is host-neutral (uv tool) and installs for a Cursor-only target too');
 });
@@ -98,7 +100,7 @@ test('profiles command: lists every profile, marks the one in use and where it c
     const j = JSON.parse(cli(['profiles', '--json', '--claude-home', home, '--profile', 'docs']).out);
     assert.strictEqual(j.current, 'docs');
     assert.match(j.source, /--profile/);
-    assert.ok(Array.isArray(j.profiles) ? j.profiles.length === 4 : Object.keys(j.profiles).length === 4);
+    assert.ok(Array.isArray(j.profiles) ? j.profiles.length === 5 : Object.keys(j.profiles).length === 5);
   } finally { rm(home); }
 });
 

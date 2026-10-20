@@ -1,11 +1,25 @@
 {
   "name": "askai",
-  "version": "2.1.0",
-  "description": "Installs and wires up existing token-saving tools (RTK, Context Mode, Serena, Caveman) for Claude Code and shows the savings they measure.",
+  "version": "1.0.0",
+  "description": "Make AI coding subscriptions last longer: installs and wires up existing token-saving tools (RTK, Context Mode, Serena, markitdown, Caveman-style rules) for Claude Code, Cursor, OpenAI Codex and Google Antigravity on Windows, macOS, Linux and WSL, with a hook-free session ledger, handoff and cheat sheet.",
   "private": true,
-  "bin": { "askai": "askai.js" },
-  "engines": { "node": ">=18" },
+  "bin": {
+    "askai": "askai.js"
+  },
+  "engines": {
+    "node": ">=18"
+  },
   "scripts": {
     "test": "node --test test/*.test.js"
-  }
+  },
+  "repository": {
+    "type": "git",
+    "url": "https://github.com/aalokshah-business/AskAi.git"
+  },
+  "homepage": "https://github.com/aalokshah-business/AskAi#readme",
+  "bugs": {
+    "url": "https://github.com/aalokshah-business/AskAi/issues"
+  },
+  "license": "MIT",
+  "author": "Aalok Shah"
 }

@@ -202,9 +202,9 @@ test('context-mode: a plugin the user installed is not removed without --force',
 
 test('opt-in components: caveman-plugin, markitdown, ccusage and rules; the Cursor mirrors are not opt-in', () => {
   const optIn = comps.ALL.filter(x => x.optIn).map(x => x.id).sort();
-  assert.deepStrictEqual(optIn, ['caveman-plugin', 'ccusage', 'markitdown', 'rules']);
-  for (const id of ['caveman-plugin', 'markitdown', 'ccusage']) assert.ok(c(id).optInFlag, `${id} has a flag`);
-  for (const id of ['cursor-rtk', 'cursor-context-mode', 'cursor-serena']) {
+  assert.deepStrictEqual(optIn, ['base-tools', 'caveman-plugin', 'ccusage', 'claude-mem', 'code-intel', 'codebase-memory', 'context-mode', 'context7', 'graphify', 'headroom', 'markitdown', 'repomix', 'rtk', 'rules']);
+  for (const id of ['caveman-plugin', 'markitdown', 'ccusage', 'rtk', 'context-mode', 'code-intel']) assert.ok(c(id).optInFlag, `${id} has a flag`);
+  for (const id of ['cursor-rtk', 'cursor-context-mode', 'cursor-serena', 'cursor-rules']) {
     assert.strictEqual(c(id).host, 'cursor');
     assert.ok(!c(id).optIn);
   }
@@ -470,7 +470,13 @@ test('claude: present CLI is detected and never reinstalled; missing CLI needs w
   assert.strictEqual(c('claude').detect(ok).state, 'ok');
   const missing = makeCtx(home, {}, { claude: null });
   assert.strictEqual(c('claude').detect(missing).state, 'missing');
-  assert.throws(() => c('claude').install(missing), /winget/);
+  // Windows: winget. macOS/Linux: Homebrew or Claude's own installer script; the fake run succeeds but no CLI appears afterwards.
+  if (process.platform === 'win32') assert.throws(() => c('claude').install(missing), /winget/);
+  else {
+    missing.which = n => (n === 'curl' ? '/usr/bin/curl' : null);
+    assert.throws(() => c('claude').install(missing), /not on PATH/);
+    assert.ok(missing.calls.some(x => x.includes('claude.ai/install.sh')), 'used the official installer script');
+  }
 }));
 
 test('nodeOk compares against 22.5', () => {

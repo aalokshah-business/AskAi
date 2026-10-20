@@ -1,46 +1,69 @@
 <#
 .SYNOPSIS
-  One-command setup of askai on Windows: makes sure Node.js is present, then runs `askai.js`, which installs and wires up
-  RTK, Context Mode, Serena and a terse-output block for Claude Code and, when it is present, Cursor. The set of tools
-  follows the kind of work (-Workflow).
+  Installs AskAI on Windows (macOS, Linux and WSL use install.sh): checks that Node.js 18+ is present, then runs askai.js,
+  which applies the token-saving setup for Claude Code and, when they are present, Codex, Antigravity and Cursor.
 
 .DESCRIPTION
-  Run from a checkout of this repo:
+  Run from the unzipped AskAI folder (full steps: docs\INSTALL.md):
 
-    powershell -ExecutionPolicy Bypass -File .\install.ps1
-    powershell -ExecutionPolicy Bypass -File .\install.ps1 -Workflow docs
-    powershell -ExecutionPolicy Bypass -File .\install.ps1 -Action suggest -Path C:\work\my-project
+    powershell -ExecutionPolicy Bypass -File .\install.ps1 -DryRun      # preview: changes nothing
+    powershell -ExecutionPolicy Bypass -File .\install.ps1              # install (asks once)
+    powershell -ExecutionPolicy Bypass -File .\install.ps1 -Target all -Workflow full
+    powershell -ExecutionPolicy Bypass -File .\install.ps1 -Action check
 
-  Safe to re-run: components that already look healthy are skipped. Nothing is written to Claude Code's or Cursor's
-  config without a timestamped backup first (~/.claude/askai/backups). Use -DryRun to see the plan without changing anything.
+  What it sets: cheap default models when none are set (Haiku main and subagents), medium effort, auto-compact at 150K, idle
+  drains off, a Bash output cap and deny-read rules for Claude Code; effort, verbosity, personality and no auto-recaps for Codex;
+  paid credits off for Antigravity; short token rules and a handoff command in every tool. RTK and Context Mode are opt-in only
+  (-Rtk, -ContextMode): independent benchmarks found they cost more. Settings you already chose are never changed; every file is
+  backed up first (~\.claude\askai\backups); askai uninstall removes only what AskAI added. Safe to re-run.
 
 .PARAMETER Yes            Do not ask for confirmation (also skips the Node.js prompt).
-.PARAMETER DryRun         Show what would happen; nothing is installed or written.
-.PARAMETER Workflow       Kind of work: minimal | coding (default) | docs | full. Alias: -Profile.
-.PARAMETER Target         Where to wire the tools: auto (default: Claude Code, plus Cursor when installed) | claude | cursor | both.
-.PARAMETER Markitdown     Add markitdown (PDF and Office files to Markdown) to the workflow.
-.PARAMETER Ccusage        Add ccusage (third-party usage report) to the workflow.
-.PARAMETER Only           Comma-separated components: claude,baseline,rtk,context-mode,serena,markitdown,ccusage,caveman,caveman-plugin,rules,statusline,cursor-rtk,cursor-context-mode,cursor-serena
-.PARAMETER Skip           Comma-separated components to skip.
-.PARAMETER NoPath         Do not add the `askai` command to the user PATH.
-.PARAMETER Caveman        Terse-output level in the CLAUDE.md block and the Cursor rules: lite | full | ultra | off (default full).
-.PARAMETER ClaudeHome     Use this folder instead of ~/.claude (testing aid).
-.PARAMETER CursorHome     Use this folder instead of ~/.cursor (testing aid; RTK's own Cursor init may still write to the real one).
+.PARAMETER DryRun         Show the plan; nothing is installed or written.
+.PARAMETER Workflow       Kind of work: minimal | coding (default) | docs | full | max (everything: RTK, Context Mode, Headroom, Graphify, Context7, Caveman plugin, LSP, base tools). Alias: -Profile.
+.PARAMETER Target         Tools to set up: auto (default: Claude Code plus every other tool found) | claude | codex | agy | cursor | both | all, or a list such as claude,codex.
+.PARAMETER Markitdown     Add markitdown (PDF and Office files to Markdown).
+.PARAMETER Ccusage        Add ccusage (usage report).
+.PARAMETER Only           Comma-separated component ids (askai profiles and docs\ARCHITECTURE.md list them all).
+.PARAMETER Skip           Comma-separated component ids to leave out.
+.PARAMETER NoPath         Do not add the askai command to the user PATH.
+.PARAMETER Caveman        Terse-reply level: lite | full | ultra | off (default full).
+.PARAMETER ClaudeHome     Use this folder instead of ~\.claude (testing).
+.PARAMETER CursorHome     Use this folder instead of ~\.cursor (testing).
+.PARAMETER CodexHome      Use this folder instead of ~\.codex (testing).
+.PARAMETER AgyHome        Use this folder instead of ~\.gemini (testing).
 .PARAMETER NoStatusline   Do not set Claude Code's status line.
 .PARAMETER CavemanPlugin  Also install the Caveman plugin (adds its own hooks; off by default).
-.PARAMETER Tools          uninstall: also remove the tools askai installed (winget, uv, npm).
-.PARAMETER Force          Re-run components that already look fine; uninstall: also remove things askai did not add.
-.PARAMETER Path           Project folder for -Action suggest | project.
+.PARAMETER Tools          With -Action uninstall: also remove the tools AskAI installed (winget, uv, npm).
+.PARAMETER Force          Re-run components that already look fine; with uninstall, also remove things AskAI did not add.
+.PARAMETER Path           Folder for -Action suggest | project | scaffold | check.
 .PARAMETER Print          With -Action project: show the Cursor rules instead of writing them.
-.PARAMETER Remove         With -Action project: delete the Cursor rules askai wrote.
-.PARAMETER Action         install (default) | update | status | doctor | report | profiles | suggest | project | restore | uninstall
+.PARAMETER Remove         With -Action project: delete the Cursor rules AskAI wrote.
+.PARAMETER Lean           Accepted for older scripts; lean settings are in every profile.
+.PARAMETER LeanGit        Also drop Claude Code's git instructions from every turn.
+.PARAMETER Rtk            Opt in to RTK (benchmarks found no net saving).
+.PARAMETER ContextMode    Opt in to Context Mode (benchmarks found higher cost).
+.PARAMETER Lsp            Claude Code's official code-intelligence plugins: ts,py,kotlin,ruby,swift.
+.PARAMETER MainModel      Claude Code model when settings.json has none: haiku (default) | sonnet | opus | keep.
+.PARAMETER SubagentModel  CLAUDE_CODE_SUBAGENT_MODEL when unset (default haiku).
+.PARAMETER CodexModel     Codex model when config.toml has none.
+.PARAMETER Topic          With -Action tips: claude | codex | agy | cursor | session | habits.
+.PARAMETER Headroom       Also install Headroom in MCP mode for every tool in play (no proxy).
+.PARAMETER Graphify       Also install Graphify and register its skill for every tool in play.
+.PARAMETER Context7       Also register the Context7 docs MCP server for every tool in play.
+.PARAMETER Repomix        Also install the Repomix CLI.
+.PARAMETER CodebaseMemory Also install codebase-memory-mcp and register it in every tool in play (not in max).
+.PARAMETER ClaudeMem      Also install the claude-mem plugin for Claude Code (not in max; it summarises sessions with your plan).
+.PARAMETER BaseTools      Also install the command-line tools agents search with: ripgrep, jq and gh (only those missing).
+.PARAMETER Project        After installing, write the project knowledge pack into this repository (askai init): AGENTS.md, CLAUDE.md, GEMINI.md, docs\ai\*, subagents for all four tools.
+.PARAMETER Action         install (default) | update | status | doctor | check | usage | report | profiles | suggest | project | scaffold | tips | peak | restore | uninstall | init | infra | audit | guide | models | mcp | plugins.
+  Every other command (ask, start, break, resume, session, help) runs through the askai command after install.
 #>
 [CmdletBinding()]
 param(
   [switch]$Yes,
   [switch]$DryRun,
-  [Alias('Profile')][ValidateSet('minimal', 'coding', 'docs', 'full')][string]$Workflow,
-  [ValidateSet('auto', 'claude', 'cursor', 'both')][string]$Target,
+  [Alias('Profile')][ValidateSet('minimal', 'coding', 'docs', 'full', 'max')][string]$Workflow,
+  [string]$Target,          # auto | claude | cursor | both | codex | agy | all, or a list such as claude,codex
   [switch]$Markitdown,
   [switch]$Ccusage,
   [string]$Only,
@@ -56,7 +79,26 @@ param(
   [string]$Path,
   [switch]$Print,
   [switch]$Remove,
-  [ValidateSet('install', 'update', 'status', 'doctor', 'report', 'profiles', 'suggest', 'project', 'restore', 'uninstall')][string]$Action = 'install'
+  [switch]$Lean,
+  [switch]$LeanGit,
+  [switch]$Rtk,
+  [switch]$ContextMode,
+  [string]$Lsp,
+  [string]$MainModel,
+  [string]$SubagentModel,
+  [string]$CodexModel,
+  [string]$CodexHome,
+  [string]$AgyHome,
+  [string]$Topic,
+  [string]$Project,
+  [switch]$BaseTools,
+  [switch]$Headroom,
+  [switch]$Graphify,
+  [switch]$Context7,
+  [switch]$Repomix,
+  [switch]$CodebaseMemory,
+  [switch]$ClaudeMem,
+  [ValidateSet('install', 'update', 'status', 'doctor', 'check', 'usage', 'report', 'profiles', 'suggest', 'project', 'scaffold', 'tips', 'peak', 'restore', 'uninstall', 'init', 'infra', 'audit', 'guide', 'models', 'mcp', 'plugins')][string]$Action = 'install'
 )
 
 $ErrorActionPreference = 'Stop'
@@ -146,6 +188,28 @@ if ($Tools) { $argv += '--tools' }
 if ($Force) { $argv += '--force' }
 if ($Print) { $argv += '--print' }
 if ($Remove) { $argv += '--remove' }
+if ($Lean) { $argv += '--lean' }
+if ($LeanGit) { $argv += '--lean-git' }
+if ($Rtk) { $argv += '--rtk' }
+if ($ContextMode) { $argv += '--context-mode' }
+if ($Lsp) { $argv += @('--lsp', $Lsp) }
+if ($MainModel) { $argv += @('--main-model', $MainModel) }
+if ($SubagentModel) { $argv += @('--subagent-model', $SubagentModel) }
+if ($CodexModel) { $argv += @('--codex-model', $CodexModel) }
+if ($CodexHome) { $argv += @('--codex-home', $CodexHome) }
+if ($AgyHome) { $argv += @('--agy-home', $AgyHome) }
+if ($Topic) { $argv += $Topic }
+if ($Project) {
+  if (-not (Test-Path -LiteralPath $Project -PathType Container)) { throw "Project folder not found: $Project" }
+  $argv += @('--project', (Resolve-Path -LiteralPath $Project).Path)
+}
+if ($BaseTools) { $argv += '--base-tools' }
+if ($Headroom) { $argv += '--headroom' }
+if ($Graphify) { $argv += '--graphify' }
+if ($Context7) { $argv += '--context7' }
+if ($Repomix) { $argv += '--repomix' }
+if ($CodebaseMemory) { $argv += '--codebase-memory' }
+if ($ClaudeMem) { $argv += '--claude-mem' }
 
 & $node $script @argv
 exit $LASTEXITCODE

@@ -212,8 +212,8 @@ test('collect: a tool outside the profile is "not wanted"; opt-in tools appear o
     const rows = status.collect(ctx);
     const by = id => rows.find(r => r.id === id);
     assert.strictEqual(by('serena').wanted, false);
-    assert.strictEqual(by('context-mode').wanted, true);
-    assert.ok(!by('cursor-rtk') && !by('cursor-serena') && !by('cursor-context-mode'));
+    assert.ok(!by('context-mode'), 'Context Mode is opt-in since 3.1: not listed while absent');
+    assert.ok(!by('cursor-rtk') && !by('cursor-serena') && !by('cursor-context-mode') && !by('cursor-rules'));
     assert.ok(!by('markitdown') && !by('ccusage') && !by('caveman-plugin') && !by('rules'), 'opt-in and absent: not listed');
     ctx.manifest.components.rules = { files: [] };
     assert.strictEqual(status.collect(ctx).find(r => r.id === 'rules').wanted, true, 'listed once recorded, and part of every profile');
@@ -237,7 +237,7 @@ test('collect: a component whose check throws becomes "partial" instead of break
 test('collect: Cursor rows appear when Cursor is in play, with what each one is wired to', () => withCtx((ctx, home, cursorHome) => {
   const rows = status.collect(ctx);
   const ids = rows.filter(r => r.id.startsWith('cursor-')).map(r => r.id);
-  assert.deepStrictEqual(ids, ['cursor-rtk', 'cursor-context-mode', 'cursor-serena']);
+  assert.deepStrictEqual(ids, ['cursor-rtk', 'cursor-context-mode', 'cursor-serena', 'cursor-rules']);
   assert.match(rows.find(r => r.id === 'cursor-rtk').wiring, /hooks\.json/);
   const r = status.renderStatus(ctx);
   assert.match(r.lines[0], new RegExp(`cursor home: ${cursorHome.replace(/[\\^$.*+?()[\]{}|]/g, '\\$&')}`));
@@ -259,7 +259,7 @@ test('doctor: a tool outside the profile is ok when absent, one inside it is a w
     const serena = d.find(r => r.id === 'serena');
     assert.strictEqual(serena.level, 'ok');
     assert.match(serena.msg, /\(not part of the docs profile\)/);
-    assert.strictEqual(d.find(r => r.id === 'context-mode').level, 'warn', 'in the docs profile and missing');
+    assert.strictEqual(d.find(r => r.id === 'caveman').level, 'warn', 'in the docs profile and missing');
   });
   withCtx(ctx => {
     const d = status.doctor(ctx);

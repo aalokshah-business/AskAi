@@ -23,9 +23,9 @@ function capture(ctx) {
 test('hosts: explicit targets', () => {
   const p = cursor.cursorPaths('/nowhere/.cursor');
   const h = target => cursor.hosts({ opts: { target }, cursorPaths: p, which: () => null });
-  assert.deepStrictEqual(h('claude'), { target: 'claude', claude: true, cursor: false });
-  assert.deepStrictEqual(h('cursor'), { target: 'cursor', claude: false, cursor: true });
-  assert.deepStrictEqual(h('both'), { target: 'both', claude: true, cursor: true });
+  assert.deepStrictEqual(h('claude'), { target: 'claude', claude: true, cursor: false, codex: false, agy: false });
+  assert.deepStrictEqual(h('cursor'), { target: 'cursor', claude: false, cursor: true, codex: false, agy: false });
+  assert.deepStrictEqual(h('both'), { target: 'both', claude: true, cursor: true, codex: false, agy: false });
 });
 
 test('hosts: auto is Claude, plus Cursor when its directory exists, the cursor command is on PATH, or --cursor-home was given', () => {
@@ -33,7 +33,7 @@ test('hosts: auto is Claude, plus Cursor when its directory exists, the cursor c
   try {
     const missing = path.join(home, 'no-cursor');
     const auto = (o, which = () => null, dir = missing) => cursor.hosts({ opts: { target: 'auto', ...o }, cursorPaths: cursor.cursorPaths(dir), which });
-    assert.deepStrictEqual(auto({}), { target: 'auto', claude: true, cursor: false }, 'no directory, no command: Claude only');
+    assert.deepStrictEqual(auto({}), { target: 'auto', claude: true, cursor: false, codex: false, agy: false }, 'no directory, no command: Claude only');
     assert.strictEqual(auto({}, () => null, home).cursor, true, 'the directory exists');
     assert.strictEqual(auto({}, n => (n === 'cursor' ? '/bin/cursor' : null)).cursor, true, 'cursor is on PATH');
     assert.strictEqual(auto({ cursorHome: missing }).cursor, true, 'an explicit --cursor-home is a request for Cursor');

@@ -31,8 +31,10 @@ test('select: caveman-plugin only with --caveman-plugin or --only; unknown ids r
   assert.ok(!ids({ skip: 'serena' }).includes('serena'));
   assert.throws(() => select({ only: 'nope' }, 'install'), /unknown component "nope"/);
   const un = select({}, 'uninstall').map(c => c.id);
-  assert.strictEqual(un[0], 'statusline');
-  assert.strictEqual(un[un.length - 1], 'claude');
+  assert.strictEqual(un[0], 'code-intel', 'uninstall runs in reverse of ALL');
+  assert.ok(un.indexOf('statusline') < un.indexOf('claude'));
+  assert.strictEqual(un[un.length - 1], 'token-kit', 'token-kit installs first, so it uninstalls last');
+  assert.strictEqual(un[un.length - 2], 'claude');
 });
 
 test('version, help and usage exit codes', () => {

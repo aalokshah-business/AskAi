@@ -81,7 +81,8 @@ test('suggest command: text and --json output, and a bad directory exits 1', () 
     assert.strictEqual(t.code, 0, t.err);
     assert.match(t.out, /suggested profile: coding/);
     assert.match(t.out, /askai install --profile coding/);
-    assert.match(t.out, /askai project .* --profile coding/);
+    assert.match(t.out, /~\/\.cursor\/rules/);
+    assert.match(t.out, /askai project/);
     const j = JSON.parse(cli(['suggest', dir, '--json', '--claude-home', home]).out);
     assert.strictEqual(j.profile, 'coding');
     assert.strictEqual(j.counts.code, 4);
@@ -198,7 +199,7 @@ test('cursor components: without a Cursor directory (sandbox, no --cursor-home) 
   try {
     const ctx = makeCtx(home, {}, { tools: { rtk: '/bin/rtk', npm: '/bin/npm' } });
     assert.strictEqual(ctx.cursorPaths, null);
-    for (const id of ['cursor-rtk', 'cursor-context-mode', 'cursor-serena']) {
+    for (const id of ['cursor-rtk', 'cursor-context-mode', 'cursor-serena', 'cursor-rules']) {
       assert.strictEqual(c(id).detect(ctx).state, 'other', id);
       c(id).uninstall(ctx);
       c(id).update(ctx);
@@ -206,9 +207,32 @@ test('cursor components: without a Cursor directory (sandbox, no --cursor-home) 
     assert.throws(() => c('cursor-context-mode').install(ctx), /--cursor-home/);
     assert.throws(() => c('cursor-serena').install(ctx), /--cursor-home/);
     assert.throws(() => c('cursor-rtk').install(ctx), /--cursor-home/);
+    assert.throws(() => c('cursor-rules').install(ctx), /--cursor-home/);
     assert.deepStrictEqual(ctx.calls, [], 'no command ran');
   } finally { rm(home); }
 });
+
+test('cursor-rules: writes the profile rules under <cursorHome>/rules and removes only marked files', () => withDirs(a => {
+  cfg.writeJson(path.join(a.cursorHome, 'mcp.json'), { mcpServers: { 'context-mode': { command: 'context-mode' }, serena: { command: '/bin/serena' } } });
+  const ctx = cctx(a, { profile: 'coding' }, { tools: { serena: '/bin/serena' } });
+  assert.strictEqual(c('cursor-rules').detect(ctx).state, 'missing');
+  c('cursor-rules').install(ctx);
+  const rd = path.join(a.cursorHome, 'rules');
+  assert.deepStrictEqual(fs.readdirSync(rd).sort(), ['askai-coding.mdc', 'askai-tokens.mdc']);
+  const tokens = fs.readFileSync(path.join(rd, 'askai-tokens.mdc'), 'utf8');
+  assert.match(tokens, /alwaysApply: true/);
+  assert.match(tokens, /find_symbol/);
+  assert.match(tokens, /ctx_batch_execute/);
+  assert.ok(!fs.existsSync(path.join(a.cursorHome, '.cursor')), 'user rules are not nested under another .cursor');
+  assert.strictEqual(c('cursor-rules').detect(ctx).state, 'ok');
+  write(path.join(rd, 'askai-docs.mdc'), `${rules.MDC_MARKER}\nstale\n`);
+  assert.strictEqual(c('cursor-rules').detect(ctx).state, 'partial');
+  c('cursor-rules').install(ctx);
+  assert.ok(!fs.existsSync(path.join(rd, 'askai-docs.mdc')));
+  write(path.join(rd, 'mine.mdc'), 'leave me\n');
+  c('cursor-rules').uninstall(ctx);
+  assert.deepStrictEqual(fs.readdirSync(rd), ['mine.mdc']);
+}));
 
 test('cursor-context-mode: installs the npm package once, adds the MCP entry, records ownership; detect goes ok', () => withDirs(a => {
   const tools = { npm: '/bin/npm' };
@@ -629,7 +653,7 @@ test('ccusage: update moves to the latest release and needs npm', () => withDirs
 
 // ---- CLI flows (dry-run and file-only paths: nothing is installed) ---------------------------------------------------------
 test('install --dry-run --target both --profile full lists the Cursor and opt-in tools and writes nothing', () => withDirs(a => {
-  const r = cli(['install', '--dry-run', '--profile', 'full', '--target', 'both', '--claude-home', a.home, '--cursor-home', a.cursorHome, '--no-path', '--yes']);
+  const r = cli(['install', '--dry-run', '--profile', 'full', '--rtk', '--context-mode', '--target', 'both', '--claude-home', a.home, '--cursor-home', a.cursorHome, '--no-path', '--yes']);
   for (const id of ['cursor-rtk', 'cursor-context-mode', 'cursor-serena', 'markitdown', 'ccusage', 'rules']) assert.match(r.out, new RegExp(`\\b${id}\\b`), `${id} is listed`);
   assert.match(r.out, /profile: full/);
   assert.match(r.out, /mcp\.json and hooks\.json/);

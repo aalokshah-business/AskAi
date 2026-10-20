@@ -1,2 +1,11 @@
 .claude/
 .serena/
+.ai-work/
+hooks/.claude/
+node_modules/
+graphify-out/
+.codebase-memory/
+repomix-output.*
+*.log
+.DS_Store
+Thumbs.db

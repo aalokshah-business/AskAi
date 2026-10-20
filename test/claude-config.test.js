@@ -6,12 +6,28 @@ const { tmpHome, rm, write, path } = require('./helpers');
 
 test('applyBaseline adds only missing keys and never overrides', () => {
   const s = { autoCompactWindow: 200000, env: { CLAUDE_CODE_SUBAGENT_MODEL: 'opus', OTHER: '1' } };
-  const added = cfg.applyBaseline(s);
+  const added = cfg.applyBaseline(s, { mainModel: 'keep' });
   assert.strictEqual(s.autoCompactWindow, 200000);
   assert.strictEqual(s.env.CLAUDE_CODE_SUBAGENT_MODEL, 'opus');
   assert.strictEqual(s.env.OTHER, '1');
-  assert.ok(added.every(a => a.key.startsWith('skillOverrides.')), 'only skillOverrides entries were added');
-  assert.deepStrictEqual(cfg.applyBaseline(s), [], 'second run adds nothing');
+  assert.ok(added.every(a => a.key.startsWith('skillOverrides.') || a.key === 'effortLevel'), 'only skillOverrides entries and effortLevel were added');
+  assert.deepStrictEqual(cfg.applyBaseline(s, { mainModel: 'keep' }), [], 'second run adds nothing');
+});
+
+test('applyBaseline: the main model is haiku by default, never overrides one already set, and --main-model keep skips it', () => {
+  const fresh = {};
+  assert.ok(cfg.applyBaseline(fresh).some(a => a.key === 'model' && a.value === 'haiku'));
+  assert.strictEqual(fresh.effortLevel, 'medium');
+  const mine = { model: 'opus[1m]' };
+  cfg.applyBaseline(mine, { mainModel: 'haiku' });
+  assert.strictEqual(mine.model, 'opus[1m]', 'an existing model is the user\'s choice');
+  const kept = {};
+  cfg.applyBaseline(kept, { mainModel: 'keep', subagentModel: 'haiku' });
+  assert.ok(!('model' in kept));
+  assert.strictEqual(kept.env.CLAUDE_CODE_SUBAGENT_MODEL, 'haiku');
+  const other = {}; cfg.applyBaseline(other, { subagentModel: 'sonnet' });
+  assert.strictEqual(other.env.CLAUDE_CODE_SUBAGENT_MODEL, 'sonnet');
+  assert.strictEqual(cfg.BASELINE.env.CLAUDE_CODE_SUBAGENT_MODEL, 'haiku', 'BASELINE itself is never mutated');
 });
 
 test('removeKey removes nested keys only while they still hold the value askai set', () => {

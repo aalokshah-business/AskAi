@@ -1,0 +1,12 @@
+---
+description: Token-saving working rules
+alwaysApply: true
+---
+
+<!-- token-kit:managed -->
+- Read code by searching first (grep/rg), then read only the needed line ranges. Read a whole file only when editing most of it; do not re-read a file you just edited.
+- Batch independent reads and searches into one message: one turn instead of several.
+- Make the smallest change that solves the task: reuse existing code and the standard library; no speculative features, abstractions or unrequested refactors; keep validation, error handling and security intact.
+- Answer tersely: no preamble, no restating the question, no tool-call narration. Keep code, commands, numbers and error text exact; use full sentences for warnings and destructive actions.
+- Run the narrowest test or build command first and read only the failing lines of its output.
+- Ask one round of clarifying questions when a requirement is truly ambiguous, then proceed.
