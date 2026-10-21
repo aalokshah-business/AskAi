@@ -5,7 +5,7 @@
 //   node scripts/validate-install.js [repo-folder] [--json]
 // Exit code 1 when anything FAILs. Paste the output when asking for help: the home folder is shown as ~ and no secrets are printed.
 const fs = require('fs'); const os = require('os'); const path = require('path'); const cp = require('child_process');
-const args = process.argv.slice(2); const asJson = args.includes('--json'); const repoArg = args.find(a => !a.startsWith('--'));
+const args = process.argv.slice(2); const asJson = args.includes('--json'); const filesOnly = args.includes('--files'); const repoArg = args.find(a => !a.startsWith('--'));
 const HOME = os.homedir(); const tilde = s => String(s).split(HOME).join('~');
 const DIR = { claude: path.join(HOME, '.claude'), codex: process.env.CODEX_HOME || path.join(HOME, '.codex'), agy: path.join(HOME, '.gemini'), cursor: path.join(HOME, '.cursor') };
 const repo = repoArg ? path.resolve(repoArg) : null;
@@ -24,17 +24,21 @@ if (!exists(appJs)) {
   finish();
 }
 const run = a => { const r = cp.spawnSync(process.execPath, [appJs, ...a], { encoding: 'utf8', timeout: 180000, env: process.env }); return { code: r.status, out: `${r.stdout || ''}${r.stderr || ''}` }; };
+const manifest = readJ(path.join(DIR.claude, 'askai', 'manifest.json')) || {};
+const comps = manifest.components || {};
+if (filesOnly) add('PASS', 'askai', 'command checks skipped (--files); askai setup already ran them');
+else {
 const ver = run(['version']).out.trim();
 /^\d+\.\d+\.\d+$/.test(ver) ? add('PASS', 'askai', `version ${ver}`) : add('FAIL', 'askai', `askai version printed "${tilde(ver).slice(0, 80)}"`, 'run the one-line install again');
 const srcVer = (readJ(path.join(DIR.claude, 'askai', 'src', 'package.json')) || {}).version;
 if (srcVer && srcVer !== ver) add('WARN', 'askai', `installed ${ver} but the downloaded source is ${srcVer}`, 'askai upgrade');
 which(process.platform === 'win32' ? 'askai.cmd' : 'askai') ? add('PASS', 'askai', '`askai` is on PATH in this terminal') : add('WARN', 'askai', '`askai` is not on PATH in this terminal', 'open a NEW terminal (PATH changes need one); or run: node ~/.claude/askai/app/askai.js');
-const manifest = readJ(path.join(DIR.claude, 'askai', 'manifest.json')) || {};
-const comps = manifest.components || {};
 Object.keys(comps).length ? add('PASS', 'askai', `manifest: profile ${manifest.profile || '?'}, target ${manifest.target || '?'}, ${Object.keys(comps).length} components recorded`) : add('FAIL', 'askai', 'manifest has no components: nothing was installed', 'askai install --yes --target all --profile max --project <repo>');
 const helpN = (run(['help', 'all']).out.match(/^askai /gm) || []).length;
 helpN >= 45 ? add('PASS', 'askai', `askai help all prints ${helpN} commands`) : add('FAIL', 'askai', `askai help all printed only ${helpN} commands`);
 for (const [v, lvl, why] of [['ANTHROPIC_API_KEY', 'FAIL', 'Claude Code bills this key, not your plan'], ['ANTHROPIC_BASE_URL', 'FAIL', 'Claude Code goes through a proxy'], ['OPENAI_API_KEY', 'WARN', 'Codex may bill the API']]) if (process.env[v]) add(lvl, 'billing', `${v} is set in this terminal: ${why}`, `unset it (and remove it from your shell profile), then check /status inside the tool`);
+const ready = run(['plugins', 'ready', '--json', ...(repo ? ['--path', repo] : [])]);
+ready.code === 0 && /"tools"/.test(ready.out) ? add('PASS', 'askai', 'askai plugins ready reports which tools wait and which one-time step is left') : add('FAIL', 'askai', 'askai plugins ready failed', tilde(ready.out.split('\n').slice(0, 3).join(' | ')));
 const infra = run(['infra', ...(repo ? [repo] : [])]);
 infra.code === 0 && /\[Plugins and third-party tools\]/.test(infra.out) ? add('PASS', 'askai', 'askai infra runs and lists every plugin') : add('FAIL', 'askai', 'askai infra failed', tilde(infra.out.split('\n').slice(0, 3).join(' | ')));
 const todo = run(['todo', ...(repo ? [repo] : [])]);
@@ -42,6 +46,7 @@ todo.code === 0 ? add('PASS', 'askai', `askai todo: ${(todo.out.match(/(\d+) ope
 const chk = run(['check', ...(repo ? [repo] : [])]); const failing = Number((chk.out.match(/(\d+) failing/) || [0, 0])[1]); const toImprove = Number((chk.out.match(/(\d+) to improve/) || [0, 0])[1]);
 if (failing) add('FAIL', 'check', `askai check: ${failing} failing: ${tilde(chk.out.split('\n').filter(l => /^\s*FAIL/.test(l)).map(l => l.trim()).join(' | '))}`, 'askai check --fix');
 else add('PASS', 'check', `askai check: no failing items${toImprove ? ` (${toImprove} to improve: askai check --fix)` : ''}`);
+}
 
 // ---- what was installed, per tool: the manifest says what AskAI believes, the files say what is true -----------------
 const hostsOf = id => (comps[id] && comps[id].hosts) || [];
@@ -73,6 +78,7 @@ if (exists(DIR.claude)) {
   }
   has(path.join(DIR.claude, 'CLAUDE.md'), /askai:begin/) ? add('PASS', 'Claude Code', 'rules block in ~/.claude/CLAUDE.md') : add('FAIL', 'Claude Code', 'AskAI rules block missing from ~/.claude/CLAUDE.md', 'askai install --only caveman');
   exists(path.join(DIR.claude, 'commands', 'askai-cli.md')) ? add('PASS', 'Claude Code', '/askai-cli command present') : add('FAIL', 'Claude Code', '/askai-cli command missing', 'askai install --target all --yes');
+  exists(path.join(DIR.claude, 'commands', 'askai-plugins.md')) ? add('PASS', 'Claude Code', '/askai-plugins command present') : add('FAIL', 'Claude Code', '/askai-plugins command missing', 'askai install --target all --yes');
   mcp('claude');
   which('claude') ? add('PASS', 'Claude Code', 'CLI on PATH') : add('WARN', 'Claude Code', 'CLI not on PATH in this terminal');
 }
@@ -80,6 +86,7 @@ if (exists(DIR.codex)) {
   has(path.join(DIR.codex, 'AGENTS.md'), /askai:begin/) ? add('PASS', 'Codex', 'rules block in ~/.codex/AGENTS.md') : add('FAIL', 'Codex', 'AskAI rules block missing from ~/.codex/AGENTS.md', 'askai install --only codex-rules');
   has(path.join(DIR.codex, 'config.toml'), /model_reasoning_effort/) ? add('PASS', 'Codex', 'config.toml has the effort setting') : add('WARN', 'Codex', 'no model_reasoning_effort in config.toml', 'askai install --only codex-baseline');
   exists(path.join(HOME, '.agents', 'skills', 'askai-cli', 'SKILL.md')) ? add('PASS', 'Codex', '$askai-cli skill present') : add('FAIL', 'Codex', '$askai-cli skill missing', 'askai install --target all --yes');
+  exists(path.join(HOME, '.agents', 'skills', 'askai-plugins', 'SKILL.md')) ? add('PASS', 'Codex', '$askai-plugins skill present') : add('FAIL', 'Codex', '$askai-plugins skill missing', 'askai install --target all --yes');
   mcp('codex'); which('codex') ? add('PASS', 'Codex', 'CLI on PATH') : add('WARN', 'Codex', 'CLI not on PATH in this terminal');
 }
 if (exists(DIR.agy)) {
@@ -87,11 +94,13 @@ if (exists(DIR.agy)) {
   const set = readJ(path.join(DIR.agy, 'antigravity-cli', 'settings.json')) || {};
   set.useG1Credits === true ? add('FAIL', 'Antigravity', 'useG1Credits is true: paid credits can be spent silently', 'set it to false (askai check --fix)') : add('PASS', 'Antigravity', 'paid credits are off');
   exists(path.join(DIR.agy, 'antigravity-cli', 'skills', 'askai-cli', 'SKILL.md')) || exists(path.join(DIR.agy, 'config', 'skills', 'askai-cli', 'SKILL.md')) ? add('PASS', 'Antigravity', 'askai-cli skill present') : add('FAIL', 'Antigravity', 'askai-cli skill missing', 'askai install --target all --yes');
+  exists(path.join(DIR.agy, 'antigravity-cli', 'skills', 'askai-plugins', 'SKILL.md')) || exists(path.join(DIR.agy, 'config', 'skills', 'askai-plugins', 'SKILL.md')) ? add('PASS', 'Antigravity', 'askai-plugins skill present') : add('FAIL', 'Antigravity', 'askai-plugins skill missing', 'askai install --target all --yes');
   mcp('agy'); which('agy') ? add('PASS', 'Antigravity', 'CLI (agy) on PATH') : add('WARN', 'Antigravity', 'CLI (agy) not on PATH in this terminal');
 }
 if (exists(DIR.cursor)) {
   exists(path.join(DIR.cursor, 'rules', 'askai-tokens.mdc')) ? add('PASS', 'Cursor', 'always-on rules file present') : add('FAIL', 'Cursor', '~/.cursor/rules/askai-tokens.mdc missing', 'askai install --only cursor-rules');
   exists(path.join(DIR.cursor, 'commands', 'askai-cli.md')) ? add('PASS', 'Cursor', '/askai-cli command present') : add('FAIL', 'Cursor', '/askai-cli command missing', 'askai install --target all --yes');
+  exists(path.join(DIR.cursor, 'commands', 'askai-plugins.md')) ? add('PASS', 'Cursor', '/askai-plugins command present') : add('FAIL', 'Cursor', '/askai-plugins command missing', 'askai install --target all --yes');
   mcp('cursor');
 }
 
@@ -124,10 +133,10 @@ function finish() {
   for (const r of rows) console.log(`${r.level.padEnd(4)}  ${r.area.padEnd(11)} ${tilde(r.msg)}${r.level !== 'PASS' && r.fix ? `\n${' '.repeat(18)}fix: ${tilde(r.fix)}` : ''}`);
   console.log(`\n${n('PASS')} pass, ${n('WARN')} warn, ${n('FAIL')} FAIL`);
   const inTool = [];
-  if (exists(DIR.claude)) inTool.push('Claude Code (new session in the project): /status shows your plan, not API billing; /mcp lists ' + (want.claude.join(', ') || 'no servers') + '; /plugin lists the plugins above; the status line shows; an "AskAI: ..." reminder appears at session start.');
-  if (exists(DIR.codex)) inTool.push('Codex: /mcp lists ' + (want.codex.join(', ') || 'no servers') + '; $askai-cli opens the AskAI terminal; /model offers gpt-6.1-sol and gpt-6-luna.');
-  if (exists(DIR.agy)) inTool.push('Antigravity: /mcp lists ' + (want.agy.join(', ') || 'no servers') + '; /skills shows askai-cli; /model flash, /effort high; app settings: AI Credit Overages = Never.');
-  if (exists(DIR.cursor)) inTool.push('Cursor (quit and reopen first): Settings, Rules shows the AskAI rules; Settings, MCP lists ' + (want.cursor.join(', ') || 'no servers') + '; Settings, Models: Auto or Grok 4.7.');
+  if (exists(DIR.claude)) inTool.push('Claude Code (new session in the project): /status shows your plan, not API billing; /mcp lists ' + (want.claude.join(', ') || 'no servers') + '; /plugin lists the plugins above; /askai-cli opens the terminal; /askai-plugins does one-time plugin setup.');
+  if (exists(DIR.codex)) inTool.push('Codex: /mcp lists ' + (want.codex.join(', ') || 'no servers') + '; $askai-cli opens the AskAI terminal; $askai-plugins does one-time plugin setup; /model offers gpt-6.1-sol and gpt-6-luna.');
+  if (exists(DIR.agy)) inTool.push('Antigravity: /mcp lists ' + (want.agy.join(', ') || 'no servers') + '; /skills shows askai-cli and askai-plugins; /model flash, /effort high; app settings: AI Credit Overages = Never.');
+  if (exists(DIR.cursor)) inTool.push('Cursor (quit and reopen first): Settings, Rules shows the AskAI rules; Settings, MCP lists ' + (want.cursor.join(', ') || 'no servers') + '; /askai-cli and /askai-plugins are in the command list; Settings, Models: Auto or Grok 4.7.');
   if (inTool.length) console.log('\nStill to check by hand, inside each tool:\n' + inTool.map(l => `  - ${l}`).join('\n'));
   console.log('\nThen the daily flow: askai go claude --tier build "small task"; ask the agent to write .ai-work/HANDOFF.md; askai clear (should say safe); askai continue.\nAfter a day of use: askai savings, askai usage 7, askai audit.\nChecks that change nothing: askai upgrade --dry-run, askai uninstall --dry-run.');
   process.exit(n('FAIL') ? 1 : 0);

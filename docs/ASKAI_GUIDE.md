@@ -14,7 +14,7 @@ AskAI installs straight from GitHub ([aalokshah-business/AskAi](https://github.c
 curl -fsSL https://raw.githubusercontent.com/aalokshah-business/AskAi/main/get.sh | bash -s -- --target all --profile max --project ~/code/myapp --yes
 ```
 
-Then work through `askai todo <repo>` and check everything with `askai infra <repo>`. Add `-DryRun` or `--dry-run` for a preview, or leave out the `max` profile for the evidence-based default. The command always installs the latest AskAI. To read the script before running it, open `get.sh` or `get.ps1` in the repository.
+Then open a new terminal and run `askai setup <repo>`. That one command runs status, the guideline audit, infra, which plugins are waiting, the to-do list, and the file validator. Restart each tool. `/askai-cli` reviews the project pack. `/askai-plugins` finishes one-time plugin setup. Add `-DryRun` or `--dry-run` for a preview, or leave out the `max` profile for the evidence-based default. The command always installs the latest AskAI. To read the script before running it, open `get.sh` or `get.ps1` in the repository.
 
 **Or ask your agent to do it.** Paste this into Claude Code, Codex, Antigravity or Cursor, opened in the project:
 
@@ -22,8 +22,9 @@ Then work through `askai todo <repo>` and check everything with `askai infra <re
 Set up AskAI for this repository. From the repository root, run the one command for this OS and wait for it to finish (it asks no questions):
 - macOS, Linux or WSL: curl -fsSL https://raw.githubusercontent.com/aalokshah-business/AskAi/main/get.sh | bash -s -- --target all --profile max --project . --yes
 - Windows: powershell -NoProfile -ExecutionPolicy Bypass -Command "& ([scriptblock]::Create((irm https://raw.githubusercontent.com/aalokshah-business/AskAi/main/get.ps1))) -Target all -Workflow max -Project . -Yes"
-Then run: askai todo .   (if askai is not found yet, use its full path: ~/.claude/askai/bin/askai, or askai.cmd on Windows)
-Reply with what was installed, anything that failed, and my to-do list. Change no other files. Remind me to restart this session afterwards.
+Then run, from the repository: askai setup .
+(if askai is not found yet, use its full path: ~/.claude/askai/bin/askai, or askai.cmd on Windows)
+Reply with what was installed, anything that failed, the plugin-ready report, and my to-do list. Change no other files. Remind me to restart this session, then run /askai-plugins once.
 ```
 
 Other ways to get it: `git clone https://github.com/aalokshah-business/AskAi`, or the ZIP from GitHub, then run `install.sh` or `install.ps1` in that folder with the same options. Keep it current with `askai upgrade` (AskAI itself) and `askai update` (the tools it installed). In the terminal afterwards: `askai help all` lists every command, `askai plugins info <id>` explains each plugin, `askai work` shows the etiquette with your open to-dos.
@@ -214,10 +215,10 @@ All 27 runs exited cleanly and wrote no files. The plans used the right route fo
 
 | Tool | What AskAI adds |
 | --- | --- |
-| Claude Code | `/askai-cli`; a status line with context and cache figures |
-| Codex | The `askai-cli` skill (`$askai-cli`) |
-| Antigravity | The `askai-cli` skill (`/askai-cli`) |
-| Cursor | `/askai-cli` and the always-on token rule |
+| Claude Code | `/askai-cli`, `/askai-plugins`; a status line with context and cache figures |
+| Codex | The `askai-cli` and `askai-plugins` skills (`$askai-cli`, `$askai-plugins`) |
+| Antigravity | The `askai-cli` and `askai-plugins` skills |
+| Cursor | `/askai-cli`, `/askai-plugins`, and the always-on token rule |
 
 AskAI is a command-line tool plus these commands, not a Claude Code plugin from a marketplace. That keeps one install working across all four agents.
 
@@ -227,10 +228,9 @@ Every key is added only when you have not set it, so your own choices stay. Each
 
 | Tool | Setting | Value | Why |
 | --- | --- | --- | --- |
-| Claude Code | `model` | `haiku` (`--main-model sonnet` to change) | Claude Code starts on Opus otherwise; a cheaper model is the largest repeated saving |
+| Claude Code | `model` | `claude-sonnet-5-5` (`--main-model` to change) | Claude Code starts on Opus otherwise |
 |  | `env.CLAUDE_CODE_SUBAGENT_MODEL` | `haiku` | Subagents mostly search and read |
-|  | `effortLevel` | `medium` | Thinking is billed as output |
-|  | `autoCompactWindow` | `150000` | Turns over 150K were three quarters of one heavy week's cost |
+|  | `effortLevel` | `high` | Everyday effort. Use max only for the hard step |
 |  | `promptSuggestionEnabled`, `awaySummaryEnabled` | `false` | Requests you did not ask for |
 |  | `crossSessionInbound`, `env.CLAUDE_CODE_GOAL_CHECKIN_MINUTES` | `"hold"`, `"0"` | No idle wake-ups re-sending the whole context |
 |  | `bashOutputMaxChars` | `15000` | Caps shell output read back (default 30,000) |
@@ -355,8 +355,8 @@ Three things decide it: how much context each turn re-sends, which model does th
 
 | Fact | Evidence | What follows |
 | --- | --- | --- |
-| Every turn re-sends the conversation | Calls over 150K tokens of context were 74.7% of one week that hit a Max 20x limit ([dotclaude](https://github.com/xsyetopz/dotclaude/wiki/Usage-Evidence)) | Short sessions, clear between tasks, auto-compact at 150K |
-| The model is the biggest lever | A cheaper model was the only repeated large saving across eight benchmarks, about −49% ([catalogue](https://cc.bruniaux.com/token-savings/)); Claude Code defaults to Opus since 22 Sep 2026 | Haiku default, escalate per task |
+| Every turn re-sends the conversation | Calls over 150K tokens of context were 74.7% of one week that hit a Max 20x limit ([dotclaude](https://github.com/xsyetopz/dotclaude/wiki/Usage-Evidence)) | Short sessions, clear between tasks. Compact is in the tips |
+| The model is the biggest lever | A cheaper model was the only repeated large saving across eight benchmarks, about −49% ([catalogue](https://cc.bruniaux.com/token-savings/)); Claude Code defaults to Opus since 22 Sep 2026 | Sonnet 5.5 at high effort; Haiku for subagents |
 | Thinking is billed as output | Anthropic's [cost guide](https://code.claude.com/docs/en/costs.md) | Medium effort default |
 | Reads are most of the tool tokens | File reads 90.6%, shell output 6.4% in one measured workload ([Marmelab](https://marmelab.com/blog/2026/08/27/which-agent-based-plugin-should-you-use-in-2026.html)) | Search, then read ranges; LSP navigation; deny useless reads |
 | Fan-out multiplies cost | Agent teams about 7x (Anthropic); each fresh subagent writes \~14K tokens before its first call (dotclaude) | Few subagents, on Haiku |

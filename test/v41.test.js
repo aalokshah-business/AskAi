@@ -33,7 +33,7 @@ test('standalone script: preview writes nothing; apply, re-apply and uninstall r
     assert.strictEqual(fs.readdirSync(path.join(h, '.claude')).length, 1, 'preview wrote nothing');
     assert.strictEqual(run('--apply').status, 0);
     const s = JSON.parse(fs.readFileSync(path.join(h, '.claude', 'settings.json'), 'utf8'));
-    assert.strictEqual(s.model, 'sonnet', 'existing model kept'); assert.strictEqual(s.effortLevel, 'medium');
+    assert.strictEqual(s.model, 'sonnet', 'existing model kept'); assert.strictEqual(s.effortLevel, 'high');
     assert.ok(!/\+ /.test(run('--apply').stdout), 're-apply changes nothing');
     assert.strictEqual(run('--uninstall').status, 0);
     assert.deepStrictEqual(JSON.parse(fs.readFileSync(path.join(h, '.claude', 'settings.json'), 'utf8')), { model: 'sonnet' });

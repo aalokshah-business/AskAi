@@ -1,24 +1,25 @@
-# HANDOFF — .ai-work/HANDOFF.md (local; overwrite each session; < 40 lines; no secrets)
+# HANDOFF — .ai-work/HANDOFF.md (local; overwrite each session; under 40 lines; no secrets)
+
+No session recorded. Replace this file from work that was actually verified.
 
 ## Goal and acceptance criteria
-- <one sentence>
-- <testable criterion>
+- (none yet)
 
 ## Done this session (verified)
-- <change> — <file(s)> — <how verified>
+- (none yet)
 
 ## Not verified / in progress
-- <item>
+- (none yet)
 
 ## Current state
-- Branch: <name> · Last commit: <hash msg> · Uncommitted: <files or none>
-- Tests: <passing | failing: name + one-line error>
+- Branch: (none yet) · Last commit: (none yet) · Uncommitted: (none yet)
+- Tests: (none yet)
 
 ## Decisions (and why)
-- <decision> — <reason>
+- (none yet)
 
 ## Next steps (in order; first one is the smallest)
-1. <step>
+1. (none yet)
 
 ## Files to read first next time
-- <path:line-range>
+- (none yet)

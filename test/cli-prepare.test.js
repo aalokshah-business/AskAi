@@ -69,3 +69,27 @@ test('cli --prepare inits a named folder offline and launches only after review 
   const third = cli(args, { env });
   assert.strictEqual(JSON.parse(third.out).action, 'launch');
 }));
+
+test('cli --prepare requires a description before a review', () => withHome(root => {
+  const proj = path.join(root, 'shop');
+  fs.mkdirSync(proj);
+  fs.writeFileSync(path.join(proj, 'package.json'), JSON.stringify({ name: 'shop', description: 'A shop' }));
+  const env = { ASKAI_HOME: process.env.ASKAI_HOME };
+  const blocked = cli(['cli', '--prepare', '--json', '--offline', '--path', proj], { env });
+  assert.strictEqual(blocked.code, 2);
+  const body = JSON.parse(blocked.out);
+  assert.strictEqual(body.need, 'about');
+  assert.strictEqual(body.default, 'A shop');
+  assert.ok(!fs.existsSync(path.join(proj, 'AGENTS.md')));
+  const ok = cli(['cli', '--prepare', '--json', '--offline', '--path', proj, '--about', 'A shop for members'], { env });
+  assert.strictEqual(ok.code, 0, ok.err + ok.out);
+  assert.match(fs.readFileSync(path.join(proj, 'AGENTS.md'), 'utf8'), /A shop for members/);
+}));
+
+test('askai help lists command names in alphabetical order', () => {
+  const out = cli(['help']).out.trim().split(/\r?\n/).filter(Boolean);
+  const names = out.filter(l => !l.startsWith('askai ') && !l.startsWith('Same command'));
+  assert.deepStrictEqual(names, [...names].sort());
+  assert.ok(names.includes('init') && names.includes('upgrade'));
+  assert.match(cli(['help', 'init']).out, /Usage: askai init/);
+});

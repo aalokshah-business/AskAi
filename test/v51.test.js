@@ -35,8 +35,8 @@ test('context7 and graphify: registered for every tool in play; infra reflects t
   assert.deepStrictEqual(readJson(ctx.cursorPaths.mcp).mcpServers.context7, { command: 'npx', args: ['-y', '@upstash/context7-mcp'] });
   comps.byId('headroom').install(ctx);
   const r = infra.collect(ctx, null);
-  const hr = r.plugins.find(p => p.id === 'headroom'); assert.match(hr.state, /claude on/); assert.match(hr.state, /codex on/);
-  assert.match(r.plugins.find(p => p.id === 'context7').state, /cursor on/);
+  const hr = r.plugins.find(p => p.id === 'headroom'); assert.match(hr.state, /claude configured, never called/); assert.match(hr.state, /codex configured, no call log/);
+  assert.match(r.plugins.find(p => p.id === 'context7').state, /cursor configured, never called/);
   const dry = makeCtx(h, { dry: true, codexHome: path.join(h, 'codex'), agyHome: path.join(h, 'gemini'), cursorHome: path.join(h, 'cursor') }, { tools: { uv: '/fake/uv', graphify: '/fake/graphify' } });
   comps.byId('graphify').install(dry);
   for (const pl of ['claude', 'codex', 'cursor', 'antigravity']) assert.ok(dry.calls.some(x => x.includes(`install --platform ${pl}`)), `${pl}: ${dry.calls.join(' | ')}`);

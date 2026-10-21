@@ -10,7 +10,7 @@ Three things decide it: how much context each turn re-sends, which model does th
 
 | Fact | Evidence | What it means for you |
 | --- | --- | --- |
-| Every turn re-sends the whole conversation | Calls with over 150K tokens of context were 74.7% of one measured week that hit a Max 20x limit ([dotclaude](https://github.com/xsyetopz/dotclaude/wiki/Usage-Evidence)) | Short sessions, `/clear` between tasks, auto-compact well before the window is full |
+| Every turn re-sends the whole conversation | Calls with over 150K tokens of context were 74.7% of one measured week that hit a Max 20x limit ([dotclaude](https://github.com/xsyetopz/dotclaude/wiki/Usage-Evidence)) | Short sessions and `/clear` between tasks. Compact is a tip, not a setting |
 | Model choice is the biggest lever | Switching to a cheaper model was the only repeated cost drop across eight benchmarks, about −49% ([catalogue](https://cc.bruniaux.com/token-savings/)); Claude Code starts on Opus by default since 22 Sep 2026 | Set a cheap default; escalate only when a task needs it |
 | Thinking is billed as output | Anthropic's [cost guide](https://code.claude.com/docs/en/costs.md); one creator measured max effort at 3.5–4x default tokens | Medium effort by default; high only for hard debugging |
 | Reads are most of the tool tokens | File reads were 90.6% of tool-result tokens, shell output 6.4%, in one measured workload ([Marmelab](https://marmelab.com/blog/2026/08/27/which-agent-based-plugin-should-you-use-in-2026.html)) | Search first, read line ranges, navigate by symbol |
@@ -33,10 +33,9 @@ Install the CLI, sign in with your plan, confirm you are not on per-token billin
 
 | Setting | Value | Why |
 | --- | --- | --- |
-| `model` | `haiku` for simple work, `sonnet` as the everyday default | Claude Code starts on Opus otherwise; escalate per task with `/model` |
+| `model` | `claude-sonnet-5-5` | Claude Code starts on Opus otherwise. Haiku stays the subagent model |
 | `env.CLAUDE_CODE_SUBAGENT_MODEL` | `haiku` | Search and log-reading subagents rarely need more |
-| `effortLevel` | `medium` | Thinking tokens are billed as output |
-| `autoCompactWindow` | `150000` | Turns above 150K were three quarters of one heavy week's cost |
+| `effortLevel` | `high` | Everyday effort. Use max only for the hard step. Compact stays a tip, not a setting |
 | `promptSuggestionEnabled`, `awaySummaryEnabled` | `false` | Each sends a request you did not ask for |
 | `crossSessionInbound` | `"hold"` | A message from another session does not wake this one |
 | `env.CLAUDE_CODE_GOAL_CHECKIN_MINUTES` | `"0"` | No idle goal check-ins re-sending the full context |
@@ -233,7 +232,7 @@ powershell -ExecutionPolicy Bypass -File .\setup\setup.ps1 --apply
 
 | Tool | What it sets |
 | --- | --- |
-| Claude Code | `settings.json`: cheap default model, Haiku subagents, medium effort, auto-compact at 150K, prompt suggestions and recaps off, cross-session messages held, no idle goal check-ins, Bash output capped at 15K, 15 deny-read rules; a ccusage status line when none is set. A 12-line rules block in `CLAUDE.md` and a `/handoff` command |
+| Claude Code | `settings.json`: Sonnet 5.5, Haiku subagents, high effort, prompt suggestions and recaps off, cross-session messages held, no idle goal check-ins, Bash output capped at 15K, 15 deny-read rules; a ccusage status line when none is set. A 12-line rules block in `CLAUDE.md` and a `/handoff` command |
 | Codex | `config.toml`: medium effort, low verbosity, no personality section, medium subagent effort, no automatic recaps. The rules block in `AGENTS.md` and a `handoff` skill |
 | Antigravity | `useG1Credits: false`, the rules block in `GEMINI.md`, a glob-triggered code rule, and a `handoff` skill for the CLI and the app |
 | Cursor | An always-on user rule with the same short rules, and a `/handoff` command |

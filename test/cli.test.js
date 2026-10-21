@@ -52,7 +52,8 @@ test('install writes only into the given home, is idempotent, and records a mani
   assert.strictEqual(r1.code, 0, r1.out + r1.err);
   const s = readJson(`${home}/settings.json`);
   assert.strictEqual(s.model, 'opus');
-  assert.strictEqual(s.autoCompactWindow, 150000);
+  assert.strictEqual(s.effortLevel, 'high');
+  assert.ok(!('autoCompactWindow' in s));
   assert.match(s.statusLine.command, /askai\.js" statusline/);
   assert.ok(fs.readFileSync(`${home}/CLAUDE.md`, 'utf8').includes('askai:begin'));
   for (const f of ['askai/app/askai.js', 'askai/app/lib/components.js', 'askai/manifest.json', 'commands/askai-cli.md']) {
@@ -82,18 +83,20 @@ test('AskAI CLI entry installs and uninstalls in all four hosts', () => withHome
   ];
   const first = cli(['install', ...flags]);
   assert.strictEqual(first.code, 0, first.out + first.err);
-  for (const f of paths) assert.ok(fs.existsSync(f), `${f} exists`);
+  const plugins = [path.join(homes.claude, 'commands', 'askai-plugins.md'), path.join(homes.cursor, 'commands', 'askai-plugins.md')];
+  for (const f of paths.concat(plugins)) assert.ok(fs.existsSync(f), `${f} exists`);
+  for (const f of plugins) assert.match(fs.readFileSync(f, 'utf8'), /askai plugins ready --json/);
   assert.match(fs.readFileSync(paths[0], 'utf8'), /disable-model-invocation: true[\s\S]*askai cli --prepare --json[\s\S]*askai init --path <project-folder> --yes[\s\S]*askai cli --launch/);
   assert.match(fs.readFileSync(paths[2], 'utf8'), /askai cli --prepare --json[\s\S]*askai cli --launch/);
   assert.match(fs.readFileSync(paths[3], 'utf8'), /name: askai-cli/);
   for (const f of paths) assert.match(fs.readFileSync(f, 'utf8'), /SOURCE_INDEX\.md[\s\S]*HANDOFF\.md/);
-  for (const f of paths) assert.doesNotMatch(fs.readFileSync(f, 'utf8'), /\{\{ASKAI\}\}/);
+  for (const f of paths.concat(plugins)) assert.doesNotMatch(fs.readFileSync(f, 'utf8'), /\{\{ASKAI\}\}/);
   const second = cli(['install', ...flags]);
   assert.strictEqual(second.code, 0, second.out + second.err);
   assert.match(second.out, /command entry points: 0 written/);
   const removed = cli(['uninstall', ...flags]);
   assert.strictEqual(removed.code, 0, removed.out + removed.err);
-  for (const f of paths) assert.ok(!fs.existsSync(f), `${f} removed`);
+  for (const f of paths.concat(plugins)) assert.ok(!fs.existsSync(f), `${f} removed`);
 }));
 
 test('askai cli runs commands without prefixes and exits', () => {

@@ -28,7 +28,7 @@ macOS, Linux or WSL:
 curl -fsSL https://raw.githubusercontent.com/aalokshah-business/AskAi/main/get.sh | bash -s -- --target all --profile max --project ~/code/myapp --yes
 ```
 
-Then work through `askai todo` (sign-ins, restarts, app settings, project details) and check everything with `askai infra`. The project passed during install is registered by folder name. Use `askai projects` to see it, `askai infra --project NAME` to inspect it from another directory, or `askai cli` then `set project NAME` to keep it selected. [Project management](docs/PROJECT_MANAGEMENT.md) covers two or more repositories and shell integration. Add `-DryRun` / `--dry-run` for a preview, or leave out the `max` profile for the evidence-based default.
+Then open a new terminal and run `askai setup --project NAME`. That one command runs status, the guideline audit, infra, which plugins are waiting, the to-do list, and the file validator. Restart each tool. `/askai-cli` (Codex: `$askai-cli`) reviews the project pack. `/askai-plugins` finishes one-time plugin setup. The project passed during install is registered by folder name. Use `askai projects` to see it. [Project management](docs/PROJECT_MANAGEMENT.md) covers two or more repositories and shell integration. Add `-DryRun` / `--dry-run` for a preview, or leave out the `max` profile for the evidence-based default.
 
 **Or ask your agent to do it.** Paste this into Claude Code, Codex, Antigravity or Cursor, opened in the project:
 
@@ -36,8 +36,9 @@ Then work through `askai todo` (sign-ins, restarts, app settings, project detail
 Set up AskAI for this repository. From the repository root, run the one command for this OS and wait for it to finish (it asks no questions):
 - macOS, Linux or WSL: curl -fsSL https://raw.githubusercontent.com/aalokshah-business/AskAi/main/get.sh | bash -s -- --target all --profile max --project . --yes
 - Windows: powershell -NoProfile -ExecutionPolicy Bypass -Command "& ([scriptblock]::Create((irm https://raw.githubusercontent.com/aalokshah-business/AskAi/main/get.ps1))) -Target all -Workflow max -Project . -Yes"
-Then run: askai todo .   (if askai is not found yet, use its full path: ~/.claude/askai/bin/askai, or askai.cmd on Windows)
-Reply with what was installed, anything that failed, and my to-do list. Change no other files. Remind me to restart this session afterwards.
+Then run, from the repository: askai setup .
+(if askai is not found yet, use its full path: ~/.claude/askai/bin/askai, or askai.cmd on Windows)
+Reply with what was installed, anything that failed, the plugin-ready report, and my to-do list. Change no other files. Remind me to restart this session, then run /askai-plugins once.
 ```
 
 **Other ways to get it.** Clone it (`git clone https://github.com/aalokshah-business/AskAi ~/tools/AskAI`) or download the ZIP from GitHub (Code, Download ZIP), then run the installer in that folder with the same options: `bash ~/tools/AskAI/install.sh --target all --profile max --project ~/code/myapp --yes`, or on Windows `powershell -ExecutionPolicy Bypass -File C:\tools\AskAI\install.ps1 -Target all -Workflow max -Project C:\code\myapp -Yes`. With Node.js and git installed, `npx github:aalokshah-business/AskAi install --target all --profile max --project . --yes` works too.
@@ -70,7 +71,7 @@ In the terminal: `askai help all` (every command), `askai plugins info <id>` (ho
 - **Evidence-based defaults**: cheap default models and effort, idle drains off, output caps, short rules (terse replies, diff-only output, build-lean), reminder hooks that cost no tokens, a status line, handoff commands in every tool.
 - **Every optimiser on request** (`--profile max`): Serena, RTK, Context Mode, Headroom (MCP mode), Graphify, Context7, Repomix, the Caveman plugin, LSP plugins, MarkItDown, ccusage, ripgrep, jq, gh; codebase-memory-mcp and claude-mem one flag each.
 - **A project knowledge pack** (`askai init`): scans eligible first-party source files, README and manifests for an on-demand source index, static architecture and feature evidence. Fetches page titles from detected frameworks' official docs into a references file; `--offline` skips web access. No source text is uploaded. Writes a short AGENTS.md router, CLAUDE.md, GEMINI.md, work order, model tiers, agents for all four tools and four project skills. `/askai-cli` (Codex: `$askai-cli`) runs `askai cli --prepare` in that chat: it picks the project folder, runs init, then the host AI verifies the pack and asks only for facts the repository cannot establish. That review uses model tokens. Refresh unedited generated docs with `askai init --project NAME --refresh --yes`. Each initialized folder gets a name in `~/.askai/projects.json`.
-- **Everything visible in the terminal**: `askai help all`, `askai todo` (what only you can do), `askai infra` (installed, configured, used), `askai savings`, `askai plugins info <id>`, `askai guide <moment>`, `askai work`, `askai audit`, `askai usage`.
+- **Everything visible in the terminal**: `askai help all`, `askai todo` (what only you can do), `askai infra` (installed, configured, used), `askai plugins ready` (when each connected tool is called), `askai savings`, `askai plugins info <id>`, `askai guide <moment>`, `askai work`, `askai audit`, `askai usage`. A new machine is checked with `askai setup <repo>`.
 
 What changed in each version: [docs/CHANGELOG.md](docs/CHANGELOG.md).
 
@@ -101,7 +102,7 @@ Token use in an agent session comes from a handful of sources, and each tool bel
 | | Status line `prompt_cache` and `context_window` fields | Claude Code reports cache hit and context use to the status line command | **Yes**: `askai statusline` records them per session (Claude Code v2.1.251+) |
 | Peer installers | [tokless](https://pkg.go.dev/github.com/HoangP8/tokless), [dotclaude](https://github.com/xsyetopz/dotclaude) | tokless wires RTK, Caveman, Ponytail, codegraph and Context Mode into four agents; dotclaude is a lean settings snippet | No: same idea, different stance (askai installs fewer tools and labels the evidence); worth reading |
 | Request-rewriting proxies | ClaudeSlim and similar | Rewrite or "hash" the system prompt and tool names in a local proxy | No, and avoid: breaks prompt caching and tool semantics, and sits in the billing path |
-| Built into Claude Code | Prompt caching, `/compact` and `autoCompactWindow`, `/clear`, `/effort`, subagent model, skills, MCP tool-definition deferral, output styles | Native levers | Baseline settings (`autoCompactWindow`, subagent model, `skillOverrides`); the rest are habits, not something to install |
+| Built into Claude Code | Prompt caching, `/compact`, `/clear`, `/effort`, subagent model, skills, MCP tool-definition deferral, output styles | Native levers | Baseline settings (subagent model, `skillOverrides`); compact and `/clear` stay habits, see tips |
 
 Names without a link were found in searches while researching this; find the official repository yourself before installing any of them.
 
@@ -211,7 +212,7 @@ A rule file without askai's marker line is not askai's: it is skipped unless `--
 |---|---|---|---|
 | `token-kit` | Takeover of a previous standalone `token-setup.mjs` run | Only if `~/.token-kit/state.json` exists: runs `standalone/token-setup.mjs --uninstall` (removes its keys, rule blocks and handoff files, with backups) so askai's settings and rules are not applied twice | Once, during install |
 | `claude` | Claude Code CLI | winget `Anthropic.ClaudeCode` (Windows); Homebrew cask `claude-code` or `claude.ai/install.sh` (macOS, Linux), only if missing | - |
-| `baseline` | The zero-cost settings | `~/.claude/settings.json`: `model` haiku when none is set (Claude Code starts on Opus otherwise; `--main-model`), `effortLevel` medium, `autoCompactWindow` 150000, `env.CLAUDE_CODE_SUBAGENT_MODEL=haiku`, `skillOverrides` (rarely used bundled skills to `name-only`). Added only when absent, never overriding your values. Also removes registrations of the retired askai hook | Every session |
+| `baseline` | The zero-cost settings | `~/.claude/settings.json`: `model` `claude-sonnet-5-5` when none is set (Claude Code starts on Opus otherwise; `--main-model`), `effortLevel` high, `env.CLAUDE_CODE_SUBAGENT_MODEL=haiku`, `skillOverrides` (rarely used bundled skills to `name-only`). Added only when absent. The retired AskAI defaults (haiku, effort medium, `autoCompactWindow` 150000) are updated. Also removes registrations of the retired askai hook | Every session |
 | `rtk` | [RTK](https://github.com/rtk-ai/rtk), **opt-in** (`--rtk`) | winget `rtk-ai.rtk`, then `rtk init -g --auto-patch` (a PreToolUse hook on Bash calls) | Every Bash tool call, automatically |
 | `context-mode` | [Context Mode](https://github.com/mksglu/context-mode), **opt-in** (`--context-mode`) | `claude plugin marketplace add mksglu/context-mode`, `claude plugin install context-mode@context-mode` | Plugin hooks fire automatically; the model chooses when to call `ctx_*` tools |
 | `serena` | [Serena](https://github.com/oraios/serena) | `uv tool install -p 3.13 serena-agent`, `serena init`, uv's tool bin dir added to the user PATH, `claude mcp add --scope user serena ...` (dashboard off) | The model chooses to call its tools; the `CLAUDE.md` block and the coding rule nudge it |
@@ -351,7 +352,8 @@ askai graph [dir]                                print the Mermaid architecture 
 askai map [dir] [--dry-run]                      regenerate docs/ai/PROJECT_MAP.md
 askai mcp [list | on <name> | off <name>] [--tool claude|codex|cursor|agy] [--dry-run]
                                                   every MCP server in the four tools, and a switch
-askai plugins [list | info <id> | install <id> | decisions]  every token tool researched: evidence, installed or not
+askai plugins [list | ready [dir] | info <id> | install <id> | decisions]  every token tool researched; ready says when each one is called
+askai setup [dir]                                 status, check, infra, plugins, to-do, and the file validator
 askai infra [dir] [--json]                       everything AskAI set up, per tool and for the repository
 askai audit [dir] [--json]                       the seven-point token audit
 askai todo [dir] [--all] | todo done|undo <id>   everything only you can do, per tool and for the repository
@@ -417,7 +419,7 @@ Components for `--only` and `--skip`: `token-kit, claude, baseline, rtk, context
 
 - Codex and Antigravity wiring follows each vendor's documentation (October 2026), but has not had a real first run on a machine with those tools: whether `rtk init -g --codex` and `--agent antigravity` accept `--auto-patch`, the exact shape of `codex mcp add`, and whether Antigravity's app reads `~/.gemini/config/skills` as documented. Start with `--dry-run`, then `askai doctor`.
 - On macOS and Linux askai runs the vendors' installer scripts (`claude.ai/install.sh`, `astral.sh/uv/install.sh`) when Homebrew is absent; the install plan names each URL before the one confirmation. It never uses sudo: ripgrep without Homebrew is a manual `apt`/`dnf` step.
-- `--main-model sonnet` is applied only when `settings.json` has no `model`. If you rely on Opus for everyday work, pass `--main-model keep`.
+- `--main-model` is applied only when `settings.json` has no `model`. The default is `claude-sonnet-5-5`. If you rely on Opus for everyday work, pass `--main-model keep`.
 
 ## Tests
 
@@ -441,7 +443,7 @@ Tests use throwaway folders under the OS temp dir with fake process runners: not
 - `lib/status.js`, `lib/sys.js`, `lib/winpath.js`: status/doctor/cache views, process helpers, user PATH edit.
 - `lib/mcp.js`: `askai mcp` — list, on/off and park/unpark for every MCP server across the four tools.
 - `lib/models.js`: `askai models` — model and effort per task tier, per tool.
-- `lib/plugins.js`, `lib/usage-guide.js`: `askai plugins` — the researched tool catalogue and each one's usage guide.
+- `lib/plugins.js`, `lib/plugins-ready.js`, `lib/usage-guide.js`: `askai plugins` — the researched tool catalogue, `askai plugins ready`, and each one's usage guide.
 - `lib/infra.js`: `askai infra` — everything askai set up, per tool and for the repository.
 - `lib/audit.js`: `askai audit` — the seven-point token audit.
 - `lib/savings.js`: `askai savings` — each installed plugin's own savings report.
@@ -452,6 +454,6 @@ Tests use throwaway folders under the OS temp dir with fake process runners: not
 - `lib/session.js`, `lib/scaffold.js`, `lib/tips.js`, `lib/launch.js`, `lib/prompt.js`, `lib/guide.js`: `askai session`, `scaffold`, `tips`/`peak`, `go`, `prompt`, and `guide`/`clear`/`context`/`work`/`etiquette`. `templates/`: the files scaffold and session write.
 - `lib/help.js`: one entry per command; also the source `scripts/gen-docs.js` reads for the command reference in `docs/ARCHITECTURE.md`.
 - `hooks/askai-report.js`: transcript-based spend report used by `askai report`. `lib/hook.js`: the Claude Code reminder hooks (`askai hook`), invoked by Claude Code itself, not typed by you.
-- `commands/`: `/askai-cli` is the installed AskAI entry point for Claude Code, Cursor and Antigravity. Codex gets `/prompts:askai-cli` and the `$askai-cli` skill; custom prompts are deprecated, so the skill remains the supported option. Earlier AskAI command files are retired during installation when AskAI still owns them.
+- `commands/`: `/askai-cli` sets up a project and opens the terminal. `/askai-plugins` finishes one-time plugin setup and says when each connected tool is called. Claude Code, Cursor, and Antigravity install both. Codex gets the prompts and the `$askai-cli` and `$askai-plugins` skills. Earlier AskAI command files are retired during installation when AskAI still owns them.
 - `legacy/`: the retired self-built hook system and its installer. Not used by anything above.
 - `test/`: the test suite.

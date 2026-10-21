@@ -32,8 +32,9 @@ test('init fills project docs from README, manifest and entry code, and refresh 
     assert.doesNotMatch(arch, /seed-media/);
     assert.match(features, /Photo gallery with uploads for members/);
     assert.match(features, /\| documented \| README\.md/);
+    assert.match(features, /\| gallery \| `public\/pages\/gallery\.js` \| detected \|/);
     const report = infra.collect(ctx, repo);
-    assert.equal(report.repo.analysis.features, 1);
+    assert.equal(report.repo.analysis.features, 2);
     assert.equal(report.repo.analysis.dataFlow, 'evidenced');
     assert.equal(report.repo.analysis.invariants, 'documented');
     write(file('FEATURES.md'), features + '\nOwner note.\n');
@@ -95,5 +96,65 @@ test('official research uses detected public docs only and supports offline refr
     const cached = await research.collect(repo, { offline: true, fetchTitle: async () => { throw new Error('network called'); } });
     assert.equal(cached.length, 2);
     assert.equal(cached[0].status, 'checked');
+    assert.match(research.markdown(rows), /Other dependencies are omitted/);
+  } finally { rm(home); }
+});
+
+test('init upgrades blank pack files and keeps a written goal, handoff and ignore list', () => {
+  const home = tmpHome();
+  try {
+    const repo = path.join(home, 'site'); fs.mkdirSync(repo);
+    write(path.join(repo, 'package.json'), JSON.stringify({ name: 'site', scripts: { test: 'node --test' } }));
+    write(path.join(repo, 'server.js'), "require('./lib/db');\n");
+    write(path.join(repo, 'lib', 'db.js'), 'module.exports = {};\n');
+    write(path.join(repo, 'notes', 'a.txt'), 'note\n');
+    for (let i = 0; i < 20; i++) write(path.join(repo, 'photos', `p${i}.jpg`), 'jpg');
+    write(path.join(repo, 'docs', 'ai', 'WORK_ORDER.md'), '# Current work order\n\n1. **Current goal:** \n6. **Checks to run:** \n');
+    write(path.join(repo, '.ai-work', 'HANDOFF.md'), '# HANDOFF\n## Goal and acceptance criteria\n- <one sentence>\n');
+    write(path.join(repo, '.cursorignore'), ['node_modules/', 'dist/', 'build/', 'out/', '.next/', 'coverage/', 'target/', 'vendor/', 'Pods/', 'DerivedData/', '.gradle/', '*.min.js', '*.map', 'package-lock.json', 'yarn.lock', 'pnpm-lock.yaml', '.env', '.env.*', 'graphify-out/graph.json', ''].join('\n'));
+    project.init(repo, { yes: true }, null, () => {});
+    const read = n => fs.readFileSync(path.join(repo, n), 'utf8');
+    assert.match(read('docs/ai/WORK_ORDER.md'), /not set; source files cannot reveal the task/);
+    assert.match(read('docs/ai/WORK_ORDER.md'), /`npm test`/);
+    assert.match(read('.ai-work/HANDOFF.md'), /No session recorded/);
+    assert.doesNotMatch(read('.ai-work/HANDOFF.md'), /<one sentence>/);
+    assert.match(read('.cursorignore'), /photos\//);
+    assert.match(read('.cursorignore'), /Terminal and MCP tools can still read ignored paths/);
+    assert.match(read('docs/ai/PROJECT_MAP.md'), /`notes\/` \| 1 \| \.txt \| not stated in README or a known folder name/);
+    assert.match(read('docs/ai/SOURCE_INDEX.md'), /## Folders/);
+    assert.match(read('docs/ai/ARCHITECTURE.md'), /None confirmed by the scan/);
+    assert.match(read('docs/ai/ARCHITECTURE.md'), /N\d+ --> N\d+/);
+    assert.match(read('AGENTS.md'), /Empty fields in WORK_ORDER.md and HANDOFF.md are unknown/);
+    assert.match(read('CLAUDE.md'), /Shared project rules stay in AGENTS.md/);
+    assert.match(read('GEMINI.md'), /context\.fileName/);
+    assert.match(read('docs/ai/MODELS.md'), /current task stays in docs\/ai\/WORK_ORDER.md/);
+    write(path.join(repo, 'docs', 'ai', 'WORK_ORDER.md'), '# Current work order\n\n1. **Current goal:** ship the gallery\n');
+    write(path.join(repo, '.ai-work', 'HANDOFF.md'), '# HANDOFF\nGoal: ship the gallery; tests green\n');
+    write(path.join(repo, '.cursorignore'), read('.cursorignore') + 'keep-me/\n');
+    project.init(repo, { yes: true }, null, () => {});
+    assert.match(read('docs/ai/WORK_ORDER.md'), /ship the gallery/);
+    assert.doesNotMatch(read('docs/ai/WORK_ORDER.md'), /not set/);
+    assert.match(read('.ai-work/HANDOFF.md'), /ship the gallery/);
+    assert.match(read('.cursorignore'), /keep-me\//);
+  } finally { rm(home); }
+});
+
+test('a CLI bin, README folder labels, an includes list and Safety rules are written as evidence', () => {
+  const home = tmpHome();
+  try {
+    const repo = path.join(home, 'kit'); fs.mkdirSync(repo);
+    write(path.join(repo, 'package.json'), JSON.stringify({ name: 'kit', bin: { kit: 'kit.js' }, scripts: { test: 'node --test', 'test:commands': 'node --test test/commands.js' } }));
+    write(path.join(repo, 'kit.js'), "require('./lib/run');\n");
+    write(path.join(repo, 'lib', 'run.js'), 'module.exports = {};\n');
+    write(path.join(repo, 'commands', 'go.md'), '# go\n');
+    write(path.join(repo, 'README.md'), '# Kit\n\n## What the tool includes\n\n- One command installs the tools for four coding agents.\n\n## Safety\n\n- Never store a password in the project.\n\n## Repository layout\n\n- `commands/`: agent entry points for the host tools\n');
+    project.init(repo, { yes: true }, null, () => {});
+    const read = n => fs.readFileSync(path.join(repo, n), 'utf8');
+    assert.match(read('docs/ai/PROJECT_MAP.md'), /`kit\.js`/);
+    assert.match(read('docs/ai/PROJECT_MAP.md'), /agent entry points for the host tools/);
+    assert.match(read('docs/ai/ARCHITECTURE.md'), /calls modules in `lib\/`/);
+    assert.match(read('docs/ai/ARCHITECTURE.md'), /Never store a password/);
+    assert.match(read('docs/ai/FEATURES.md'), /One command installs the tools/);
+    assert.match(read('docs/ai/WORK_ORDER.md'), /`npm test`, `npm run test:commands` \(no build script\)/);
   } finally { rm(home); }
 });

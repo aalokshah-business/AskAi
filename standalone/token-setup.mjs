@@ -18,7 +18,7 @@ if (flag('--help') || flag('-h')) {
 Options
   --tools claude,codex,agy,cursor      hosts to configure (default: Claude Code plus every other tool found)
   --install-clis                       also install missing CLIs (vendor installers are shown and confirmed first) and ccusage
-  --claude-model haiku|sonnet|opus|keep   default model when settings.json has none (default haiku; sonnet for heavier work)
+  --claude-model ID                   default model when settings.json has none (default claude-sonnet-5-5)
   --lsp ts,py,kotlin,ruby,swift        Claude Code's official code-intelligence plugins (+ npm language servers for ts, py)
   --lean-git                           also set includeGitInstructions=false (only if you do not use Claude for commits)
   --project DIR                        add AGENTS.md, CLAUDE.md, .cursorignore and .ai-work/HANDOFF.md to a repo (repeatable)
@@ -174,11 +174,14 @@ async function main() {
 
   if (tools.includes('claude')) {
     log('\n[claude code]');
-    const f = path.join(P.claude, 'settings.json'); const model = opt('--claude-model', 'haiku');
+    const f = path.join(P.claude, 'settings.json'); const model = opt('--claude-model', 'claude-sonnet-5-5');
     editJson(f, s => {
       if (model !== 'keep') addKey(f, s, 'model', model);
-      if (typeof s.model === 'string' && /opus/i.test(s.model)) log(`  note: your default model is ${s.model}; Opus spends usage fastest. Consider /model sonnet or haiku for routine work (left unchanged).`);
-      addKey(f, s, 'env.CLAUDE_CODE_SUBAGENT_MODEL', 'haiku'); addKey(f, s, 'effortLevel', 'medium'); addKey(f, s, 'autoCompactWindow', 150000);
+      if (s.model === 'haiku') { s.model = 'claude-sonnet-5-5'; plan(`${path.basename(f)}: model haiku -> claude-sonnet-5-5`); }
+      if (typeof s.model === 'string' && /opus/i.test(s.model)) log(`  note: your default model is ${s.model}; Opus spends usage fastest. Consider /model sonnet for routine work (left unchanged).`);
+      addKey(f, s, 'env.CLAUDE_CODE_SUBAGENT_MODEL', 'haiku'); addKey(f, s, 'effortLevel', 'high');
+      if (s.effortLevel === 'medium') { s.effortLevel = 'high'; plan(`${path.basename(f)}: effortLevel medium -> high`); }
+      if (s.autoCompactWindow === 150000) { delete s.autoCompactWindow; plan(`${path.basename(f)}: removed autoCompactWindow 150000`); }
       addKey(f, s, 'promptSuggestionEnabled', false); addKey(f, s, 'awaySummaryEnabled', false); addKey(f, s, 'crossSessionInbound', 'hold');
       addKey(f, s, 'env.CLAUDE_CODE_GOAL_CHECKIN_MINUTES', '0'); addKey(f, s, 'bashOutputMaxChars', 15000);
       if (flag('--lean-git')) addKey(f, s, 'includeGitInstructions', false);

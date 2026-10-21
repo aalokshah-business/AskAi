@@ -47,7 +47,7 @@ function claudeSettings() {
   for (const [k, v] of Object.entries(cfg.BASELINE)) {
     if (k === 'skillOverrides') rows.push([code('skillOverrides'), `${Object.keys(v).length} bundled skills set to name-only`, 'baseline', 'smaller skill listing in every session']);
     else if (k === 'env') for (const [ek, ev] of Object.entries(v)) rows.push([code(`env.${ek}`), JSON.stringify(ev), 'baseline', 'subagents mostly search and read']);
-    else rows.push([code(k), JSON.stringify(v), 'baseline', k === 'autoCompactWindow' ? 'turns over 150K dominate cost' : k === 'effortLevel' ? 'thinking is billed as output' : '']);
+    else rows.push([code(k), JSON.stringify(v), 'baseline', k === 'effortLevel' ? 'high for the session; max only for the hard step' : '']);
   }
   for (const k of lean.leanKeys || []) rows.push([code(k.env ? `env.${k.key}` : k.key), JSON.stringify(k.value), 'lean', k.why || '']);
   rows.push([code('includeGitInstructions'), 'false', 'lean with --lean-git', 'no commit and PR instructions or git snapshot in every turn']);
@@ -142,7 +142,7 @@ AskAI does not sit inside a running agent and rewrite each message: none of the 
 ## 1. Design principles
 
 - **Evidence first.** A tool or setting is installed by default only when official guidance or a third-party measurement supports it. Tools the benchmarks did not support stay opt-in (\`--rtk\`, \`--context-mode\`) or out.
-- **Never override.** Every setting is added only when you have not set it; your own model, effort or rules stay.
+- **Never override.** Every setting is added only when you have not set it; your own model, effort or rules stay. The retired AskAI defaults (haiku, effort medium, autoCompactWindow 150000) are the exception: the next baseline install updates them.
 - **Reversible.** Each file is backed up before its first change; rule text lives in marked blocks; a manifest records every key, file and registration AskAI added, and \`askai uninstall\` removes only those.
 - **No background work.** AskAI adds no hooks. Its own earlier hooks were measured to cost more than they saved.
 - **No sudo, one install for four agents.** Package managers per OS (winget, Homebrew, vendor scripts, cargo), user-level paths only.
@@ -151,9 +151,8 @@ AskAI does not sit inside a running agent and rewrite each message: none of the 
 
 | AskAI feature | Mechanism | Evidence |
 | --- | --- | --- |
-| Haiku default and Haiku subagents (when unset) | Cheaper model per token; subagents mostly search | A model switch is the only repeated large saving across eight benchmarks |
-| ${code('effortLevel')} medium; Codex effort medium, verbosity low | Fewer thinking and output tokens | Thinking is billed as output (Anthropic) |
-| ${code('autoCompactWindow')} 150000 | No turns re-sending more than 150K tokens | 74.7% of one heavy week's cost came from such turns |
+| Sonnet 5.5 default, Haiku subagents (when unset) | Everyday model at high effort; subagents mostly search | A model switch is the only repeated large saving across eight benchmarks |
+| ${code('effortLevel')} high; Codex effort medium, verbosity low | High for the session; max only for the hard step | Thinking is billed as output (Anthropic) |
 | Lean settings (suggestions, recaps, goal check-ins, cross-session wake-ups off) | No requests you did not ask for | Anthropic's cost guide lists each as a background request |
 | ${code('bashOutputMaxChars')} and deny-read rules | Less tool output and no useless reads in context | Reads are about 90% of tool-result tokens |
 | Token rules, build-lean rule, terse block in every host | Fewer turns, smaller diffs, shorter replies | Ponytail -10.3%, Caveman-style -8% |
@@ -222,23 +221,26 @@ Long conversations are the biggest token cost: every turn re-sends the whole cha
 
 | File | Purpose |
 | --- | --- |
-| ${code('AGENTS.md')} | Router (under ${project.MAX_LINES} lines): project, pointers table, commands, working rules, sessions, delegation. Read by Codex, Cursor and Antigravity |
-| ${code('CLAUDE.md')} | ${code('@AGENTS.md')} plus Claude Code notes (subagents, ${code('askai go')}, plan mode) |
-| ${code('GEMINI.md')} | Antigravity notes (agents on the flash tier, /effort, handoff) |
-| ${code('docs/ai/PROJECT_MAP.md')} | Folders, languages, commands, entry points, source-scan count; your purposes are kept |
-| ${code('docs/ai/SOURCE_INDEX.md')} | On-demand path and symbol lookup from eligible first-party source files; never loaded as a whole by the router |
-| ${code('docs/ai/REFERENCES.md')} | Official documentation for detected frameworks; only page titles fetched; no repository text uploaded |
-| ${code('docs/ai/ARCHITECTURE.md')}, ${code('FEATURES.md')}, ${code('WORK_ORDER.md')} | Architecture and decisions; one line per feature; the current task |
-| ${code('docs/ai/MODELS.md')} | The tier table below, for this repository |
+| ${code('AGENTS.md')} | Short index (under ${project.MAX_LINES} lines): project, pointers, commands, working rules, sessions, delegation. Read by Codex, Cursor and Antigravity |
+| ${code('CLAUDE.md')} | ${code('@AGENTS.md')} plus Claude-only notes. Shared rules stay in AGENTS.md |
+| ${code('GEMINI.md')} | Antigravity-only notes. Gemini CLI loads this file; add AGENTS.md to ${code('context.fileName')} to load the router too |
+| ${code('docs/ai/PROJECT_MAP.md')} | Folders, languages, commands, entry points. Purposes come from the README or a known folder name; a written purpose is kept |
+| ${code('docs/ai/SOURCE_INDEX.md')} | Folder counts, then one row per eligible source file. Search it; do not load it whole |
+| ${code('docs/ai/REFERENCES.md')} | Official pages for frameworks AskAI can check. Other dependencies are omitted. Page titles only; no repository text uploaded |
+| ${code('docs/ai/ARCHITECTURE.md')} | Evidenced flow, static imports and README constraints. A decision row is added only after a decision is made |
+| ${code('docs/ai/FEATURES.md')} | At most 12 rows: README bullets (documented) and routes or page modules (detected) |
+| ${code('docs/ai/WORK_ORDER.md')} | The current task. An empty goal is replaced on the next init; a written goal is kept |
+| ${code('docs/ai/MODELS.md')} | The tier table below. The task stays in the work order |
 | ${code('.claude/agents/')}, ${code('.codex/agents/')}, ${code('.cursor/agents/')}, ${code('.agents/agents/')} | ${code('architect')}, ${code('builder')}, ${code('runner')} in each tool's format |
 | ${code('.claude/skills/')}, ${code('.agents/skills/')} | ${code('architecture-map')}, ${code('prompt-refiner')}, ${code('investigate-bug')}, ${code('verify-and-review')} (load on demand) |
-| ${code('.cursorignore')}, ${code('.ai-work/')} | Junk kept out of Cursor; handoff, ledger and measurements (gitignored) |
+| ${code('.cursorignore')} | Dependencies, build output, secrets, and large media folders in the repo. An edited file is kept. Terminal and MCP tools can still read ignored paths |
+| ${code('.ai-work/')} | Handoff, ledger and measurements (gitignored). The shipped handoff means no session is recorded |
 
 Initialization also registers the canonical folder under a short name in ${code('~/.askai/projects.json')}. Tool integrations remain global; project files and ${code('.ai-work/')} stay in each repository. ${code('lib/project-registry.js')} resolves an explicit ${code('--project NAME')} or ${code('-p NAME')} first, then the terminal's ${code('ASKAI_PROJECT')}, the registered or initialized current directory, an optional default, and finally the older current-directory behavior. Missing registrations fail clearly. ${code('lib/project-shell.js')} supplies PowerShell, Bash and Zsh functions so ${code('askai set project NAME')} changes only the calling terminal. ${code('docs/PROJECT_MANAGEMENT.md')} covers registration, two terminals and moved folders.
 
 Init scans eligible first-party source files locally (up to 1 MiB per file), records static declarations, routes and cross-folder imports, and fetches page titles from up to four fixed official framework documentation sites. It uses no model tokens and sends no repository contents. ${code('--offline')} skips the web lookup. Static evidence cannot establish runtime behavior, the current work order or handoff state; review those separately. Generated source detail is stored behind the short router and refreshed only when unedited.
 
-The installed ${code('askai-cli')} entry point in each host runs ${code('askai cli --prepare')}. Prepare chooses the project from a named path, otherwise the chat's repository, otherwise the only registered project, and it asks only when several projects remain. It runs ${code('askai init')} when the pack is missing or source changed. The host agent then verifies the pack against code and official docs, asks for facts the repository cannot establish, and calls ${code('askai review done')}. That marker is gitignored in ${code('.ai-work/')} and compares source hashes on later calls. AI review uses model tokens; ${code('askai init')} in a terminal does not.
+The installed ${code('askai-cli')} entry point in each host runs ${code('askai cli --prepare')}. Prepare chooses the project from a named path, otherwise the chat's repository, otherwise the only registered project, and it asks only when several projects remain. It runs ${code('askai init')} when the pack is missing or source changed. The host agent then verifies the pack against code and official docs, asks for facts the repository cannot establish, and calls ${code('askai review done')}. That marker is gitignored in ${code('.ai-work/')} and compares source hashes on later calls. AI review uses model tokens; ${code('askai init')} in a terminal does not. ${code('/askai-plugins')} runs ${code('askai plugins ready')}: connected servers wait until the task matches, and the one-time step still left (a missing Graphify graph, an unregistered RTK hook) is done then. A new machine is checked with ${code('askai setup <repo>')}, which runs status, the guideline audit, infra, plugins, the to-do list, and the file validator once.
 
 ## 5b. Model and effort per tier
 
@@ -286,6 +288,7 @@ ${claudeSettings()}
 | Cursor | ${code('~/.cursor/rules/askai-*.mdc')} | always-on token rule; code and document rules with globs |
 | Cursor | ${code('~/.cursor/mcp.json')}, ${code('~/.cursor/hooks.json')} | Serena; RTK only with --rtk |
 | Cursor | ${code('~/.cursor/commands/askai-cli.md')} | AskAI-only terminal |
+| Claude Code, Cursor, Codex, Antigravity | ${code('askai-plugins')} command or skill | one-time plugin setup, then call each tool only when the task matches |
 
 ## 9. Files and data AskAI keeps
 
@@ -312,6 +315,10 @@ ${commandRef()}
 | Codex | ${code('$askai-cli')} | opens the AskAI-only terminal |
 | Antigravity | ${code('/askai-cli')} | opens the AskAI-only terminal |
 | Cursor | ${code('/askai-cli')} | opens the AskAI-only terminal |
+| Claude Code | ${code('/askai-plugins')} | one-time plugin setup; call each tool only when the task matches |
+| Codex | ${code('$askai-plugins')} | one-time plugin setup; call each tool only when the task matches |
+| Antigravity | ${code('/askai-plugins')} | one-time plugin setup; call each tool only when the task matches |
+| Cursor | ${code('/askai-plugins')} | one-time plugin setup; call each tool only when the task matches |
 
 ## 12. Practices AskAI knows (askai ask)
 

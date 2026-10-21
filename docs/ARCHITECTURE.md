@@ -34,7 +34,7 @@ AskAI does not sit inside a running agent and rewrite each message: none of the 
 ## 1. Design principles
 
 - **Evidence first.** A tool or setting is installed by default only when official guidance or a third-party measurement supports it. Tools the benchmarks did not support stay opt-in (`--rtk`, `--context-mode`) or out.
-- **Never override.** Every setting is added only when you have not set it; your own model, effort or rules stay.
+- **Never override.** Every setting is added only when you have not set it; your own model, effort or rules stay. The retired AskAI defaults (haiku, effort medium, autoCompactWindow 150000) are the exception: the next baseline install updates them.
 - **Reversible.** Each file is backed up before its first change; rule text lives in marked blocks; a manifest records every key, file and registration AskAI added, and `askai uninstall` removes only those.
 - **No background work.** AskAI adds no hooks. Its own earlier hooks were measured to cost more than they saved.
 - **No sudo, one install for four agents.** Package managers per OS (winget, Homebrew, vendor scripts, cargo), user-level paths only.
@@ -43,9 +43,8 @@ AskAI does not sit inside a running agent and rewrite each message: none of the 
 
 | AskAI feature | Mechanism | Evidence |
 | --- | --- | --- |
-| Haiku default and Haiku subagents (when unset) | Cheaper model per token; subagents mostly search | A model switch is the only repeated large saving across eight benchmarks |
-| `effortLevel` medium; Codex effort medium, verbosity low | Fewer thinking and output tokens | Thinking is billed as output (Anthropic) |
-| `autoCompactWindow` 150000 | No turns re-sending more than 150K tokens | 74.7% of one heavy week's cost came from such turns |
+| Sonnet 5.5 default, Haiku subagents (when unset) | Everyday model at high effort; subagents mostly search | A model switch is the only repeated large saving across eight benchmarks |
+| `effortLevel` high; Codex effort medium, verbosity low | High for the session; max only for the hard step | Thinking is billed as output (Anthropic) |
 | Lean settings (suggestions, recaps, goal check-ins, cross-session wake-ups off) | No requests you did not ask for | Anthropic's cost guide lists each as a background request |
 | `bashOutputMaxChars` and deny-read rules | Less tool output and no useless reads in context | Reads are about 90% of tool-result tokens |
 | Token rules, build-lean rule, terse block in every host | Fewer turns, smaller diffs, shorter replies | Ponytail -10.3%, Caveman-style -8% |
@@ -114,23 +113,26 @@ Long conversations are the biggest token cost: every turn re-sends the whole cha
 
 | File | Purpose |
 | --- | --- |
-| `AGENTS.md` | Router (under 333 lines): project, pointers table, commands, working rules, sessions, delegation. Read by Codex, Cursor and Antigravity |
-| `CLAUDE.md` | `@AGENTS.md` plus Claude Code notes (subagents, `askai go`, plan mode) |
-| `GEMINI.md` | Antigravity notes (agents on the flash tier, /effort, handoff) |
-| `docs/ai/PROJECT_MAP.md` | Folders, languages, commands, entry points, source-scan count; your purposes are kept |
-| `docs/ai/SOURCE_INDEX.md` | On-demand path and symbol lookup from eligible first-party source files; never loaded as a whole by the router |
-| `docs/ai/REFERENCES.md` | Official documentation for detected frameworks; only page titles fetched; no repository text uploaded |
-| `docs/ai/ARCHITECTURE.md`, `FEATURES.md`, `WORK_ORDER.md` | Architecture and decisions; one line per feature; the current task |
-| `docs/ai/MODELS.md` | The tier table below, for this repository |
+| `AGENTS.md` | Short index (under 333 lines): project, pointers, commands, working rules, sessions, delegation. Read by Codex, Cursor and Antigravity |
+| `CLAUDE.md` | `@AGENTS.md` plus Claude-only notes. Shared rules stay in AGENTS.md |
+| `GEMINI.md` | Antigravity-only notes. Gemini CLI loads this file; add AGENTS.md to `context.fileName` to load the router too |
+| `docs/ai/PROJECT_MAP.md` | Folders, languages, commands, entry points. Purposes come from the README or a known folder name; a written purpose is kept |
+| `docs/ai/SOURCE_INDEX.md` | Folder counts, then one row per eligible source file. Search it; do not load it whole |
+| `docs/ai/REFERENCES.md` | Official pages for frameworks AskAI can check. Other dependencies are omitted. Page titles only; no repository text uploaded |
+| `docs/ai/ARCHITECTURE.md` | Evidenced flow, static imports and README constraints. A decision row is added only after a decision is made |
+| `docs/ai/FEATURES.md` | At most 12 rows: README bullets (documented) and routes or page modules (detected) |
+| `docs/ai/WORK_ORDER.md` | The current task. An empty goal is replaced on the next init; a written goal is kept |
+| `docs/ai/MODELS.md` | The tier table below. The task stays in the work order |
 | `.claude/agents/`, `.codex/agents/`, `.cursor/agents/`, `.agents/agents/` | `architect`, `builder`, `runner` in each tool's format |
 | `.claude/skills/`, `.agents/skills/` | `architecture-map`, `prompt-refiner`, `investigate-bug`, `verify-and-review` (load on demand) |
-| `.cursorignore`, `.ai-work/` | Junk kept out of Cursor; handoff, ledger and measurements (gitignored) |
+| `.cursorignore` | Dependencies, build output, secrets, and large media folders in the repo. An edited file is kept. Terminal and MCP tools can still read ignored paths |
+| `.ai-work/` | Handoff, ledger and measurements (gitignored). The shipped handoff means no session is recorded |
 
 Initialization also registers the canonical folder under a short name in `~/.askai/projects.json`. Tool integrations remain global; project files and `.ai-work/` stay in each repository. `lib/project-registry.js` resolves an explicit `--project NAME` or `-p NAME` first, then the terminal's `ASKAI_PROJECT`, the registered or initialized current directory, an optional default, and finally the older current-directory behavior. Missing registrations fail clearly. `lib/project-shell.js` supplies PowerShell, Bash and Zsh functions so `askai set project NAME` changes only the calling terminal. `docs/PROJECT_MANAGEMENT.md` covers registration, two terminals and moved folders.
 
 Init scans eligible first-party source files locally (up to 1 MiB per file), records static declarations, routes and cross-folder imports, and fetches page titles from up to four fixed official framework documentation sites. It uses no model tokens and sends no repository contents. `--offline` skips the web lookup. Static evidence cannot establish runtime behavior, the current work order or handoff state; review those separately. Generated source detail is stored behind the short router and refreshed only when unedited.
 
-The installed `askai-cli` entry point in each host runs `askai cli --prepare`. Prepare chooses the project from a named path, otherwise the chat's repository, otherwise the only registered project, and it asks only when several projects remain. It runs `askai init` when the pack is missing or source changed. The host agent then verifies the pack against code and official docs, asks for facts the repository cannot establish, and calls `askai review done`. That marker is gitignored in `.ai-work/` and compares source hashes on later calls. AI review uses model tokens; `askai init` in a terminal does not.
+The installed `askai-cli` entry point in each host runs `askai cli --prepare`. Prepare chooses the project from a named path, otherwise the chat's repository, otherwise the only registered project, and it asks only when several projects remain. It runs `askai init` when the pack is missing or source changed. The host agent then verifies the pack against code and official docs, asks for facts the repository cannot establish, and calls `askai review done`. That marker is gitignored in `.ai-work/` and compares source hashes on later calls. AI review uses model tokens; `askai init` in a terminal does not. `/askai-plugins` runs `askai plugins ready`: connected servers wait until the task matches, and the one-time step still left (a missing Graphify graph, an unregistered RTK hook) is done then. A new machine is checked with `askai setup <repo>`, which runs status, the guideline audit, infra, plugins, the to-do list, and the file validator once.
 
 ## 5b. Model and effort per tier
 
@@ -151,7 +153,7 @@ In install order. Evidence labels: measured (a third-party saving), mixed, claim
 - **`claude`** · Claude Code · in its profiles · evidence: none.
   Claude Code CLI. winget install Anthropic.ClaudeCode on Windows, brew install --cask claude-code on macOS, curl -fsSL https://claude.ai/install.sh | bash on Linux, only if the claude CLI is missing
 - **`baseline`** · Claude Code · in its profiles · evidence: none.
-  Settings baseline. settings.json: add (never override) model=haiku (Claude Code otherwise starts on Opus; --main-model), CLAUDE_CODE_SUBAGENT_MODEL=haiku, effortLevel=medium, autoCompactWindow=150000, name-only skillOverrides; remove leftover self-built askai hook registrations
+  Settings baseline. settings.json: add (never override) model=claude-sonnet-5-5 (Claude Code otherwise starts on Opus; --main-model), CLAUDE_CODE_SUBAGENT_MODEL=haiku, effortLevel=high, name-only skillOverrides; replace the retired haiku, medium, and autoCompactWindow 150000 defaults; remove leftover self-built askai hook registrations
 - **`rtk`** · Claude Code · opt-in (--rtk) · evidence: reported.
   RTK (Bash output compression; opt-in, see README for the benchmarks). winget install rtk-ai.rtk on Windows, brew install rtk on macOS, cargo install --git https://github.com/rtk-ai/rtk (needs Rust from rustup.rs, or Homebrew) on Linux; check `rtk gain` works; winget install BurntSushi.ripgrep.MSVC on Windows, brew install ripgrep on macOS, manual: sudo apt-get install ripgrep  (or dnf install ripgrep) on Linux if rg is missing; `rtk init -g --auto-patch` (registers a PreToolUse hook on Bash)
 - **`context-mode`** · Claude Code · opt-in (--context-mode) · evidence: reported.
@@ -235,9 +237,8 @@ In install order. Evidence labels: measured (a third-party saving), mixed, claim
 
 | Key | Value | Component | Why |
 | --- | --- | --- | --- |
-| `model` | haiku | baseline | Claude Code starts on Opus otherwise; --main-model changes it |
-| `autoCompactWindow` | 150000 | baseline | turns over 150K dominate cost |
-| `effortLevel` | "medium" | baseline | thinking is billed as output |
+| `model` | claude-sonnet-5-5 | baseline | Claude Code starts on Opus otherwise; --main-model changes it |
+| `effortLevel` | "high" | baseline | high for the session; max only for the hard step |
 | `env.CLAUDE_CODE_SUBAGENT_MODEL` | "haiku" | baseline | subagents mostly search and read |
 | `skillOverrides` | 20 bundled skills set to name-only | baseline | smaller skill listing in every session |
 | `promptSuggestionEnabled` | false | lean | no extra request after each reply for the grey prompt prediction |
@@ -272,6 +273,7 @@ In install order. Evidence labels: measured (a third-party saving), mixed, claim
 | Cursor | `~/.cursor/rules/askai-*.mdc` | always-on token rule; code and document rules with globs |
 | Cursor | `~/.cursor/mcp.json`, `~/.cursor/hooks.json` | Serena; RTK only with --rtk |
 | Cursor | `~/.cursor/commands/askai-cli.md` | AskAI-only terminal |
+| Claude Code, Cursor, Codex, Antigravity | `askai-plugins` command or skill | one-time plugin setup, then call each tool only when the task matches |
 
 ## 9. Files and data AskAI keeps
 
@@ -293,18 +295,19 @@ In install order. Evidence labels: measured (a third-party saving), mixed, claim
 ```text
 askai cli: Prepare a project from the chat folder, then open an AskAI-only terminal.
 
-Usage: askai cli [--prepare] [--launch] [--path DIR]
+Usage: askai cli [--prepare] [--launch] [--path DIR] [--about TEXT]
 
-askai cli --prepare finds the project (named path, the chat's repository, or the only registered project) and runs askai init when the pack is missing or source changed. It prints JSON with action review or launch, and a question only when the folder cannot be chosen.
-The host agent reviews the generated pack, asks one bundled question for facts code cannot establish, records askai review done, then askai cli --launch. The terminal runs commands locally without model tokens unless a command launches an AI agent. Terminal askai init still works with no AI session.
+askai cli --prepare finds the project (named path, the chat's repository, or the only registered project). A review exits 2 until --about supplies the one-or-two sentence description (dictation in the host chat is enough; AskAI cannot open a microphone). --yes accepts the detected description.
+It then runs askai init when the pack is missing or source changed, and prints JSON with action review or launch.
+The host agent reviews the generated pack using that description, asks one bundled question for facts code still cannot establish, records askai review done, then askai cli --launch. The terminal runs commands locally without model tokens unless a command launches an AI agent. Terminal askai init still works with no AI session.
 
 Examples:
   askai cli --prepare --json
-  askai cli --prepare --path C:\work\shop --json
+  askai cli --prepare --path C:\work\shop --about "A shop for members" --json
   askai cli --launch
   askai> exit
 
-Exit: 0, or 2 when the project must be chosen
+Exit: 0, or 2 when the project or the description must be supplied
 ```
 
 #### `askai install`
@@ -324,7 +327,7 @@ Options:
   --target auto|claude|codex|agy|cursor|all|a,b hosts to wire (default auto: Claude Code plus every tool found)
   --dry-run                                show the plan, change nothing
   --only ID,ID / --skip ID,ID              limit or exclude components
-  --main-model M / --subagent-model M      Claude Code models when unset (default haiku; keep leaves them alone)
+  --main-model M / --subagent-model M      Claude Code models when unset (default claude-sonnet-5-5, subagent haiku; keep leaves the main model alone)
   --codex-model M                          Codex model when config.toml has none
   --caveman off|lite|full|ultra            terse-reply level (default full)
   --lsp ts,py,kotlin,ruby,swift            Claude Code's official code-intelligence plugins
@@ -391,6 +394,25 @@ Examples:
 Exit: 0 healthy, 1 when a problem is found
 ```
 
+#### `askai setup`
+
+```text
+askai setup: One check after install: status, the guideline audit, infra, which plugins are waiting, the to-do list, and the file validator.
+
+Usage: askai setup [dir]
+
+Replaces running askai check, askai status, askai infra, askai plugins ready, askai todo, and node scripts/validate-install.js one after another.
+The file validator runs with --files so infra, plugins, to-do, and check are not repeated.
+Sign-in, restart, and model checks stay in the to-do list. They cannot be completed from this command.
+
+Examples:
+  askai setup
+  askai setup ~/code/shop
+  askai setup --project shop
+
+Exit: 1 when the guideline audit or the file validator fails, else 0
+```
+
 #### `askai check`
 
 ```text
@@ -398,9 +420,10 @@ askai check: Audit this machine and a repository against the token-saving guidel
 
 Usage: askai check [dir] [--fix] [--json]
 
-Machine: billing variables, default and subagent models, effort, auto-compact, idle drains, CLAUDE.md size, MCP counts, RTK and Context Mode, Codex keys and AGENTS.md size, Antigravity paid credits and GEMINI.md size, Cursor rules, peak hours.
+Machine: billing variables, default and subagent models, effort, idle drains, CLAUDE.md size, MCP counts, RTK and Context Mode, Codex keys and AGENTS.md size, Antigravity paid credits and GEMINI.md size, Cursor rules, peak hours.
 Repo: AGENTS.md and CLAUDE.md (present, size, import), .cursorignore, .ai-work/ gitignored, age of the last handoff.
 Each gap is printed with the command that fixes it.
+askai setup runs this together with status, infra, plugins, to-do, and the file validator.
 
 Options:
   --fix                                    scaffold the repo and create .ai-work (never overwrites)
@@ -851,7 +874,7 @@ Exit: 1 when a high-severity finding exists
 #### `askai infra`
 
 ```text
-askai infra: Everything AskAI set up, plus project documentation coverage: source scan, official references, folder purposes, features, data flow and invariants.
+askai infra: Everything AskAI set up, plus project documentation coverage. For an MCP server, working means a transcript call in the last 7 days; configured means the switch is on and the agent has not called it.
 
 Usage: askai infra [dir] [--json]
 
@@ -894,17 +917,19 @@ Exit: 0 when current; 1 when generated docs differ
 #### `askai plugins`
 
 ```text
-askai plugins: Every token tool researched: evidence, what runs on its own versus by command, installed or not; verified installs for context7, repomix and graphify.
+askai plugins: Every token tool researched: evidence, what runs on its own versus by command, installed or not. ready says which connected tools wait for a matching task, and the one-time steps still left.
 
-Usage: askai plugins [list | info <id> | install <id> | decisions]
+Usage: askai plugins [list | ready [dir] | info <id> | install <id> | decisions]
 
 Options:
+  ready [dir]                              Serena, Context7, Headroom, Context Mode, Graphify and RTK: connected or not, when the agent should call each, and any one-time step left
   info <id>                                what it is, the evidence, its commands in a terminal and inside the agent, how to check it works, where to see its savings, how to switch it off
   install <id>                             verified installs for Context7, Repomix and Graphify
   decisions                                every tool AskAI evaluated, where it stands and why
 
 Examples:
   askai plugins
+  askai plugins ready
   askai plugins info headroom
   askai plugins install context7 --dry-run
 
@@ -958,19 +983,22 @@ Exit: 0
 ```text
 askai upgrade: Fetch the latest AskAI from GitHub (git, into ~/.claude/askai/src) and run its install with the profile and target recorded last time.
 
-Usage: askai upgrade [--dry-run] [install options]
+Usage: askai upgrade [--dry-run] [--agents] [install options]
 
 Always the latest: the default branch of https://github.com/aalokshah-business/AskAi. Options after upgrade go to the install (for example --profile max).
 ASKAI_REPO (owner/name) or ASKAI_REPO_URL (a full git URL or path) point at a fork or a test copy.
 Without git, run the one-line installer from the README again: it downloads the latest archive instead.
 askai update is different: it upgrades the tools AskAI installed (Serena, ccusage, plugins).
+--agents then starts askai go claude --tier lead on the updated checkout. That review spends model tokens; a plain upgrade does not.
 
 Options:
   --dry-run                                show what it would fetch and run
+  --agents                                 after install, start a Claude Code lead review of the checkout
 
 Examples:
   askai upgrade
   askai upgrade --profile max
+  askai upgrade --agents
 
 Exit: 0, or the install's exit code
 ```
@@ -1054,9 +1082,11 @@ Exit: 1 when the whitespace check finds problems
 #### `askai graph`
 
 ```text
-askai graph: Print the Mermaid architecture diagram from docs/ai/ARCHITECTURE.md in the terminal.
+askai graph: Print the Mermaid architecture diagram from docs/ai/ARCHITECTURE.md and open it in the browser when the terminal is interactive.
 
 Usage: askai graph [dir]
+
+Writes .ai-work/architecture.html and opens it. The page loads Mermaid from the network. A piped or non-interactive run only writes the file.
 
 Exit: 0, or 1 when there is none yet
 ```
@@ -1074,12 +1104,14 @@ Exit: 0 always
 #### `askai help`
 
 ```text
-askai help: This help: the overview, or one command in detail (also askai <command> --help).
+askai help: Command names in alphabetical order, one command in detail, or every command in full.
 
-Usage: askai help [command]
+Usage: askai help [command|all]
 
 Examples:
+  askai help
   askai help check
+  askai help all
 
 Exit: 0
 ```
@@ -1092,6 +1124,10 @@ Exit: 0
 | Codex | `$askai-cli` | opens the AskAI-only terminal |
 | Antigravity | `/askai-cli` | opens the AskAI-only terminal |
 | Cursor | `/askai-cli` | opens the AskAI-only terminal |
+| Claude Code | `/askai-plugins` | one-time plugin setup; call each tool only when the task matches |
+| Codex | `$askai-plugins` | one-time plugin setup; call each tool only when the task matches |
+| Antigravity | `/askai-plugins` | one-time plugin setup; call each tool only when the task matches |
+| Cursor | `/askai-plugins` | one-time plugin setup; call each tool only when the task matches |
 
 ## 12. Practices AskAI knows (askai ask)
 
@@ -1147,9 +1183,9 @@ Exit: 0
   Why: Antigravity plans page; Flash has its own pool that refreshes more often.
 - **Cursor models and Auto** (`askai ask model-cursor`): Auto for routine work; a frontier model only for the hard task; Max Mode off.
   Why: Cursor pricing: Auto bills $1.25/M input, $6/M output, $0.25/M cache reads, cheaper than frontier models but not free.
-- **Medium effort by default** (`askai ask effort`): Default to medium effort; raise it for the hard step, then put it back.
+- **High effort for Claude, medium elsewhere** (`askai ask effort`): Claude Code defaults to high effort. Use max only for the hard step. Codex and Antigravity stay on medium.
   Why: Thinking is billed as output (Anthropic); one creator measured max effort at 3.5-4x tokens.
-  AskAI: askai install sets medium effort for Claude Code and Codex
+  AskAI: askai install sets high effort for Claude Code and medium for Codex
 - **Advisor instead of Opus** (`askai ask advisor`): For a hard task, keep a Sonnet session and run /advisor opus instead of switching to Opus.
   Why: The advisor is consulted at decision points; analyses put it about a third cheaper than Opus throughout.
 - **No speed or big-context modes** (`askai ask speed-modes`): Leave Claude fast mode, Codex Fast/Ultrafast, Cursor Max Mode and Antigravity /boost off unless speed matters more.

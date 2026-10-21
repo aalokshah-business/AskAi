@@ -10,3 +10,7 @@ rtk/
 *.log
 .DS_Store
 Thumbs.db
+
+# Local AI session state (askai session; never commit)
+/.ai-work/
+.claude/settings.local.json

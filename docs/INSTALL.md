@@ -18,7 +18,15 @@ macOS, Linux or WSL:
 curl -fsSL https://raw.githubusercontent.com/aalokshah-business/AskAi/main/get.sh | bash -s -- --target all --profile max --project ~/code/myapp --yes
 ```
 
-Then work through `askai todo --project NAME` (sign-ins, restarts, app settings, project details) and check everything with `askai infra --project NAME`. The project passed during install is registered under its folder name. Add `-DryRun` / `--dry-run` for a preview, or leave out the `max` profile for the evidence-based default.
+Then open a new terminal and run one check:
+
+```bash
+askai setup --project NAME
+```
+
+That runs status, the guideline audit, infra, which plugins are waiting, the to-do list, and the file validator. Infra separates a server that is only switched on from one the agent has called. The to-do list is what only you can finish (sign-in, restart, trust, model IDs). The project passed during install is registered under its folder name. The separate commands (`askai check`, `askai status`, `askai infra`, `askai plugins ready`, `askai todo`, `node scripts/validate-install.js`) still work when you want one section.
+
+Restart Claude Code, Codex, Antigravity, and Cursor. In the project chat, `/askai-cli` (Codex: `$askai-cli`) reviews the knowledge pack and opens the terminal. `/askai-plugins` runs the ready report and does the one-time step still left, including `/graphify .` once when the graph is missing. That build spends tokens once. Add `-DryRun` / `--dry-run` for a preview, or leave out the `max` profile for the evidence-based default.
 
 **Or ask your agent to do it.** Paste this into Claude Code, Codex, Antigravity or Cursor, opened in the project:
 
@@ -26,8 +34,9 @@ Then work through `askai todo --project NAME` (sign-ins, restarts, app settings,
 Set up AskAI for this repository. From the repository root, run the one command for this OS and wait for it to finish (it asks no questions):
 - macOS, Linux or WSL: curl -fsSL https://raw.githubusercontent.com/aalokshah-business/AskAi/main/get.sh | bash -s -- --target all --profile max --project . --yes
 - Windows: powershell -NoProfile -ExecutionPolicy Bypass -Command "& ([scriptblock]::Create((irm https://raw.githubusercontent.com/aalokshah-business/AskAi/main/get.ps1))) -Target all -Workflow max -Project . -Yes"
-Then run: askai todo .   (if askai is not found yet, use its full path: ~/.claude/askai/bin/askai, or askai.cmd on Windows)
-Reply with what was installed, anything that failed, and my to-do list. Change no other files. Remind me to restart this session afterwards.
+Then run, from the repository: askai setup .
+(if askai is not found yet, use its full path: ~/.claude/askai/bin/askai, or askai.cmd on Windows)
+Reply with what was installed, anything that failed, the plugin-ready report, and my to-do list. Change no other files. Remind me to restart this session, then run /askai-plugins once.
 ```
 
 **Other ways to get it.** Clone it (`git clone https://github.com/aalokshah-business/AskAi ~/tools/AskAI`) or download the ZIP from GitHub (Code, Download ZIP), then run the installer in that folder with the same options: `bash ~/tools/AskAI/install.sh --target all --profile max --project ~/code/myapp --yes`, or on Windows `powershell -ExecutionPolicy Bypass -File C:\tools\AskAI\install.ps1 -Target all -Workflow max -Project C:\code\myapp -Yes`. With Node.js and git installed, `npx github:aalokshah-business/AskAi install --target all --profile max --project . --yes` works too.
@@ -40,10 +49,10 @@ The rest of this guide explains each step, every option and every file.
 
 - The `askai` command in every new terminal (`askai check`, `askai ask`, `askai break`, `askai resume`, `askai usage` and the rest; `askai help <command>`).
 - Token-saving settings and short rules in each tool you use: Claude Code, Codex, Antigravity and Cursor.
-- One AskAI entry point inside each tool: `/askai-cli` (Codex: `$askai-cli`). Write a session handoff by asking your agent to update `.ai-work/HANDOFF.md`.
+- Two entry points inside each tool: `/askai-cli` sets up the project and opens the terminal (Codex: `$askai-cli`). `/askai-plugins` finishes one-time plugin setup and says when each connected tool is called. Write a session handoff by asking your agent to update `.ai-work/HANDOFF.md`.
 - For each repository you choose: shared instruction files, an ignore list for Cursor, and a local `.ai-work/` folder for handoffs and measurements.
 
-Nothing runs in the background: AskAI adds no hooks. Settings you already chose are never changed.
+Connected MCP servers do not read each prompt. The agent calls Serena, Context7, Headroom, or Context Mode only when the task matches. RTK, when its hook is installed, shortens shell output by itself. Settings you already chose are kept.
 
 ## 2. Before you start
 
@@ -164,10 +173,7 @@ Re-running is safe: components already right are skipped.
 Open a new terminal, so the PATH change applies, then:
 
 ```bash
-askai version        # 1.1.0
-askai status         # each component: ok, partial, missing or other
-askai check          # every guideline: ok, fix or FAIL, with the command that fixes it
-askai doctor         # broken config and billing traps
+askai setup ~/code/myapp
 ```
 
 Then start a new session in each tool:
@@ -178,6 +184,8 @@ Then start a new session in each tool:
 | Codex | `/status`; `~/.codex/config.toml` has effort `medium` and verbosity `low` |
 | Antigravity | `/usage`; `~/.gemini/GEMINI.md` has the askai block |
 | Cursor | `~/.cursor/rules/` holds the `askai-*.mdc` files |
+
+`askai setup` prints status, the guideline audit, infra, which plugins are waiting, the to-do list, and the file validator. Exit 1 means the audit or the file validator failed. It does not sign you in, and it does not prove a plugin saved tokens. `working` in the infra section is the call evidence. `askai version`, `askai doctor`, and `node scripts/validate-install.js <repo>` remain available when you want one section.
 
 ## 8. Set up each repository
 
@@ -195,17 +203,18 @@ Repeat `askai init --name NAME --path FOLDER --yes` for each repository. AskAI r
 
 | File | What to do |
 | --- | --- |
-| `AGENTS.md` | Review the detected description, stack and commands. Keep it short: every agent reads it |
-| `CLAUDE.md` | Imports `@AGENTS.md`; add only Claude-specific notes |
-| `docs/ai/PROJECT_MAP.md` | Review inferred folder purposes; add any that remain blank |
-| `docs/ai/SOURCE_INDEX.md` | Search for a path or declaration; do not load the entire index into an agent session |
-| `docs/ai/ARCHITECTURE.md` | Review the evidenced flow and explicit constraints; add decisions and unrecorded invariants |
-| `docs/ai/FEATURES.md` | Confirm documented or detected features and their state |
-| `docs/ai/REFERENCES.md` | Open the official reference relevant to the current change; an unavailable lookup is marked |
-| `docs/ai/WORK_ORDER.md` | Add the current goal and acceptance criteria; init cannot infer your task |
-| `docs/ai/MODELS.md` | Review model tiers for this project |
-| `.cursorignore` | Keeps build output, lockfiles and `.env` out of Cursor |
-| `.ai-work/` | Handoff, ledger and measurements; gitignored automatically |
+| `AGENTS.md` | Short index: what the project is, commands, where detail lives, security pointer. Keep notes outside the managed block |
+| `CLAUDE.md` | `@AGENTS.md` plus Claude-only notes (subagents, plan mode). Shared rules stay in AGENTS.md |
+| `GEMINI.md` | Antigravity-only notes. Gemini CLI loads this file; add `AGENTS.md` to `context.fileName` to load the router too |
+| `docs/ai/PROJECT_MAP.md` | Folder purposes from the README or a known folder name. A remaining “not stated” cell needs a purpose you know |
+| `docs/ai/SOURCE_INDEX.md` | Folder counts, then one row per source file. Search it; do not load it whole |
+| `docs/ai/ARCHITECTURE.md` | Evidenced flow, imports and README constraints. Add a decision only after it is made |
+| `docs/ai/FEATURES.md` | Up to 12 rows: README bullets (`documented`) and routes or page modules (`detected`). Confirm behavior before calling one finished |
+| `docs/ai/REFERENCES.md` | Official pages for frameworks AskAI can check. Other dependencies are omitted |
+| `docs/ai/WORK_ORDER.md` | The current task. An empty goal is replaced on the next init; a written goal is kept |
+| `docs/ai/MODELS.md` | Model and effort per tier. The task itself stays in the work order |
+| `.cursorignore` | Dependencies, build output, secrets, and large media folders present in the repo. An edited file is kept. Terminal and MCP tools can still read ignored paths |
+| `.ai-work/HANDOFF.md` | Written at the end of a session: goal, verified state, branch, decisions, next step, files to read. The shipped file means no session is recorded |
 
 For an existing initialized folder, run `askai init --project NAME --refresh --yes`. It updates AskAI-managed blocks and generated docs only when their content has not been edited. `askai infra --project NAME` reports folder-purpose and feature coverage; `askai todo --project NAME` lists evidence gaps still needing review.
 
@@ -219,7 +228,8 @@ Use `/askai-cli` in Claude Code, Cursor or Antigravity (`$askai-cli` in Codex) f
 | Shape a dictated ask | `askai prompt "..." --copy` |
 | Remaining setup and review steps | `askai todo` (per tool and repository; `askai todo done <id>` marks one) |
 | Every command in full | `askai help all`; one command: `askai help <command>` |
-| How to use a plugin | `askai plugins info <id>`: commands in a terminal and inside the agent, how to check it, its savings, how to switch it off |
+| Use the connected plugins | `/askai-plugins` (Codex: `$askai-plugins`). Terminal: `askai plugins ready` |
+| How to use one plugin | `askai plugins info <id>`: commands in a terminal and inside the agent, how to check it, its savings, how to switch it off |
 | What each plugin saved | `askai savings` (runs rtk gain, ccusage, headroom stats and the rest for you) |
 | Check etiquette | `askai work`, `askai etiquette`, `askai guide <moment>`, `askai ask <words>` |
 | Coming back | `askai continue` (same as `askai resume`) |
@@ -234,7 +244,7 @@ Use `/askai-cli` in Claude Code, Cursor or Antigravity (`$askai-cli` in Codex) f
 | Option | Effect |
 | --- | --- |
 | `--lsp ts,py` (also kotlin, ruby, swift) | Claude Code's official code-intelligence plugins, plus the npm language servers for ts and py |
-| `--main-model sonnet` | Sonnet instead of Haiku as Claude Code's default, when you have none set |
+| `--main-model NAME` | Claude Code's default when you have none set. The default is `claude-sonnet-5-5` at high effort |
 | `--codex-model NAME` | A cheaper default model for Codex |
 | `--ccusage`, `--markitdown` | The usage reporter; the document converter |
 | `--lean-git` | Also remove Claude Code's git instructions from every turn, if you never use it for commits |
@@ -250,10 +260,10 @@ Paths are under your home folder (`%USERPROFILE%` on Windows).
 | Tool | Files |
 | --- | --- |
 | AskAI | `.claude/askai/app/` (the program), `.claude/askai/bin/askai` (the command), `.claude/askai/manifest.json`, `.claude/askai/backups/`, `.claude/askai/sessions/` (status-line snapshots), `.claude/askai/cache/` |
-| Claude Code | `.claude/settings.json` (added keys only), `.claude/CLAUDE.md` (a marked block), `.claude/rules/askai-*.md`, `.claude/commands/askai-cli.md` |
-| Codex | `.codex/config.toml` (added keys only), `.codex/AGENTS.md` (a marked block), `.codex/prompts/askai-cli.md`, `.agents/skills/askai-cli/` |
-| Antigravity | `.gemini/antigravity-cli/settings.json`, `.gemini/GEMINI.md` (a marked block), `.gemini/config/rules/askai-*.md`, the `askai-cli` skill in `.gemini/antigravity-cli/skills/` and `.gemini/config/skills/` |
-| Cursor | `.cursor/rules/askai-*.mdc`, `.cursor/commands/askai-cli.md` |
+| Claude Code | `.claude/settings.json` (added keys only), `.claude/CLAUDE.md` (a marked block), `.claude/rules/askai-*.md`, `.claude/commands/askai-cli.md`, `.claude/commands/askai-plugins.md` |
+| Codex | `.codex/config.toml` (added keys only), `.codex/AGENTS.md` (a marked block), `.codex/prompts/askai-cli.md`, `.codex/prompts/askai-plugins.md`, `.agents/skills/askai-cli/`, `.agents/skills/askai-plugins/` |
+| Antigravity | `.gemini/antigravity-cli/settings.json`, `.gemini/GEMINI.md` (a marked block), `.gemini/config/rules/askai-*.md`, the `askai-cli` and `askai-plugins` skills in `.gemini/antigravity-cli/skills/` and `.gemini/config/skills/` |
+| Cursor | `.cursor/rules/askai-*.mdc`, `.cursor/commands/askai-cli.md`, `.cursor/commands/askai-plugins.md` |
 | Coding profile | Serena as an MCP server in each tool (`.claude.json`, `.cursor/mcp.json`, `.codex/config.toml`, `.gemini/config/mcp_config.json`) |
 
 The full list, with every key and value: `docs/ARCHITECTURE.md`, sections 8 and 9.

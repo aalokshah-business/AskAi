@@ -103,7 +103,46 @@ test('infra finds Claude outside PATH, lists askai-cli.md and combines plugin wi
   const r = infra.collect(ctx, null);
   assert.strictEqual(r.tools.claude.cli, 'claude 2.0');
   assert.ok(r.tools.claude.commands.includes('askai-cli.md'));
-  assert.strictEqual(r.plugins.find(p => p.id === 'context-mode').state, 'claude plugin, claude on');
+  assert.strictEqual(r.plugins.find(p => p.id === 'context-mode').state, 'claude configured, never called');
+}));
+
+test('plugins ready tells which tools wait and which one-time step is left', () => withHome(h => {
+  const dir = path.join(h, 'repo');
+  const ctx = makeCtx(h, { cursorHome: path.join(h, 'cursor') }, { tools: { graphify: '/fake/graphify', rtk: '/fake/rtk' } });
+  write(ctx.cursorPaths.mcp, JSON.stringify({ mcpServers: { serena: { command: 'serena' }, context7: {} } }));
+  write(ctx.paths.settings, JSON.stringify({ enabledPlugins: { 'context-mode@context-mode': true } }));
+  const report = require('../lib/plugins-ready').ready(ctx, dir);
+  const row = id => report.tools.find(t => t.id === id);
+  assert.strictEqual(row('serena').state, 'connected, waits for a matching task');
+  assert.strictEqual(row('context7').state, 'connected, waits for a matching task');
+  assert.strictEqual(row('headroom').state, 'not installed');
+  assert.strictEqual(row('lsp').state, 'not installed');
+  assert.strictEqual(row('markitdown').state, 'not installed');
+  assert.strictEqual(row('context-mode').state, 'connected, waits for a matching task');
+  assert.strictEqual(row('graphify').state, 'installed, graph not built');
+  assert.strictEqual(row('rtk').state, 'installed, hook not registered');
+  assert.deepStrictEqual(report.actions.map(a => a.id), ['graphify', 'rtk']);
+  write(path.join(dir, 'graphify-out', 'GRAPH_REPORT.md'), '# g');
+  write(ctx.cursorPaths.hooks, JSON.stringify({ hooks: { beforeShellExecution: [{ command: 'rtk hook cursor' }] } }));
+  const done = require('../lib/plugins-ready').ready(ctx, dir);
+  assert.strictEqual(done.tools.find(t => t.id === 'graphify').state, 'graph built');
+  assert.match(done.tools.find(t => t.id === 'rtk').state, /hook on Cursor/);
+  assert.deepStrictEqual(done.actions, []);
+}));
+
+test('infra marks an MCP server working only after a transcript call', () => withHome(h => {
+  const cursorHome = path.join(h, 'cursor');
+  const ctx = makeCtx(h, { cursorHome }, {});
+  write(ctx.cursorPaths.mcp, JSON.stringify({ mcpServers: { serena: { command: 'serena' }, context7: { command: 'npx' } } }));
+  write(path.join(cursorHome, 'projects', 'app', 'agent-transcripts', 'chat.jsonl'), [
+    '{"role":"user","message":{"content":[{"type":"text","text":"namespaces user-serena user-context7"}]}}',
+    '{"role":"assistant","message":{"content":[{"type":"tool_use","name":"GetDynamicTools","input":{"namespace":"user-serena"}}]}}',
+    '{"role":"assistant","message":{"content":[{"type":"tool_use","name":"CallDynamicTool","input":{"namespace":"user-serena","toolName":"find_symbol"}}]}}',
+  ].join('\n'));
+  const r = infra.collect(ctx, null);
+  assert.strictEqual(r.plugins.find(p => p.id === 'serena').state, 'cursor working, 1 call/7d');
+  assert.strictEqual(r.plugins.find(p => p.id === 'context7').state, 'cursor configured, never called');
+  assert.match(infra.render(r), /working means a transcript call/);
 }));
 
 test('todo names npm global bin folder when installed tools are absent from PATH', () => withHome(h => {

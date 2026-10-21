@@ -4,7 +4,13 @@ AskAI follows semantic versioning from 1.0.0 (see [RELEASING.md](RELEASING.md)).
 
 ## Unreleased: full source inventory and official references
 
+- `/askai-plugins` and `askai plugins ready` say which connected tools wait for a matching task and which one-time step is left. The graph build is one of those steps. `askai setup <repo>` runs status, the guideline audit, infra, plugins, the to-do list, and the file validator in one command.
+- Claude Code's baseline default is `claude-sonnet-5-5` at high effort. The retired defaults (haiku, effort medium, `autoCompactWindow` 150000) are updated on the next baseline install. Compact stays in the tips.
+
+- `askai cli --prepare` now stops until `--about` gives the project description for a review. `askai help` lists command names alphabetically. `askai graph` opens the architecture diagram in the browser from an interactive terminal. The AskAI terminal restores Backspace after a command. `askai upgrade --agents` starts a lead review after the update.
+
 - `askai init` and project installation now scan eligible first-party source files, generate an on-demand source index, and summarize static imports and routes with source paths. Official framework documentation links are checked and cached without uploading repository content or using model tokens; `--offline` skips requests. Infra reports source-scan and official-reference coverage.
+- Project files now say when a fact is unknown: an empty work order is rewritten until a goal is set, a placeholder handoff says no session is recorded, folder purposes and features stay labeled as README text or detected code, and `.cursorignore` adds large media folders that exist while keeping an edited ignore file.
 - The single `askai-cli` entry point in Claude Code, Codex, Cursor and Antigravity now performs AI-assisted setup for a new project, asks for missing facts, then launches the terminal. Established projects still open directly unless setup or refresh is requested.
 
 ## 1.2.1 (21 October 2026): escape README text in generated Markdown

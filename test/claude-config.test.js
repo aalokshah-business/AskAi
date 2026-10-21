@@ -14,10 +14,25 @@ test('applyBaseline adds only missing keys and never overrides', () => {
   assert.deepStrictEqual(cfg.applyBaseline(s, { mainModel: 'keep' }), [], 'second run adds nothing');
 });
 
-test('applyBaseline: the main model is haiku by default, never overrides one already set, and --main-model keep skips it', () => {
+test('migrateRetired updates only the old AskAI defaults', () => {
+  const old = { model: 'haiku', effortLevel: 'medium', autoCompactWindow: 150000, env: { KEEP: 'x' } };
+  const changed = cfg.migrateRetired(old);
+  assert.strictEqual(old.model, 'claude-sonnet-5-5');
+  assert.strictEqual(old.effortLevel, 'high');
+  assert.ok(!('autoCompactWindow' in old));
+  assert.strictEqual(old.env.KEEP, 'x');
+  assert.deepStrictEqual(changed.map(c => c.key), ['model', 'effortLevel', 'autoCompactWindow']);
+  const mine = { model: 'opus[1m]', effortLevel: 'low', autoCompactWindow: 200000 };
+  assert.deepStrictEqual(cfg.migrateRetired(mine), []);
+  assert.strictEqual(mine.model, 'opus[1m]');
+  assert.strictEqual(mine.autoCompactWindow, 200000);
+});
+
+test('applyBaseline: the main model is claude-sonnet-5-5 by default, never overrides one already set, and --main-model keep skips it', () => {
   const fresh = {};
-  assert.ok(cfg.applyBaseline(fresh).some(a => a.key === 'model' && a.value === 'haiku'));
-  assert.strictEqual(fresh.effortLevel, 'medium');
+  assert.ok(cfg.applyBaseline(fresh).some(a => a.key === 'model' && a.value === 'claude-sonnet-5-5'));
+  assert.strictEqual(fresh.effortLevel, 'high');
+  assert.ok(!('autoCompactWindow' in fresh));
   const mine = { model: 'opus[1m]' };
   cfg.applyBaseline(mine, { mainModel: 'haiku' });
   assert.strictEqual(mine.model, 'opus[1m]', 'an existing model is the user\'s choice');

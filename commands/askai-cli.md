@@ -3,9 +3,9 @@ description: Set up a project's AskAI knowledge pack with AI review, then open i
 disable-model-invocation: true
 ---
 
-Run `askai cli --prepare --json`. If the user named a project or folder, add `--project` or `--path`. Add `--refresh` when they asked to set up again, and `--offline` only when they asked or the network is unavailable.
+Run `askai cli --prepare --json`. If the user named a project or folder, add `--project` or `--path`. If they described the project, including by dictation, add `--about "their words"`. Add `--refresh` when they asked to set up again, and `--offline` only when they asked or the network is unavailable.
 
-Prepare finds the project itself: the named path, otherwise the repository or manifest folder of this chat, otherwise the only registered project. If the JSON has `need`, ask that one `question` and run prepare again with the answer as `--path` or `--project`. Never initialize an unrelated folder.
+Prepare finds the project itself: the named path, otherwise the repository or manifest folder of this chat, otherwise the only registered project. If the JSON has `need` `project`, ask that one `question` and run prepare again with the answer as `--path` or `--project`. If `need` is `about`, ask that question, show `default`, and run prepare again with `--about`. Accept a dictated answer. AskAI cannot open a microphone. If they accept the default, pass that text as `--about`. Do not continue while prepare exits 2. Never initialize an unrelated folder.
 
 If `action` is `launch`, the pack is current. Open the terminal.
 

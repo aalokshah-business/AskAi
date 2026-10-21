@@ -15,7 +15,8 @@ Checked against vendor docs and independent benchmarks, 20 October 2026. Run `/h
 | Unsure about a habit | `askai work`, `askai etiquette`, `askai guide <moment>`, `askai ask <words>` |
 | Before /clear or a break | Ask the agent to write `.ai-work/HANDOFF.md`, then `askai clear` or `askai break` |
 | Coming back | `askai continue --copy` (same as `askai resume`) |
-| What is set up and used | `askai infra`, `askai check`, `askai mcp`, `node scripts/validate-install.js <repo>` (read-only check of an install) |
+| What is set up and used | `askai setup <repo>` (status, check, infra, plugins, to-do, files) |
+| Use connected plugins in a chat | `/askai-plugins` (Codex: `$askai-plugins`) |
 | Where tokens go | `askai audit`, `askai usage 7`, `askai report` |
 | Housekeeping | `askai update`, `askai doctor`, `askai uninstall` |
 
@@ -36,6 +37,7 @@ Checked against vendor docs and independent benchmarks, 20 October 2026. Run `/h
 | Unused tools off | `/mcp` | `/mcp` | `/mcp` | Settings, MCP |
 | Handoff before a break | Ask the agent to write `.ai-work/HANDOFF.md` | Same | Same | Same |
 | AskAI-only terminal | `/askai-cli` | `/prompts:askai-cli` or `$askai-cli` | `/askai-cli` | `/askai-cli` |
+| Connected plugins | `/askai-plugins` | `$askai-plugins` | `/askai-plugins` | `/askai-plugins` |
 | Resume later | `/resume`, `claude -c` | `codex resume --last` | `/resume` | `agent --continue` |
 
 ## Cheapest model first

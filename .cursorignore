@@ -1,0 +1,21 @@
+# Dependencies, build output, secrets, and large media folders in this repo.
+# Cursor already skips many binaries. Terminal and MCP tools can still read ignored paths.
+node_modules/
+dist/
+build/
+out/
+.next/
+coverage/
+target/
+vendor/
+Pods/
+DerivedData/
+.gradle/
+*.min.js
+*.map
+package-lock.json
+yarn.lock
+pnpm-lock.yaml
+.env
+.env.*
+graphify-out/graph.json
