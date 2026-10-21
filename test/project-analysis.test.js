@@ -158,3 +158,23 @@ test('a CLI bin, README folder labels, an includes list and Safety rules are wri
     assert.match(read('docs/ai/WORK_ORDER.md'), /`npm test`, `npm run test:commands` \(no build script\)/);
   } finally { rm(home); }
 });
+
+test('Zephyr firmware with a gradle file and Java is embedded, and Main.cpp is an entry', () => {
+  const home = tmpHome();
+  try {
+    const repo = path.join(home, 'fw');
+    fs.mkdirSync(path.join(repo, 'Firmware'), { recursive: true });
+    fs.mkdirSync(path.join(repo, 'ThirdParty'), { recursive: true });
+    write(path.join(repo, 'mk.sh'), '#!/bin/sh\n');
+    write(path.join(repo, 'CMakeLists.txt'), 'project(fw)\n');
+    write(path.join(repo, 'prj.conf'), 'CONFIG_PRINTK=y\n');
+    write(path.join(repo, 'build.gradle'), 'plugins {}\n');
+    write(path.join(repo, 'ThirdParty', 'A.java'), 'class A {}\n');
+    write(path.join(repo, 'Firmware', 'Main.cpp'), 'int main(){return 0;}\n');
+    const d = project.detect(repo);
+    assert.equal(d.type, 'embedded');
+    assert.equal(d.commands.build, './mk.sh');
+    assert.equal(d.commands.test, undefined);
+    assert.ok(d.entries.includes('Firmware/Main.cpp'));
+  } finally { rm(home); }
+});

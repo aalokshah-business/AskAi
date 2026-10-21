@@ -1123,17 +1123,30 @@ function cliArgs(line) {
   if (started) args.push(word);
   return args;
 }
+function graphicalTerminal() {
+  if (process.platform === 'win32' || process.platform === 'darwin') return process.platform;
+  if (!process.env.DISPLAY && !process.env.WAYLAND_DISPLAY) return null;
+  const cp = require('child_process');
+  const found = cp.spawnSync('sh', ['-c', 'command -v x-terminal-emulator'], { encoding: 'utf8' });
+  return found.status === 0 && found.stdout.trim() ? 'x-terminal-emulator' : null;
+}
 function launchCli() {
   const cp = require('child_process'); let r;
-  if (process.platform === 'win32') {
+  const gui = graphicalTerminal();
+  if (gui === 'win32') {
     const ps = `& '${process.execPath.replace(/'/g, "''")}' '${path.join(SRC, 'askai.js').replace(/'/g, "''")}' cli`;
     const encoded = Buffer.from(ps, 'utf16le').toString('base64');
     r = cp.spawnSync('powershell.exe', ['-NoProfile', '-NonInteractive', '-Command', `Start-Process powershell.exe -ArgumentList '-NoExit','-NoProfile','-EncodedCommand','${encoded}'`], { encoding: 'utf8' });
-  } else if (process.platform === 'darwin') {
+  } else if (gui === 'darwin') {
     const cmd = [process.execPath, path.join(SRC, 'askai.js'), 'cli'].map(x => `'${x.replace(/'/g, "'\\''")}'`).join(' ');
     r = cp.spawnSync('osascript', ['-e', `tell application "Terminal" to do script "${cmd.replace(/\\/g, '\\\\').replace(/"/g, '\\"')}"`], { encoding: 'utf8' });
-  } else r = cp.spawnSync('x-terminal-emulator', ['-e', process.execPath, path.join(SRC, 'askai.js'), 'cli'], { encoding: 'utf8' });
-  if (r.status !== 0) { console.error(`Could not open a terminal. Run askai cli in a terminal. ${String(r.stderr || (r.error && r.error.message) || '').trim()}`); return 1; }
+  } else if (gui === 'x-terminal-emulator') {
+    r = cp.spawnSync('x-terminal-emulator', ['-e', process.execPath, path.join(SRC, 'askai.js'), 'cli'], { encoding: 'utf8' });
+  } else {
+    console.log('No graphical terminal on this machine (a devcontainer or SSH session has no x-terminal-emulator). In the Cursor terminal run: askai cli');
+    return 0;
+  }
+  if (r.status !== 0) { console.error(`Could not open a terminal. Run askai cli in the Cursor terminal. ${String(r.stderr || (r.error && r.error.message) || '').trim()}`); return 1; }
   console.log('Opened AskAI CLI.'); return 0;
 }
 async function cmdPrepare(o) {

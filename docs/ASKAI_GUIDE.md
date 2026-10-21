@@ -140,6 +140,8 @@ Then, so Cursor lists the command:
 
 Serena still needs a network path to `astral.sh`. If that download fails, the rest of the install stays, and `askai install --only cursor-serena --yes` retries it later.
 
+**Why `/askai-cli` does not open a window.** `askai cli --launch` opens a new terminal only when the machine has one: PowerShell on Windows, Terminal.app on macOS, `x-terminal-emulator` on Linux when `DISPLAY` or `WAYLAND_DISPLAY` is set. A devcontainer or SSH session has none of those, so the command used to exit with `spawnSync x-terminal-emulator ENOENT`. It now prints the next step and exits 0. In the Cursor terminal run `askai cli`. The install script does not open that window.
+
 **Environment setup, before installing.**
 
 1. Install Node.js 18 or newer: `winget install OpenJS.NodeJS.LTS` on Windows, `brew install node` on macOS, nvm on Linux. Install the AI tools you use, or let AskAI install Claude Code.
