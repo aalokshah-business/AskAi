@@ -6,6 +6,7 @@
 //   MEASURED = A/B control vs treatment sessions (historic; the arms were assigned by the retired askai hooks);  COMPUTED = exact arithmetic on known config;
 //   OBSERVED = on/off comparison of different turns (confounded, not proof);  none = not measurable from transcripts.
 const fs = require('fs'), path = require('path'), os = require('os');
+const { MAX_STRING_LENGTH } = require('buffer').constants;
 
 const args = process.argv.slice(2);
 const opt = (n, d) => { const i = args.indexOf('--' + n); return i >= 0 && args[i + 1] ? args[i + 1] : d; };
@@ -40,7 +41,7 @@ function segments(text) {
 }
 
 const files = [];
-(function walk(d) {
+if (fs.existsSync(projectsRoot)) (function walk(d) {
   for (const e of fs.readdirSync(d, { withFileTypes: true })) {
     const p = path.join(d, e.name);
     if (e.isDirectory()) walk(p);
@@ -66,6 +67,7 @@ for (const f of files) {
   const ev = mainEvents[sid] = mainEvents[sid] || [];
   const info = sessInfo[sid] = sessInfo[sid] || { cwd: null, first: Infinity, last: 0 };
   let cave = 'none';
+  if (fs.statSync(f).size >= MAX_STRING_LENGTH) continue;    // too big for one JS string (ERR_STRING_TOO_LONG); skip rather than crash the whole report
   for (const line of fs.readFileSync(f, 'utf8').split('\n')) {
     if (!line) continue;
     let j; try { j = JSON.parse(line); } catch { continue; }
