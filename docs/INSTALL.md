@@ -18,7 +18,7 @@ macOS, Linux or WSL:
 curl -fsSL https://raw.githubusercontent.com/aalokshah-business/AskAi/main/get.sh | bash -s -- --target all --profile max --project ~/code/myapp --yes
 ```
 
-Then work through `askai todo <repo>` (sign-ins, restarts, app settings, project details) and check everything with `askai infra <repo>`. Add `-DryRun` / `--dry-run` for a preview, or leave out the `max` profile for the evidence-based default.
+Then work through `askai todo --project NAME` (sign-ins, restarts, app settings, project details) and check everything with `askai infra --project NAME`. The project passed during install is registered under its folder name. Add `-DryRun` / `--dry-run` for a preview, or leave out the `max` profile for the evidence-based default.
 
 **Or ask your agent to do it.** Paste this into Claude Code, Codex, Antigravity or Cursor, opened in the project:
 
@@ -40,7 +40,7 @@ The rest of this guide explains each step, every option and every file.
 
 - The `askai` command in every new terminal (`askai check`, `askai ask`, `askai break`, `askai resume`, `askai usage` and the rest; `askai help <command>`).
 - Token-saving settings and short rules in each tool you use: Claude Code, Codex, Antigravity and Cursor.
-- A handoff command inside each tool: `/askai-handoff` (Codex: `$askai-handoff`).
+- One AskAI entry point inside each tool: `/askai-cli` (Codex: `$askai-cli`). Write a session handoff by asking your agent to update `.ai-work/HANDOFF.md`.
 - For each repository you choose: shared instruction files, an ignore list for Cursor, and a local `.ai-work/` folder for handoffs and measurements.
 
 Nothing runs in the background: AskAI adds no hooks. Settings you already chose are never changed.
@@ -164,7 +164,7 @@ Re-running is safe: components already right are skipped.
 Open a new terminal, so the PATH change applies, then:
 
 ```bash
-askai version        # 1.0.2
+askai version        # 1.1.0
 askai status         # each component: ok, partial, missing or other
 askai check          # every guideline: ok, fix or FAIL, with the command that fixes it
 askai doctor         # broken config and billing traps
@@ -182,14 +182,16 @@ Then start a new session in each tool:
 ## 8. Set up each repository
 
 ```bash
-askai init ~/code/myapp           # asks what the project is about, then writes the knowledge pack; never overwrites
-askai check ~/code/myapp --fix    # check it, and fix what can be fixed
-askai infra ~/code/myapp          # everything set up for the four tools and this repository
+askai init --name myapp --path ~/code/myapp  # writes the knowledge pack and registers the path
+askai check --project myapp --fix            # check it, and fix what can be fixed
+askai infra --project myapp                  # everything set up for this repository
 ```
 
 Or during install: `bash install.sh --project ~/code/myapp` (PowerShell: `-Project C:\code\myapp`).
 
 `askai init` writes `AGENTS.md` (the router every agent reads, under 333 lines), `CLAUDE.md`, `GEMINI.md`, `docs/ai/PROJECT_MAP.md`, `ARCHITECTURE.md`, `FEATURES.md`, `WORK_ORDER.md`, `MODELS.md`, the `architect`, `builder` and `runner` subagents for Claude Code, Codex, Cursor and Antigravity, four skills, `.cursorignore` and `.ai-work/`. Afterwards fill in the Purpose column of `PROJECT_MAP.md` (or ask the agent to use the architecture-map skill). The table below lists the files that need your input.
+
+Repeat `askai init --name NAME --path FOLDER --yes` for each repository. AskAI resolves `--project NAME` or `-p NAME` without another path; `askai cli` also keeps `set project NAME` active for later commands. For ordinary shells, enable `askai shell init` or opt into the installer's managed shell-profile integration (`-ShellIntegration` in PowerShell, `--shell-integration` in Bash). See [Project management](PROJECT_MANAGEMENT.md) for the selection order, moving folders, separate terminals and migration from earlier installs. Global tool settings are shared, while each repository keeps its own files and `.ai-work/` state. After changes to AskAI, run `npm run test:commands`, `npm test` and `askai docs check`. The command test does not run external agents, downloads or paid services.
 
 | File | What to do |
 | --- | --- |
@@ -214,7 +216,7 @@ Use `/askai-cli` in Claude Code, Cursor or Antigravity (`$askai-cli` in Codex) t
 | Check etiquette | `askai work`, `askai etiquette`, `askai guide <moment>`, `askai ask <words>` |
 | Coming back | `askai continue` (same as `askai resume`) |
 | Review before handing off | `askai diff`; architecture at a glance: `askai graph` |
-| Before /clear or a break | `/askai-handoff`, then `askai clear` or `askai break` |
+| Before /clear or a break | Ask the agent to write `.ai-work/HANDOFF.md`, then run `askai clear` or `askai break` |
 | Coming back | `askai resume --copy` |
 | See waste | `askai audit`; usage: `askai usage 7` |
 | Switch MCP servers | `askai mcp off <name>` before the next session |
@@ -240,10 +242,10 @@ Paths are under your home folder (`%USERPROFILE%` on Windows).
 | Tool | Files |
 | --- | --- |
 | AskAI | `.claude/askai/app/` (the program), `.claude/askai/bin/askai` (the command), `.claude/askai/manifest.json`, `.claude/askai/backups/`, `.claude/askai/sessions/` (status-line snapshots), `.claude/askai/cache/` |
-| Claude Code | `.claude/settings.json` (added keys only), `.claude/CLAUDE.md` (a marked block), `.claude/rules/askai-*.md`, `.claude/commands/askai-*.md` |
-| Codex | `.codex/config.toml` (added keys only), `.codex/AGENTS.md` (a marked block), `.codex/prompts/askai-cli.md`, `.agents/skills/askai-cli/`, `.agents/skills/askai-handoff/` |
-| Antigravity | `.gemini/antigravity-cli/settings.json`, `.gemini/GEMINI.md` (a marked block), `.gemini/config/rules/askai-*.md`, the `askai-cli` and `askai-handoff` skills in `.gemini/antigravity-cli/skills/` and `.gemini/config/skills/` |
-| Cursor | `.cursor/rules/askai-*.mdc`, `.cursor/commands/askai-cli.md`, `.cursor/commands/askai-handoff.md` |
+| Claude Code | `.claude/settings.json` (added keys only), `.claude/CLAUDE.md` (a marked block), `.claude/rules/askai-*.md`, `.claude/commands/askai-cli.md` |
+| Codex | `.codex/config.toml` (added keys only), `.codex/AGENTS.md` (a marked block), `.codex/prompts/askai-cli.md`, `.agents/skills/askai-cli/` |
+| Antigravity | `.gemini/antigravity-cli/settings.json`, `.gemini/GEMINI.md` (a marked block), `.gemini/config/rules/askai-*.md`, the `askai-cli` skill in `.gemini/antigravity-cli/skills/` and `.gemini/config/skills/` |
+| Cursor | `.cursor/rules/askai-*.mdc`, `.cursor/commands/askai-cli.md` |
 | Coding profile | Serena as an MCP server in each tool (`.claude.json`, `.cursor/mcp.json`, `.codex/config.toml`, `.gemini/config/mcp_config.json`) |
 
 The full list, with every key and value: `docs/ARCHITECTURE.md`, sections 8 and 9.

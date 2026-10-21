@@ -55,12 +55,12 @@ test('install writes only into the given home, is idempotent, and records a mani
   assert.strictEqual(s.autoCompactWindow, 150000);
   assert.match(s.statusLine.command, /askai\.js" statusline/);
   assert.ok(fs.readFileSync(`${home}/CLAUDE.md`, 'utf8').includes('askai:begin'));
-  for (const f of ['askai/app/askai.js', 'askai/app/lib/components.js', 'askai/manifest.json', 'commands/askai-status.md', 'commands/askai-report.md']) {
+  for (const f of ['askai/app/askai.js', 'askai/app/lib/components.js', 'askai/manifest.json', 'commands/askai-cli.md']) {
     assert.ok(fs.existsSync(path.join(home, f)), `${f} exists`);
   }
-  const cmdText = fs.readFileSync(`${home}/commands/askai-status.md`, 'utf8');
+  const cmdText = fs.readFileSync(`${home}/commands/askai-cli.md`, 'utf8');
   assert.ok(!cmdText.includes('{{ASKAI}}'), 'placeholder substituted');
-  assert.match(cmdText, /askai\.js/);
+  assert.match(cmdText, /askai cli --launch/);
   assert.ok(fs.readdirSync(`${home}/askai/backups`).length >= 1, 'existing files were backed up');
 
   const before = ['settings.json', 'CLAUDE.md'].map(f => sha(path.join(home, f)));
@@ -100,7 +100,7 @@ test('askai cli runs commands without prefixes and exits', () => {
   const cp = require('child_process');
   const r = cp.spawnSync(process.execPath, [path.join(__dirname, '..', 'askai.js'), 'cli'], { input: 'version\nhelp cli\nexit\n', encoding: 'utf8', timeout: 10000 });
   assert.strictEqual(r.status, 0, r.stdout + r.stderr);
-  assert.match(r.stdout, /AskAI CLI[\s\S]*askai> 1\.0\.2[\s\S]*askai cli: Open an AskAI-only terminal prompt/);
+  assert.match(r.stdout, /AskAI CLI[\s\S]*askai> 1\.1\.0[\s\S]*askai cli: Open an AskAI-only terminal prompt/);
 });
 
 test('install replaces owned generic askai entry without deleting edited copies', () => withHome(home => {
@@ -158,7 +158,7 @@ test('uninstall removes only what askai added and keeps the rest and the backups
   assert.deepStrictEqual(s, { model: 'opus', env: { KEEP: '1' } });
   assert.strictEqual(fs.readFileSync(`${home}/CLAUDE.md`, 'utf8'), claudeMd);
   assert.ok(fs.existsSync(`${home}/commands/mine.md`), 'own command untouched');
-  assert.ok(!fs.existsSync(`${home}/commands/askai-status.md`));
+  assert.ok(!fs.existsSync(`${home}/commands/askai-cli.md`));
   assert.ok(!fs.existsSync(`${home}/askai/app`) && !fs.existsSync(`${home}/askai/manifest.json`));
   assert.ok(fs.existsSync(`${home}/askai/backups`), 'backups kept');
 }));
@@ -173,10 +173,29 @@ test('uninstall on a machine askai never touched changes nothing', () => withHom
 
 test('a command file the user edited after install is not deleted on uninstall', () => withHome(home => {
   assert.strictEqual(run(home, 'install', ...SAFE).code, 0);
-  fs.appendFileSync(`${home}/commands/askai-status.md`, '\nmy edit\n');
+  fs.appendFileSync(`${home}/commands/askai-cli.md`, '\nmy edit\n');
   assert.strictEqual(run(home, 'uninstall', ...SAFE).code, 0);
-  assert.ok(fs.existsSync(`${home}/commands/askai-status.md`));
-  assert.ok(!fs.existsSync(`${home}/commands/askai-report.md`), 'unedited one is removed');
+  assert.ok(fs.existsSync(`${home}/commands/askai-cli.md`));
+}));
+
+test('install retires tracked slash commands and keeps edited ones', () => withHome(home => {
+  assert.strictEqual(run(home, 'install', ...SAFE).code, 0);
+  const crypto = require('crypto');
+  const manifestFile = `${home}/askai/manifest.json`;
+  const manifest = readJson(manifestFile);
+  for (const name of ['askai-status.md', 'askai-report.md']) {
+    const target = path.join(home, 'commands', name);
+    const text = `legacy ${name}\n`;
+    write(target, text);
+    manifest.files.push({ path: target, sha: crypto.createHash('sha1').update(text).digest('hex') });
+  }
+  fs.appendFileSync(`${home}/commands/askai-status.md`, 'user edit\n');
+  write(manifestFile, JSON.stringify(manifest));
+  const rerun = run(home, 'install', ...SAFE);
+  assert.strictEqual(rerun.code, 0, rerun.out + rerun.err);
+  assert.ok(fs.existsSync(`${home}/commands/askai-status.md`), 'edited legacy command kept');
+  assert.ok(!fs.existsSync(`${home}/commands/askai-report.md`), `unchanged legacy command removed: ${rerun.out + rerun.err}`);
+  assert.ok(fs.existsSync(`${home}/commands/askai-cli.md`), 'single launcher installed');
 }));
 
 test('restore lists backups and puts a backed-up file back', () => withHome(home => {
@@ -242,7 +261,7 @@ test('the installed copy is self-contained and runs from the app folder', () => 
   assert.strictEqual(r.out.trim(), VERSION);
   const un = cli(['uninstall', ...SAFE, '--claude-home', home], { script: path.join(home, 'askai', 'app', 'askai.js') });
   assert.strictEqual(un.code, 0, un.out + un.err);
-  assert.ok(!fs.existsSync(`${home}/commands/askai-status.md`));
+  assert.ok(!fs.existsSync(`${home}/commands/askai-cli.md`));
 }));
 
 test('shim is written for Windows', { skip: !WIN }, () => withHome(home => {

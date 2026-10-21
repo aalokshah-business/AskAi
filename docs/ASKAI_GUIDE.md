@@ -48,7 +48,7 @@ AskAI automates every part of the research that a program can do: the one-time s
 | Switch MCP servers between sessions | `askai mcp` | All four |
 | Look up a habit or a tool | `askai ask`, `askai guide <moment>`, `askai plugins` | All four |
 | Before a break, before `/clear`, coming back | `askai break`, `askai clear`, `askai resume --copy` | All four |
-| Write the handoff from inside the agent | `/askai-handoff` (Codex: `$askai-handoff`) | All four |
+| Write the handoff from inside the agent | Ask it to update `.ai-work/HANDOFF.md` | All four |
 | Convert documents to Markdown | `askai convert <file or url>` | All four |
 | See what was spent; Claude peak hours | `askai usage`, `askai report`, `askai peak` | Claude Code, Codex |
 
@@ -214,10 +214,10 @@ All 27 runs exited cleanly and wrote no files. The plans used the right route fo
 
 | Tool | What AskAI adds |
 | --- | --- |
-| Claude Code | `/askai-handoff`, `/askai-status`, `/askai-report`; a status line with context and cache figures |
-| Codex | The `askai-handoff` skill (`$askai-handoff`) |
-| Antigravity | The `askai-handoff` skill, which Antigravity turns into `/askai-handoff` |
-| Cursor | `/askai-handoff` and the always-on token rule |
+| Claude Code | `/askai-cli`; a status line with context and cache figures |
+| Codex | The `askai-cli` skill (`$askai-cli`) |
+| Antigravity | The `askai-cli` skill (`/askai-cli`) |
+| Cursor | `/askai-cli` and the always-on token rule |
 
 AskAI is a command-line tool plus these commands, not a Claude Code plugin from a marketplace. That keeps one install working across all four agents.
 
@@ -239,7 +239,7 @@ Every key is added only when you have not set it, so your own choices stay. Each
 |  | `CLAUDE.md` block | token rules, build-lean rule, terse style | Short rules that change behaviour (about 25 lines) |
 |  | `~/.claude/rules/askai-*.md` | code and document rules with `paths:` | Load only when a matching file is read |
 | Codex | `config.toml` | `model_reasoning_effort = "medium"`, `model_verbosity = "low"`, `personality = "none"`, `[agents] default_subagent_reasoning_effort = "medium"`, `[tui] auto_recap = false` | Less thinking, shorter replies, no background recaps |
-|  | `AGENTS.md` block, `$askai-handoff` skill | the same rules |  |
+|  | `AGENTS.md` block, `$askai-cli` skill | the same rules |  |
 | Antigravity | `useG1Credits` | `false` | No automatic spending of paid credits |
 |  | `GEMINI.md` block; `config/rules/askai-*.md` with `trigger: glob` | the same rules; code and document rules on demand | Always-on rules share a 20,000-token budget |
 | Cursor | `~/.cursor/rules/askai-*.mdc` | an always-on token rule; code and document rules with globs | Every project on the machine |
@@ -253,8 +253,8 @@ Every key is added only when you have not set it, so your own choices stay. Each
 2. **Start of day:** `askai check .` (fix anything marked `FAIL` first: those bill you outside your plan) and `askai peak` before a big job.
 3. **Start a task:** `askai go claude --tier build "fix the cart rounding in src/cart.ts"` (also `codex`, `cursor`, `agy`). The tier fixes the model and effort for the whole session. For a dictated ask, `askai prompt "..." --copy` shapes it first.
 4. **While working:** follow Part 2. In Claude Code, reminders appear at 60% and 80% context; for anything else, `askai guide work` or `askai ask <words>`.
-5. **Task done, or context past 60%:** run `/askai-handoff`, then `askai clear` to check the handoff is real. Then `/clear` in the same terminal and paste `askai prompt --resume`: the new session reads the handoff and project files, not the old chat.
-6. **Before a break:** `/askai-handoff`, then `askai break`; it lists uncommitted work and agents still running.
+5. **Task done, or context past 60%:** ask the agent to write `.ai-work/HANDOFF.md`, then run `askai clear` to check the handoff is real. Then `/clear` in the same terminal and paste `askai prompt --resume`: the new session reads the handoff and project files, not the old chat.
+6. **Before a break:** ask the agent to write `.ai-work/HANDOFF.md`, then run `askai break`; it lists uncommitted work and agents still running.
 7. **Coming back:** `askai resume --copy` says whether to continue or start fresh; `askai mcp` confirms which servers are on.
 8. **Weekly:** `askai audit` (cache reuse, model switches, memory size), `askai usage 7`, `askai infra` (installed versus used), `askai session report`.
 

@@ -1,4 +1,4 @@
-# AskAI 1.0 cheat sheet: Claude Code, Codex, Antigravity, Cursor
+# AskAI 1.1 cheat sheet: Claude Code, Codex, Antigravity, Cursor
 Checked against vendor docs and independent benchmarks, 20 October 2026. Run `/help` after upgrades. Full guide: docs/ASKAI_GUIDE.md.
 
 ## AskAI commands
@@ -13,7 +13,7 @@ Checked against vendor docs and independent benchmarks, 20 October 2026. Run `/h
 | Start a task | `askai go claude --tier build "task"` (codex, cursor, agy; lead, build, chore) |
 | Shape a dictated ask | `askai prompt "..." --copy`; noisy command: `askai prompt --output-safe "cmd"` |
 | Unsure about a habit | `askai work`, `askai etiquette`, `askai guide <moment>`, `askai ask <words>` |
-| Before /clear or a break | `/askai-handoff`, then `askai clear` or `askai break` |
+| Before /clear or a break | Ask the agent to write `.ai-work/HANDOFF.md`, then `askai clear` or `askai break` |
 | Coming back | `askai continue --copy` (same as `askai resume`) |
 | What is set up and used | `askai infra`, `askai check`, `askai mcp`, `node scripts/validate-install.js <repo>` (read-only check of an install) |
 | Where tokens go | `askai audit`, `askai usage 7`, `askai report` |
@@ -34,7 +34,7 @@ Checked against vendor docs and independent benchmarks, 20 October 2026. Run `/h
 | Lower thinking | `/effort medium` | `Alt+,` | `/effort low` | non-thinking model |
 | Strong model only when needed | `/advisor opus` (Sonnet session) | Sol for the hard step | Pro for the hard step | frontier for the hard step |
 | Unused tools off | `/mcp` | `/mcp` | `/mcp` | Settings, MCP |
-| Handoff before a break | `/askai-handoff` | `$askai-handoff` | `/askai-handoff` | `/askai-handoff` |
+| Handoff before a break | Ask the agent to write `.ai-work/HANDOFF.md` | Same | Same | Same |
 | AskAI-only terminal | `/askai-cli` | `/prompts:askai-cli` or `$askai-cli` | `/askai-cli` | `/askai-cli` |
 | Resume later | `/resume`, `claude -c` | `codex resume --last` | `/resume` | `agent --continue` |
 
@@ -59,7 +59,7 @@ Checked against vendor docs and independent benchmarks, 20 October 2026. Run `/h
 10. Claude peak hours: weekdays 08:00–14:00 US Eastern (17:30–23:30 IST in US summer, 18:30–00:30 IST after early November).
 
 ## Before a break
-Finish the verified step, then commit or stash, then run `/askai-handoff` (Codex: `$askai-handoff`), then `askai break`. Stop `/loop`, `/goal`, teams and background agents, and note your reset time.
+Finish the verified step, then commit or stash, then ask the agent to write `.ai-work/HANDOFF.md`, then run `askai break`. Stop `/loop`, `/goal`, teams and background agents, and note your reset time.
 
 **Coming back:** `askai resume --copy` says whether to continue or start fresh and copies the prompt. The prompt: "Read AGENTS.md, then .ai-work/HANDOFF.md, then only the files it lists. Check them against git status and git log -1. Summarise in 6 lines, confirm the next step, and wait."
 

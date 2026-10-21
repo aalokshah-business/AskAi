@@ -24,6 +24,7 @@ const kb = require('./lib/kb');
 const usage = require('./lib/usage');
 const help = require('./lib/help');
 const project = require('./lib/project');
+const registry = require('./lib/project-registry');
 const models = require('./lib/models');
 const promptLib = require('./lib/prompt');
 const guide = require('./lib/guide');
@@ -35,7 +36,7 @@ const launch = require('./lib/launch');
 const hookLib = require('./lib/hook');
 const todo = require('./lib/todo');
 
-const VERSION = '1.0.2';
+const VERSION = '1.1.0';
 const SRC = __dirname;
 
 const HELP = `askai ${VERSION}: make AI coding usage last longer. Installs and wires up token-saving tools for Claude Code, Cursor,
@@ -54,6 +55,8 @@ Setup
   suggest [dir]  which profile fits a directory (counts code and document files; read-only)
   scaffold [dir] write AGENTS.md, CLAUDE.md, docs/ai/PROJECT_PROFILE.md, .cursorignore and .ai-work/ into a repo (never overwrites)
   project [dir]  optional: copy the Cursor rules into one repo (dir/.cursor/rules) for git; --print shows them, --remove deletes them
+  projects       list registered project names and paths; project show|rename|path|remove manages registrations
+  set project NAME   select a project in the AskAI CLI or a shell with AskAI integration; set project --clear unsets it
 
 Every day
   cli                  open an AskAI-only terminal prompt; type commands without askai, / or $ (exit to leave)
@@ -65,7 +68,7 @@ Every day
   Open /askai-cli (Codex: $askai-cli) once, then type any AskAI command in that terminal without prefixes (zero model tokens).
 
 Project and sessions (AskAI as the mediator)
-  init [dir]        project knowledge pack: AGENTS.md router (<333 lines), CLAUDE.md, GEMINI.md, docs/ai/*, subagents and skills for all four tools
+  init [dir]        project knowledge pack and name registration (--name NAME --path DIR)
   map [dir]         regenerate docs/ai/PROJECT_MAP.md (folders, languages, commands, entry points; keeps your purposes)
   go <tool> "task"  start claude | codex | cursor | agy with the tier's model and effort fixed for the session (--tier lead|build|chore)
   prompt "ask"      turn a rough or dictated ask into a structured prompt (--tier --files --done --mode blunt|brutal|...; --output-safe CMD; --resume)
@@ -114,14 +117,14 @@ Install options
                        to the real ~/.claude, ~/.cursor, ~/.codex or ~/.gemini)
 
 Session options
-  --repo DIR (default: current directory)  --tool T  --model M  --effort E  --task "..."  --difficulty simple|moderate|hard
+  --project NAME or -p NAME (registered project)   --repo DIR (legacy)   --tool T  --model M  --effort E
   --summary "..."  --next "..."  --result "..."  --minutes N  --input-tokens N  --output-tokens N  --cached-tokens N
   --success 0|1  --rework-minutes N  --usage-source "/usage|ccusage|dashboard|estimate"  --notes "..."
 `;
 
 // ---- args --------------------------------------------------------------------------------------------------------
-const BOOL = { yes: 'yes', y: 'yes', 'dry-run': 'dry', json: 'json', launch: 'launch', 'no-statusline': 'noStatusline', 'no-path': 'noPath', 'caveman-plugin': 'cavemanPlugin', markitdown: 'markitdown', ccusage: 'ccusage', tools: 'tools', force: 'force', print: 'print', remove: 'remove', lean: 'lean', rtk: 'rtk', 'context-mode': 'contextMode', 'lean-git': 'leanGit', copy: 'copy', fix: 'fix', refresh: 'refresh', resume: 'resume', 'base-tools': 'baseTools', headroom: 'headroom', graphify: 'graphify', context7: 'context7', repomix: 'repomix', 'codebase-memory': 'codebaseMemory', 'claude-mem': 'claudeMem', all: 'all', help: 'help', h: 'help' };
-const VAL = { output: 'output', kind: 'kind', about: 'about', type: 'type', tier: 'tier', files: 'files', done: 'done', mode: 'mode', used: 'used', window: 'window', 'output-safe': 'outputSafe', out: 'out', project: 'project', build: 'build', test: 'test', only: 'only', skip: 'skip', caveman: 'caveman', profile: 'profile', target: 'target', 'claude-home': 'claudeHome', 'cursor-home': 'cursorHome', hours: 'hours',
+const BOOL = { yes: 'yes', y: 'yes', 'dry-run': 'dry', json: 'json', launch: 'launch', clear: 'clear', 'no-statusline': 'noStatusline', 'no-path': 'noPath', 'caveman-plugin': 'cavemanPlugin', markitdown: 'markitdown', ccusage: 'ccusage', tools: 'tools', force: 'force', print: 'print', remove: 'remove', lean: 'lean', rtk: 'rtk', 'context-mode': 'contextMode', 'lean-git': 'leanGit', copy: 'copy', fix: 'fix', refresh: 'refresh', resume: 'resume', 'base-tools': 'baseTools', headroom: 'headroom', graphify: 'graphify', context7: 'context7', repomix: 'repomix', 'codebase-memory': 'codebaseMemory', 'claude-mem': 'claudeMem', all: 'all', help: 'help', h: 'help' };
+const VAL = { output: 'output', kind: 'kind', about: 'about', type: 'type', tier: 'tier', files: 'files', done: 'done', mode: 'mode', used: 'used', window: 'window', 'output-safe': 'outputSafe', out: 'out', project: 'project', p: 'project', name: 'name', path: 'path', build: 'build', test: 'test', only: 'only', skip: 'skip', caveman: 'caveman', profile: 'profile', target: 'target', 'claude-home': 'claudeHome', 'cursor-home': 'cursorHome', hours: 'hours',
   'codex-home': 'codexHome', 'agy-home': 'agyHome', 'main-model': 'mainModel', 'subagent-model': 'subagentModel', 'codex-model': 'codexModel',
   repo: 'repo', tool: 'tool', model: 'model', effort: 'effort', task: 'task', difficulty: 'difficulty', summary: 'summary', next: 'next',
   result: 'result', minutes: 'minutes', 'input-tokens': 'inputTokens', 'output-tokens': 'outputTokens', 'cached-tokens': 'cachedTokens',
@@ -150,6 +153,26 @@ function parseArgs(argv) {
   return o;
 }
 const list = s => String(s || '').split(',').map(x => x.trim()).filter(Boolean);
+const registryHome = o => registry.folder(o);
+function projectDir(o, positional, fallback = true) {
+  const found = registry.resolve(registryHome(o), o.project || o.repo || positional);
+  return found ? found.path : fallback ? process.cwd() : null;
+}
+function registerProject(o, dir) {
+  if (o.dry) return;
+  const data = registry.read(registryHome(o));
+  const existing = Object.entries(data.projects).find(([, p]) => process.platform === 'win32' ? p.toLowerCase() === dir.toLowerCase() : p === dir);
+  const result = registry.register(registryHome(o), o.name || (existing && existing[0]) || path.basename(dir), dir);
+  console.log(`  registered project ${result.name} -> ${result.path}`);
+}
+function registrationName(o, dir) {
+  const data = registry.read(registryHome(o));
+  const canonical = registry.canonical(dir);
+  const existing = Object.entries(data.projects).find(([, p]) => process.platform === 'win32' ? p.toLowerCase() === canonical.toLowerCase() : p === canonical);
+  const name = o.name || (existing && existing[0]) || path.basename(canonical);
+  registry.canRegister(registryHome(o), name, canonical);
+  return name;
+}
 
 // ---- context -----------------------------------------------------------------------------------------------------
 function makeLog(quiet) {
@@ -168,7 +191,7 @@ function buildCtx(o, quiet) {
   const paths = cfg.claudePaths(home, sandbox);
   const dry = !!o.dry;
   const log = makeLog(quiet);
-  const env = { RTK_TELEMETRY_DISABLED: '1', ...(o.claudeHome ? { CLAUDE_CONFIG_DIR: home } : {}) };
+  const env = { RTK_TELEMETRY_DISABLED: '1', CLAUDE_CODE_DISABLE_TELEMETRY: '1', DISABLE_TELEMETRY: '1', ...(o.claudeHome ? { CLAUDE_CONFIG_DIR: home } : {}) };
   const backup = dry ? () => null : cfg.makeBackup(paths, new Date().toISOString().replace(/[:.]/g, '-'));
 
   let manifest;
@@ -303,6 +326,8 @@ function copyApp(ctx) {
     fs.rmSync(path.join(dest, d), { recursive: true, force: true });
     fs.cpSync(path.join(SRC, d), path.join(dest, d), { recursive: true });
   }
+  fs.mkdirSync(path.join(dest, 'scripts'), { recursive: true });
+  if (fs.existsSync(path.join(SRC, 'scripts', 'gen-docs.js'))) fs.copyFileSync(path.join(SRC, 'scripts', 'gen-docs.js'), path.join(dest, 'scripts', 'gen-docs.js'));
   fs.mkdirSync(path.join(dest, 'hooks'), { recursive: true });
   for (const f of ['askai.js', 'package.json', path.join('hooks', 'askai-report.js')]) {
     if (fs.existsSync(path.join(SRC, f))) fs.copyFileSync(path.join(SRC, f), path.join(dest, f));
@@ -337,9 +362,7 @@ function installCommands(ctx, hosts = ctx.hostSel) {
   const askai = fs.readFileSync(path.join(source, 'askai-cli.md'), 'utf8');
   const skill = askai.replace(/^---\n[\s\S]*?\n---\n/, '---\nname: askai-cli\ndescription: Open the AskAI-only terminal. Use only when the user invokes askai-cli.\n---\n');
   const entries = [];
-  if (hosts.claude) for (const n of fs.readdirSync(source).filter(n => n.endsWith('.md'))) {
-    entries.push({ target: path.join(ctx.paths.home, 'commands', n), text: fs.readFileSync(path.join(source, n), 'utf8') });
-  }
+  if (hosts.claude) entries.push({ target: path.join(ctx.paths.home, 'commands', 'askai-cli.md'), text: askai });
   if (hosts.cursor) entries.push({ target: path.join(ctx.cursorPaths.home, 'commands', 'askai-cli.md'), text: askai.replace(/^---\n[\s\S]*?\n---\n\n/, '') });
   if (hosts.codex) {
     entries.push({ target: path.join(ctx.codexPaths.home, 'prompts', 'askai-cli.md'), text: askai.replace('disable-model-invocation: true\n', '') });
@@ -348,9 +371,14 @@ function installCommands(ctx, hosts = ctx.hostSel) {
   if (hosts.agy) {
     for (const dir of [ctx.agyPaths.cliSkills, ctx.agyPaths.appSkills]) entries.push({ target: path.join(dir, 'askai-cli', 'SKILL.md'), text: skill });
   }
-  const old = [hosts.claude && path.join(ctx.paths.home, 'commands', 'askai.md'), hosts.cursor && path.join(ctx.cursorPaths.home, 'commands', 'askai.md'),
+  // Retire only launchers recorded in AskAI's manifest. Keep edited or user-owned files.
+  const old = [
+    ...(hosts.claude ? ['askai.md', 'askai-status.md', 'askai-report.md', 'askai-handoff.md'].map(n => path.join(ctx.paths.home, 'commands', n)) : []),
+    hosts.cursor && path.join(ctx.cursorPaths.home, 'commands', 'askai-handoff.md'),
+    hosts.cursor && path.join(ctx.cursorPaths.home, 'commands', 'askai.md'),
     hosts.codex && path.join(ctx.codexPaths.home, 'prompts', 'askai.md'), hosts.codex && path.join(ctx.codexPaths.skills, 'askai', 'SKILL.md'),
     ...(hosts.agy ? [path.join(ctx.agyPaths.cliSkills, 'askai', 'SKILL.md'), path.join(ctx.agyPaths.appSkills, 'askai', 'SKILL.md')] : [])].filter(Boolean);
+  if ((ctx.manifest.components.handoff || {}).files?.length) comps.byId('handoff').uninstall(ctx);
   for (const target of old) {
     const i = files.findIndex(f => f.path === target);
     if (i < 0) continue;
@@ -359,6 +387,11 @@ function installCommands(ctx, hosts = ctx.hostSel) {
     if (ctx.dry) { ctx.log.plan(`remove ${target}`); continue; }
     if (current !== null) { ctx.backup(target); fs.rmSync(target); }
     files.splice(i, 1);
+  }
+  if (!ctx.dry) for (const target of old) {
+    const parent = path.dirname(target);
+    if (path.basename(parent) !== 'askai') continue;
+    try { if (!fs.readdirSync(parent).length) fs.rmdirSync(parent); } catch (_) { /* absent or not empty */ }
   }
   let changed = 0;
   for (const entry of entries) {
@@ -416,6 +449,7 @@ const planText = (ctx, plan) => (S.IS_WIN ? plan : plan.replace(/winget install 
 
 async function cmdInstall(o) {
   if (o.profile === 'max' && !o.lsp) o.lsp = 'ts,py'; // the max profile includes Claude Code's TypeScript and Python code intelligence
+  if (o.project) registrationName(o, projectDir(o, o.project));
   const ctx = buildCtx(o);
   preflight(ctx);
   const hosts = cursor.hosts(ctx);
@@ -476,11 +510,11 @@ async function cmdInstall(o) {
   if (o.dry) console.log('\nDry-run only. Re-run without --dry-run to apply.');
   else if (failed.length) console.log(`\n${failed.length} component(s) failed. Fix the cause and re-run \`askai install\`: finished components are skipped.`);
   else {
-    console.log(`\nDone. Open a NEW ${hostNames(hosts).join(' / ')} session so hooks, plugins and MCP servers load${hosts.claude ? ', then run /askai-status' : ''}.`);
+    console.log(`\nDone. Open a NEW ${hostNames(hosts).join(' / ')} session so hooks, plugins and MCP servers load. Run askai status in a terminal to check tools.`);
     if (hosts.cursor) console.log('Cursor user rules are in ~/.cursor/rules and apply in every project on this machine. Restart Cursor so it reads the hooks, MCP servers and rules. `askai project` writes the same files into one repo for git; skip it here, or the always-applied rule is loaded twice.');
   }
-  if (o.project) { console.log(''); project.init(path.resolve(o.project), { yes: true, dry: o.dry, about: o.about, type: o.type }, ctx); }
-  if (!o.dry) { console.log('Check it: askai infra (everything set up, per tool), askai check (gaps), and /askai-status inside Claude Code.'); try { const dir = o.project ? path.resolve(o.project) : null; const list = todo.items(ctx, dir); const n = todo.open(list).length; if (n && dir) console.log(`\nThings only you can do (${n}); askai todo ${dir} shows them again:\n${todo.render(list)}`); else if (n) console.log(`Next: askai todo lists the ${n} thing(s) only you can do (sign-ins, restarts, app settings, project files).`); } catch (_) { /* best effort */ } }
+  if (o.project) { console.log(''); const dir = projectDir(o, o.project); const name = registrationName(o, dir); project.init(dir, { yes: true, dry: o.dry, about: o.about, type: o.type }, ctx); registerProject({ ...o, name }, dir); }
+  if (!o.dry) { console.log('Check it: askai infra (everything set up, per tool), askai check (gaps), and askai status (tool state).'); try { const dir = o.project ? projectDir(o, o.project) : null; const list = todo.items(ctx, dir); const n = todo.open(list).length; if (n && dir) console.log(`\nThings only you can do (${n}); askai todo ${dir} shows them again:\n${todo.render(list)}`); else if (n) console.log(`Next: askai todo lists the ${n} thing(s) only you can do (sign-ins, restarts, app settings, project files).`); } catch (_) { /* best effort */ } }
   return failed.length ? 1 : 0;
 }
 
@@ -551,7 +585,7 @@ function cmdProfiles(o) {
 
 // Read-only: which profile fits a directory.
 function cmdSuggest(o) {
-  const dir = path.resolve(o._[1] || process.cwd());
+  const dir = projectDir(o, o._[1]);
   let isDir = false;
   try { isDir = fs.statSync(dir).isDirectory(); } catch (_) { /* missing */ }
   if (!isDir) { console.error(`askai: ${dir} is not a directory`); return 1; }
@@ -563,10 +597,85 @@ function cmdSuggest(o) {
   return 0;
 }
 
+function cmdProjects(o) {
+  const data = registry.read(registryHome(o));
+  const rows = Object.entries(data.projects).map(([name, dir]) => ({ name, path: dir,
+    active: process.env.ASKAI_PROJECT === name, default: data.default === name, exists: fs.existsSync(dir) }));
+  if (o.json) console.log(JSON.stringify(rows, null, 2));
+  else {
+    console.log(rows.length ? rows.map(r => `${r.active ? '*' : ' '} ${r.name}${r.default ? ' (default)' : ''} -> ${r.path}${r.exists ? '' : ' (missing; askai project path NAME NEW_PATH)'}`).join('\n') : 'No projects registered. Run askai init --name NAME --path FOLDER.');
+    console.log('Selection: askai set project NAME; project details: askai project show.');
+  }
+  return 0;
+}
+function cmdSet(o) {
+  const area = o._[1];
+  if (area === 'project') {
+    if (o.clear) { delete process.env.ASKAI_PROJECT; console.log('Cleared active project in this AskAI process.'); return 0; }
+    if (!o._[2]) { console.error('askai set project NAME | --clear'); return 1; }
+    const chosen = registry.select(registryHome(o), o._[2]);
+    process.env.ASKAI_PROJECT = chosen.name;
+    console.log(`Active project: ${chosen.name} -> ${chosen.path}`);
+    return 0;
+  }
+  if (area === 'default') {
+    const name = registry.setDefault(registryHome(o), o.clear ? null : o._[2]);
+    console.log(name ? `Default project: ${name}` : 'Cleared default project.'); return 0;
+  }
+  console.error('askai set project NAME | project --clear | default NAME | default --clear'); return 1;
+}
+async function cmdProjectRegistry(o) {
+  const dir = registryHome(o); const action = o._[1];
+  if (action === 'show') {
+    const found = registry.resolve(dir, o.project || o._[2]);
+    console.log(found ? `${found.name || '(unregistered folder)'} -> ${found.path}` : 'No project selected. Run askai projects or askai init <folder>.');
+    return found ? 0 : 1;
+  }
+  if (action === 'rename') {
+    if (!o._[2] || !o._[3]) throw new Error('usage: askai project rename OLD NEW');
+    const result = registry.rename(dir, o._[2], o._[3]);
+    if (process.env.ASKAI_PROJECT && process.env.ASKAI_PROJECT.toLowerCase() === o._[2].toLowerCase()) process.env.ASKAI_PROJECT = result.name;
+    console.log(`Renamed project: ${result.name} -> ${result.path}`); return 0;
+  }
+  if (action === 'path') {
+    if (!o._[2] || !o._[3]) throw new Error('usage: askai project path NAME NEW_PATH');
+    const result = registry.move(dir, o._[2], o._[3]); console.log(`Moved project: ${result.name} -> ${result.path}`); return 0;
+  }
+  if (action === 'remove') {
+    if (!o._[2]) throw new Error('usage: askai project remove NAME');
+    const result = registry.remove(dir, o._[2]);
+    if (process.env.ASKAI_PROJECT && process.env.ASKAI_PROJECT.toLowerCase() === result.name.toLowerCase()) delete process.env.ASKAI_PROJECT;
+    console.log(`Unregistered ${result.name}; project files kept at ${result.path}`); return 0;
+  }
+  if (action === 'switch') {
+    if (o._[2]) return cmdSet({ ...o, _: ['set', 'project', o._[2]] });
+    const names = Object.keys(registry.read(dir).projects);
+    if (!names.length) { console.error('No projects registered. Run askai init <folder>.'); return 1; }
+    if (!process.stdin.isTTY) { console.error('Run askai project switch NAME, or askai set project NAME.'); return 1; }
+    console.log(names.map((name, i) => `  ${i + 1}. ${name}`).join('\n'));
+    const rl = readline.createInterface({ input: process.stdin, output: process.stdout });
+    const answer = await new Promise(resolve => rl.question('Project number or name: ', resolve)); rl.close();
+    const chosen = names[Number(answer) - 1] || answer.trim();
+    return cmdSet({ ...o, _: ['set', 'project', chosen] });
+  }
+  return 1;
+}
+function cmdShell(o) {
+  const shell = require('./lib/project-shell');
+  if (o._[1] === 'init') { console.log(shell.init(o._[2])); return 0; }
+  if (o._[1] === 'install') {
+    if (!o.path) throw new Error('usage: askai shell install powershell|bash|zsh --path PROFILE');
+    console.log(`AskAI shell integration installed in ${shell.install(registryHome(o), o.path, o._[2], path.join(SRC, 'askai.js'))}`); return 0;
+  }
+  if (o._[1] === 'uninstall') { console.log(`Removed AskAI shell integration from ${shell.uninstall(registryHome(o)).length} profile(s).`); return 0; }
+  console.error('askai shell init|install powershell|bash|zsh [--path PROFILE] | uninstall'); return 1;
+}
+
 // Cursor: write (or show, or remove) the token rules of a project in <dir>/.cursor/rules.
 function cmdProject(o) {
+  if (['show', 'rename', 'path', 'remove', 'switch'].includes(o._[1])) return cmdProjectRegistry(o);
   const ctx = buildCtx(o);
-  const dir = path.resolve(o._[1] || process.cwd());
+  const dir = projectDir(o, o._[1]);
   let isDir = false;
   try { isDir = fs.statSync(dir).isDirectory(); } catch (_) { /* missing */ }
   if (!isDir) { console.error(`askai: ${dir} is not a directory`); return 1; }
@@ -716,6 +825,7 @@ async function cmdUninstall(o) {
         if (!o.dry) delete ctx.manifest.cursorProjects[dir];
       } catch (e) { console.error(`  failed: ${e.message}`); failed++; }
     }
+    if (!o.dry) try { require('./lib/project-shell').uninstall(registryHome(o)); } catch (e) { console.error(`  shell integration removal failed: ${e.message}`); failed++; }
   }
   try { comps.refreshDerived(ctx); } catch (e) { ctx.log.warn(`could not refresh derived files: ${e.message}`); }
   console.log('\n[askai] commands, shim, PATH, app');
@@ -802,7 +912,7 @@ function cmdUpgrade(o, rest) {
   return r.status === null ? 1 : r.status;
 }
 function cmdDiff(o) {
-  const repo = path.resolve(o.repo || o._[1] || '.'); const g = a => require('child_process').spawnSync('git', ['-C', repo, ...a], { encoding: 'utf8' });
+  const repo = projectDir(o, o._[1]); const g = a => require('child_process').spawnSync('git', ['-C', repo, ...a], { encoding: 'utf8' });
   const st = g(['diff', '--stat']); if (st.status !== 0) { console.log(`not a git repository: ${repo}`); return 1; }
   const staged = g(['diff', '--cached', '--stat']).stdout.trim(); const check = g(['diff', '--check']);
   console.log(st.stdout.trim() || '(no unstaged changes)'); if (staged) console.log(`\nstaged:\n${staged}`);
@@ -811,7 +921,7 @@ function cmdDiff(o) {
   return check.status === 0 ? 0 : 1;
 }
 function cmdGraph(o) {
-  const f = path.join(path.resolve(o.repo || o._[1] || '.'), 'docs', 'ai', 'ARCHITECTURE.md');
+  const f = path.join(projectDir(o, o._[1]), 'docs', 'ai', 'ARCHITECTURE.md');
   let t; try { t = fs.readFileSync(f, 'utf8'); } catch (_) { console.log(`no ${f}: run askai init`); return 1; }
   const blocks = [...t.matchAll(/```mermaid\s*\n([\s\S]*?)\n```/g)].map(m => m[1]);
   if (!blocks.length) { console.log('ARCHITECTURE.md has no Mermaid diagram yet (ask the agent to use the architecture-map skill).'); return 1; }
@@ -833,7 +943,7 @@ function cmdModels(o) {
 function cmdPrompt(o) {
   let text;
   if (o.outputSafe) text = promptLib.outputSafe(o.outputSafe);
-  else if (o.resume && !o._[1]) text = promptLib.resume(path.resolve(o.repo || '.'));
+  else if (o.resume && !o._[1]) text = promptLib.resume(projectDir(o));
   else { const r = promptLib.task({ ask: o._.slice(1).join(' '), tier: o.tier, tool: o.tool, files: o.files, done: o.done, mode: o.mode, kind: o.kind, output: o.output, resume: o.resume }); text = r.text; }
   console.log(text);
   if (o.copy) { const via = require('./lib/session').copyText ? require('./lib/session').copyText(text) : null; if (via) console.log(`(copied with ${via})`); }
@@ -852,9 +962,15 @@ function cmdMcp(o) {
   console.log('askai mcp [list | on <name> | off <name>] [--tool claude|codex|cursor|agy]'); return 1;
 }
 function cmdDocs(o) {
-  const DOCS = { install: 'INSTALL.md', architecture: 'ARCHITECTURE.md', guide: 'ASKAI_GUIDE.md', cheatsheet: 'CHEAT_SHEET.md', changelog: 'CHANGELOG.md', preview: 'PREVIEW_MATRIX.md' };
+  const DOCS = { install: 'INSTALL.md', architecture: 'ARCHITECTURE.md', projects: 'PROJECT_MANAGEMENT.md', guide: 'ASKAI_GUIDE.md', cheatsheet: 'CHEAT_SHEET.md', changelog: 'CHANGELOG.md', preview: 'PREVIEW_MATRIX.md' };
   const name = o._[1];
-  if (!name || !DOCS[name]) { for (const [k, v] of Object.entries(DOCS)) console.log(`  askai docs ${k.padEnd(13)} ${path.join(SRC, 'docs', v)}`); console.log('  (add --print to show one in the terminal)'); return name ? 1 : 0; }
+  if (name === 'check') {
+    const script = path.join(SRC, 'scripts', 'gen-docs.js');
+    if (!fs.existsSync(script)) { console.error('Documentation checker is missing from this AskAI copy. Reinstall AskAI.'); return 1; }
+    const r = require('child_process').spawnSync(process.execPath, [script, '--check'], { stdio: 'inherit' });
+    return r.status === 0 ? 0 : 1;
+  }
+  if (!name || !DOCS[name]) { for (const [k, v] of Object.entries(DOCS)) console.log(`  askai docs ${k.padEnd(13)} ${path.join(SRC, 'docs', v)}`); console.log('  askai docs check      validate generated command documentation'); console.log('  (add --print to show one in the terminal)'); return name ? 1 : 0; }
   const f = path.join(SRC, 'docs', DOCS[name]);
   if (!fs.existsSync(f)) { console.log(`${f} is not in this copy of AskAI (docs live in the downloaded folder)`); return 1; }
   console.log(o.print ? fs.readFileSync(f, 'utf8') : f); return 0;
@@ -864,7 +980,7 @@ function cmdConvert(o) {
   if (!src) { console.log('askai convert <file|url> [--out file.md]: PDF, Word, PowerPoint, Excel, HTML, YouTube URL -> Markdown (Microsoft MarkItDown, local)'); return 1; }
   if (!ctx.which('markitdown')) { console.log('MarkItDown is not installed: askai install --only markitdown (or --profile docs). Videos other than YouTube need a transcriber first (graphifyy[video] or Whisper).'); return 1; }
   const isUrl = /^https?:\/\//.test(src);
-  const out = o.out || path.join(process.cwd(), 'docs', 'ai', 'inputs', `${(isUrl ? src.replace(/^https?:\/\//, '').replace(/[^\w.-]+/g, '_') : path.basename(src, path.extname(src))).slice(0, 80)}.md`);
+  const out = o.out || path.join(projectDir(o), 'docs', 'ai', 'inputs', `${(isUrl ? src.replace(/^https?:\/\//, '').replace(/[^\w.-]+/g, '_') : path.basename(src, path.extname(src))).slice(0, 80)}.md`);
   if (fs.existsSync(out)) { console.log(`${out} exists; choose another --out`); return 1; }
   fs.mkdirSync(path.dirname(out), { recursive: true });
   const r = require('child_process').spawnSync('markitdown', [src, '-o', out], { stdio: 'inherit', shell: process.platform === 'win32' });
@@ -873,7 +989,7 @@ function cmdConvert(o) {
 }
 function cmdCheck(o) {
   const ctx = buildCtx(o, true);
-  const dir = o._[1] ? path.resolve(o._[1]) : null;
+  const dir = projectDir(o, o._[1], false);
   return check.run(ctx, dir, o);
 }
 function cmdAsk(o) {
@@ -901,10 +1017,13 @@ function cmdUsage(o) {
   return 0;
 }
 function cmdSession(o) {
-  try { return session.run(o._[1], o); } catch (e) { console.error(`askai session: ${e.message}`); return 1; }
+  try {
+    const args = o._[1] === 'report' && o._.length > 2 ? [...o._.slice(0, 2), ...o._.slice(2).map(name => projectDir({ ...o, project: name }))] : o._;
+    return session.run(o._[1], { ...o, _: args, repo: projectDir(o) });
+  } catch (e) { console.error(`askai session: ${e.message}`); return 1; }
 }
 function cmdScaffold(o) {
-  try { return scaffold.run(o._[1], o); } catch (e) { console.error(`askai scaffold: ${e.message}`); return 1; }
+  try { return scaffold.run(projectDir(o, o._[1]), o); } catch (e) { console.error(`askai scaffold: ${e.message}`); return 1; }
 }
 function cmdTips(o) {
   try { console.log(tips.render(o._[1])); return 0; } catch (e) { console.error(`askai tips: ${e.message}`); return 1; }
@@ -981,42 +1100,45 @@ async function main() {
     case 'profiles': return cmdProfiles(o);
     case 'suggest': return cmdSuggest(o);
     case 'project': return cmdProject(o);
+    case 'projects': return cmdProjects(o);
+    case 'set': return cmdSet(o);
+    case 'shell': return cmdShell(o);
     case 'uninstall': return cmdUninstall(o);
     case 'restore': return cmdRestore(o);
     case 'statusline': return cmdStatusline(o);
     case 'session': return cmdSession(o);
-    case 'init': { const dir = path.resolve(o._[1] || '.'); const ctx = buildCtx(o, true); const oo = await project.ask(dir, o); project.init(dir, { ...oo, dry: o.dry }, ctx); return 0; }
-    case 'map': project.map(o._[1] || '.', { dry: o.dry }); return 0;
+    case 'init': { const dir = projectDir(o, o.path || o._[1]); const name = registrationName(o, dir); const ctx = buildCtx(o, true); const oo = await project.ask(dir, o); project.init(dir, { ...oo, dry: o.dry }, ctx); registerProject({ ...o, name }, dir); return 0; }
+    case 'map': project.map(projectDir(o, o._[1]), { dry: o.dry }); return 0;
     case 'models': return cmdModels(o);
-    case 'go': return launch.run(buildCtx(o, true), o._[1], { ...o, ask: o._.slice(2).join(' ') });
+    case 'go': return launch.run(buildCtx(o, true), o._[1], { ...o, repo: projectDir(o), ask: o._.slice(2).join(' ') });
     case 'prompt': return cmdPrompt(o);
     case 'mcp': return cmdMcp(o);
-    case 'audit': return audit.run(buildCtx(o, true), o._[1] ? path.resolve(o._[1]) : process.cwd(), o);
-    case 'infra': { const ctx = buildCtx(o, true); const r = infra.collect(ctx, path.resolve(o._[1] || '.')); console.log(o.json ? JSON.stringify(r, null, 2) : infra.render(r)); return 0; }
+    case 'audit': return audit.run(buildCtx(o, true), projectDir(o, o._[1]), o);
+    case 'infra': { const ctx = buildCtx(o, true); const r = infra.collect(ctx, projectDir(o, o._[1])); console.log(o.json ? JSON.stringify(r, null, 2) : infra.render(r)); return 0; }
     case 'guide': { const t = guide.render(o._[1]); console.log(t || `No guide for "${o._[1]}". Topics: ${guide.ORDER.join(', ')}`); return t ? 0 : 1; }
     case 'docs': return cmdDocs(o);
     case 'plugins': { const ctx = buildCtx(o, true); const a = o._[1] || 'list'; if (a === 'decisions') { console.log(plugins.decisions()); return 0; }
       if (a === 'info' || a === 'use') { if (!o._[2]) { console.log(`which one? askai plugins info <id>   ids: ${require('./lib/plugins').P.map(p => p.id).join(', ')}`); return 1; } const r = plugins.info(o._[2]); console.log(`\nHow to use it\n${require('./lib/usage-guide').render(o._[2])}`); return r; }
       return a === 'install' ? plugins.install(ctx, o._[2], o) : plugins.list(ctx); }
     case 'upgrade': return cmdUpgrade(o, rest);
-    case 'savings': { const ctx = buildCtx(o, true); console.log(require('./lib/savings').report(ctx, Number(o._[1]) || 7, path.resolve(o.repo || '.'))); return 0; }
+    case 'savings': { const ctx = buildCtx(o, true); console.log(require('./lib/savings').report(ctx, Number(o._[1]) || 7, projectDir(o))); return 0; }
     case 'convert': return cmdConvert(o);
-    case 'clear': { const g = guide.clearGate(path.resolve(o.repo || '.'), o.tool || 'claude', o._[1] === 'compact' ? 'compact' : 'clear'); console.log(g.text); return g.fresh ? 0 : 1; }
+    case 'clear': { const g = guide.clearGate(projectDir(o), o.tool || 'claude', o._[1] === 'compact' ? 'compact' : 'clear'); console.log(g.text); return g.fresh ? 0 : 1; }
     case 'context': { const pct = o.used !== undefined && o.window ? 100 * Number(o.used) / Number(o.window) : Number(o._[1]); if (!isFinite(pct)) { console.log('Give the level: askai context 62, or askai context --used 124000 --window 200000 (read it from /context or /status). Claude Code: the AskAI status line shows it live.'); return 1; } console.log(`Context ${Math.round(pct)}%: ${guide.advice(pct)}.`); return 0; }
-    case 'todo': { const ctx = buildCtx(o, true); const dir = path.resolve(o._[2] && o._[1] !== 'done' && o._[1] !== 'undo' ? o._[2] : (o._[1] && !['done', 'undo'].includes(o._[1]) ? o._[1] : (o.repo || '.')));
+    case 'todo': { const ctx = buildCtx(o, true); const dir = !['done', 'undo'].includes(o._[1]) ? projectDir(o, o._[1]) : null;
       if (o._[1] === 'done' || o._[1] === 'undo') { if (!o._[2]) { console.log('which item? askai todo done <id>'); return 1; } todo.mark(ctx, o._[2], o._[1] === 'done'); console.log(`${o._[1] === 'done' ? 'marked done' : 'reopened'}: ${o._[2]}`); return 0; }
       console.log(todo.render(todo.items(ctx, dir), o.all)); return 0; }
-    case 'work': { console.log(guide.render('work')); try { const ctx = buildCtx(o, true); const open = todo.open(todo.items(ctx, path.resolve(o.repo || '.'))); if (open.length) console.log(`\nYour open to-dos (${open.length}): ${open.slice(0, 3).map(i => i.text).join('; ')}${open.length > 3 ? '; ...' : ''}\nAll of them: askai todo`); } catch (_) { /* no context */ } } console.log('\nMore: askai guide <moment> (start, break, resume, clear, compact, cache, models, subagents, mcp, output, prompts, docs, plugins, security, peak) · askai ask <words>'); return 0;
+    case 'work': { console.log(guide.render('work')); try { const ctx = buildCtx(o, true); const open = todo.open(todo.items(ctx, projectDir(o))); if (open.length) console.log(`\nYour open to-dos (${open.length}): ${open.slice(0, 3).map(i => i.text).join('; ')}${open.length > 3 ? '; ...' : ''}\nAll of them: askai todo`); } catch (_) { /* no context */ } } console.log('\nMore: askai guide <moment> (start, break, resume, clear, compact, cache, models, subagents, mcp, output, prompts, docs, plugins, security, peak) · askai ask <words>'); return 0;
     case 'etiquette': console.log(guide.render('all')); return 0;
-    case 'continue': return session.run('resume', o);
-    case 'checkpoint': return session.run('pause', o);
+    case 'continue': return session.run('resume', { ...o, repo: projectDir(o) });
+    case 'checkpoint': return session.run('pause', { ...o, repo: projectDir(o) });
     case 'diff': return cmdDiff(o);
     case 'graph': return cmdGraph(o);
     case 'hook': { let input = ''; try { input = fs.readFileSync(0, 'utf8'); } catch (_) { /* no stdin */ } const out = hookLib.run(buildCtx(o, true), o._[1], input); if (out) process.stdout.write(out + '\n'); return 0; }
     case 'check': return cmdCheck(o);
     case 'ask': return cmdAsk(o);
     case 'usage': return cmdUsage(o);
-    case 'start': case 'break': case 'resume': return session.run(o._[0], o);
+    case 'start': case 'break': case 'resume': return session.run(o._[0], { ...o, repo: projectDir(o) });
     case 'scaffold': return cmdScaffold(o);
     case 'tips': return cmdTips(o);
     case 'peak': return cmdPeak(o);

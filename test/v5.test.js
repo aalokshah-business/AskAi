@@ -139,7 +139,7 @@ test('guide, clear gate and context advice', () => withHome(h => {
   assert.match(guide.clearGate(h).text, /still the empty template/);
   write(path.join(h, '.ai-work', 'HANDOFF.md'), '# HANDOFF\nGoal: ship the cart totals fix; tests green\n');
   const g = guide.clearGate(h, 'codex'); assert.strictEqual(g.fresh, true); assert.strictEqual(g.native, '/new');
-  assert.match(guide.advice(30), /continue/); assert.match(guide.advice(65), /handoff/); assert.match(guide.advice(90), /now/);
+  assert.match(guide.advice(30), /continue/); assert.match(guide.advice(65), /HANDOFF\.md/); assert.match(guide.advice(90), /now/);
 }));
 
 test('go: the tier model and effort per tool, fixed for the session', () => withHome(h => {

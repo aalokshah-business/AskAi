@@ -63,7 +63,7 @@ test('askai install takes over a previous token-setup run: same settings, one ru
   assert.ok(!fs.existsSync(path.join(H, '.token-kit', 'state.json')), 'token-setup state removed');
   for (const f of [['.claude', 'CLAUDE.md'], ['.codex', 'AGENTS.md'], ['.gemini', 'GEMINI.md']]) assert.ok(!read(path.join(H, ...f)).includes('token-kit:begin'), `${f.join('/')}: no token-kit block`);
   assert.ok(read(path.join(H, '.claude', 'CLAUDE.md')).startsWith('# my own notes'), 'user text kept');
-  assert.ok(!fs.existsSync(path.join(H, '.claude', 'commands', 'handoff.md')) && fs.existsSync(path.join(H, '.claude', 'commands', 'askai-handoff.md')));
+  assert.ok(!fs.existsSync(path.join(H, '.claude', 'commands', 'handoff.md')) && fs.existsSync(path.join(H, '.claude', 'commands', 'askai-cli.md')));
   assert.ok(!fs.existsSync(path.join(H, '.cursor', 'rules', 'token-rules.mdc')));
   const s = JSON.parse(read(path.join(H, '.claude', 'settings.json')));
   assert.strictEqual(s.model, 'haiku'); assert.strictEqual(s.effortLevel, 'medium'); assert.strictEqual(s.promptSuggestionEnabled, false);

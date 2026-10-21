@@ -134,7 +134,7 @@ flowchart LR
 | --- | --- | --- |
 | Before a session | The task, the tier (lead, build, chore), the model and effort, the active MCP servers, peak hours, the project context | ${code('askai go')}, ${code('askai prompt')}, ${code('askai mcp')}, ${code('askai models')}, ${code('askai init')} |
 | During a session | The rules, subagents and skills AskAI wrote (the agent loads them); reminders at 60% and 80% context, long sessions, peak hours, stale handoff, cache misses | Files in each tool; Claude Code ${code('SessionStart')} and ${code('UserPromptSubmit')} hooks answering with ${code('systemMessage')} only (zero tokens) |
-| At a break or a /clear | The handoff, the ledger, the check that the handoff is fresh | ${code('/askai-handoff')}, ${code('askai break')}, ${code('askai clear')}, ${code('askai resume')} |
+| At a break or a /clear | The handoff, the ledger, the check that the handoff is fresh | Ask the agent to write .ai-work/HANDOFF.md; ${code('askai break')}, ${code('askai clear')}, ${code('askai resume')} |
 | After work | Usage, cache reuse, model switches, the models subagents really ran, what is installed versus used | ${code('askai usage')}, ${code('askai audit')}, ${code('askai infra')}, ${code('askai session report')} |
 
 AskAI does not sit inside a running agent and rewrite each message: none of the four tools allows that without proxying their traffic, which can switch billing and breaks caching. It mediates at the boundaries (session start, breaks, clears) and inside the session through the files and hooks each tool already reads. That also matches the cache rule: the model, effort and tools are chosen once per session.
@@ -172,7 +172,7 @@ AskAI does not sit inside a running agent and rewrite each message: none of the 
 | Each repository | Shared instruction file, ignore list, local handoff folder | ${code('askai scaffold .')}, ${code('askai check . --fix')} |
 | Start of a task | One task per chat; one complete prompt; plan for multi-file work | ${code('askai start')}, ${code('askai peak')} |
 | While working | Search then read ranges, smallest change, Esc early, few cheap subagents | Rules installed in every host; ${code('askai ask <topic>')} |
-| Before a break | Verified step, commit, handoff, stop background work | ${code('/askai-handoff')}, ${code('askai break')} |
+| Before a break | Verified step, commit, handoff, stop background work | Ask the agent to write .ai-work/HANDOFF.md; ${code('askai break')} |
 | Coming back | Continue within the cache lifetime; otherwise fresh chat from the handoff | ${code('askai resume --copy')} |
 | Weekly | Compare tools and habits on accepted work per token | ${code('askai usage 7')}, ${code('askai session report')}, ${code('/doctor')} |
 | Upgrades | Re-check after each tool update | ${code('askai update')}, ${code('askai check')} |
@@ -232,6 +232,8 @@ Long conversations are the biggest token cost: every turn re-sends the whole cha
 | ${code('.claude/skills/')}, ${code('.agents/skills/')} | ${code('architecture-map')}, ${code('prompt-refiner')}, ${code('investigate-bug')}, ${code('verify-and-review')} (load on demand) |
 | ${code('.cursorignore')}, ${code('.ai-work/')} | Junk kept out of Cursor; handoff, ledger and measurements (gitignored) |
 
+Initialization also registers the canonical folder under a short name in ${code('~/.askai/projects.json')}. Tool integrations remain global; project files and ${code('.ai-work/')} stay in each repository. ${code('lib/project-registry.js')} resolves an explicit ${code('--project NAME')} or ${code('-p NAME')} first, then the terminal's ${code('ASKAI_PROJECT')}, the registered or initialized current directory, an optional default, and finally the older current-directory behavior. Missing registrations fail clearly. ${code('lib/project-shell.js')} supplies PowerShell, Bash and Zsh functions so ${code('askai set project NAME')} changes only the calling terminal. ${code('docs/PROJECT_MANAGEMENT.md')} covers registration, two terminals and moved folders.
+
 ## 5b. Model and effort per tier
 
 ${tierTable()}
@@ -274,10 +276,10 @@ ${claudeSettings()}
 | Antigravity | ${code('~/.gemini/GEMINI.md')} | the token rules block |
 | Antigravity | ${code('~/.gemini/config/rules/askai-*.md')} | code and document rules with ${code('trigger: glob')} |
 | Antigravity | ${code('~/.gemini/config/mcp_config.json')} | Serena (coding profile) |
-| Antigravity | ${code('~/.gemini/antigravity-cli/skills/askai-handoff')}, ${code('~/.gemini/config/skills/askai-handoff')} | the handoff skill |
+| Antigravity | ${code('~/.gemini/antigravity-cli/skills/askai-cli')}, ${code('~/.gemini/config/skills/askai-cli')} | AskAI-only terminal |
 | Cursor | ${code('~/.cursor/rules/askai-*.mdc')} | always-on token rule; code and document rules with globs |
 | Cursor | ${code('~/.cursor/mcp.json')}, ${code('~/.cursor/hooks.json')} | Serena; RTK only with --rtk |
-| Cursor | ${code('~/.cursor/commands/askai-handoff.md')} | the handoff command |
+| Cursor | ${code('~/.cursor/commands/askai-cli.md')} | AskAI-only terminal |
 
 ## 9. Files and data AskAI keeps
 
@@ -300,11 +302,10 @@ ${commandRef()}
 
 | Tool | Command or skill | What it does |
 | --- | --- | --- |
-| Claude Code | ${code('/askai-handoff')} | writes .ai-work/HANDOFF.md in under 40 lines |
-| Claude Code | ${code('/askai-status')}, ${code('/askai-report')} | askai status and askai report inside the session |
-| Codex | ${code('$askai-handoff')} | the handoff skill |
-| Antigravity | ${code('/askai-handoff')} | the handoff skill |
-| Cursor | ${code('/askai-handoff')} | the handoff command |
+| Claude Code | ${code('/askai-cli')} | opens the AskAI-only terminal |
+| Codex | ${code('$askai-cli')} | opens the AskAI-only terminal |
+| Antigravity | ${code('/askai-cli')} | opens the AskAI-only terminal |
+| Cursor | ${code('/askai-cli')} | opens the AskAI-only terminal |
 
 ## 12. Practices AskAI knows (askai ask)
 

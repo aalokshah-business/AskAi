@@ -657,7 +657,7 @@ test('install --dry-run --target both --profile full lists the Cursor and opt-in
   for (const id of ['cursor-rtk', 'cursor-context-mode', 'cursor-serena', 'markitdown', 'ccusage', 'rules']) assert.match(r.out, new RegExp(`\\b${id}\\b`), `${id} is listed`);
   assert.match(r.out, /profile: full/);
   assert.match(r.out, /mcp\.json and hooks\.json/);
-  // The real `claude --version` probe creates its own .claude.json and backups/ in a fresh config dir; askai writes nothing.
+  // The real Claude CLI probe creates .claude.json and backups/; telemetry stays disabled and AskAI writes nothing.
   assert.deepStrictEqual(fs.readdirSync(a.home).filter(n => n !== '.claude.json' && n !== 'backups'), [], 'dry-run wrote nothing into the claude home');
   assert.deepStrictEqual(fs.readdirSync(a.cursorHome), [], 'nor into the Cursor home');
 }));

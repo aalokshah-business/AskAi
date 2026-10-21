@@ -25,7 +25,7 @@ test('profiles: every profile lists real components and rule kinds, and rules is
     for (const id of p.components) assert.ok(known.includes(id), `${name}: ${id} is a component`);
     for (const k of p.rules) assert.ok(rules.kinds().includes(k), `${name}: ${k} is a rule kind`);
     assert.ok(p.components.includes('rules'), `${name} carries the rules component so a narrower profile can remove wider rule files`);
-    assert.ok(p.components.includes('caveman') && p.components.includes('handoff') && (name === 'max' || !p.components.includes('rtk')), `${name} keeps the basics; RTK is opt-in outside max`);
+    assert.ok(p.components.includes('caveman') && !p.components.includes('handoff') && (name === 'max' || !p.components.includes('rtk')), `${name} keeps the basics; RTK is opt-in outside max`);
   }
 });
 
@@ -41,7 +41,7 @@ test('profiles: work kinds differ the way the README says', () => {
 });
 
 test('select: a profile picks its components for install, opt-in flags add to it, --skip removes', () => {
-  assert.deepStrictEqual(ids({ profile: 'minimal' }), ['token-kit', 'claude', 'baseline', 'caveman', 'rules', 'statusline', 'prompt-hooks', 'handoff', 'lean']);
+  assert.deepStrictEqual(ids({ profile: 'minimal' }), ['token-kit', 'claude', 'baseline', 'caveman', 'rules', 'statusline', 'prompt-hooks', 'lean']);
   assert.ok(ids({ profile: 'minimal', rtk: true }).includes('rtk') && ids({ contextMode: true }).includes('context-mode'), '--rtk and --context-mode opt in');
   assert.ok(ids({ profile: 'docs' }).includes('markitdown') && !ids({ profile: 'docs' }).includes('serena'));
   assert.ok(ids({}).includes('serena'), 'no profile means the default one (coding)');

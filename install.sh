@@ -9,6 +9,9 @@
 set -euo pipefail
 HERE="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
 ARGS=("$@"); if [ ${#ARGS[@]} -eq 0 ] || [[ "${ARGS[0]}" == -* ]]; then ARGS=(install "${ARGS[@]}"); fi  # no command, or options first: install
+SHELL_INTEGRATION=0
+FILTERED=(); for a in "${ARGS[@]}"; do if [ "$a" = --shell-integration ]; then SHELL_INTEGRATION=1; else FILTERED+=("$a"); fi; done
+ARGS=("${FILTERED[@]}")
 has() { for a in "${ARGS[@]}"; do [ "$a" = "$1" ] && return 0; done; return 1; }
 YES=0; { has --yes || has -y; } && YES=1
 DRY=0; has --dry-run && DRY=1
@@ -41,5 +44,12 @@ if [ "$CODE" -eq 0 ] && [ "${ARGS[0]}" = "install" ] && [ "$DRY" -eq 0 ] && ! ha
       echo "Added. Open a new terminal (or: source $RC)."
     fi;;
   esac
+fi
+if [ "$CODE" -eq 0 ] && [ "${ARGS[0]}" = install ] && [ "$SHELL_INTEGRATION" -eq 1 ] && [ "$DRY" -eq 0 ] && ! has --claude-home; then
+  RC="$HOME/.bashrc"; SH_NAME=bash
+  if [ -n "${ZSH_VERSION:-}" ] || [ "$(basename "${SHELL:-}")" = zsh ]; then RC="$HOME/.zshrc"; SH_NAME=zsh; fi
+  APP="${CLAUDE_CONFIG_DIR:-$HOME/.claude}/askai/app/askai.js"
+  node "$APP" shell install "$SH_NAME" --path "$RC"
+  echo "Open a new terminal to use askai set project NAME."
 fi
 exit "$CODE"

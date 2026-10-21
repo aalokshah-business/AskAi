@@ -66,7 +66,7 @@ test('select: Codex and Antigravity components follow the tools they mirror and 
   const claudeOnly = { claude: true, cursor: false, codex: false, agy: false };
   assert.ok(!ids({ profile: 'coding' }, claudeOnly).some(i => /^(codex|agy)-/.test(i)));
   const all = ids({ profile: 'coding', rtk: true }, { claude: true, cursor: true, codex: true, agy: true });
-  for (const i of ['codex-baseline', 'codex-rules', 'codex-rtk', 'codex-serena', 'agy-rules', 'agy-rtk', 'agy-serena', 'handoff']) assert.ok(all.includes(i), i);
+  for (const i of ['codex-baseline', 'codex-rules', 'codex-rtk', 'codex-serena', 'agy-rules', 'agy-rtk', 'agy-serena']) assert.ok(all.includes(i), i);
   const minimal = ids({ profile: 'minimal', rtk: true }, { claude: false, cursor: false, codex: true, agy: true });
   assert.ok(minimal.includes('codex-rtk') && !minimal.includes('codex-serena') && !minimal.includes('agy-serena'), 'minimal has no MCP servers');
   assert.ok(ids({}, claudeOnly).includes('lean') && !ids({ skip: 'lean' }, claudeOnly).includes('lean'), 'lean is in every profile since 4.0; --skip removes it');
@@ -139,19 +139,20 @@ test('agy-serena adds an entry only when absent and removes only its own', () =>
 }));
 
 // ---- handoff and lean ------------------------------------------------------------------------------------------------
-test('handoff: one prompt for Cursor (command), Codex and Antigravity (skills); never overwrites a user file; uninstall only its own', () => withHome(home => {
+test('retired handoff launcher is not installed and cleanup removes only its own files', () => withHome(home => {
   const ctx = hostCtx(home);
   const userFile = path.join(ctx.agyPaths.appSkills, 'askai-handoff', 'SKILL.md');
   write(userFile, 'my own skill');
   c('handoff').install(ctx);
   const cursorCmd = path.join(ctx.cursorPaths.home, 'commands', 'askai-handoff.md');
-  const codexSkill = path.join(ctx.codexPaths.skills, 'askai-handoff', 'SKILL.md');
-  const agyCli = path.join(ctx.agyPaths.cliSkills, 'askai-handoff', 'SKILL.md');
-  assert.ok(read(cursorCmd).includes('.ai-work/HANDOFF.md') && read(codexSkill).startsWith('---\nname: askai-handoff') && read(agyCli));
+  assert.ok(!fs.existsSync(cursorCmd), 'retired component creates no launcher');
   assert.strictEqual(read(userFile), 'my own skill', 'a file askai did not write is left alone');
-  assert.strictEqual(c('handoff').detect(ctx).state, 'partial');
+  assert.strictEqual(c('handoff').detect(ctx).state, 'other');
+  const text = 'old AskAI launcher';
+  write(cursorCmd, text);
+  ctx.manifest.components.handoff = { files: [{ path: cursorCmd, sha: require('crypto').createHash('sha1').update(text).digest('hex') }] };
   c('handoff').uninstall(ctx);
-  assert.ok(!fs.existsSync(cursorCmd) && !fs.existsSync(codexSkill) && !fs.existsSync(agyCli) && read(userFile) === 'my own skill');
+  assert.ok(!fs.existsSync(cursorCmd) && read(userFile) === 'my own skill');
   const dry = hostCtx(home, { dry: true });
   c('handoff').install(dry);
   assert.ok(!fs.existsSync(cursorCmd), 'dry-run writes nothing');
@@ -230,12 +231,12 @@ test('tips and peak: every topic renders; the peak window follows US Eastern wee
 
 // ---- CLI -----------------------------------------------------------------------------------------------------------
 test('CLI: version, tips, peak and a four-host dry-run install that writes nothing', () => withHome(home => {
-  assert.strictEqual(cli(['version']).out.trim(), '1.0.2');
+  assert.strictEqual(cli(['version']).out.trim(), '1.1.0');
   assert.strictEqual(cli(['tips', 'agy']).code, 0);
   assert.strictEqual(cli(['peak', '--json']).code, 0);
   const homes = ['--claude-home', path.join(home, 'claude'), '--cursor-home', path.join(home, 'cursor'), '--codex-home', path.join(home, 'codex'), '--agy-home', path.join(home, 'gemini')];
   const r = cli(['install', '--dry-run', '--yes', '--target', 'all', '--profile', 'minimal', ...homes]);
-  assert.ok(r.out.includes('codex-baseline') && r.out.includes('agy-rules') && r.out.includes('handoff'), r.out + r.err);
+  assert.ok(r.out.includes('codex-baseline') && r.out.includes('agy-rules') && !/\n\s+handoff\s/.test(r.out), r.out + r.err);
   assert.ok(!fs.existsSync(path.join(home, 'codex', 'config.toml')) && !fs.existsSync(path.join(home, 'gemini', 'GEMINI.md')), 'dry-run wrote nothing');
   assert.strictEqual(cli(['session', 'status', '--repo', home]).code, 0);
 }));

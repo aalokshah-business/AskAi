@@ -2,6 +2,13 @@
 
 AskAI follows semantic versioning from 1.0.0 (see [RELEASING.md](RELEASING.md)). Installs always take the latest version on `main`.
 
+## 1.1.0 (21 October 2026): project aliases and one AskAI launcher
+
+- Registered initialized projects by name in `~/.askai/projects.json`; added `projects`, `set project`, and project show/rename/path/remove/switch commands. Project-aware commands now share the same resolver for names, terminal selection, directory discovery and an optional default.
+- Added PowerShell, Bash and Zsh shell functions for terminal-scoped selection. Install scripts can add their managed profile block on request; full uninstall removes it.
+- Added `askai docs check`, a project management guide and regression tests for command entry points, two-project setup, registry operations, terminal isolation and rollback.
+- Kept `askai-cli` as the sole installed AskAI agent launcher. Reinstall removes unchanged legacy AskAI slash commands and handoff skills recorded in its manifest; edited files stay intact. AskAI-launched subprocesses now disable telemetry.
+
 ## 1.0.2 (21 October 2026): slash commands and accurate usage windows
 
 - Added `/askai-cli` (Codex: `$askai-cli`) across Claude Code, Codex, Antigravity and Cursor; documented model token cost of the initial agent command.

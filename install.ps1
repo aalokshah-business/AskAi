@@ -55,6 +55,7 @@
 .PARAMETER ClaudeMem      Also install the claude-mem plugin for Claude Code (not in max; it summarises sessions with your plan).
 .PARAMETER BaseTools      Also install the command-line tools agents search with: ripgrep, jq and gh (only those missing).
 .PARAMETER Project        After installing, write the project knowledge pack into this repository (askai init): AGENTS.md, CLAUDE.md, GEMINI.md, docs\ai\*, subagents for all four tools.
+.PARAMETER ShellIntegration Add the AskAI project-selection function to this PowerShell profile. Run with -Yes for unattended setup.
 .PARAMETER Action         install (default) | update | status | doctor | check | usage | report | profiles | suggest | project | scaffold | tips | peak | restore | uninstall | init | infra | audit | guide | models | mcp | plugins.
   Every other command (ask, start, break, resume, session, help) runs through the askai command after install.
 #>
@@ -91,6 +92,7 @@ param(
   [string]$AgyHome,
   [string]$Topic,
   [string]$Project,
+  [switch]$ShellIntegration,
   [switch]$BaseTools,
   [switch]$Headroom,
   [switch]$Graphify,
@@ -212,4 +214,15 @@ if ($CodebaseMemory) { $argv += '--codebase-memory' }
 if ($ClaudeMem) { $argv += '--claude-mem' }
 
 & $node $script @argv
-exit $LASTEXITCODE
+$askaiCode = $LASTEXITCODE
+if ($askaiCode -eq 0 -and $Action -eq 'install' -and $ShellIntegration -and -not $ClaudeHome) {
+  $profilePath = $PROFILE.CurrentUserCurrentHost
+  if ($DryRun) { Write-Host "[dry-run] would add AskAI shell integration to $profilePath" }
+  else {
+    $appPath = Join-Path (Join-Path $HOME '.claude') 'askai\app\askai.js'
+    & $node $appPath shell install powershell --path $profilePath
+    if ($LASTEXITCODE -ne 0) { exit $LASTEXITCODE }
+    Write-Host 'Open a new PowerShell terminal to use askai set project NAME.'
+  }
+}
+exit $askaiCode

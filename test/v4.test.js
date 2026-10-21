@@ -41,7 +41,7 @@ test('check: flags billing traps, Opus default, Antigravity credits and repo gap
 test('break and resume: checklist, ledger entry, time away and advice; the prompt is always printed', () => withHome(home => {
   const out = []; const p = m => out.push(m);
   assert.strictEqual(session.run('break', { repo: home, summary: 'menu done', next: 'check 320px' }, p), 0);
-  assert.ok(out.join('\n').includes('write the handoff') && fs.existsSync(path.join(home, '.ai-work', 'LAST_BREAK')));
+  assert.ok(out.join('\n').includes('write .ai-work/HANDOFF.md') && fs.existsSync(path.join(home, '.ai-work', 'LAST_BREAK')));
   fs.writeFileSync(path.join(home, '.ai-work', 'LAST_BREAK'), new Date(Date.now() - 3 * 3600000).toISOString());
   out.length = 0;
   session.run('resume', { repo: home }, p);

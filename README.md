@@ -10,7 +10,7 @@ Background: the earlier self-built askai hook system was measured net negative o
 
 **Installing: follow [docs/INSTALL.md](docs/INSTALL.md).** Architecture, settings and command reference: [docs/ARCHITECTURE.md](docs/ARCHITECTURE.md).
 
-Contents: [Quick start](#quick-start-one-command-per-project) | [Documentation](#documentation) | [What AskAI 1.0 includes](#what-askai-10-includes) | [The landscape](#the-landscape-what-exists-and-what-askai-uses) | [Commands](#commands) | [Safety](#safety)
+Contents: [Quick start](#quick-start-one-command-per-project) | [Documentation](#documentation) | [What AskAI 1.1 includes](#what-askai-11-includes) | [The landscape](#the-landscape-what-exists-and-what-askai-uses) | [Commands](#commands) | [Safety](#safety)
 
 ## Quick start: one command per project
 
@@ -28,7 +28,7 @@ macOS, Linux or WSL:
 curl -fsSL https://raw.githubusercontent.com/aalokshah-business/AskAi/main/get.sh | bash -s -- --target all --profile max --project ~/code/myapp --yes
 ```
 
-Then work through `askai todo <repo>` (sign-ins, restarts, app settings, project details) and check everything with `askai infra <repo>`. Add `-DryRun` / `--dry-run` for a preview, or leave out the `max` profile for the evidence-based default.
+Then work through `askai todo` (sign-ins, restarts, app settings, project details) and check everything with `askai infra`. The project passed during install is registered by folder name. Use `askai projects` to see it, `askai infra --project NAME` to inspect it from another directory, or `askai cli` then `set project NAME` to keep it selected. [Project management](docs/PROJECT_MANAGEMENT.md) covers two or more repositories and shell integration. Add `-DryRun` / `--dry-run` for a preview, or leave out the `max` profile for the evidence-based default.
 
 **Or ask your agent to do it.** Paste this into Claude Code, Codex, Antigravity or Cursor, opened in the project:
 
@@ -64,12 +64,12 @@ AskAI is MIT-licensed. Only the maintainer pushes to this repository; changes fr
 
 In the terminal: `askai help all` (every command), `askai plugins info <id>` (how to use each plugin), `askai docs <name> --print` (any document above).
 
-## What AskAI 1.0 includes
+## What AskAI 1.1 includes
 
 - **One command per project** from GitHub, for Claude Code, Codex, Antigravity and Cursor on Windows, macOS, Linux and WSL; `askai upgrade` keeps it on the latest version.
 - **Evidence-based defaults**: cheap default models and effort, idle drains off, output caps, short rules (terse replies, diff-only output, build-lean), reminder hooks that cost no tokens, a status line, handoff commands in every tool.
 - **Every optimiser on request** (`--profile max`): Serena, RTK, Context Mode, Headroom (MCP mode), Graphify, Context7, Repomix, the Caveman plugin, LSP plugins, MarkItDown, ccusage, ripgrep, jq, gh; codebase-memory-mcp and claude-mem one flag each.
-- **A project knowledge pack** (`askai init`): AGENTS.md router under 333 lines, CLAUDE.md, GEMINI.md, project map, architecture, features, work order, model tiers, lead/build/chore subagents for all four tools, four project skills.
+- **A project knowledge pack** (`askai init`): AGENTS.md router under 333 lines, CLAUDE.md, GEMINI.md, project map, architecture, features, work order, model tiers, lead/build/chore subagents for all four tools, four project skills. Each initialized folder gets a name in `~/.askai/projects.json`.
 - **Everything visible in the terminal**: `askai help all`, `askai todo` (what only you can do), `askai infra` (installed, configured, used), `askai savings`, `askai plugins info <id>`, `askai guide <moment>`, `askai work`, `askai audit`, `askai usage`.
 
 What changed in each version: [docs/CHANGELOG.md](docs/CHANGELOG.md).
@@ -199,7 +199,7 @@ A rule file without askai's marker line is not askai's: it is skipped unless `--
 | Shell-output compression (RTK) | `rtk init -g --codex --auto-patch` (RTK's PreToolUse hook) | `rtk init -g --agent antigravity --auto-patch` (RTK's plugin in `~/.gemini/config/plugins/rtk`) |
 | Code navigation (Serena) | `codex mcp add serena -- serena start-mcp-server --context codex --project-from-cwd` | `serena` entry in `~/.gemini/config/mcp_config.json` (`--context ide`) |
 | Large-output sandbox (Context Mode) | Supported by Context Mode itself: run its installer (`npx skills add mksglu/context-mode`); askai does not guess its flags | Same |
-| Handoff | `askai-handoff` skill in `~/.agents/skills` (`$askai-handoff`) | `askai-handoff` skill in `~/.gemini/antigravity-cli/skills` and `~/.gemini/config/skills` (becomes `/askai-handoff`) |
+| Handoff | Ask the agent to write `.ai-work/HANDOFF.md` | Ask the agent to write `.ai-work/HANDOFF.md` |
 | AskAI-only terminal | `/prompts:askai-cli` or `$askai-cli` | `/askai-cli` (AskAI skill) |
 | Usage figures | `/status`, `/usage`; not read by askai | `/usage`, `/credits`; not read by askai |
 
@@ -225,7 +225,7 @@ A rule file without askai's marker line is not askai's: it is skipped unless `--
 | `cursor-rules` | The Cursor twin of the rule files | `~/.cursor/rules/askai-*.mdc` for the profile | Every Cursor chat (token rule); code and document rules when a matching file is in play |
 | `codex-baseline`, `codex-rules`, `codex-rtk`, `codex-serena` | The Codex twins of `baseline`, `caveman`, `rtk` and `serena` | See [Codex and Antigravity](#codex-and-antigravity) | Every Codex session |
 | `agy-baseline`, `agy-rules`, `agy-rtk`, `agy-serena` | The Antigravity twins of `baseline`, `caveman`, `rtk` and `serena` | See [Codex and Antigravity](#codex-and-antigravity) | Every Antigravity session |
-| `handoff` | Session handoff (`/askai-handoff` for Claude Code and Cursor, `askai-handoff` skill for Codex and Antigravity) | `~/.claude/commands/askai-handoff.md`, `~/.cursor/commands/askai-handoff.md`, the `askai-handoff` skill for Codex and Antigravity | Only when you ask for it |
+| Session handoff | Ask the agent to update `.ai-work/HANDOFF.md` before a break | Repository-local `.ai-work/HANDOFF.md` | Only when you ask for it |
 | `lean` | Lean Claude Code settings (idle drains off, Bash output cap, deny-read rules) | `settings.json`: `promptSuggestionEnabled` false, `bashOutputMaxChars` 15000, `includeGitInstructions` false (`--lean-git` to add this one too); `permissions.deny` `Read()` rules for `node_modules`, build output, lockfiles, minified files and `.env`; also `awaySummaryEnabled` false, `crossSessionInbound` hold and `CLAUDE_CODE_GOAL_CHECKIN_MINUTES=0` (no idle wake-ups), plus Codex `[tui] auto_recap = false`. In every profile; leave it out with `--skip lean` | Every session |
 | `prompt-hooks` | In-session reminders (zero-token Claude Code hooks) | `settings.json` hooks: `SessionStart` and `UserPromptSubmit` → `askai hook` (short reminders shown only to you: context at 60% and 80%, long sessions, peak hours, stale handoff, cache misses) | `SessionStart` and `UserPromptSubmit`; nothing is added to the model's context |
 | `agy-path-rules` | The Antigravity twin of `rules` | `~/.gemini/config/rules/askai-<kind>.md` with `trigger: glob` frontmatter | Only when a matching file is touched |
@@ -270,7 +270,7 @@ A break longer than about an hour costs you the prompt cache, and a long chat re
 
 ```bash
 askai session start --tool claude --task "Fix mobile nav"          # ledger entry: tool, task, branch, last commit
-# in the agent: /askai-handoff  (Codex: $askai-handoff; Antigravity: /askai-handoff)
+# ask the agent to write a short handoff to .ai-work/HANDOFF.md
 askai session pause --summary "menu closes, unit test green" --next "check 320px"
 askai session resume      # prints .ai-work/HANDOFF.md, the last ledger lines, and the prompt to paste into ANY of the four agents
 askai session measure --tool codex --difficulty simple --task "..." --minutes 25 --input-tokens 9000 --output-tokens 2200 --success 1
@@ -298,7 +298,7 @@ askai doctor          # health checks (exit 1 on failure)
 askai report --json   # machine-readable; status --json and doctor --json also exist
 ```
 
-Inside Claude Code: `/askai-report [hours]` (everything), `/askai-status` (tools only), and `/context-mode:ctx-stats` for the current session. The status line shows RTK's running total, and cache hit and context use when Claude Code reports them.
+From `/askai-cli` (Codex: `$askai-cli`), type `report [hours]` or `status` in the AskAI terminal. Claude Code's `/context-mode:ctx-stats` reports the current Context Mode session. The status line shows RTK's running total, and cache hit and context use when Claude Code reports them.
 
 `askai report` prints these sections, each independent, so one failing does not hide the others:
 
@@ -320,9 +320,15 @@ askai install [--profile minimal|coding|docs|full|max] [--target auto|claude|cod
               [--no-statusline] [--no-path] [--yes] [--dry-run] [--force]
 askai profiles | suggest [dir] [--json]          which profile fits what
 askai scaffold [dir] [--dry-run]                 repo files every agent reads (never overwrites)
-askai init [dir] [--about "..."] [--type T] [--build "cmd"] [--test "cmd"] [--refresh] [--yes] [--dry-run]
+askai init [dir] [--name NAME] [--path DIR] [--about "..."] [--type T] [--build "cmd"] [--test "cmd"] [--refresh] [--yes] [--dry-run]
                                                   project knowledge pack, so /clear can be run freely
 askai project [dir] [--print|--remove] [--force] Cursor: the token rules inside one repo
+askai projects [--json]                         registered project names and paths
+askai project show|rename OLD NEW|path NAME NEW_PATH|remove NAME|switch [NAME]
+askai set project NAME|project --clear           active project in askai cli or an integrated terminal
+askai set default NAME|default --clear           optional persistent fallback
+askai shell init powershell|bash|zsh             shell function for terminal-scoped project selection
+--project NAME or -p NAME                        select a registered project for one project-aware command
 askai check [dir] [--fix] [--json]              audit the machine and a repo against the token guidelines
 askai ask <words>                                offline answers on etiquette and the research
 askai start | break | resume | continue [--copy] session shortcuts: ledger, before-break checklist, coming back
@@ -349,7 +355,7 @@ askai infra [dir] [--json]                       everything AskAI set up, per to
 askai audit [dir] [--json]                       the seven-point token audit
 askai todo [dir] [--all] | todo done|undo <id>   everything only you can do, per tool and for the repository
 askai convert <file|url> [--out file.md]         PDF, Office file, web page or YouTube URL to Markdown, locally
-askai docs [install|architecture|guide|cheatsheet|changelog|preview] [--print]
+askai docs [install|architecture|projects|guide|cheatsheet|changelog|preview|check] [--print]
 askai update [--target T] | upgrade [--dry-run]  refresh what's installed, or fetch the latest AskAI from GitHub and reinstall
 askai report [hours] [--json] | status | doctor [--json]
 askai uninstall [--tools] [--force] [--yes] | restore [stamp] [--yes]
@@ -416,9 +422,10 @@ Components for `--only` and `--skip`: `token-kit, claude, baseline, rtk, context
 
 ```powershell
 npm test        # node --test test/*.test.js, needs Node 21+ for the glob
+npm run test:commands  # all command entry points; two-project setup, infra and uninstall in temporary folders
 ```
 
-240 tests (5 skipped on this platform; see below) against throwaway folders under the OS temp dir with fake process runners: nothing installs software, touches the network, or writes to your real `~/.claude` or `~/.cursor`. The two `report` tests only read your real Claude Code transcripts (`~/.claude/projects`), because that is what the spend section reports on. Three tests need `bash` (and one also `git`) and are skipped where neither is on PATH, such as plain Windows without Git Bash or WSL.
+Tests use throwaway folders under the OS temp dir with fake process runners: nothing installs software, touches the network, or writes to your real `~/.claude` or `~/.cursor`. The two `report` tests only read your real Claude Code transcripts (`~/.claude/projects`), because that is what the spend section reports on. Three tests need `bash` (and one also `git`) and are skipped where neither is on PATH, such as plain Windows without Git Bash or WSL.
 
 ## Repository layout
 
@@ -440,9 +447,10 @@ npm test        # node --test test/*.test.js, needs Node 21+ for the glob
 - `lib/todo.js`: `askai todo` — what only you can do, with auto-clearing checks.
 - `lib/check.js`, `lib/suggest.js`: `askai check` (machine and repo audit against the guide) and the directory scan behind `askai suggest`.
 - `lib/project.js`, `lib/kb.js`: `askai init`/`askai map` (the project knowledge pack) and `askai ask` (the offline etiquette knowledge base).
+- `lib/project-registry.js`, `lib/project-shell.js`: project names, shared path resolution and terminal-scoped selection. The registry lives in `~/.askai/projects.json`; project notes remain in each repository.
 - `lib/session.js`, `lib/scaffold.js`, `lib/tips.js`, `lib/launch.js`, `lib/prompt.js`, `lib/guide.js`: `askai session`, `scaffold`, `tips`/`peak`, `go`, `prompt`, and `guide`/`clear`/`context`/`work`/`etiquette`. `templates/`: the files scaffold and session write.
 - `lib/help.js`: one entry per command; also the source `scripts/gen-docs.js` reads for the command reference in `docs/ARCHITECTURE.md`.
 - `hooks/askai-report.js`: transcript-based spend report used by `askai report`. `lib/hook.js`: the Claude Code reminder hooks (`askai hook`), invoked by Claude Code itself, not typed by you.
-- `commands/`: `/askai-cli`, `/askai-status`, `/askai-report`, and `/askai-handoff` for Claude Code. The `/askai-cli` entry opens a separate terminal in Cursor and Antigravity too. Codex gets `/prompts:askai-cli` and the `$askai-cli` skill; custom prompts are deprecated, so the skill remains the supported option.
+- `commands/`: `/askai-cli` is the installed AskAI entry point for Claude Code, Cursor and Antigravity. Codex gets `/prompts:askai-cli` and the `$askai-cli` skill; custom prompts are deprecated, so the skill remains the supported option. Earlier AskAI command files are retired during installation when AskAI still owns them.
 - `legacy/`: the retired self-built hook system and its installer. Not used by anything above.
 - `test/`: the test suite.
