@@ -45,6 +45,6 @@ test('install.sh with options first (the one command) runs install, from the pro
       { cwd: repo, encoding: 'utf8', input: '', timeout: 120000, env: { ...process.env, HOME: H } });
     assert.strictEqual(r.status, 0, r.stdout + r.stderr);
     assert.ok(fs.existsSync(path.join(repo, 'AGENTS.md')) && fs.existsSync(path.join(repo, 'docs', 'ai', 'PROJECT_MAP.md')), 'the project pack was written into the current folder');
-    assert.match(r.stdout, /Things only you can do/);
+    assert.match(r.stdout, /Remaining setup and review steps/);
   } finally { fs.rmSync(H, { recursive: true, force: true }); }
 });

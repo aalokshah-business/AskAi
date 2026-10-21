@@ -36,7 +36,7 @@ const launch = require('./lib/launch');
 const hookLib = require('./lib/hook');
 const todo = require('./lib/todo');
 
-const VERSION = '1.1.0';
+const VERSION = '1.2.0';
 const SRC = __dirname;
 
 const HELP = `askai ${VERSION}: make AI coding usage last longer. Installs and wires up token-saving tools for Claude Code, Cursor,
@@ -79,7 +79,7 @@ Project and sessions (AskAI as the mediator)
   guide [moment]    etiquette for install | start | work | break | resume | clear | compact | cache | models | subagents | mcp | output | prompts | docs | plugins | peak
   plugins           every token tool: evidence and state; plugins info <id> (commands, checks, savings, off switch), plugins install <id>, plugins decisions
   savings [days]    run each installed plugin's own savings report (rtk gain, ccusage, headroom stats, ...)
-  todo              everything only you can do, per tool and for the repository (askai todo done <id> marks one)
+  todo              remaining setup and project-review steps (askai todo done <id> marks one)
   convert <file>    PDF, Office, HTML or a YouTube URL to Markdown (MarkItDown)
   clear [compact]   is it safe to /clear now (fresh handoff?) and the native command for the tool (--tool)
   work · etiquette  the working etiquette · all of it (same as askai guide work / askai guide all)
@@ -162,7 +162,9 @@ function registerProject(o, dir) {
   if (o.dry) return;
   const data = registry.read(registryHome(o));
   const existing = Object.entries(data.projects).find(([, p]) => process.platform === 'win32' ? p.toLowerCase() === dir.toLowerCase() : p === dir);
-  const result = registry.register(registryHome(o), o.name || (existing && existing[0]) || path.basename(dir), dir);
+  const name = o.name || (existing && existing[0]) || path.basename(dir);
+  if (existing && existing[0].toLowerCase() === name.toLowerCase()) { console.log(`  registered project ${existing[0]} -> ${existing[1]}`); return; }
+  const result = registry.register(registryHome(o), name, dir);
   console.log(`  registered project ${result.name} -> ${result.path}`);
 }
 function registrationName(o, dir) {
@@ -514,7 +516,7 @@ async function cmdInstall(o) {
     if (hosts.cursor) console.log('Cursor user rules are in ~/.cursor/rules and apply in every project on this machine. Restart Cursor so it reads the hooks, MCP servers and rules. `askai project` writes the same files into one repo for git; skip it here, or the always-applied rule is loaded twice.');
   }
   if (o.project) { console.log(''); const dir = projectDir(o, o.project); const name = registrationName(o, dir); project.init(dir, { yes: true, dry: o.dry, about: o.about, type: o.type }, ctx); registerProject({ ...o, name }, dir); }
-  if (!o.dry) { console.log('Check it: askai infra (everything set up, per tool), askai check (gaps), and askai status (tool state).'); try { const dir = o.project ? projectDir(o, o.project) : null; const list = todo.items(ctx, dir); const n = todo.open(list).length; if (n && dir) console.log(`\nThings only you can do (${n}); askai todo ${dir} shows them again:\n${todo.render(list)}`); else if (n) console.log(`Next: askai todo lists the ${n} thing(s) only you can do (sign-ins, restarts, app settings, project files).`); } catch (_) { /* best effort */ } }
+  if (!o.dry) { console.log('Check it: askai infra (everything set up, per tool), askai check (gaps), and askai status (tool state).'); try { const dir = o.project ? projectDir(o, o.project) : null; const list = todo.items(ctx, dir); const n = todo.open(list).length; if (n && dir) console.log(`\nRemaining setup and review steps (${n}); askai todo ${dir} shows them again:\n${todo.render(list)}`); else if (n) console.log(`Next: askai todo lists ${n} remaining setup and review steps.`); } catch (_) { /* best effort */ } }
   return failed.length ? 1 : 0;
 }
 

@@ -15,6 +15,8 @@ askai check --project app-a
 
 `askai install --project 'C:\code\AppA'` also initializes and registers that project. Existing repositories that were initialized before the registry was introduced still work from their own directory. Run `askai init <folder> --yes --name NAME` once to register them; existing content is preserved. A duplicate name or a second name for the same folder is rejected.
 
+Init analyzes each folder's README, manifest, entry point and source layout to fill project map purposes, data flow, features and documented constraints. It does not run a model or web search. `askai init --project NAME --refresh --yes` refreshes unedited generated docs after the repository changes; user-edited docs stay intact. Check `askai infra --project NAME` for coverage and `askai todo --project NAME` for facts still needing review. The current work order and architectural decisions require the project owner's input.
+
 ## Select once in a terminal
 
 The AskAI-only terminal keeps selection in its process:

@@ -34,6 +34,10 @@ test('registered names resolve for flags, active selection, cwd discovery and de
   for (const [name, dir] of [['alpha', a], ['beta', b]]) {
     const r = run(['init', '--name', name, '--path', dir, '--yes']); assert.equal(r.code, 0, r.output);
   }
+  const lock = registry.file(config) + '.lock'; fs.writeFileSync(lock, 'held');
+  const repeated = run(['init', '--project', 'alpha', '--refresh', '--yes']);
+  assert.equal(repeated.code, 0, repeated.output, 'refresh of an existing alias must not need a registry write');
+  fs.rmSync(lock);
   const rows = JSON.parse(run(['projects', '--json']).output);
   assert.deepEqual(rows.map(r => r.name), ['alpha', 'beta']);
   const infra = (args, options) => {

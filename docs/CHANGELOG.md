@@ -2,6 +2,12 @@
 
 AskAI follows semantic versioning from 1.0.0 (see [RELEASING.md](RELEASING.md)). Installs always take the latest version on `main`.
 
+## 1.2.0 (21 October 2026): evidence-based project init
+
+- `askai init` now fills folder purposes from README layout and conventional names, architecture flow from entry code and package dependencies, features from README or page modules, and explicit README constraints. It leaves unsupported claims visible for review and preserves edited files on `--refresh`.
+- `askai infra` reports project documentation coverage. The install guide now describes automatic analysis and the facts that still need owner input.
+- Repeating `askai init` for an existing project no longer rewrites its registry entry.
+
 ## 1.1.0 (21 October 2026): project aliases and one AskAI launcher
 
 - Registered initialized projects by name in `~/.askai/projects.json`; added `projects`, `set project`, and project show/rename/path/remove/switch commands. Project-aware commands now share the same resolver for names, terminal selection, directory discovery and an optional default.

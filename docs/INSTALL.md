@@ -4,7 +4,7 @@ This guide takes you from the downloaded zip to a working setup on Windows, macO
 
 ## The short version
 
-AskAI installs straight from GitHub: nothing to download first. Run **one command per project**. It fetches AskAI into `~/.claude/askai/src` (so `askai upgrade` can refresh it later), installs or refreshes it for Claude Code, Codex, Antigravity and Cursor with every optimiser (the `max` profile), writes the project's knowledge pack, and ends with the list of things only you can do. Running it again for another project is safe: whatever is already set up is skipped.
+AskAI installs straight from GitHub: nothing to download first. Run **one command per project**. It fetches AskAI into `~/.claude/askai/src` (so `askai upgrade` can refresh it later), installs or refreshes it for Claude Code, Codex, Antigravity and Cursor with every optimiser (the `max` profile), writes the project's knowledge pack, and ends with the remaining setup and review steps. Running it again for another project is safe: whatever is already set up is skipped.
 
 Windows (PowerShell):
 
@@ -189,17 +189,23 @@ askai infra --project myapp                  # everything set up for this reposi
 
 Or during install: `bash install.sh --project ~/code/myapp` (PowerShell: `-Project C:\code\myapp`).
 
-`askai init` writes `AGENTS.md` (the router every agent reads, under 333 lines), `CLAUDE.md`, `GEMINI.md`, `docs/ai/PROJECT_MAP.md`, `ARCHITECTURE.md`, `FEATURES.md`, `WORK_ORDER.md`, `MODELS.md`, the `architect`, `builder` and `runner` subagents for Claude Code, Codex, Cursor and Antigravity, four skills, `.cursorignore` and `.ai-work/`. Afterwards fill in the Purpose column of `PROJECT_MAP.md` (or ask the agent to use the architecture-map skill). The table below lists the files that need your input.
+`askai init` reads the project folder locally: README, package manifest, entry file and directory layout. It writes `AGENTS.md` (the router every agent reads, under 333 lines), `CLAUDE.md`, `GEMINI.md`, `docs/ai/PROJECT_MAP.md`, `ARCHITECTURE.md`, `FEATURES.md`, `WORK_ORDER.md`, `MODELS.md`, the `architect`, `builder` and `runner` subagents for Claude Code, Codex, Cursor and Antigravity, four skills, `.cursorignore` and `.ai-work/`. Folder purposes, verified code flow, README features and explicit constraints are filled when evidence exists. The files label what is inferred or only documented. No model, network search or API token is used by init. Review the generated material; add facts the folder cannot establish, especially current work and architectural decisions. The table below lists the files that may still need your input.
 
 Repeat `askai init --name NAME --path FOLDER --yes` for each repository. AskAI resolves `--project NAME` or `-p NAME` without another path; `askai cli` also keeps `set project NAME` active for later commands. For ordinary shells, enable `askai shell init` or opt into the installer's managed shell-profile integration (`-ShellIntegration` in PowerShell, `--shell-integration` in Bash). See [Project management](PROJECT_MANAGEMENT.md) for the selection order, moving folders, separate terminals and migration from earlier installs. Global tool settings are shared, while each repository keeps its own files and `.ai-work/` state. After changes to AskAI, run `npm run test:commands`, `npm test` and `askai docs check`. The command test does not run external agents, downloads or paid services.
 
 | File | What to do |
 | --- | --- |
-| `AGENTS.md` | Fill in the stack, the test, build and lint commands, and where things live. Keep it under 60 lines: every agent reads it |
+| `AGENTS.md` | Review the detected description, stack and commands. Keep it short: every agent reads it |
 | `CLAUDE.md` | Imports `@AGENTS.md`; add only Claude-specific notes |
-| `docs/ai/PROJECT_PROFILE.md` | Longer project notes, read only when needed |
+| `docs/ai/PROJECT_MAP.md` | Review inferred folder purposes; add any that remain blank |
+| `docs/ai/ARCHITECTURE.md` | Review the evidenced flow and explicit constraints; add decisions and unrecorded invariants |
+| `docs/ai/FEATURES.md` | Confirm documented or detected features and their state |
+| `docs/ai/WORK_ORDER.md` | Add the current goal and acceptance criteria; init cannot infer your task |
+| `docs/ai/MODELS.md` | Review model tiers for this project |
 | `.cursorignore` | Keeps build output, lockfiles and `.env` out of Cursor |
 | `.ai-work/` | Handoff, ledger and measurements; gitignored automatically |
+
+For an existing initialized folder, run `askai init --project NAME --refresh --yes`. It updates AskAI-managed blocks and generated docs only when their content has not been edited. `askai infra --project NAME` reports folder-purpose and feature coverage; `askai todo --project NAME` lists evidence gaps still needing review.
 
 ## 8a. Daily commands
 
@@ -209,7 +215,7 @@ Use `/askai-cli` in Claude Code, Cursor or Antigravity (`$askai-cli` in Codex) t
 | --- | --- |
 | Start a task | `askai go claude --tier build "fix the cart rounding in src/cart.ts"` (also codex, cursor, agy) |
 | Shape a dictated ask | `askai prompt "..." --copy` |
-| Things only you can do | `askai todo` (per tool and repository; `askai todo done <id>` marks one) |
+| Remaining setup and review steps | `askai todo` (per tool and repository; `askai todo done <id>` marks one) |
 | Every command in full | `askai help all`; one command: `askai help <command>` |
 | How to use a plugin | `askai plugins info <id>`: commands in a terminal and inside the agent, how to check it, its savings, how to switch it off |
 | What each plugin saved | `askai savings` (runs rtk gain, ccusage, headroom stats and the rest for you) |

@@ -71,7 +71,7 @@ test('init: router under 333 lines, adapters, docs/ai, subagents in each tool fo
   const a2 = read(path.join(r2, 'AGENTS.md')); assert.ok(a2.startsWith('# Mine\nkeep this\n')); assert.match(a2, /askai:begin router/);
   models.set(ctx, 'claude.lead', 'opus:high'); project.init(repo, { yes: true, refresh: true }, ctx, quiet);
   assert.match(read(f('.claude/agents/architect.md')), /model: opus\neffort: high/);
-  write(f('docs/ai/PROJECT_MAP.md'), read(f('docs/ai/PROJECT_MAP.md')).replace('| `src/` | 1 | .tsx |  |', '| `src/` | 1 | .tsx | the shop UI |'));
+  write(f('docs/ai/PROJECT_MAP.md'), read(f('docs/ai/PROJECT_MAP.md')).replace('| `src/` | 1 | .tsx | Application source code |', '| `src/` | 1 | .tsx | the shop UI |'));
   project.map(repo, {}, quiet); assert.match(read(f('docs/ai/PROJECT_MAP.md')), /the shop UI/);
 }));
 
