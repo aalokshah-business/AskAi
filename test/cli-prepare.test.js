@@ -5,6 +5,7 @@ const os = require('os');
 const fs = require('fs');
 const path = require('path');
 const prepare = require('../lib/cli-prepare');
+const review = require('../lib/project-review');
 const registry = require('../lib/project-registry');
 const { tmpHome, rm, cli } = require('./helpers');
 
@@ -64,10 +65,45 @@ test('cli --prepare inits a named folder offline and launches only after review 
   assert.ok(fs.existsSync(path.join(proj, 'AGENTS.md')));
   assert.ok(fs.existsSync(path.join(proj, 'docs', 'ai', 'SOURCE_INDEX.md')));
   const again = cli(args, { env });
-  assert.strictEqual(JSON.parse(again.out).init, 'already');
+  assert.strictEqual(JSON.parse(again.out).init, 'ran');
   assert.strictEqual(cli(['review', 'done', '--path', proj, '--json'], { env }).code, 0);
   const third = cli(args, { env });
   assert.strictEqual(JSON.parse(third.out).action, 'launch');
+  fs.rmSync(path.join(proj, 'docs', 'ai', 'SOURCE_INDEX.md'));
+  const missing = cli(args, { env });
+  const repair = JSON.parse(missing.out);
+  assert.strictEqual(repair.action, 'review');
+  assert.strictEqual(repair.init, 'ran');
+  assert.deepStrictEqual(repair.review.missing, ['docs/ai/SOURCE_INDEX.md']);
+  assert.ok(fs.existsSync(path.join(proj, 'docs', 'ai', 'SOURCE_INDEX.md')));
+  fs.rmSync(path.join(proj, '.claude', 'agents', 'builder.md'));
+  const missingAgent = JSON.parse(cli(args, { env }).out);
+  assert.deepStrictEqual(missingAgent.review.missing, ['.claude/agents/builder.md']);
+  assert.ok(fs.existsSync(path.join(proj, '.claude', 'agents', 'builder.md')));
+  fs.writeFileSync(path.join(proj, 'index.js'), 'console.log(2)\n');
+  const changed = JSON.parse(cli(args, { env }).out);
+  assert.deepStrictEqual(changed.review.changed, ['index.js']);
+}));
+
+test('review becomes stale when README or manifest changes and exposes every path on request', () => withHome(root => {
+  const proj = path.join(root, 'shop');
+  fs.mkdirSync(proj);
+  fs.writeFileSync(path.join(proj, 'package.json'), '{"name":"shop"}\n');
+  fs.writeFileSync(path.join(proj, 'README.md'), '# Shop\n');
+  review.done(proj);
+  fs.writeFileSync(path.join(proj, 'README.md'), '# Updated shop\n');
+  fs.writeFileSync(path.join(proj, 'package.json'), '{"name":"shop","scripts":{"test":"node --test"}}\n');
+  assert.deepStrictEqual(review.status(proj).changed, ['README.md', 'package.json']);
+  for (let i = 0; i < 45; i++) fs.writeFileSync(path.join(proj, `file-${i}.js`), 'export const value = 1;\n');
+  const brief = review.status(proj);
+  assert.strictEqual(brief.changedCount, 47);
+  assert.strictEqual(brief.changed.length, 40);
+  assert.strictEqual(brief.pathsTruncated, true);
+  const full = cli(['review', 'status', '--path', proj, '--all', '--json'], { env: { ASKAI_HOME: process.env.ASKAI_HOME } });
+  assert.strictEqual(full.code, 0, full.err + full.out);
+  assert.strictEqual(JSON.parse(full.out).changed.length, 47);
+  fs.rmSync(path.join(proj, 'README.md'));
+  assert.deepStrictEqual(review.status(proj).removed, ['README.md']);
 }));
 
 test('cli --prepare requires a description before a review', () => withHome(root => {

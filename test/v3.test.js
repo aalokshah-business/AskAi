@@ -231,7 +231,7 @@ test('tips and peak: every topic renders; the peak window follows US Eastern wee
 
 // ---- CLI -----------------------------------------------------------------------------------------------------------
 test('CLI: version, tips, peak and a four-host dry-run install that writes nothing', () => withHome(home => {
-  assert.strictEqual(cli(['version']).out.trim(), '1.2.1');
+  assert.strictEqual(cli(['version']).out.trim(), '1.2.2');
   assert.strictEqual(cli(['tips', 'agy']).code, 0);
   assert.strictEqual(cli(['peak', '--json']).code, 0);
   const homes = ['--claude-home', path.join(home, 'claude'), '--cursor-home', path.join(home, 'cursor'), '--codex-home', path.join(home, 'codex'), '--agy-home', path.join(home, 'gemini')];

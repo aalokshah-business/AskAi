@@ -38,7 +38,7 @@ const launch = require('./lib/launch');
 const hookLib = require('./lib/hook');
 const todo = require('./lib/todo');
 
-const VERSION = '1.2.1';
+const VERSION = '1.2.2';
 const SRC = __dirname;
 
 const HELP = `askai ${VERSION}: make AI coding usage last longer. Installs and wires up token-saving tools for Claude Code, Cursor,
@@ -1136,8 +1136,13 @@ async function cmdPrepare(o) {
     if (picked.need) return emit(2, picked);
     const dir = picked.path;
     const review = projectReview.status(dir);
+    const required = ['AGENTS.md', 'CLAUDE.md', 'GEMINI.md', '.cursorignore', 'docs/ai/PROJECT_MAP.md',
+      'docs/ai/SOURCE_INDEX.md', 'docs/ai/ARCHITECTURE.md', 'docs/ai/FEATURES.md',
+      'docs/ai/REFERENCES.md', 'docs/ai/WORK_ORDER.md', 'docs/ai/MODELS.md', '.ai-work/HANDOFF.md',
+      ...Object.keys(project.agentFiles(models.DEFAULTS)), ...Object.keys(project.skillFiles())];
     const initialized = fs.existsSync(path.join(dir, session.DIR, 'askai-init.json'));
-    const reviewing = review.state !== 'current' || o.refresh;
+    const missing = required.filter(rel => !fs.existsSync(path.join(dir, rel)));
+    const reviewing = review.state !== 'current' || !!o.refresh || missing.length > 0;
     if (reviewing && !o.about && !o.yes) {
       const detected = project.detect(dir);
       return emit(2, {
@@ -1148,29 +1153,28 @@ async function cmdPrepare(o) {
     }
     let init = 'skipped';
     let info = project.detect(dir);
-    if (review.state !== 'current' || o.refresh) {
-      if (review.state === 'needed' && initialized && !o.refresh) init = 'already';
-      else {
+    if (reviewing) {
         const name = registrationName({ ...o, name: o.name || picked.project }, dir);
         picked.project = name;
         const ctx = buildCtx({ ...o, yes: true }, true);
         const references = await project.research(dir, { offline: o.offline || o.dry, dry: o.dry });
-        const result = project.init(dir, { ...o, yes: true, refresh: o.refresh || review.state === 'stale', references }, ctx);
+        const result = project.init(dir, { ...o, yes: true, refresh: !!o.refresh || initialized, references }, ctx);
         if (!o.dry) registerProject({ ...o, name }, dir);
         info = result.info;
         init = o.dry ? 'planned' : 'ran';
-      }
     }
-    const action = review.state === 'current' && !o.refresh ? 'launch' : 'review';
+    const action = reviewing ? 'review' : 'launch';
     return emit(0, {
       action, init, project: picked.project, path: dir, how: picked.how,
-      review: { state: review.state, changedCount: review.changedCount, removedCount: review.removedCount },
+      review: { state: review.state, changedCount: review.changedCount, removedCount: review.removedCount,
+        changed: review.changed, removed: review.removed, pathsTruncated: review.pathsTruncated,
+        skipped: review.skippedFiles, missing },
       detected: { type: info.type, about: info.about || '', commands: info.commands },
       read: ['docs/ai/SOURCE_INDEX.md', 'docs/ai/PROJECT_MAP.md', 'docs/ai/ARCHITECTURE.md', 'docs/ai/FEATURES.md', 'docs/ai/REFERENCES.md', 'AGENTS.md'],
       questions: action === 'review' ? cliPrepare.questions(info) : [],
       instruction: action === 'launch'
         ? 'The pack matches the last AI review. Open the terminal with askai cli --launch.'
-        : 'Inspect the read list and the source it points at. Fill evidence-backed gaps. Ask the user one bundled question only for questions that code and this chat still cannot answer. Then askai review done and askai cli --launch.',
+        : 'Start with changed and missing paths; use the source index for targeted lookup. If pathsTruncated, run askai review status --all --json. Fill evidence-backed gaps. Ask one bundled question only for facts code and chat cannot establish. Then askai review done and askai cli --launch.',
     });
   } finally { console.log = log; }
 }
@@ -1200,6 +1204,7 @@ async function main() {
   let o;
   try { o = parseArgs(rest); } catch (e) { console.error(`askai: ${e.message}`); return 2; }
   o._.unshift(cmd);
+  if (cmd === 'help' && o.help) { console.log(help.render('help')); return 0; }
   if (cmd === 'help' && o._[1] === 'all') { console.log(`askai ${VERSION}: every command in full\n\n` + help.names().map(n => help.render(n)).join(`\n\n${'-'.repeat(72)}\n\n`)); return 0; }
   if (cmd === 'help' && !o._[1]) { console.log(help.names().slice().sort().join('\n')); console.log('\naskai help <command>    usage for one command\naskai help all          every command in full\nSame command: continue = resume, etiquette = guide all, checkpoint = session pause. update upgrades installed tools; upgrade updates AskAI.'); return 0; }
   if (cmd === 'help' && o._[1]) { const t = help.render(o._[1]); console.log(t || `No help for "${o._[1]}". Commands: ${help.names().slice().sort().join(', ')}`); return t ? 0 : 1; }
@@ -1223,7 +1228,7 @@ async function main() {
     case 'statusline': return cmdStatusline(o);
     case 'session': return cmdSession(o);
     case 'init': { const dir = projectDir(o, o.path || o._[1]); const name = registrationName(o, dir); const ctx = buildCtx(o, true); const oo = await project.ask(dir, o); const references = await project.research(dir, { offline: o.offline, dry: o.dry }); project.init(dir, { ...oo, dry: o.dry, references }, ctx); registerProject({ ...o, name }, dir); return 0; }
-    case 'review': { const action = o._[1] || 'status'; if (!['status', 'done'].includes(action)) throw new Error('askai review accepts status or done'); const dir = projectDir(o, o.path || o._[2]); const result = action === 'done' ? projectReview.done(dir) : projectReview.status(dir); console.log(o.json ? JSON.stringify(result, null, 2) : `AI review ${result.state}: ${result.scanned}/${result.eligible} source files scanned${result.skipped ? `, ${result.skipped} skipped` : ''}${action === 'status' ? `; ${result.changedCount} changed, ${result.removedCount} removed` : ''}`); return 0; }
+    case 'review': { const action = o._[1] || 'status'; if (!['status', 'done'].includes(action)) throw new Error('askai review accepts status or done'); const dir = projectDir(o, o.path || o._[2]); const result = action === 'done' ? projectReview.done(dir) : projectReview.status(dir, { all: !!o.all }); console.log(o.json ? JSON.stringify(result, null, 2) : `AI review ${result.state}: ${result.scanned}/${result.eligible} source files scanned${result.skipped ? `, ${result.skipped} skipped` : ''}${action === 'status' ? `; ${result.changedCount} changed, ${result.removedCount} removed${result.pathsTruncated ? '; path list capped at 40 (use --all --json)' : ''}` : ''}`); return 0; }
     case 'map': project.map(projectDir(o, o._[1]), { dry: o.dry }); return 0;
     case 'models': return cmdModels(o);
     case 'go': return launch.run(buildCtx(o, true), o._[1], { ...o, repo: projectDir(o), ask: o._.slice(2).join(' ') });
