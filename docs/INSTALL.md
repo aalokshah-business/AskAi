@@ -1,10 +1,32 @@
 # Installing AskAI
 
-This guide takes you from the downloaded zip to a working setup on Windows, macOS, Linux or WSL: what to prepare, how to preview and install, how to check it worked, and every file AskAI creates. It takes about ten minutes. What each setting does and why: `docs/ARCHITECTURE.md`.
+This guide takes you from a Git checkout or downloaded zip to a working setup on Windows, macOS, Linux or WSL: what to prepare, how to preview and install, how to check it worked, and every file AskAI creates. What each setting does and why: `docs/ARCHITECTURE.md`.
 
 ## The short version
 
 AskAI installs straight from GitHub: nothing to download first. Run **one command per project**. It fetches AskAI into `~/.claude/askai/src` (so `askai upgrade` can refresh it later), installs or refreshes it for Claude Code, Codex, Antigravity and Cursor with the `coding` profile by default, writes the project's knowledge pack, and ends with the remaining setup and review steps. Running it again for another project keeps the recorded profile and skips what is already set up. Add `-Workflow max` (PowerShell) or `--profile max` (shell) when you want every optimiser.
+
+### Windows: Git clone and local installer
+
+Install Git and [Node.js LTS](https://nodejs.org/en/download) if missing; open a new PowerShell window so both commands are on PATH. Clone your project first, then replace the sample path below with its existing local folder. A path passed to `-Project` is a local directory, not a Git URL.
+
+```powershell
+git --version
+node --version
+$askaiSource = Join-Path $HOME '.claude\askai\src'
+$projectPath = 'C:\code\myapp'  # change to your existing project folder
+if (-not (Test-Path -LiteralPath $projectPath -PathType Container)) { throw "Project folder not found: $projectPath" }
+New-Item -ItemType Directory -Force -Path (Split-Path $askaiSource) | Out-Null
+git clone https://github.com/aalokshah-business/AskAi.git $askaiSource
+powershell -NoProfile -ExecutionPolicy Bypass -File "$askaiSource\install.ps1" -DryRun -Target all -Workflow coding -Project $projectPath
+powershell -NoProfile -ExecutionPolicy Bypass -File "$askaiSource\install.ps1" -Target all -Workflow coding -Project $projectPath -Yes
+```
+
+Open a new PowerShell window and run `askai setup --project 'C:\code\myapp'` with your actual project path. If PATH has not refreshed, run `& "$HOME\.claude\askai\bin\askai.cmd" setup --project 'C:\code\myapp'`. `askai projects` shows its registered name. Restart each AI tool; in a project chat run `/askai-cli` (Codex: `$askai-cli`), supply or accept the one-sentence project description for AI review, then run `/askai-plugins` only for the one-time actions you want. AskAI's terminal can be reopened with `askai cli`. A plain terminal command uses no model tokens; host AI review and Graphify builds do.
+
+The `coding` profile is the recommended starting point. `max` adds RTK, Context Mode, Headroom and Graphify; some have measured token costs or require a one-time graph build. Check `askai plugins decisions` before adding them. If your project is not cloned yet, omit `-Project` during installation and later run `/askai-cli <local-project-path>` from a host chat.
+
+### One-line bootstrap alternative
 
 Windows (PowerShell):
 
@@ -26,7 +48,7 @@ askai setup --project NAME
 
 That runs status, the guideline audit, infra, which plugins are waiting, the to-do list, and the file validator. Infra separates a server that is only switched on from one the agent has called. The to-do list is what only you can finish (sign-in, restart, trust, model IDs). The project passed during install is registered under its folder name. The separate commands (`askai check`, `askai status`, `askai infra`, `askai plugins ready`, `askai todo`, `node scripts/validate-install.js`) still work when you want one section.
 
-Restart Claude Code, Codex, Antigravity, and Cursor. In the project chat, `/askai-cli` (Codex: `$askai-cli`) reviews the knowledge pack and opens the terminal. `/askai-plugins` runs the ready report and does the one-time step still left, including `/graphify .` once when the graph is missing. That build spends tokens once. Add `-DryRun` / `--dry-run` for a preview.
+Restart Claude Code, Codex, Antigravity, and Cursor. In the project chat, `/askai-cli` (Codex: `$askai-cli`) reviews the knowledge pack and opens the terminal. `/askai-plugins` runs the ready report and does the one-time step still left, including `/graphify .` once when the graph is missing. That build spends tokens once. Add `-DryRun` / `--dry-run` to preview installation settings; the one-line bootstrap still downloads AskAI first.
 
 **Or ask your agent to do it.** Paste this into Claude Code, Codex, Antigravity or Cursor, opened in the project:
 
@@ -303,10 +325,10 @@ askai restore                 # list backups; askai restore <file> puts one back
 
 ## 14. What was tested
 
-- 204 automated tests in throwaway folders. Every component installs, detects and uninstalls; settings are never overridden; `install.ps1`'s options and actions match askai.js; AskAI applies every token-setup setting; a token-setup run is taken over cleanly; a full install followed by uninstall leaves nothing of AskAI in any of the four tools.
+- The Node test suite runs in throwaway folders and covers command entry points, installation, project isolation, settings preservation, validation and uninstall. Run `npm test` in the AskAI checkout for the current count and result.
 - A real run of `install.sh` on Linux into a throwaway home folder: install, the installed `askai` command, and uninstall.
 - Previews of every OS and tool combination (`docs/PREVIEW_MATRIX.md`): Windows and macOS were simulated on Linux by making Node report those systems.
-- Not yet run on real machines: `install.ps1` itself (PowerShell was not available where AskAI was built and tested) and live installs of each tool. On each new machine, run the preview first, then `askai check` after installing.
+- The Windows self-test below runs the real `install.ps1` in isolated folders. A new laptop still needs `askai setup <project>` and sign-in checks inside each installed host; a passing test cannot verify those accounts or plugin savings.
 
 **Windows self-test.** One command runs the real `install.ps1` in a temporary folder (your own settings are never touched) and prints a summary to paste back:
 

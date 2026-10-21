@@ -2,6 +2,12 @@
 
 AskAI follows semantic versioning from 1.0.0 (see [RELEASING.md](RELEASING.md)). Installs always take the latest version on `main`.
 
+## 1.2.4 (22 October 2026): clearer first-time Windows setup
+
+- Added a Git-clone-first office-laptop path in the README and both install guides, including local project selection, dry run, validation, host restart and CLI entry points.
+- Bootstrap scripts now refuse to replace unrelated source folders. Corrected Windows installer help to describe Sonnet 5.5/high and no automatic compact setting.
+- Updated the Windows self-test to count current Node test output, fail on a failed check, and verify its temporary path before cleanup.
+
 ## 1.2.3 (22 October 2026): verified project setup and agent upgrade review
 
 - `/askai-cli` now requires an explicit project description for a new or stale project even with `--yes`. A current reviewed project still opens directly.

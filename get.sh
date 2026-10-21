@@ -8,18 +8,30 @@ set -euo pipefail
 REPO="${ASKAI_REPO:-aalokshah-business/AskAi}"
 URL="${ASKAI_REPO_URL:-https://github.com/$REPO.git}"
 DIR="${ASKAI_DIR:-$HOME/.claude/askai/src}"
+replace_source() {
+  case "$DIR" in /|"$HOME"|"$HOME/.claude"|"$HOME/.claude/askai") echo "Refusing to replace unsafe source folder: $DIR" >&2; exit 1;; esac
+  if [ -e "$DIR" ]; then
+    [ -f "$DIR/askai.js" ] && [ -f "$DIR/install.sh" ] && [ -f "$DIR/package.json" ] && grep -Eq '"name"[[:space:]]*:[[:space:]]*"askai"' "$DIR/package.json" || {
+      echo "Source folder already exists and is not an AskAI checkout: $DIR. Choose another ASKAI_DIR." >&2; exit 1;
+    }
+    rm -rf "$DIR"
+  fi
+}
 mkdir -p "$(dirname "$DIR")"
 if command -v git >/dev/null 2>&1; then
   if [ -d "$DIR/.git" ]; then
+    [ -f "$DIR/askai.js" ] && [ -f "$DIR/install.sh" ] && grep -Eq '"name"[[:space:]]*:[[:space:]]*"askai"' "$DIR/package.json" || { echo "Not an AskAI checkout: $DIR" >&2; exit 1; }
     echo "==> updating $DIR to the latest AskAI"; git -C "$DIR" fetch --quiet --depth 1 origin HEAD; git -C "$DIR" checkout --quiet FETCH_HEAD
   else
-    echo "==> fetching the latest AskAI into $DIR"; rm -rf "$DIR"; git clone --quiet --depth 1 "$URL" "$DIR"
+    echo "==> fetching the latest AskAI into $DIR"; replace_source; git clone --quiet --depth 1 "$URL" "$DIR"
   fi
 else
   command -v curl >/dev/null 2>&1 || { echo "AskAI needs git or curl to download itself" >&2; exit 1; }
   echo "==> downloading the latest AskAI into $DIR (no git: GitHub archive of main)"
   tmp="$(mktemp -d)"; curl -fsSL "https://github.com/$REPO/archive/refs/heads/main.tar.gz" | tar -xz -C "$tmp"
-  rm -rf "$DIR"; mv "$tmp"/*/ "$DIR"; rm -rf "$tmp"
+  archive_dirs=( "$tmp"/*/ ); archive_dir="${archive_dirs[0]}"
+  [ -f "$archive_dir/askai.js" ] && [ -f "$archive_dir/install.sh" ] && grep -Eq '"name"[[:space:]]*:[[:space:]]*"askai"' "$archive_dir/package.json" || { echo 'Downloaded archive does not contain AskAI.' >&2; exit 1; }
+  replace_source; mv "$archive_dir" "$DIR"; rm -rf "$tmp"
 fi
 # Prompts read from the terminal even when this script arrives through a pipe; without a terminal (an agent) pass --yes.
 if ( : </dev/tty ) 2>/dev/null; then exec bash "$DIR/install.sh" "$@" </dev/tty; else exec bash "$DIR/install.sh" "$@"; fi

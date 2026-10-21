@@ -16,6 +16,19 @@ Contents: [Quick start](#quick-start-one-command-per-project) | [Documentation](
 
 AskAI installs straight from GitHub: nothing to download first. Run **one command per project**. It fetches AskAI into `~/.claude/askai/src` (so `askai upgrade` can refresh it later), installs or refreshes it for Claude Code, Codex, Antigravity and Cursor with the `coding` profile by default, writes the project's knowledge pack, and ends with the list of things only you can do. Running it again for another project keeps the recorded profile and skips what is already set up. Add `-Workflow max` (PowerShell) or `--profile max` (shell) when you want every optimiser.
 
+**Windows office laptop, fetch with Git first.** Install Git and [Node.js LTS](https://nodejs.org/en/download) if missing, then open a new PowerShell window. Clone your own project first and replace the sample path below with its existing local folder. The `coding` profile is the token-conscious default; `max` adds tools that may increase usage.
+
+```powershell
+$askaiSource = Join-Path $HOME '.claude\askai\src'
+$projectPath = 'C:\code\myapp'  # existing local project folder
+New-Item -ItemType Directory -Force -Path (Split-Path $askaiSource) | Out-Null
+git clone https://github.com/aalokshah-business/AskAi.git $askaiSource
+powershell -NoProfile -ExecutionPolicy Bypass -File "$askaiSource\install.ps1" -DryRun -Target all -Workflow coding -Project $projectPath
+powershell -NoProfile -ExecutionPolicy Bypass -File "$askaiSource\install.ps1" -Target all -Workflow coding -Project $projectPath -Yes
+```
+
+Open a new PowerShell window and run `askai setup --project $projectPath` (set `$projectPath` again in that window, or pass the path directly). If `askai` is not on PATH yet, run `& "$HOME\.claude\askai\bin\askai.cmd" setup --project 'C:\code\myapp'`. See [installation steps](docs/INSTALL.md) for prerequisites, project registration and checks.
+
 Windows (PowerShell):
 
 ```powershell
@@ -28,7 +41,7 @@ macOS, Linux or WSL:
 curl -fsSL https://raw.githubusercontent.com/aalokshah-business/AskAi/main/get.sh | bash -s -- --target all --project ~/code/myapp --yes
 ```
 
-Then open a new terminal and run `askai setup --project NAME`. That one command runs status, the guideline audit, infra, which plugins are waiting, the to-do list, and the file validator. Restart each tool. `/askai-cli` (Codex: `$askai-cli`) reviews the project pack. `/askai-plugins` finishes one-time plugin setup. The project passed during install is registered by folder name. Use `askai projects` to see it. [Project management](docs/PROJECT_MANAGEMENT.md) covers two or more repositories and shell integration. Add `-DryRun` / `--dry-run` for a preview.
+Then open a new terminal and run `askai setup --project NAME`. That one command runs status, the guideline audit, infra, which plugins are waiting, the to-do list, and the file validator. Restart each tool. `/askai-cli` (Codex: `$askai-cli`) reviews the project pack. `/askai-plugins` finishes one-time plugin setup. The project passed during install is registered by folder name. Use `askai projects` to see it. [Project management](docs/PROJECT_MANAGEMENT.md) covers two or more repositories and shell integration. Add `-DryRun` / `--dry-run` to preview installation settings; the one-line bootstrap still downloads the AskAI source first.
 
 **Or ask your agent to do it.** Paste this into Claude Code, Codex, Antigravity or Cursor, opened in the project:
 

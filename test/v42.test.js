@@ -105,5 +105,7 @@ test('windows-selftest.ps1 only uses install.ps1 parameters and askai.js flags t
   for (const p of [...used, ...hashKeys]) assert.ok(declared.includes(p), `install.ps1 declares -${p}`);
   const js = read(ASKAI);
   for (const f of [...st.matchAll(/'(--[a-z-]+)'/g)].map(m => m[1])) assert.match(js, new RegExp(`['"]?${f.slice(2)}['"]?: ?'`), `askai.js accepts ${f}`);
-  assert.match(st, /GetTempPath\(\)/); assert.match(st, /Remove-Item -Recurse -Force \$tmp/);
+  assert.match(st, /GetTempPath\(\)/);
+  assert.match(st, /StartsWith\(\$tempRoot/);
+  assert.match(st, /Remove-Item -LiteralPath \$tmpFull -Recurse -Force/);
 });

@@ -2,6 +2,19 @@
 
 AskAI installs straight from GitHub: nothing to download first. Run **one command per project**. It fetches AskAI into `~/.claude/askai/src` (so `askai upgrade` can refresh it later), installs or refreshes it for Claude Code, Codex, Antigravity and Cursor with the `coding` profile by default, writes the project's knowledge pack, and ends with the list of things only you can do. Running it again for another project keeps the recorded profile and skips what is already set up. Add `-Workflow max` (PowerShell) or `--profile max` (shell) when you want every optimiser.
 
+**Windows Git clone route.** Install Git and Node.js LTS first. Clone your project to a local folder, set `$projectPath` to that folder, then fetch AskAI and run the local installer:
+
+```powershell
+$askaiSource = Join-Path $HOME '.claude\askai\src'
+$projectPath = 'C:\code\myapp'  # change to your existing project folder
+New-Item -ItemType Directory -Force -Path (Split-Path $askaiSource) | Out-Null
+git clone https://github.com/aalokshah-business/AskAi.git $askaiSource
+powershell -NoProfile -ExecutionPolicy Bypass -File "$askaiSource\install.ps1" -DryRun -Target all -Workflow coding -Project $projectPath
+powershell -NoProfile -ExecutionPolicy Bypass -File "$askaiSource\install.ps1" -Target all -Workflow coding -Project $projectPath -Yes
+```
+
+Open a new PowerShell window, set `$projectPath` again, and run `askai setup --project $projectPath`. The `coding` profile is the default; use `max` only when you want its additional tools and token costs. See [the detailed installation guide](docs/INSTALL.md).
+
 Windows (PowerShell):
 
 ```powershell
@@ -14,7 +27,7 @@ macOS, Linux or WSL:
 curl -fsSL https://raw.githubusercontent.com/aalokshah-business/AskAi/main/get.sh | bash -s -- --target all --project ~/code/myapp --yes
 ```
 
-Then run `askai setup --project NAME` for status, audit, infra, plugin readiness, to-dos and the file validator. Restart each tool. `/askai-cli` (Codex: `$askai-cli`) reviews the project pack; `/askai-plugins` finishes one-time plugin setup. Add `-DryRun` / `--dry-run` for a preview.
+Then run `askai setup --project NAME` for status, audit, infra, plugin readiness, to-dos and the file validator. Restart each tool. `/askai-cli` (Codex: `$askai-cli`) reviews the project pack; `/askai-plugins` finishes one-time plugin setup. Add `-DryRun` / `--dry-run` to preview installation settings; the one-line bootstrap still downloads AskAI first.
 
 **Or ask your agent to do it.** Paste this into Claude Code, Codex, Antigravity or Cursor, opened in the project:
 

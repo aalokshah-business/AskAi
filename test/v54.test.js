@@ -41,9 +41,9 @@ test('askai upgrade clones or updates the source and re-runs install with the re
     const ins = askai(['install', '--yes', '--profile', 'minimal', '--target', 'claude', '--skip', 'claude', '--no-path', '--claude-home', c]); assert.strictEqual(ins.status, 0, ins.stdout + ins.stderr);
     const dry = askai(['upgrade', '--dry-run', '--claude-home', c]); assert.match(dry.stdout, /would clone[\s\S]*--profile minimal --target claude/);
     const up = askai(['upgrade', '--only', 'caveman', '--no-path', '--claude-home', c]);
-    assert.strictEqual(up.status, 0, up.stdout + up.stderr); assert.match(up.stdout, /AskAI .* -> 1\.2\.3/);
+    assert.strictEqual(up.status, 0, up.stdout + up.stderr); assert.match(up.stdout, /AskAI .* -> 1\.2\.4/);
     assert.ok(fs.existsSync(path.join(c, 'askai', 'src', 'askai.js')));
-    const again = askai(['upgrade', '--only', 'caveman', '--no-path', '--claude-home', c]); assert.strictEqual(again.status, 0, 'update an existing checkout to the latest'); assert.match(again.stdout, /-> 1\.2\.3/);
+    const again = askai(['upgrade', '--only', 'caveman', '--no-path', '--claude-home', c]); assert.strictEqual(again.status, 0, 'update an existing checkout to the latest'); assert.match(again.stdout, /-> 1\.2\.4/);
     const agentPlan = askai(['upgrade', '--agents', '--dry-run', '--claude-home', c]);
     assert.strictEqual(agentPlan.status, 0, agentPlan.stdout + agentPlan.stderr);
     assert.match(agentPlan.stdout, /Claude Code, Cursor and Codex in sequence/);
@@ -56,6 +56,27 @@ test('get.ps1 forwards every option, resolves -Project, never closes the window,
   for (const f of ['get.ps1', 'get.sh', 'askai.js', 'lib/help.js', 'README.md', 'INSTALL.md', 'docs/INSTALL.md', 'SECURITY.md', 'docs/RELEASING.md']) assert.ok(!/ASKAI_REF|--ref\b/.test(read(f)), `${f}: always the latest, no version pinning`);
   assert.ok(!/^\s*exit\b/m.test(ps), 'no exit: it runs inside the caller\'s PowerShell');
   const sh = read('get.sh'); for (const s of ['ASKAI_REPO_URL', '/dev/tty', 'archive/refs/heads/main.tar.gz', 'git clone', 'origin HEAD']) assert.ok(sh.includes(s), s);
+});
+
+test('bootstrap refuses to replace an unrelated source folder', { skip: !hasGit && 'needs git' }, () => {
+  const home = fs.mkdtempSync(path.join(os.tmpdir(), 'askai-guard-'));
+  const occupied = path.join(home, 'source');
+  fs.mkdirSync(occupied);
+  fs.writeFileSync(path.join(occupied, 'keep.txt'), 'owner data');
+  try {
+    const env = { ...process.env, ASKAI_DIR: occupied, ASKAI_REPO_URL: ROOT };
+    const command = process.platform === 'win32' ? 'powershell.exe' : 'bash';
+    const args = process.platform === 'win32'
+      ? ['-NoProfile', '-ExecutionPolicy', 'Bypass', '-File', path.join(ROOT, 'get.ps1'), '-DryRun']
+      : [path.join(ROOT, 'get.sh'), '--dry-run'];
+    const result = cp.spawnSync(command, args, { env, encoding: 'utf8', timeout: 30000 });
+    assert.notEqual(result.status, 0, result.stdout + result.stderr);
+    assert.match(result.stdout + result.stderr, /not an AskAI checkout/i);
+    assert.strictEqual(fs.readFileSync(path.join(occupied, 'keep.txt'), 'utf8'), 'owner data');
+  } finally {
+    assert.ok(path.resolve(home).startsWith(path.resolve(os.tmpdir()) + path.sep) && path.basename(home).startsWith('askai-guard-'));
+    fs.rmSync(home, { recursive: true, force: true });
+  }
 });
 
 test('CI workflow and community files are in place; package.json points at the repository', () => {

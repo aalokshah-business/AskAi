@@ -11,8 +11,8 @@
     powershell -ExecutionPolicy Bypass -File .\install.ps1 -Target all -Workflow full
     powershell -ExecutionPolicy Bypass -File .\install.ps1 -Action check
 
-  What it sets: cheap default models when none are set (Haiku main and subagents), medium effort, auto-compact at 150K, idle
-  drains off, a Bash output cap and deny-read rules for Claude Code; effort, verbosity, personality and no auto-recaps for Codex;
+  What it sets: Claude Sonnet 5.5 at high effort when no main model is set, Haiku for subagents, idle drains off, a Bash output
+  cap and deny-read rules for Claude Code; effort, verbosity, personality and no auto-recaps for Codex;
   paid credits off for Antigravity; short token rules and a handoff command in every tool. RTK and Context Mode are opt-in only
   (-Rtk, -ContextMode): independent benchmarks found they cost more. Settings you already chose are never changed; every file is
   backed up first (~\.claude\askai\backups); askai uninstall removes only what AskAI added. Safe to re-run.
