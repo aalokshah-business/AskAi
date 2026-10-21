@@ -299,7 +299,7 @@ Usage: askai cli [--prepare] [--launch] [--path DIR] [--about TEXT]
 
 askai cli --prepare finds the project (named path, the chat's repository, or the only registered project). A review exits 2 until --about supplies the one-or-two sentence description (dictation in the host chat is enough; AskAI cannot open a microphone). --yes does not bypass this question.
 It then runs askai init when pack files are missing or source, README or build manifests changed, and prints JSON with action review or launch.
-The host agent reviews the generated pack using that description, asks one bundled question for facts code still cannot establish, records askai review done, then askai cli --launch. On a devcontainer or SSH session there is no graphical terminal, so --launch tells you to run askai cli in the Cursor terminal instead. The terminal runs commands locally without model tokens unless a command launches an AI agent. Terminal askai init still works with no AI session.
+The host agent reviews the generated pack using that description, asks one bundled question for facts code still cannot establish, records askai review done, then askai cli --launch. On a devcontainer or SSH session there is no graphical terminal. --launch starts the CLI in tmux or screen, attaches this terminal when it can, and otherwise runs in the current terminal. askai upgrade and askai setup install tmux on that machine when they can do it without a password. The terminal runs commands locally without model tokens unless a command launches an AI agent. Terminal askai init still works with no AI session.
 
 Examples:
   askai cli --prepare --json
@@ -318,7 +318,7 @@ askai install: Install and wire the token-saving setup for Claude Code, Codex, A
 Usage: askai install [--profile P] [--target T] [--dry-run] [--yes] [options]
 
 Detects each component, shows the plan, asks once, installs what is missing or partial, and records what it added in a manifest.
-Adds settings only when you have not set them; backs up every file before its first change; never uses sudo.
+Adds settings only when you have not set them; backs up every file before its first change; never prompts for a password. On a headless Linux machine, install, update and setup install tmux when the user is root or sudo -n works, so askai cli --launch can open a session.
 If the standalone token-setup script was run on this machine, AskAI first runs its --uninstall (component token-kit) and then applies the same settings itself, so the rules load once.
 Step-by-step instructions for each OS, the environment setup and every file it creates: docs/INSTALL.md.
 

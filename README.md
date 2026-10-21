@@ -446,7 +446,7 @@ Components for `--only` and `--skip`: `token-kit, claude, baseline, rtk, context
 - askai's status, doctor and install call `claude plugin list --json`. The Claude CLI itself may migrate values in `settings.json` when it runs (observed on Claude Code 2.1.281: `"model": "opus"` became `"opus[1m]"`). That is the CLI's behaviour, not askai's, and it can happen before askai's own backup of that file.
 
 - Codex and Antigravity wiring follows each vendor's documentation (October 2026), but has not had a real first run on a machine with those tools: whether `rtk init -g --codex` and `--agent antigravity` accept `--auto-patch`, the exact shape of `codex mcp add`, and whether Antigravity's app reads `~/.gemini/config/skills` as documented. Start with `--dry-run`, then `askai doctor`.
-- On macOS and Linux askai runs the vendors' installer scripts (`claude.ai/install.sh`, `astral.sh/uv/install.sh`) when Homebrew is absent; the install plan names each URL before the one confirmation. It never uses sudo: ripgrep without Homebrew is a manual `apt`/`dnf` step.
+- On macOS and Linux askai runs the vendors' installer scripts (`claude.ai/install.sh`, `astral.sh/uv/install.sh`) when Homebrew is absent; the install plan names each URL before the one confirmation. It never prompts for a password: ripgrep without Homebrew is a manual `apt`/`dnf` step. On a headless Linux machine, upgrade, update, and setup install `tmux` when the user is root or `sudo -n` works.
 - `--main-model` is applied only when `settings.json` has no `model`. The default is `claude-sonnet-5-5`. If you rely on Opus for everyday work, pass `--main-model keep`.
 
 ## Tests

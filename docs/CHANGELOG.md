@@ -2,6 +2,10 @@
 
 AskAI follows semantic versioning from 1.0.0 (see [RELEASING.md](RELEASING.md)). Installs always take the latest version on `main`.
 
+## Unreleased
+
+- On a devcontainer or SSH session, `askai cli --launch` starts the CLI in `tmux` or `screen` and attaches the current terminal when it can. `askai upgrade`, `askai update`, and `askai setup` install `tmux` on that machine when the user is root or `sudo -n` works. They never wait for a password.
+
 ## 1.2.5 (22 October 2026): Linux and Windows host setup
 
 - Added a Git-clone-first Linux Cursor walkthrough to the README and both installation guides, plus a checklist for Claude Code, Cursor, Antigravity and Codex on Linux and Windows.

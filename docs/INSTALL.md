@@ -43,7 +43,7 @@ bash "$askai_source/install.sh" --target cursor --profile coding --project "$pro
 "$HOME/.claude/askai/bin/askai" setup --project "$project_path"
 ```
 
-`~/.claude/askai` is AskAI's own program folder on every operating system, including a Cursor-only install. It is not a Claude Code setup. The explicit shim path works even before your shell reloads PATH. Open a new terminal before typing `askai` by itself; the installer adds `$HOME/.claude/askai/bin` to `~/.bashrc` and `~/.profile` even when a later step such as Serena fails. Run `askai projects` to see the registered project. Reload Cursor and open that project folder itself, not its parent. Type `/` and choose `askai-cli`. The file Cursor reads is `<project>/.cursor/commands/askai-cli.md`. On SSH or a devcontainer, Cursor does not load commands from the remote `~/.cursor/commands`. `askai cli` opens the terminal interface; commands typed there do not use model tokens unless they launch an AI agent. `askai setup` does not fail Claude Code checks when Claude Code was not selected.
+`~/.claude/askai` is AskAI's own program folder on every operating system, including a Cursor-only install. It is not a Claude Code setup. The explicit shim path works even before your shell reloads PATH. Open a new terminal before typing `askai` by itself; the installer adds `$HOME/.claude/askai/bin` to `~/.bashrc` and `~/.profile` even when a later step such as Serena fails. Run `askai projects` to see the registered project. Reload Cursor and open that project folder itself, not its parent. Type `/` and choose `askai-cli`. The file Cursor reads is `<project>/.cursor/commands/askai-cli.md`. On SSH or a devcontainer, Cursor does not load commands from the remote `~/.cursor/commands`. `askai cli` opens the terminal interface; commands typed there do not use model tokens unless they launch an AI agent. A devcontainer has no display, so `askai cli --launch` cannot open a new window there. `askai upgrade`, `askai update`, and `askai setup` install `tmux` on that machine when the user is root or `sudo -n` works, then `--launch` starts a session named `askai`. Attach with `tmux attach -t askai`. `askai setup` does not fail Claude Code checks when Claude Code was not selected.
 
 For Claude Code, Codex or Antigravity too, install and sign in to those hosts first, then use `--target all` in both installer commands instead of `--target cursor`. The installer accepts `--target claude`, `codex`, `agy`, `cursor`, or a comma-separated list. Run `askai setup --project "$project_path"` again after adding hosts.
 
@@ -122,7 +122,7 @@ Connected MCP servers do not read each prompt. The agent calls Serena, Context7,
 
 Install the AI tools you use first, or let AskAI install Claude Code. Codex: `npm i -g @openai/codex`. Antigravity: its installer from antigravity.google. Cursor: cursor.com/download. AskAI sets up every one it finds. Context Mode (opt-in only) needs Node 22.5 or newer.
 
-AskAI never uses sudo or administrator rights; everything goes into your user folders.
+AskAI never prompts for a password or an administrator dialog. Settings go into your user folders. The one package install is `tmux` on a headless Linux machine, and only when the user is already root or `sudo -n` works.
 
 ## 3. Environment setup
 

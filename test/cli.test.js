@@ -3,7 +3,7 @@
 // (baseline, caveman, statusline) are exercised, so no winget, uv, network or plugin command is ever run.
 const test = require('node:test');
 const assert = require('node:assert');
-const { parseArgs, select, VERSION } = require('../askai');
+const { parseArgs, select, launchPlan, sessionTerminalPlan, VERSION } = require('../askai');
 const { ASKAI, WIN, tmpHome, rm, write, readJson, cli, fs, path } = require('./helpers');
 
 const SAFE = ['--only', 'baseline,caveman,statusline', '--no-path', '--yes'];
@@ -13,6 +13,32 @@ function withHome(fn) {
   try { return fn(home); } finally { rm(home); }
 }
 const sha = f => require('crypto').createHash('sha256').update(fs.readFileSync(f)).digest('hex');
+
+test('launchPlan: a headless machine uses tmux, then screen, then this terminal', () => {
+  assert.equal(launchPlan({ platform: 'linux' }), 'message');
+  assert.equal(launchPlan({ platform: 'linux', tty: true }), 'tty');
+  assert.equal(launchPlan({ platform: 'linux', tmux: true }), 'tmux');
+  assert.equal(launchPlan({ platform: 'linux', tty: true, tmux: true }), 'tmux');
+  assert.equal(launchPlan({ platform: 'linux', screen: true }), 'screen');
+  assert.equal(launchPlan({ platform: 'linux', tmux: true, screen: true }), 'tmux');
+  assert.equal(launchPlan({ platform: 'linux', display: ':0', xterm: true, tmux: true }), 'x-terminal-emulator');
+  assert.equal(launchPlan({ platform: 'linux', display: ':0' }), 'message');
+  assert.equal(launchPlan({ platform: 'win32', tmux: true }), 'win32');
+  assert.equal(launchPlan({ platform: 'darwin', tmux: true }), 'darwin');
+});
+
+test('sessionTerminalPlan: headless Linux installs tmux without a password prompt', () => {
+  const head = { platform: 'linux' };
+  assert.equal(sessionTerminalPlan({ ...head, tmux: true, apt: true, root: true }), 'skip');
+  assert.equal(sessionTerminalPlan({ ...head, screen: true, apt: true, root: true }), 'skip');
+  assert.equal(sessionTerminalPlan({ ...head, display: ':0', apt: true, root: true }), 'skip');
+  assert.equal(sessionTerminalPlan({ ...head, dry: true, apt: true, root: true }), 'dry');
+  assert.equal(sessionTerminalPlan({ ...head, root: true, apt: true }), 'apt');
+  assert.equal(sessionTerminalPlan({ ...head, root: true, dnf: true }), 'dnf');
+  assert.equal(sessionTerminalPlan({ ...head, sudo: true, apt: true }), 'sudo-apt');
+  assert.equal(sessionTerminalPlan({ ...head, apt: true }), 'manual');
+  assert.equal(sessionTerminalPlan({ platform: 'win32', apt: true, root: true }), 'skip');
+});
 
 test('parseArgs: flags, values, --opt=value, and errors', () => {
   const o = parseArgs(['install', '--yes', '--only=a,b', '--caveman', 'ultra', '--dry-run']);

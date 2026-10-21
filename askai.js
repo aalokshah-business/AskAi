@@ -527,6 +527,7 @@ async function cmdInstall(o) {
     if (hosts.cursor) console.log('In Cursor chat, type / and choose askai-cli. Cursor reads <project>/.cursor/commands/askai-cli.md. On SSH or a devcontainer it does not read ~/.cursor/commands from the remote home. Open the project folder itself, not its parent, then reload the window.');
   }
   if (o.project) { console.log(''); const dir = projectDir(o, o.project); const name = registrationName(o, dir); const references = await project.research(dir, { offline: o.offline, dry: o.dry }); project.init(dir, { yes: true, dry: o.dry, about: o.about, type: o.type, references }, ctx); registerProject({ ...o, name }, dir); }
+  ensureSessionTerminal(o, false, ctx.sandbox);
   if (!o.dry) { console.log('Check this machine: askai setup' + (o.project ? ` ${o.project}` : ' <repo>') + '.'); console.log('In a new chat: /askai-cli sets up the project (Codex: $askai-cli). /askai-plugins finishes one-time plugin setup and says when each tool is called.'); try { const dir = o.project ? projectDir(o, o.project) : null; const list = todo.items(ctx, dir); const n = todo.open(list).length; if (n && dir) console.log(`\nRemaining setup and review steps (${n}); askai todo ${dir} shows them again:\n${todo.render(list)}`); else if (n) console.log(`Next: askai todo lists ${n} remaining setup and review steps.`); } catch (_) { /* best effort */ } }
   return failed.length ? 1 : 0;
 }
@@ -547,6 +548,7 @@ async function cmdUpdate(o) {
   }
   try { comps.refreshDerived(ctx); } catch (e) { ctx.log.warn(`could not refresh derived files: ${e.message}`); }
   saveManifest(ctx, 'update', []);
+  ensureSessionTerminal(o, false, ctx.sandbox);
   console.log(failed ? `\n${failed} failure(s).` : '\nDone. To update askai itself, pull its repo and re-run install.ps1.');
   return failed ? 1 : 0;
 }
@@ -1039,7 +1041,9 @@ function cmdSetup(o) {
   const dir = projectDir(o, o._[1]);
   const fail = [];
   console.log(`AskAI setup — ${dir}\n`);
-  console.log('## Status');
+  console.log('## Terminal');
+  ensureSessionTerminal(o, true, ctx.sandbox);
+  console.log('\n## Status');
   console.log(status.renderStatus(ctx).lines.join('\n'));
   console.log('\n## Check');
   if (check.run(ctx, dir, {}) !== 0) fail.push('check');
@@ -1123,27 +1127,151 @@ function cliArgs(line) {
   if (started) args.push(word);
   return args;
 }
-function graphicalTerminal() {
-  if (process.platform === 'win32' || process.platform === 'darwin') return process.platform;
-  if (!process.env.DISPLAY && !process.env.WAYLAND_DISPLAY) return null;
+function commandOnPath(name) {
+  if (!/^[a-z0-9.+-]+$/i.test(name)) return false;
   const cp = require('child_process');
-  const found = cp.spawnSync('sh', ['-c', 'command -v x-terminal-emulator'], { encoding: 'utf8' });
-  return found.status === 0 && found.stdout.trim() ? 'x-terminal-emulator' : null;
+  const found = cp.spawnSync('sh', ['-c', `command -v ${name}`], { encoding: 'utf8' });
+  return found.status === 0 && !!String(found.stdout || '').trim();
+}
+function launchPlan(env) {
+  if (env.platform === 'win32' || env.platform === 'darwin') return env.platform;
+  if ((env.display || env.wayland) && env.xterm) return 'x-terminal-emulator';
+  if (env.tmux) return 'tmux';
+  if (env.screen) return 'screen';
+  if (env.tty) return 'tty';
+  return 'message';
+}
+function sessionTerminalPlan(env) {
+  if (env.platform === 'win32' || env.platform === 'darwin') return 'skip';
+  if (env.display || env.wayland) return 'skip';
+  if (env.tmux || env.screen) return 'skip';
+  if (env.dry) return 'dry';
+  if (env.root && env.apt) return 'apt';
+  if (env.root && env.dnf) return 'dnf';
+  if (env.root && env.apk) return 'apk';
+  if (env.sudo && env.apt) return 'sudo-apt';
+  if (env.sudo && env.dnf) return 'sudo-dnf';
+  if (env.sudo && env.apk) return 'sudo-apk';
+  return 'manual';
+}
+function ensureSessionTerminal(o, report, sandbox) {
+  if (sandbox) return;
+  if (process.platform === 'win32' || process.platform === 'darwin') {
+    if (report) console.log('session terminal: not used on this OS');
+    return;
+  }
+  const root = typeof process.getuid === 'function' && process.getuid() === 0;
+  const plan = sessionTerminalPlan({
+    platform: process.platform,
+    display: process.env.DISPLAY,
+    wayland: process.env.WAYLAND_DISPLAY,
+    tmux: commandOnPath('tmux'),
+    screen: commandOnPath('screen'),
+    dry: !!(o && o.dry),
+    root,
+    apt: commandOnPath('apt-get'),
+    dnf: commandOnPath('dnf') || commandOnPath('microdnf'),
+    apk: commandOnPath('apk'),
+    sudo: !root && commandOnPath('sudo'),
+  });
+  if (plan === 'skip') {
+    if (report) console.log(`session terminal: ${commandOnPath('tmux') ? 'tmux' : commandOnPath('screen') ? 'screen' : 'not needed'}`);
+    return;
+  }
+  if (plan === 'dry') { console.log('would install tmux so askai cli --launch can open a session on this headless machine'); return; }
+  if (plan === 'manual') {
+    console.log('tmux is not installed, and this user cannot install packages without a password. Run: sudo apt-get install -y tmux');
+    return;
+  }
+  const cp = require('child_process');
+  const dnfBin = commandOnPath('dnf') ? 'dnf' : 'microdnf';
+  const spec = {
+    apt: ['apt-get', ['install', '-y', 'tmux']],
+    dnf: [dnfBin, ['install', '-y', 'tmux']],
+    apk: ['apk', ['add', '--no-cache', 'tmux']],
+    'sudo-apt': ['sudo', ['-n', 'apt-get', 'install', '-y', 'tmux']],
+    'sudo-dnf': ['sudo', ['-n', dnfBin, 'install', '-y', 'tmux']],
+    'sudo-apk': ['sudo', ['-n', 'apk', 'add', '--no-cache', 'tmux']],
+  }[plan];
+  const env = { ...process.env, DEBIAN_FRONTEND: 'noninteractive' };
+  console.log(`Installing tmux so askai cli --launch works on this headless machine (${spec[0]} ${spec[1].join(' ')})`);
+  if (plan === 'apt' || plan === 'sudo-apt') {
+    const update = plan === 'apt' ? ['apt-get', ['update']] : ['sudo', ['-n', 'apt-get', 'update']];
+    cp.spawnSync(update[0], update[1], { stdio: 'inherit', env, timeout: 120000 });
+  }
+  const r = cp.spawnSync(spec[0], spec[1], { stdio: 'inherit', env, timeout: 180000 });
+  if (r.status !== 0 || !commandOnPath('tmux')) console.log('tmux was not installed. Run: sudo apt-get install -y tmux');
+  else console.log('tmux installed. After askai cli --launch, attach with: tmux attach -t askai');
+}
+function launchInMultiplexer(cp, script, kind) {
+  const session = 'askai';
+  const args = [process.execPath, script, 'cli'];
+  const tty = !!(process.stdin.isTTY && process.stdout.isTTY);
+  if (kind === 'tmux') {
+    const has = cp.spawnSync('tmux', ['has-session', '-t', session], { encoding: 'utf8' });
+    if (has.status !== 0) {
+      const started = cp.spawnSync('tmux', ['new-session', '-d', '-s', session, ...args], { encoding: 'utf8' });
+      if (started.status !== 0) {
+        console.error(`Could not start a tmux session. In the Cursor terminal run: askai cli. ${String(started.stderr || (started.error && started.error.message) || '').trim()}`);
+        return 1;
+      }
+    }
+    console.log('AskAI CLI is running in tmux session "askai". In the Cursor terminal: tmux attach -t askai');
+    if (tty && !process.env.TMUX) {
+      const attached = cp.spawnSync('tmux', ['attach', '-t', session], { stdio: 'inherit' });
+      if (attached.status === 0) return 0;
+    }
+    return 0;
+  }
+  const listed = cp.spawnSync('screen', ['-ls'], { encoding: 'utf8' });
+  if (!new RegExp(`\\.${session}\\b`).test(`${listed.stdout || ''}\n${listed.stderr || ''}`)) {
+    const started = cp.spawnSync('screen', ['-dmS', session, ...args], { encoding: 'utf8' });
+    if (started.status !== 0) {
+      console.error(`Could not start a screen session. In the Cursor terminal run: askai cli. ${String(started.stderr || (started.error && started.error.message) || '').trim()}`);
+      return 1;
+    }
+  }
+  console.log('AskAI CLI is running in screen session "askai". In the Cursor terminal: screen -r askai');
+  if (tty && !process.env.STY) {
+    const attached = cp.spawnSync('screen', ['-r', session], { stdio: 'inherit' });
+    if (attached.status === 0) return 0;
+  }
+  return 0;
 }
 function launchCli() {
-  const cp = require('child_process'); let r;
-  const gui = graphicalTerminal();
-  if (gui === 'win32') {
-    const ps = `& '${process.execPath.replace(/'/g, "''")}' '${path.join(SRC, 'askai.js').replace(/'/g, "''")}' cli`;
+  const cp = require('child_process');
+  const script = path.join(SRC, 'askai.js');
+  const unix = process.platform !== 'win32' && process.platform !== 'darwin';
+  const displayed = !!(process.env.DISPLAY || process.env.WAYLAND_DISPLAY);
+  const xterm = unix && displayed && commandOnPath('x-terminal-emulator');
+  const plan = launchPlan({
+    platform: process.platform,
+    display: process.env.DISPLAY,
+    wayland: process.env.WAYLAND_DISPLAY,
+    xterm,
+    tmux: unix && !xterm && commandOnPath('tmux'),
+    screen: unix && !xterm && commandOnPath('screen'),
+    tty: !!(process.stdin.isTTY && process.stdout.isTTY),
+  });
+  let r;
+  if (plan === 'win32') {
+    const ps = `& '${process.execPath.replace(/'/g, "''")}' '${script.replace(/'/g, "''")}' cli`;
     const encoded = Buffer.from(ps, 'utf16le').toString('base64');
     r = cp.spawnSync('powershell.exe', ['-NoProfile', '-NonInteractive', '-Command', `Start-Process powershell.exe -ArgumentList '-NoExit','-NoProfile','-EncodedCommand','${encoded}'`], { encoding: 'utf8' });
-  } else if (gui === 'darwin') {
-    const cmd = [process.execPath, path.join(SRC, 'askai.js'), 'cli'].map(x => `'${x.replace(/'/g, "'\\''")}'`).join(' ');
+  } else if (plan === 'darwin') {
+    const cmd = [process.execPath, script, 'cli'].map(x => `'${x.replace(/'/g, "'\\''")}'`).join(' ');
     r = cp.spawnSync('osascript', ['-e', `tell application "Terminal" to do script "${cmd.replace(/\\/g, '\\\\').replace(/"/g, '\\"')}"`], { encoding: 'utf8' });
-  } else if (gui === 'x-terminal-emulator') {
-    r = cp.spawnSync('x-terminal-emulator', ['-e', process.execPath, path.join(SRC, 'askai.js'), 'cli'], { encoding: 'utf8' });
+  } else if (plan === 'x-terminal-emulator') {
+    r = cp.spawnSync('x-terminal-emulator', ['-e', process.execPath, script, 'cli'], { encoding: 'utf8' });
+  } else if (plan === 'tmux' || plan === 'screen') {
+    return launchInMultiplexer(cp, script, plan);
+  } else if (plan === 'tty') {
+    console.log('No graphical terminal. Starting AskAI CLI in this terminal.');
+    r = cp.spawnSync(process.execPath, [script, 'cli'], { stdio: 'inherit' });
+    return r.status || 0;
   } else {
-    console.log('No graphical terminal on this machine (a devcontainer or SSH session has no x-terminal-emulator). In the Cursor terminal run: askai cli');
+    console.log('No graphical terminal on this machine, and tmux is not installed. A devcontainer cannot open a new window. In the Cursor terminal run: askai cli');
+    console.log('askai upgrade or askai setup installs tmux when this user can. Otherwise run: sudo apt-get install -y tmux');
     return 0;
   }
   if (r.status !== 0) { console.error(`Could not open a terminal. Run askai cli in the Cursor terminal. ${String(r.stderr || (r.error && r.error.message) || '').trim()}`); return 1; }
@@ -1303,4 +1431,4 @@ async function main() {
 if (require.main === module) {
   main().then(code => { process.exitCode = code || 0; }, e => { console.error(`askai: ${e.message}`); process.exitCode = 1; });
 }
-module.exports = { parseArgs, buildCtx, select, main, VERSION };
+module.exports = { parseArgs, buildCtx, select, main, launchPlan, sessionTerminalPlan, VERSION };

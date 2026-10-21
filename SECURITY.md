@@ -2,7 +2,7 @@
 
 ## What the installer changes
 
-AskAI writes only to your user configuration: `~/.claude` (settings, CLAUDE.md block, rules, commands, hooks), `~/.codex` (config.toml keys, AGENTS.md block, skills), `~/.gemini` (settings, GEMINI.md block, skills) and `~/.cursor` (rules, MCP entries), plus the project files of a repository you name. Every file is backed up before its first change (`~/.claude/askai/backups`), settings you already set are never overwritten, and `askai uninstall` removes only what AskAI added. It never uses sudo, never routes your plan through a proxy, sends no telemetry, and makes network requests only to install the tools you chose.
+AskAI writes only to your user configuration: `~/.claude` (settings, CLAUDE.md block, rules, commands, hooks), `~/.codex` (config.toml keys, AGENTS.md block, skills), `~/.gemini` (settings, GEMINI.md block, skills) and `~/.cursor` (rules, MCP entries), plus the project files of a repository you name. Every file is backed up before its first change (`~/.claude/askai/backups`), settings you already set are never overwritten, and `askai uninstall` removes only what AskAI added. It never prompts for a password, never routes your plan through a proxy, sends no telemetry, and makes network requests only to install the tools you chose. On a headless Linux machine it may install `tmux` as root or with `sudo -n`, and it stops if that would wait for a password.
 
 ## Check before you run
 
