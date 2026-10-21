@@ -61,6 +61,7 @@ const agents = {};                 // agent file -> {sid, prompt}
 const skillCalls = {}, agentTypes = {}, compactions = [];
 
 for (const f of files) {
+  const mtime = fs.statSync(f).mtimeMs;
   const sub = f.split(path.sep).includes('subagents');
   const sid = sub ? path.basename(path.dirname(path.dirname(f))) : path.basename(f, '.jsonl');
   const agentKey = sub ? path.basename(f, '.jsonl') : null;
@@ -71,7 +72,8 @@ for (const f of files) {
   for (const line of fs.readFileSync(f, 'utf8').split('\n')) {
     if (!line) continue;
     let j; try { j = JSON.parse(line); } catch { continue; }
-    const ts = Date.parse(j.timestamp || '');
+    const ts = j.timestamp == null ? mtime : Date.parse(j.timestamp);
+    if (!Number.isFinite(ts) || ts < since) continue;
     if (!sub && j.cwd && !info.cwd) info.cwd = j.cwd;
     if (ts) { info.first = Math.min(info.first, ts); info.last = Math.max(info.last, ts); }
 

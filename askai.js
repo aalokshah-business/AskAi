@@ -35,7 +35,7 @@ const launch = require('./lib/launch');
 const hookLib = require('./lib/hook');
 const todo = require('./lib/todo');
 
-const VERSION = '1.0.1';
+const VERSION = '1.0.2';
 const SRC = __dirname;
 
 const HELP = `askai ${VERSION}: make AI coding usage last longer. Installs and wires up token-saving tools for Claude Code, Cursor,
@@ -56,11 +56,13 @@ Setup
   project [dir]  optional: copy the Cursor rules into one repo (dir/.cursor/rules) for git; --print shows them, --remove deletes them
 
 Every day
+  cli                  open an AskAI-only terminal prompt; type commands without askai, / or $ (exit to leave)
   check [dir]       audit this machine (and a repo) against the token guidelines; each gap with the command that fixes it (--fix: repo)
   ask <words>       offline answers on etiquette and the research: askai ask compact | askai ask coming back after a break
   start | break | resume   session shortcuts: ledger entry; before-break checklist; time away, advice and the resume prompt (--copy)
   usage [days]      what Claude Code and Codex spent, from their local data (Antigravity, Cursor: their own views)
   help <command>    detailed help for one command (also: askai <command> --help); docs/ARCHITECTURE.md has all of it
+  Open /askai-cli (Codex: $askai-cli) once, then type any AskAI command in that terminal without prefixes (zero model tokens).
 
 Project and sessions (AskAI as the mediator)
   init [dir]        project knowledge pack: AGENTS.md router (<333 lines), CLAUDE.md, GEMINI.md, docs/ai/*, subagents and skills for all four tools
@@ -118,7 +120,7 @@ Session options
 `;
 
 // ---- args --------------------------------------------------------------------------------------------------------
-const BOOL = { yes: 'yes', y: 'yes', 'dry-run': 'dry', json: 'json', 'no-statusline': 'noStatusline', 'no-path': 'noPath', 'caveman-plugin': 'cavemanPlugin', markitdown: 'markitdown', ccusage: 'ccusage', tools: 'tools', force: 'force', print: 'print', remove: 'remove', lean: 'lean', rtk: 'rtk', 'context-mode': 'contextMode', 'lean-git': 'leanGit', copy: 'copy', fix: 'fix', refresh: 'refresh', resume: 'resume', 'base-tools': 'baseTools', headroom: 'headroom', graphify: 'graphify', context7: 'context7', repomix: 'repomix', 'codebase-memory': 'codebaseMemory', 'claude-mem': 'claudeMem', all: 'all', help: 'help', h: 'help' };
+const BOOL = { yes: 'yes', y: 'yes', 'dry-run': 'dry', json: 'json', launch: 'launch', 'no-statusline': 'noStatusline', 'no-path': 'noPath', 'caveman-plugin': 'cavemanPlugin', markitdown: 'markitdown', ccusage: 'ccusage', tools: 'tools', force: 'force', print: 'print', remove: 'remove', lean: 'lean', rtk: 'rtk', 'context-mode': 'contextMode', 'lean-git': 'leanGit', copy: 'copy', fix: 'fix', refresh: 'refresh', resume: 'resume', 'base-tools': 'baseTools', headroom: 'headroom', graphify: 'graphify', context7: 'context7', repomix: 'repomix', 'codebase-memory': 'codebaseMemory', 'claude-mem': 'claudeMem', all: 'all', help: 'help', h: 'help' };
 const VAL = { output: 'output', kind: 'kind', about: 'about', type: 'type', tier: 'tier', files: 'files', done: 'done', mode: 'mode', used: 'used', window: 'window', 'output-safe': 'outputSafe', out: 'out', project: 'project', build: 'build', test: 'test', only: 'only', skip: 'skip', caveman: 'caveman', profile: 'profile', target: 'target', 'claude-home': 'claudeHome', 'cursor-home': 'cursorHome', hours: 'hours',
   'codex-home': 'codexHome', 'agy-home': 'agyHome', 'main-model': 'mainModel', 'subagent-model': 'subagentModel', 'codex-model': 'codexModel',
   repo: 'repo', tool: 'tool', model: 'model', effort: 'effort', task: 'task', difficulty: 'difficulty', summary: 'summary', next: 'next',
@@ -329,15 +331,43 @@ function writeShim(ctx) {
   if (!win) fs.chmodSync(file, 0o755);
 }
 
-function installCommands(ctx) {
-  const dir = path.join(ctx.paths.home, 'commands');
+function installCommands(ctx, hosts = ctx.hostSel) {
   const files = ctx.manifest.files = (ctx.manifest.files || []);
-  const names = fs.readdirSync(path.join(SRC, 'commands')).filter(n => n.endsWith('.md'));
+  const source = path.join(SRC, 'commands');
+  const askai = fs.readFileSync(path.join(source, 'askai-cli.md'), 'utf8');
+  const skill = askai.replace(/^---\n[\s\S]*?\n---\n/, '---\nname: askai-cli\ndescription: Open the AskAI-only terminal. Use only when the user invokes askai-cli.\n---\n');
+  const entries = [];
+  if (hosts.claude) for (const n of fs.readdirSync(source).filter(n => n.endsWith('.md'))) {
+    entries.push({ target: path.join(ctx.paths.home, 'commands', n), text: fs.readFileSync(path.join(source, n), 'utf8') });
+  }
+  if (hosts.cursor) entries.push({ target: path.join(ctx.cursorPaths.home, 'commands', 'askai-cli.md'), text: askai.replace(/^---\n[\s\S]*?\n---\n\n/, '') });
+  if (hosts.codex) {
+    entries.push({ target: path.join(ctx.codexPaths.home, 'prompts', 'askai-cli.md'), text: askai.replace('disable-model-invocation: true\n', '') });
+    entries.push({ target: path.join(ctx.codexPaths.skills, 'askai-cli', 'SKILL.md'), text: skill });
+  }
+  if (hosts.agy) {
+    for (const dir of [ctx.agyPaths.cliSkills, ctx.agyPaths.appSkills]) entries.push({ target: path.join(dir, 'askai-cli', 'SKILL.md'), text: skill });
+  }
+  const old = [hosts.claude && path.join(ctx.paths.home, 'commands', 'askai.md'), hosts.cursor && path.join(ctx.cursorPaths.home, 'commands', 'askai.md'),
+    hosts.codex && path.join(ctx.codexPaths.home, 'prompts', 'askai.md'), hosts.codex && path.join(ctx.codexPaths.skills, 'askai', 'SKILL.md'),
+    ...(hosts.agy ? [path.join(ctx.agyPaths.cliSkills, 'askai', 'SKILL.md'), path.join(ctx.agyPaths.appSkills, 'askai', 'SKILL.md')] : [])].filter(Boolean);
+  for (const target of old) {
+    const i = files.findIndex(f => f.path === target);
+    if (i < 0) continue;
+    const current = fs.existsSync(target) ? fs.readFileSync(target, 'utf8') : null;
+    if (current !== null && sha(current) !== files[i].sha) { ctx.log.warn(`${target} was edited after askai wrote it, left in place`); continue; }
+    if (ctx.dry) { ctx.log.plan(`remove ${target}`); continue; }
+    if (current !== null) { ctx.backup(target); fs.rmSync(target); }
+    files.splice(i, 1);
+  }
   let changed = 0;
-  for (const n of names) {
-    const text = fs.readFileSync(path.join(SRC, 'commands', n), 'utf8').replace(/\{\{ASKAI\}\}/g, () => askaiCmd(ctx));
-    const target = path.join(dir, n);
-    if (fs.existsSync(target) && fs.readFileSync(target, 'utf8') === text) continue;
+  for (const entry of entries) {
+    const target = entry.target;
+    const text = entry.text.replace(/\{\{ASKAI\}\}/g, () => askaiCmd(ctx));
+    const current = fs.existsSync(target) ? fs.readFileSync(target, 'utf8') : null;
+    if (current === text) continue;
+    const owned = files.find(f => f.path === target);
+    if (current !== null && (!owned || owned.sha !== sha(current)) && !ctx.opts.force) { ctx.log.warn(`${target} exists and was not written by askai; left in place (use --force to overwrite)`); continue; }
     changed++;
     if (ctx.dry) { ctx.log.plan(`write ${target}`); continue; }
     ctx.backup(target);
@@ -403,17 +433,17 @@ async function cmdInstall(o) {
     console.log(`  ${pad(r.c.id, w)}  ${pad(r.d.state, 7)}  ${r.skip ? `skip: ${r.d.detail}` : `will install/wire: ${planText(ctx, r.c.plan)}`}`);
   }
   if (rows.some(r => r.c.id === 'token-kit' && !r.skip)) console.log('  note: token-kit runs first; every component after it is checked again and re-applies what the takeover removed');
-  console.log(`  ${pad('askai', w)}          copy to ${ctx.paths.app}, shim in ${ctx.paths.bin}${o.noPath || ctx.sandbox || !S.IS_WIN ? '' : ' (added to user PATH)'}${S.IS_WIN && !o.noPath && !ctx.sandbox && S.which('bash') ? ', askai alias in ~/.bashrc for Git Bash' : ''}${hosts.claude ? ', /askai-status, /askai-report and /askai-handoff commands' : ''}`);
+  console.log(`  ${pad('askai', w)}          copy to ${ctx.paths.app}, shim in ${ctx.paths.bin}${o.noPath || ctx.sandbox || !S.IS_WIN ? '' : ' (added to user PATH)'}${S.IS_WIN && !o.noPath && !ctx.sandbox && S.which('bash') ? ', askai alias in ~/.bashrc for Git Bash' : ''}, command entry points in selected hosts`);
   const files = [hosts.claude && 'settings.json, CLAUDE.md, .claude.json', hosts.cursor && "Cursor's mcp.json and hooks.json", hosts.codex && "Codex's config.toml and AGENTS.md", hosts.agy && "Antigravity's GEMINI.md and mcp_config.json"].filter(Boolean);
   console.log(`\nBacks up ${files.join('; ')} before every change; existing keys, entries and hooks are kept.`);
   if (!await confirm(o, '\nProceed?')) { console.log('Aborted, nothing changed.'); return 1; }
 
   const results = [];
-  console.log(`\n[askai] app, shim${hosts.claude ? ', commands' : ''}`);
+  console.log('\n[askai] app, shim, commands');
   try {
     console.log(`  app: ${copyApp(ctx)}`);
     writeShim(ctx);
-    if (hosts.claude) console.log(`  slash commands: ${installCommands(ctx)} written`);
+    console.log(`  command entry points: ${installCommands(ctx, hosts)} written`);
     console.log(`  user PATH: ${pathStep(ctx, true)}`);
     console.log(`  Git Bash alias (~/.bashrc): ${ctx.editBashAlias(true)}`);
     results.push({ id: 'askai', result: o.dry ? 'planned' : 'ok' });
@@ -885,6 +915,53 @@ function cmdPeak(o) {
   return 0;
 }
 
+function cliArgs(line) {
+  const args = []; let word = '', quote = null, started = false;
+  for (let i = 0; i < line.length; i++) {
+    const c = line[i];
+    if (quote) {
+      if (c === quote) quote = null;
+      else if (c === '\\' && line[i + 1] === quote) word += line[++i];
+      else word += c;
+    } else if (c === '"' || c === "'") { quote = c; started = true; }
+    else if (/\s/.test(c)) { if (started) { args.push(word); word = ''; started = false; } }
+    else { word += c; started = true; }
+  }
+  if (quote) throw new Error('unclosed quote');
+  if (started) args.push(word);
+  return args;
+}
+function launchCli() {
+  const cp = require('child_process'); let r;
+  if (process.platform === 'win32') {
+    const ps = `& '${process.execPath.replace(/'/g, "''")}' '${path.join(SRC, 'askai.js').replace(/'/g, "''")}' cli`;
+    const encoded = Buffer.from(ps, 'utf16le').toString('base64');
+    r = cp.spawnSync('powershell.exe', ['-NoProfile', '-NonInteractive', '-Command', `Start-Process powershell.exe -ArgumentList '-NoExit','-NoProfile','-EncodedCommand','${encoded}'`], { encoding: 'utf8' });
+  } else if (process.platform === 'darwin') {
+    const cmd = [process.execPath, path.join(SRC, 'askai.js'), 'cli'].map(x => `'${x.replace(/'/g, "'\\''")}'`).join(' ');
+    r = cp.spawnSync('osascript', ['-e', `tell application "Terminal" to do script "${cmd.replace(/\\/g, '\\\\').replace(/"/g, '\\"')}"`], { encoding: 'utf8' });
+  } else r = cp.spawnSync('x-terminal-emulator', ['-e', process.execPath, path.join(SRC, 'askai.js'), 'cli'], { encoding: 'utf8' });
+  if (r.status !== 0) { console.error(`Could not open a terminal. Run askai cli in a terminal. ${String(r.stderr || (r.error && r.error.message) || '').trim()}`); return 1; }
+  console.log('Opened AskAI CLI.'); return 0;
+}
+async function cmdCli(o) {
+  if (o.launch) return launchCli();
+  const rl = readline.createInterface({ input: process.stdin, output: process.stdout, terminal: !!process.stdin.isTTY });
+  console.log('AskAI CLI. Type a command for Claude Code, Codex, Antigravity or Cursor; exit to leave.');
+  rl.setPrompt('askai> '); rl.prompt();
+  for await (const line of rl) {
+    try {
+      const args = cliArgs(line);
+      if (args[0] === 'exit' || args[0] === 'quit') break;
+      if (args.length && args[0] !== 'cli') {
+        const previous = process.argv; process.argv = [previous[0], previous[1], ...args];
+        try { await main(); } finally { process.argv = previous; }
+      } else if (args[0] === 'cli') console.log('Already in AskAI CLI.');
+    } catch (e) { console.error(`askai: ${e.message}`); }
+    rl.prompt();
+  }
+  rl.close(); return 0;
+}
 async function main() {
   const [cmd, ...rest] = process.argv.slice(2);
   let o;
@@ -895,6 +972,7 @@ async function main() {
   if (o.help && cmd && help.has(cmd)) { console.log(help.render(cmd)); return 0; }
   if (!cmd || cmd === 'help' || o.help) { console.log(HELP); return cmd ? 0 : 2; }
   switch (cmd) {
+    case 'cli': return cmdCli(o);
     case 'install': return cmdInstall(o);
     case 'update': return cmdUpdate(o);
     case 'status': return cmdStatus(o);

@@ -200,6 +200,7 @@ A rule file without askai's marker line is not askai's: it is skipped unless `--
 | Code navigation (Serena) | `codex mcp add serena -- serena start-mcp-server --context codex --project-from-cwd` | `serena` entry in `~/.gemini/config/mcp_config.json` (`--context ide`) |
 | Large-output sandbox (Context Mode) | Supported by Context Mode itself: run its installer (`npx skills add mksglu/context-mode`); askai does not guess its flags | Same |
 | Handoff | `askai-handoff` skill in `~/.agents/skills` (`$askai-handoff`) | `askai-handoff` skill in `~/.gemini/antigravity-cli/skills` and `~/.gemini/config/skills` (becomes `/askai-handoff`) |
+| AskAI-only terminal | `/prompts:askai-cli` or `$askai-cli` | `/askai-cli` (AskAI skill) |
 | Usage figures | `/status`, `/usage`; not read by askai | `/usage`, `/credits`; not read by askai |
 
 `--target auto` adds Codex when `~/.codex` (or `CODEX_HOME`) exists or `codex` is on PATH, and Antigravity when `~/.gemini/antigravity-cli` or `~/.gemini/config` exists or `agy` is on PATH. Restart those tools after an install.
@@ -442,6 +443,6 @@ npm test        # node --test test/*.test.js, needs Node 21+ for the glob
 - `lib/session.js`, `lib/scaffold.js`, `lib/tips.js`, `lib/launch.js`, `lib/prompt.js`, `lib/guide.js`: `askai session`, `scaffold`, `tips`/`peak`, `go`, `prompt`, and `guide`/`clear`/`context`/`work`/`etiquette`. `templates/`: the files scaffold and session write.
 - `lib/help.js`: one entry per command; also the source `scripts/gen-docs.js` reads for the command reference in `docs/ARCHITECTURE.md`.
 - `hooks/askai-report.js`: transcript-based spend report used by `askai report`. `lib/hook.js`: the Claude Code reminder hooks (`askai hook`), invoked by Claude Code itself, not typed by you.
-- `commands/`: `/askai-status` and `/askai-report` slash commands (copied to `~/.claude/commands`).
+- `commands/`: `/askai-cli`, `/askai-status`, `/askai-report`, and `/askai-handoff` for Claude Code. The `/askai-cli` entry opens a separate terminal in Cursor and Antigravity too. Codex gets `/prompts:askai-cli` and the `$askai-cli` skill; custom prompts are deprecated, so the skill remains the supported option.
 - `legacy/`: the retired self-built hook system and its installer. Not used by anything above.
 - `test/`: the test suite.

@@ -35,6 +35,7 @@ Checked against vendor docs and independent benchmarks, 20 October 2026. Run `/h
 | Strong model only when needed | `/advisor opus` (Sonnet session) | Sol for the hard step | Pro for the hard step | frontier for the hard step |
 | Unused tools off | `/mcp` | `/mcp` | `/mcp` | Settings, MCP |
 | Handoff before a break | `/askai-handoff` | `$askai-handoff` | `/askai-handoff` | `/askai-handoff` |
+| AskAI-only terminal | `/askai-cli` | `/prompts:askai-cli` or `$askai-cli` | `/askai-cli` | `/askai-cli` |
 | Resume later | `/resume`, `claude -c` | `codex resume --last` | `/resume` | `agent --continue` |
 
 ## Cheapest model first

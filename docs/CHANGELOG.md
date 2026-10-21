@@ -2,6 +2,13 @@
 
 AskAI follows semantic versioning from 1.0.0 (see [RELEASING.md](RELEASING.md)). Installs always take the latest version on `main`.
 
+## 1.0.2 (21 October 2026): slash commands and accurate usage windows
+
+- Added `/askai-cli` (Codex: `$askai-cli`) across Claude Code, Codex, Antigravity and Cursor; documented model token cost of the initial agent command.
+- Counted MCP calls, Codex models and Codex tokens by event timestamp; fixed Claude CLI discovery and combined plugin/MCP status in `infra`.
+- Included `askai-cli.md` in command status and diagnosed missing npm global bin folders in `todo`.
+- Added `askai cli`, a dedicated terminal prompt for commands without slash or dollar prefixes.
+
 ## 1.0.1 (21 October 2026): CI on current Node, README caught up to the code
 
 - GitHub Actions (`.github/workflows/test.yml`) now tests Node 22 and 24; Node 20 reached end of life.

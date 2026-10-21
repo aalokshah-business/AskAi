@@ -164,7 +164,7 @@ Re-running is safe: components already right are skipped.
 Open a new terminal, so the PATH change applies, then:
 
 ```bash
-askai version        # 4.2.1
+askai version        # 1.0.2
 askai status         # each component: ok, partial, missing or other
 askai check          # every guideline: ok, fix or FAIL, with the command that fixes it
 askai doctor         # broken config and billing traps
@@ -200,6 +200,8 @@ Or during install: `bash install.sh --project ~/code/myapp` (PowerShell: `-Proje
 | `.ai-work/` | Handoff, ledger and measurements; gitignored automatically |
 
 ## 8a. Daily commands
+
+Use `/askai-cli` in Claude Code, Cursor or Antigravity (`$askai-cli` in Codex) to open a dedicated terminal. Or open a terminal yourself and run `askai cli`. There type `infra`, `todo`, `audit` or any other AskAI command without `askai`, `/` or `$`. Type `exit` to leave. The initial agent command uses model tokens; terminal commands use none unless they explicitly launch an AI agent.
 
 | Moment | Command |
 | --- | --- |
@@ -239,9 +241,9 @@ Paths are under your home folder (`%USERPROFILE%` on Windows).
 | --- | --- |
 | AskAI | `.claude/askai/app/` (the program), `.claude/askai/bin/askai` (the command), `.claude/askai/manifest.json`, `.claude/askai/backups/`, `.claude/askai/sessions/` (status-line snapshots), `.claude/askai/cache/` |
 | Claude Code | `.claude/settings.json` (added keys only), `.claude/CLAUDE.md` (a marked block), `.claude/rules/askai-*.md`, `.claude/commands/askai-*.md` |
-| Codex | `.codex/config.toml` (added keys only), `.codex/AGENTS.md` (a marked block), `.agents/skills/askai-handoff/` |
-| Antigravity | `.gemini/antigravity-cli/settings.json`, `.gemini/GEMINI.md` (a marked block), `.gemini/config/rules/askai-*.md`, the `askai-handoff` skill in `.gemini/antigravity-cli/skills/` and `.gemini/config/skills/` |
-| Cursor | `.cursor/rules/askai-*.mdc`, `.cursor/commands/askai-handoff.md` |
+| Codex | `.codex/config.toml` (added keys only), `.codex/AGENTS.md` (a marked block), `.codex/prompts/askai-cli.md`, `.agents/skills/askai-cli/`, `.agents/skills/askai-handoff/` |
+| Antigravity | `.gemini/antigravity-cli/settings.json`, `.gemini/GEMINI.md` (a marked block), `.gemini/config/rules/askai-*.md`, the `askai-cli` and `askai-handoff` skills in `.gemini/antigravity-cli/skills/` and `.gemini/config/skills/` |
+| Cursor | `.cursor/rules/askai-*.mdc`, `.cursor/commands/askai-cli.md`, `.cursor/commands/askai-handoff.md` |
 | Coding profile | Serena as an MCP server in each tool (`.claude.json`, `.cursor/mcp.json`, `.codex/config.toml`, `.gemini/config/mcp_config.json`) |
 
 The full list, with every key and value: `docs/ARCHITECTURE.md`, sections 8 and 9.

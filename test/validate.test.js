@@ -26,7 +26,12 @@ test('validate-install: a good install passes; a broken one names the file and t
   try {
     const ins = cp.spawnSync(process.execPath, [path.join(ROOT, 'askai.js'), 'install', '--yes', '--target', 'all', '--profile', 'minimal', '--skip', 'claude', '--no-path', '--project', repo], { env, encoding: 'utf8', timeout: 300000 });
     assert.strictEqual(ins.status, 0, ins.stdout + ins.stderr);
-    const snapshot = () => cp.spawnSync('find', [H, '-type', 'f', '-newer', path.join(H, '.claude', 'askai', 'manifest.json')], { encoding: 'utf8' }).stdout;
+    const snapshot = () => {
+      const since = fs.statSync(path.join(H, '.claude', 'askai', 'manifest.json')).mtimeMs;
+      const found = []; const walk = d => { for (const e of fs.readdirSync(d, { withFileTypes: true })) {
+        const p = path.join(d, e.name); if (e.isDirectory()) walk(p); else if (fs.statSync(p).mtimeMs > since) found.push(p);
+      } }; walk(H); return found.sort().join('\n');
+    };
     const good = validate(env, repo);
     assert.strictEqual(good.status, 0, good.stdout);
     for (const s of ['PASS  askai       version', 'reminder hooks registered', 'project files present (router, docs/ai, subagents, skills)', 'AGENTS.md is', 'askai check: no failing items', 'Still to check by hand']) assert.ok(good.stdout.includes(s), s);

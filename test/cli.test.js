@@ -69,6 +69,57 @@ test('install writes only into the given home, is idempotent, and records a mani
   assert.deepStrictEqual(['settings.json', 'CLAUDE.md'].map(f => sha(path.join(home, f))), before, 'second run changes neither file');
 }));
 
+test('AskAI CLI entry installs and uninstalls in all four hosts', () => withHome(root => {
+  const homes = Object.fromEntries(['claude', 'cursor', 'codex', 'agy'].map(n => [n, path.join(root, n)]));
+  const flags = ['--claude-home', homes.claude, '--cursor-home', homes.cursor, '--codex-home', homes.codex, '--agy-home', homes.agy, '--target', 'all', '--only', 'baseline', '--no-path', '--yes'];
+  const paths = [
+    path.join(homes.claude, 'commands', 'askai-cli.md'),
+    path.join(homes.cursor, 'commands', 'askai-cli.md'),
+    path.join(homes.codex, 'prompts', 'askai-cli.md'),
+    path.join(homes.codex, 'agents-skills', 'askai-cli', 'SKILL.md'),
+    path.join(homes.agy, 'antigravity-cli', 'skills', 'askai-cli', 'SKILL.md'),
+    path.join(homes.agy, 'config', 'skills', 'askai-cli', 'SKILL.md'),
+  ];
+  const first = cli(['install', ...flags]);
+  assert.strictEqual(first.code, 0, first.out + first.err);
+  for (const f of paths) assert.ok(fs.existsSync(f), `${f} exists`);
+  assert.match(fs.readFileSync(paths[0], 'utf8'), /allowed-tools: Bash\(askai cli --launch\)[\s\S]*Run `askai cli --launch`/);
+  assert.match(fs.readFileSync(paths[0], 'utf8'), /Print only its output, no commentary/);
+  assert.match(fs.readFileSync(paths[2], 'utf8'), /Run `askai cli --launch`/);
+  assert.match(fs.readFileSync(paths[3], 'utf8'), /name: askai-cli/);
+  for (const f of paths) assert.doesNotMatch(fs.readFileSync(f, 'utf8'), /\{\{ASKAI\}\}/);
+  const second = cli(['install', ...flags]);
+  assert.strictEqual(second.code, 0, second.out + second.err);
+  assert.match(second.out, /command entry points: 0 written/);
+  const removed = cli(['uninstall', ...flags]);
+  assert.strictEqual(removed.code, 0, removed.out + removed.err);
+  for (const f of paths) assert.ok(!fs.existsSync(f), `${f} removed`);
+}));
+
+test('askai cli runs commands without prefixes and exits', () => {
+  const cp = require('child_process');
+  const r = cp.spawnSync(process.execPath, [path.join(__dirname, '..', 'askai.js'), 'cli'], { input: 'version\nhelp cli\nexit\n', encoding: 'utf8', timeout: 10000 });
+  assert.strictEqual(r.status, 0, r.stdout + r.stderr);
+  assert.match(r.stdout, /AskAI CLI[\s\S]*askai> 1\.0\.2[\s\S]*askai cli: Open an AskAI-only terminal prompt/);
+});
+
+test('install replaces owned generic askai entry without deleting edited copies', () => withHome(home => {
+  const flags = ['--claude-home', home, '--target', 'claude', '--only', 'baseline', '--no-path', '--yes'];
+  assert.strictEqual(cli(['install', ...flags]).code, 0);
+  const old = path.join(home, 'commands', 'askai.md');
+  write(old, 'old generic command');
+  const mf = path.join(home, 'askai', 'manifest.json');
+  const man = readJson(mf); man.files.push({ path: old, sha: require('crypto').createHash('sha1').update(fs.readFileSync(old)).digest('hex') }); write(mf, JSON.stringify(man));
+  const migrated = cli(['install', ...flags]);
+  assert.strictEqual(migrated.code, 0, migrated.out + migrated.err);
+  assert.ok(!fs.existsSync(old), migrated.out + migrated.err + JSON.stringify(readJson(mf).files));
+  assert.ok(fs.existsSync(path.join(home, 'commands', 'askai-cli.md')));
+  write(old, 'user edited command');
+  const second = readJson(mf); second.files.push({ path: old, sha: 'not-current' }); write(mf, JSON.stringify(second));
+  assert.strictEqual(cli(['install', ...flags]).code, 0);
+  assert.strictEqual(fs.readFileSync(old, 'utf8'), 'user edited command');
+}));
+
 test('--dry-run writes nothing at all', () => withHome(home => {
   write(`${home}/settings.json`, '{"model":"opus"}');
   const before = sha(`${home}/settings.json`);

@@ -8,6 +8,7 @@ const plugins = require('../lib/plugins');
 const ug = require('../lib/usage-guide');
 const savings = require('../lib/savings');
 const infra = require('../lib/infra');
+const todo = require('../lib/todo');
 const SRC = fs.readFileSync(path.join(__dirname, '..', 'askai.js'), 'utf8');
 const withHome = fn => { const h = tmpHome(); try { return fn(h); } finally { rm(h); } };
 
@@ -42,8 +43,10 @@ test('every plugin AskAI can install has a usage guide: commands, check, savings
 });
 
 test('askai savings runs the reports that exist and says how to add the others', () => withHome(h => {
-  const bin = path.join(h, 'bin'); write(path.join(bin, 'rtk'), '#!/bin/sh\necho "Tokens saved: 1234 over 9 commands"\n'); fs.chmodSync(path.join(bin, 'rtk'), 0o755);
-  const ctx = makeCtx(h, {}, { tools: { rtk: path.join(bin, 'rtk') } });
+  const bin = path.join(h, 'rtk' + (process.platform === 'win32' ? '.cmd' : ''));
+  write(bin, process.platform === 'win32' ? '@echo Tokens saved: 1234 over 9 commands\r\n' : '#!/bin/sh\necho "Tokens saved: 1234 over 9 commands"\n');
+  if (process.platform !== 'win32') fs.chmodSync(bin, 0o755);
+  const ctx = makeCtx(h, {}, { tools: { rtk: bin } });
   const out = savings.report(ctx, 7, h);
   assert.match(out, /Tokens saved: 1234/); assert.match(out, /ccusage[\s\S]*not installed/); assert.match(out, /\/context-mode:ctx-stats/);
   write(path.join(h, 'graphify-out', 'GRAPH_REPORT.md'), '# g'); assert.match(savings.report(ctx, 7, h), /graph built/);
@@ -53,4 +56,60 @@ test('askai savings runs the reports that exist and says how to add the others',
 test('infra points every installed plugin at its usage guide', () => withHome(h => {
   const ctx = makeCtx(h, {}, { tools: { markitdown: '/x/markitdown' } });
   assert.match(infra.render(infra.collect(ctx, null)), /MarkItDown\s+on PATH\s+use: askai plugins info markitdown/);
+}));
+
+test('weekly MCP calls and Codex models count event timestamps, with mtime fallback only for undated lines', () => withHome(h => {
+  const old = new Date(Date.now() - 10 * 86400000).toISOString();
+  const recent = new Date(Date.now() - 86400000).toISOString();
+  const ctx = makeCtx(h);
+  const claudeLog = path.join(h, 'projects', 'test.jsonl');
+  write(claudeLog, [
+    { timestamp: old, message: { content: [{ name: 'mcp__old__tool' }] } },
+    { timestamp: recent, message: { content: [{ name: 'mcp__new__tool' }] } },
+    { message: { content: [{ name: 'mcp__undated__tool' }] } },
+  ].map(JSON.stringify).join('\n'));
+  assert.deepStrictEqual(infra.mcpCalls(ctx), { new: 1, undated: 1 });
+  const codexHome = path.join(h, '.codex');
+  const codexLog = path.join(codexHome, 'sessions', 'test.jsonl');
+  write(codexLog, [
+    { timestamp: old, type: 'turn_context', payload: { model: 'old' } },
+    { timestamp: recent, type: 'turn_context', payload: { model: 'new' } },
+    { type: 'turn_context', payload: { model: 'undated' } },
+  ].map(JSON.stringify).join('\n'));
+  assert.deepStrictEqual(require('../lib/usage').codexModels(codexHome, 7), { new: 1, undated: 1 });
+}));
+
+test('Codex token increases belong to event dates, not session file mtime', () => withHome(h => {
+  const old = new Date(Date.now() - 10 * 86400000).toISOString();
+  const recent = new Date(Date.now() - 86400000).toISOString();
+  const codexHome = path.join(h, '.codex');
+  write(path.join(codexHome, 'sessions', 'test.jsonl'), [
+    { timestamp: old, payload: { total_token_usage: { input_tokens: 100, output_tokens: 20 } } },
+    { timestamp: recent, payload: { total_token_usage: { input_tokens: 150, output_tokens: 30 } } },
+    { payload: { total_token_usage: { input_tokens: 170, output_tokens: 35 } } },
+  ].map(JSON.stringify).join('\n'));
+  const r = require('../lib/usage').codex(codexHome, 7);
+  assert.deepStrictEqual([r.total.input, r.total.output, r.total.sessions], [70, 15, 1]);
+  assert.strictEqual(r.byDay.length, 2);
+  assert.deepStrictEqual(r.byDay.map(([, d]) => [d.input, d.output]), [[50, 10], [20, 5]]);
+}));
+
+test('infra finds Claude outside PATH, lists askai-cli.md and combines plugin with MCP state', () => withHome(h => {
+  const claude = path.join(h, 'claude.exe');
+  const ctx = makeCtx(h, {}, { claude, probe: cmd => ({ ok: cmd === claude, stdout: 'claude 2.0', stderr: '' }) });
+  write(path.join(h, 'commands', 'askai-cli.md'), 'command');
+  write(ctx.paths.settings, JSON.stringify({ enabledPlugins: { 'context-mode@context-mode': true } }));
+  write(ctx.paths.userJson, JSON.stringify({ mcpServers: { 'context-mode': {} } }));
+  const r = infra.collect(ctx, null);
+  assert.strictEqual(r.tools.claude.cli, 'claude 2.0');
+  assert.ok(r.tools.claude.commands.includes('askai-cli.md'));
+  assert.strictEqual(r.plugins.find(p => p.id === 'context-mode').state, 'claude plugin, claude on');
+}));
+
+test('todo names npm global bin folder when installed tools are absent from PATH', () => withHome(h => {
+  const bin = path.join(h, 'npm-global');
+  write(path.join(bin, 'ccusage' + (process.platform === 'win32' ? '.cmd' : '')), 'shim');
+  const ctx = makeCtx(h, {}, { probe: (cmd, args) => ({ ok: cmd === 'npm' && args.join(' ') === 'prefix -g', stdout: bin + '\n' }) });
+  const item = todo.items(ctx, null).find(i => i.id === 'npm-global-path');
+  assert.ok(item && item.text.includes('ccusage') && item.how.includes(bin));
 }));
