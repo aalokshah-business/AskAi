@@ -158,7 +158,7 @@ test('report prints status, health, cache and spend sections and touches nothing
   const at = [/1\/[45] +TOOLS AND MEASURED SAVINGS/, /2\/[45] +HEALTH/, /3\/[45] +CACHE AND CONTEXT PER SESSION, LAST 1h/, /\d\/[45] +SPEND FROM TRANSCRIPTS, LAST 1h/].map(re => r.out.search(re));
   assert.ok(at.every(i => i >= 0), `all four headings present: ${at}`);
   assert.deepStrictEqual([...at].sort((a, b) => a - b), at, 'sections appear in order');
-  assert.match(r.out, /ok +node/, 'doctor rows are included');
+  assert.match(r.out, /(ok|warn) +node/, 'doctor rows are included');
   for (const f of ['askai', 'settings.json', 'CLAUDE.md', 'commands']) assert.ok(!fs.existsSync(path.join(home, f)), `${f} not created`);
 }));
 

@@ -236,7 +236,7 @@ test('cursor-rules: writes the profile rules under <cursorHome>/rules and remove
 
 test('cursor-context-mode: installs the npm package once, adds the MCP entry, records ownership; detect goes ok', () => withDirs(a => {
   const tools = { npm: '/bin/npm' };
-  const fakes = { tools, act: cmd => { if (cmd === 'npm') tools['context-mode'] = '/bin/context-mode'; return OK; } };
+  const fakes = { tools, nodeVersion: '24.0.0', act: cmd => { if (cmd === 'npm') tools['context-mode'] = '/bin/context-mode'; return OK; } };
   const ctx = cctx(a, {}, fakes);
   assert.strictEqual(c('cursor-context-mode').detect(ctx).state, 'missing');
   c('cursor-context-mode').install(ctx);
@@ -262,7 +262,7 @@ test('cursor-context-mode: refuses old Node, needs npm, and a failed npm install
 test('cursor-context-mode: an entry the user already has is left as it is, is not askai\'s to remove, and --force removes it', () => withDirs(a => {
   write(`${a.cursorHome}/mcp.json`, JSON.stringify({ mcpServers: { 'context-mode': { command: 'node', args: ['mine.js'] }, other: { command: 'x' } } }));
   const tools = { npm: '/bin/npm', 'context-mode': '/bin/context-mode' };
-  const ctx = cctx(a, {}, { tools });
+  const ctx = cctx(a, {}, { tools, nodeVersion: '24.0.0' });
   const logs = capture(ctx);
   c('cursor-context-mode').install(ctx);
   assert.deepStrictEqual(mcpOf(a.cursorHome).mcpServers['context-mode'], { command: 'node', args: ['mine.js'] });
@@ -288,7 +288,7 @@ test('cursor-context-mode: an entry the user already has is left as it is, is no
 
 test('cursor-context-mode: uninstall removes what askai added; the package only with --tools', () => withDirs(a => {
   const tools = { npm: '/bin/npm' };
-  const fakes = { tools, act: cmd => { if (cmd === 'npm') tools['context-mode'] = '/bin/context-mode'; return OK; } };
+  const fakes = { tools, nodeVersion: '24.0.0', act: cmd => { if (cmd === 'npm') tools['context-mode'] = '/bin/context-mode'; return OK; } };
   const ctx = cctx(a, {}, fakes);
   c('cursor-context-mode').install(ctx);
 

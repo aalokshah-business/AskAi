@@ -2,7 +2,7 @@
 
 [![test](https://github.com/aalokshah-business/AskAi/actions/workflows/test.yml/badge.svg)](https://github.com/aalokshah-business/AskAi/actions/workflows/test.yml)
 
-askai makes AI coding subscriptions last longer. It installs and wires up existing token-saving tools for **Claude Code, Cursor, OpenAI Codex and Google Antigravity** on **Windows, macOS, Linux and WSL**, chooses the set by the kind of work (coding, documents, both, or minimal), sets each tool's own cheap defaults, and shows the savings those tools measure. It keeps a hook-free session ledger so any of the four agents can pick a task up again after a break, and prints an offline cheat sheet. It does not ship hooks of its own.
+askai makes AI coding subscriptions last longer. It installs and wires up existing token-saving tools for **Claude Code, Cursor, OpenAI Codex and Google Antigravity** on **Windows, macOS, Linux and WSL**, chooses the set by the kind of work (coding, documents, both, or minimal), sets each tool's own cheap defaults, and shows the savings those tools measure. It keeps a session ledger so any of the four agents can pick a task up again after a break, and prints an offline cheat sheet. The only hooks it registers are a couple of in-session reminders (`prompt-hooks`); it does not run a proxy, router or background process.
 
 The full guide (why tokens run out, setup per tool, daily habits, session breaks, measurement, the research behind every choice) is [`docs/ASKAI_GUIDE.md`](docs/ASKAI_GUIDE.md); the two-page cheat sheet is [`docs/CHEAT_SHEET.md`](docs/CHEAT_SHEET.md).
 
@@ -94,7 +94,7 @@ Token use in an agent session comes from a handful of sources, and each tool bel
 | Always-loaded instructions | Path-scoped rules (`~/.claude/rules/*.md` with `paths:`; Cursor `.mdc` with `globs`) | A rule loads only when a matching file is read | **Yes, per profile** (`rules` component) |
 | Binary documents (PDF, Office) | [markitdown](https://github.com/microsoft/markitdown) | Converts a document to Markdown once, so it is read as text | **Yes, docs and full** |
 | Library documentation lookups | Context7 | MCP server that fetches current library docs | No: it saves searching, not tokens in general; add it yourself if you need it |
-| Model cost, not tokens | claude-code-router, LiteLLM | Proxy that routes requests to cheaper models | No: puts a proxy in the request path. The cheap first-party version is used instead: `CLAUDE_CODE_SUBAGENT_MODEL=sonnet` |
+| Model cost, not tokens | claude-code-router, LiteLLM | Proxy that routes requests to cheaper models | No: puts a proxy in the request path. The cheap first-party version is used instead: `CLAUDE_CODE_SUBAGENT_MODEL=haiku` |
 | Usage and cost reporting | [ccusage](https://github.com/ryoppippi/ccusage) | Reads local Claude Code transcripts, prints usage and cost per day | **Yes, opt-in (full profile or `--ccusage`)**; reports, saves nothing |
 | | Claude-Code-Usage-Monitor | Live terminal view of limits and burn rate | No: ccusage covers reporting |
 | | Claude Code `/usage`, `/context`, OpenTelemetry export | First-party views and metrics | Used as they are; not wrapped |
@@ -122,13 +122,13 @@ The net effect of the whole stack is unproven. The spend section of `askai repor
 
 ## Why this combination
 
-> RTK and Context Mode are opt-in (`--rtk`, `--context-mode`): paired third-party benchmarks found no net saving for either. The reasons below come from AskAI's first evaluation and still explain the one-tool-per-sink design; [What's](#whats-new-in-31-evidence-based-defaults) gives the evidence.
+> RTK and Context Mode are opt-in (`--rtk`, `--context-mode`): paired third-party benchmarks found no net saving for either. The reasons below explain the one-tool-per-sink design; [Evidence labels](#evidence-labels) above gives the sourcing for every claim.
 
 askai installs a specific subset. The reasons, in order of weight:
 
 1. **One tool per sink, no overlap.** Shell output goes to RTK, big tool output to Context Mode, source reading to Serena, binary documents to markitdown, reply length to the Caveman block, always-loaded text to path-scoped rules. Two tools competing for the same sink would both add overhead for one saving. RTK and Context Mode do both touch Bash calls, which is the one known overlap (see [Known risks](#known-risks)); the alternatives (Headroom, a second index server) would add more.
 2. **No always-on cost that is not earned.** RTK's hook runs locally and adds no model tokens. Rule files are path-scoped, so a coding rule costs nothing in a document session. The `CLAUDE.md` block is a few lines. Serena and Context Mode are MCP servers, whose tool definitions Claude Code defers by default rather than loading in full each session; that is a small cost, and it is not measured here.
-3. **Nothing self-built.** The earlier askai hooks were the largest single cost in the measured ledger. Everything installed now is maintained by someone else, and askai registers no hooks of its own.
+3. **Almost nothing self-built.** The earlier askai hooks were the largest single cost in the measured ledger. Everything installed now is maintained by someone else, except a couple of short in-session reminders (`prompt-hooks`); askai runs no proxy, router or background process of its own.
 4. **Measured where possible, silent where not.** RTK and Context Mode have counters and are shown. Serena, markitdown and Caveman have none, so askai claims no number for them. ccusage is included because a report that reads transcripts is the independent check on the rest, not because it saves anything.
 5. **Reversible.** Every changed file is backed up first, ownership is recorded in a manifest, and `askai uninstall` removes only what askai added.
 6. **Works on both hosts where the tool allows it.** RTK, Context Mode and Serena each have a Cursor route; the status line, cache figures, ccusage and the spend report are Claude Code only (see [Claude Code and Cursor](#claude-code-and-cursor)).
@@ -147,12 +147,13 @@ askai install --markitdown --ccusage    # add a tool to whatever profile is in e
 
 | Profile | Installs (on top of the base) | Path rules | For |
 |---|---|---|---|
-| `minimal` | Base only | none | Cheap model defaults, token, build-lean and terse rules, status line, handoff; no MCP servers or plugins |
-| `coding` (default) | Base + Serena | coding | Source code work |
-| `docs` | Base + markitdown | docs | Writing and reading documents, PDFs and Office files; no code navigation |
-| `full` | Base + Serena + markitdown + ccusage | coding + docs | Mixed work, plus the usage report |
+| `minimal` | Base only | none | Cheap model defaults, token and terse rules, status line, handoff; no MCP servers or plugins |
+| `coding` (default) | Base + Serena + ccusage | coding | Source code work |
+| `docs` | Base + markitdown + ccusage | docs | Writing and reading documents, PDFs and Office files; no code navigation |
+| `full` | Base + Serena + markitdown + ccusage | coding + docs | Mixed work |
+| `max` | `full` + RTK, Context Mode, Headroom (MCP mode), Graphify, Context7, Repomix, the Caveman plugin, LSP plugins (ts, py), base tools | coding + docs | Every optimiser, for people who choose all of them over the evidence-based default |
 
-The base is `claude`, `baseline`, `caveman`, `statusline`, `rules` (the rule files a profile selects) and `handoff`. RTK (`--rtk`), Context Mode (`--context-mode`) and the code-intelligence plugins (`--lsp`) are opt-in on top of any profile.
+The base is `token-kit`, `claude`, `baseline`, `caveman`, `statusline`, `rules` (the rule files a profile selects), `handoff`, `lean` and `prompt-hooks`. RTK (`--rtk`), Context Mode (`--context-mode`) and the code-intelligence plugins (`--lsp`) are opt-in on top of any profile.
 
 - `askai suggest [dir]` scans up to three levels (skipping `node_modules`, `.git` and similar), counts code files, text documents and binary documents, and recommends: `full` when both code and binary documents are common, `coding` when code dominates, `docs` when documents dominate, otherwise `minimal`. It is a heuristic; it reads file names only.
 - Path rules: the coding rule loads only when a source file is read, the docs rule only when a document is read. Each is a few lines, and a line that names a tool is written only when that tool is present.
@@ -194,7 +195,7 @@ A rule file without askai's marker line is not askai's: it is skipped unless `--
 | Capability | OpenAI Codex | Google Antigravity CLI and app |
 |---|---|---|
 | Token rules + terse style | Managed block in `~/.codex/AGENTS.md` (`codex-rules`) | Managed block in `~/.gemini/GEMINI.md` (`agy-rules`) |
-| Cheap defaults | `codex-baseline`: effort medium, verbosity low, no personality section, subagent effort medium (all add-if-absent) | `useG1Credits` is left false; `askai doctor` warns when it is true |
+| Cheap defaults | `codex-baseline`: effort medium, verbosity low, no personality section, subagent effort medium (all add-if-absent) | `agy-baseline`: `useG1Credits` is left false; `askai doctor` warns when it is true |
 | Shell-output compression (RTK) | `rtk init -g --codex --auto-patch` (RTK's PreToolUse hook) | `rtk init -g --agent antigravity --auto-patch` (RTK's plugin in `~/.gemini/config/plugins/rtk`) |
 | Code navigation (Serena) | `codex mcp add serena -- serena start-mcp-server --context codex --project-from-cwd` | `serena` entry in `~/.gemini/config/mcp_config.json` (`--context ide`) |
 | Large-output sandbox (Context Mode) | Supported by Context Mode itself: run its installer (`npx skills add mksglu/context-mode`); askai does not guess its flags | Same |
@@ -207,8 +208,9 @@ A rule file without askai's marker line is not askai's: it is skipped unless `--
 
 | Component | What it is | How it is delivered | Fires |
 |---|---|---|---|
+| `token-kit` | Takeover of a previous standalone `token-setup.mjs` run | Only if `~/.token-kit/state.json` exists: runs `standalone/token-setup.mjs --uninstall` (removes its keys, rule blocks and handoff files, with backups) so askai's settings and rules are not applied twice | Once, during install |
 | `claude` | Claude Code CLI | winget `Anthropic.ClaudeCode` (Windows); Homebrew cask `claude-code` or `claude.ai/install.sh` (macOS, Linux), only if missing | - |
-| `baseline` | The zero-cost settings | `~/.claude/settings.json`: `model` sonnet when none is set (Claude Code starts on Opus otherwise; `--main-model`), `autoCompactWindow` 150000, `env.CLAUDE_CODE_SUBAGENT_MODEL=sonnet`, `skillOverrides` (rarely used bundled skills to `name-only`). Added only when absent, never overriding your values. Also removes registrations of the retired askai hook | Every session |
+| `baseline` | The zero-cost settings | `~/.claude/settings.json`: `model` haiku when none is set (Claude Code starts on Opus otherwise; `--main-model`), `effortLevel` medium, `autoCompactWindow` 150000, `env.CLAUDE_CODE_SUBAGENT_MODEL=haiku`, `skillOverrides` (rarely used bundled skills to `name-only`). Added only when absent, never overriding your values. Also removes registrations of the retired askai hook | Every session |
 | `rtk` | [RTK](https://github.com/rtk-ai/rtk), **opt-in** (`--rtk`) | winget `rtk-ai.rtk`, then `rtk init -g --auto-patch` (a PreToolUse hook on Bash calls) | Every Bash tool call, automatically |
 | `context-mode` | [Context Mode](https://github.com/mksglu/context-mode), **opt-in** (`--context-mode`) | `claude plugin marketplace add mksglu/context-mode`, `claude plugin install context-mode@context-mode` | Plugin hooks fire automatically; the model chooses when to call `ctx_*` tools |
 | `serena` | [Serena](https://github.com/oraios/serena) | `uv tool install -p 3.13 serena-agent`, `serena init`, uv's tool bin dir added to the user PATH, `claude mcp add --scope user serena ...` (dashboard off) | The model chooses to call its tools; the `CLAUDE.md` block and the coding rule nudge it |
@@ -221,11 +223,19 @@ A rule file without askai's marker line is not askai's: it is skipped unless `--
 | `cursor-rtk`, `cursor-context-mode`, `cursor-serena` | The Cursor twins of `rtk`, `context-mode` and `serena` | See [Claude Code and Cursor](#claude-code-and-cursor) | Cursor's own hook and MCP mechanisms |
 | `cursor-rules` | The Cursor twin of the rule files | `~/.cursor/rules/askai-*.mdc` for the profile | Every Cursor chat (token rule); code and document rules when a matching file is in play |
 | `codex-baseline`, `codex-rules`, `codex-rtk`, `codex-serena` | The Codex twins of `baseline`, `caveman`, `rtk` and `serena` | See [Codex and Antigravity](#codex-and-antigravity) | Every Codex session |
-| `agy-rules`, `agy-rtk`, `agy-serena` | The Antigravity twins of `caveman`, `rtk` and `serena` | See [Codex and Antigravity](#codex-and-antigravity) | Every Antigravity session |
-| `handoff` | The session handoff prompt | `~/.claude/commands/askai-handoff.md`, `~/.cursor/commands/askai-handoff.md`, the `askai-handoff` skill for Codex and Antigravity | Only when you ask for it |
-| `lean` | Three Claude Code keys that trade a convenience for tokens, plus deny-read rules | `settings.json`: `promptSuggestionEnabled` false, `bashOutputMaxChars` 15000, `includeGitInstructions` false; `permissions.deny` `Read()` rules for `node_modules`, build output, lockfiles, minified files and `.env`; also `awaySummaryEnabled` false, `crossSessionInbound` hold and `CLAUDE_CODE_GOAL_CHECKIN_MINUTES=0` (no idle wake-ups), plus Codex `[tui] auto_recap = false`. Opt-in: `--lean` | Every session |
+| `agy-baseline`, `agy-rules`, `agy-rtk`, `agy-serena` | The Antigravity twins of `baseline`, `caveman`, `rtk` and `serena` | See [Codex and Antigravity](#codex-and-antigravity) | Every Antigravity session |
+| `handoff` | Session handoff (`/askai-handoff` for Claude Code and Cursor, `askai-handoff` skill for Codex and Antigravity) | `~/.claude/commands/askai-handoff.md`, `~/.cursor/commands/askai-handoff.md`, the `askai-handoff` skill for Codex and Antigravity | Only when you ask for it |
+| `lean` | Lean Claude Code settings (idle drains off, Bash output cap, deny-read rules) | `settings.json`: `promptSuggestionEnabled` false, `bashOutputMaxChars` 15000, `includeGitInstructions` false (`--lean-git` to add this one too); `permissions.deny` `Read()` rules for `node_modules`, build output, lockfiles, minified files and `.env`; also `awaySummaryEnabled` false, `crossSessionInbound` hold and `CLAUDE_CODE_GOAL_CHECKIN_MINUTES=0` (no idle wake-ups), plus Codex `[tui] auto_recap = false`. In every profile; leave it out with `--skip lean` | Every session |
+| `prompt-hooks` | In-session reminders (zero-token Claude Code hooks) | `settings.json` hooks: `SessionStart` and `UserPromptSubmit` → `askai hook` (short reminders shown only to you: context at 60% and 80%, long sessions, peak hours, stale handoff, cache misses) | `SessionStart` and `UserPromptSubmit`; nothing is added to the model's context |
 | `agy-path-rules` | The Antigravity twin of `rules` | `~/.gemini/config/rules/askai-<kind>.md` with `trigger: glob` frontmatter | Only when a matching file is touched |
 | `code-intel` | Claude Code's official LSP plugins | `--lsp ts,py,kotlin,ruby,swift`: language server (npm for ts/py) + `claude plugin install <lang>-lsp@claude-plugins-official` | When Claude navigates code |
+| `headroom` | Headroom (MCP mode: on-demand compression tools, no proxy), **opt-in** (`--headroom`) | `uv tool install --python 3.13 "headroom-ai[mcp]"`, registered as an MCP server in Claude Code, Codex, Cursor and Antigravity. Proxy mode is never set up | The model chooses to call `headroom_compress`, `headroom_retrieve`, `headroom_stats` |
+| `context7` | Context7 (current library docs over MCP), **opt-in** (`--context7`) | `npx -y @upstash/context7-mcp` registered as an MCP server in Claude Code, Codex, Cursor and Antigravity | The model calls it only for library docs |
+| `repomix` | Repomix (repository snapshot CLI), **opt-in** (`--repomix`) | `npm install -g repomix`, only if missing; nothing loads into any session | On demand, e.g. `repomix --compress --include "src/**"` |
+| `graphify` | Graphify (code knowledge graph skill), **opt-in** (`--graphify`) | `uv tool install graphifyy` if missing, then `graphify install --platform <tool>` for each tool in play (a skill, a rule and, in Claude Code, a search hook) | The model runs `/graphify .` once per project, then the skill as needed |
+| `base-tools` | Base command-line tools (ripgrep, jq, gh) | winget/Homebrew/apt install of `rg`, `jq` and `gh`, only if missing. Opt-in: `--base-tools` | Used ad hoc in place of reading whole files or a GitHub MCP server |
+| `codebase-memory` | codebase-memory-mcp (code knowledge-graph MCP server), **opt-in** (`--codebase-memory`) | `npm install -g codebase-memory-mcp`, registered as an MCP server in Claude Code, Codex, Cursor and Antigravity; `askai init` indexes each repository | The model chooses to call its tools |
+| `claude-mem` | claude-mem (session memory plugin), **opt-in** (`--claude-mem`) | `claude plugin marketplace add thedotmack/claude-mem`, `claude plugin install claude-mem@thedotmack` | Hooks plus a background worker that summarises sessions, using your plan |
 
 The managed `CLAUDE.md` block also carries four short token rules: state a tool-call limit and a reply-size limit in every subagent prompt, Grep then Read with offset/limit, prefer `ctx_*` tools for large output, prefer Serena symbol tools over reading whole files. The lines about Context Mode and Serena are written only when those tools are installed. The block sits between `<!-- askai:begin ... -->` and `<!-- askai:end -->`; if your `CLAUDE.md` already has a `# Terse output (caveman` heading, the directive is not added a second time.
 
@@ -236,7 +246,7 @@ The versions of markitdown and ccusage that askai installs, and the shape of ccu
 - Serena's reminder hooks (extra per-prompt text).
 - The `@caveman-ai/cli` proxy and any `irm | iex` installer.
 - The Caveman plugin, unless you pass `--caveman-plugin` (it would double up with the `CLAUDE.md` directive).
-- Any hook written by askai.
+- Any hook written by askai beyond the short, zero-token reminders in `prompt-hooks`.
 - Any proxy or router in the request path, memory database, or second code-index server (see [the landscape](#the-landscape-what-exists-and-what-askai-uses)).
 
 ## How it works with no manual step per prompt
@@ -302,25 +312,50 @@ It exits 1 only when the spend part could not be produced; use `askai doctor` wh
 ## Commands
 
 ```
-askai install [--profile minimal|coding|docs|full] [--target auto|claude|cursor|both|codex|agy|all|a,b] [--markitdown] [--ccusage] [--lean] [--rtk] [--context-mode] [--lsp ts,py]
-              [--main-model M] [--subagent-model M] [--codex-model M] [--only a,b] [--skip a,b] [--caveman LEVEL] [--caveman-plugin]
+askai install [--profile minimal|coding|docs|full|max] [--target auto|claude|codex|agy|cursor|all|a,b] [--only a,b] [--skip a,b]
+              [--main-model M] [--subagent-model M] [--codex-model M] [--caveman off|lite|full|ultra] [--lsp ts,py,kotlin,ruby,swift]
+              [--lean-git] [--rtk] [--context-mode] [--base-tools] [--headroom] [--graphify] [--context7] [--repomix]
+              [--codebase-memory] [--claude-mem] [--markitdown] [--ccusage] [--caveman-plugin]
               [--no-statusline] [--no-path] [--yes] [--dry-run] [--force]
 askai profiles | suggest [dir] [--json]          which profile fits what
 askai scaffold [dir] [--dry-run]                 repo files every agent reads (never overwrites)
+askai init [dir] [--about "..."] [--type T] [--build "cmd"] [--test "cmd"] [--refresh] [--yes] [--dry-run]
+                                                  project knowledge pack, so /clear can be run freely
 askai project [dir] [--print|--remove] [--force] Cursor: the token rules inside one repo
 askai check [dir] [--fix] [--json]              audit the machine and a repo against the token guidelines
 askai ask <words>                                offline answers on etiquette and the research
-askai start | break | resume [--copy]            session shortcuts: ledger, before-break checklist, coming back
+askai start | break | resume | continue [--copy] session shortcuts: ledger, before-break checklist, coming back
+askai checkpoint --summary "..." --next "..."    ledger entry at a task boundary, without taking a break
+askai go <claude|codex|cursor|agy> [--tier lead|build|chore] ["task"] [--resume] [--dry-run]
+                                                  start a session with the tier's model and effort fixed, a structured prompt
+askai prompt "ask" [--tier T] [--kind bug|feature|design|risky] [--mode ...] [--copy] | --output-safe "cmd" | --resume
+                                                  turn a rough or dictated ask into a structured prompt
+askai models [set <tool>.<tier> <model>[:effort] | verify [tool]]  model and effort per tier, per tool
 askai usage [days]                               Claude Code and Codex usage from local data
+askai savings [days] [--repo DIR]                each installed plugin's own savings report (rtk gain, ccusage, ...)
 askai session init|start|pause|resume|status|finish|measure|report [--repo DIR] [...]
 askai tips [claude|codex|agy|cursor|session|habits] | peak [--json]
-askai update                                     refresh askai's copy and upgrade the tools it manages
+askai guide [install|start|work|break|resume|clear|compact|cache|models|subagents|mcp|output|prompts|docs|plugins|peak|all]
+askai work | etiquette                           the working etiquette, one moment or all of it, in the terminal
+askai context <percent> | --used N --window M    continue, hand off, or clear at this context level
+askai diff [dir]                                 git diff --stat, staged changes, whitespace check before handoff
+askai graph [dir]                                print the Mermaid architecture diagram in the terminal
+askai map [dir] [--dry-run]                      regenerate docs/ai/PROJECT_MAP.md
+askai mcp [list | on <name> | off <name>] [--tool claude|codex|cursor|agy] [--dry-run]
+                                                  every MCP server in the four tools, and a switch
+askai plugins [list | info <id> | install <id> | decisions]  every token tool researched: evidence, installed or not
+askai infra [dir] [--json]                       everything AskAI set up, per tool and for the repository
+askai audit [dir] [--json]                       the seven-point token audit
+askai todo [dir] [--all] | todo done|undo <id>   everything only you can do, per tool and for the repository
+askai convert <file|url> [--out file.md]         PDF, Office file, web page or YouTube URL to Markdown, locally
+askai docs [install|architecture|guide|cheatsheet|changelog|preview] [--print]
+askai update [--target T] | upgrade [--dry-run]  refresh what's installed, or fetch the latest AskAI from GitHub and reinstall
 askai report [hours] [--json] | status | doctor [--json]
 askai uninstall [--tools] [--force] [--yes] | restore [stamp] [--yes]
-askai statusline | version
+askai statusline | version | help [command]
 ```
 
-Components for `--only` and `--skip`: `claude, baseline, rtk, context-mode, serena, markitdown, ccusage, caveman, caveman-plugin, rules, statusline, cursor-rtk, cursor-context-mode, cursor-serena, cursor-rules, codex-baseline, codex-rules, codex-rtk, codex-serena, agy-rules, agy-rtk, agy-serena, agy-path-rules, handoff, lean, code-intel`.
+Components for `--only` and `--skip`: `token-kit, claude, baseline, rtk, context-mode, serena, markitdown, ccusage, caveman, caveman-plugin, rules, statusline, prompt-hooks, handoff, lean, code-intel, base-tools, graphify, headroom, context7, repomix, codebase-memory, claude-mem, cursor-rtk, cursor-context-mode, cursor-serena, cursor-rules, codex-baseline, codex-rules, codex-rtk, codex-serena, agy-baseline, agy-rules, agy-rtk, agy-serena, agy-path-rules`.
 
 `install.ps1` takes the same choices as parameters:
 
@@ -382,22 +417,31 @@ Components for `--only` and `--skip`: `claude, baseline, rtk, context-mode, sere
 npm test        # node --test test/*.test.js, needs Node 21+ for the glob
 ```
 
-196 tests against throwaway folders under the OS temp dir with fake process runners: nothing installs software, touches the network, or writes to your real `~/.claude` or `~/.cursor`. The two `report` tests only read your real Claude Code transcripts (`~/.claude/projects`), because that is what the spend section reports on.
+240 tests (5 skipped on this platform; see below) against throwaway folders under the OS temp dir with fake process runners: nothing installs software, touches the network, or writes to your real `~/.claude` or `~/.cursor`. The two `report` tests only read your real Claude Code transcripts (`~/.claude/projects`), because that is what the spend section reports on. Three tests need `bash` (and one also `git`) and are skipped where neither is on PATH, such as plain Windows without Git Bash or WSL.
 
 ## Repository layout
 
 - `install.ps1`: Windows entry point (Node check, then `askai.js`). `install.sh`: the same for macOS, Linux and WSL, plus the PATH line.
-- `askai.js`: CLI (install, update, status, doctor, report, profiles, suggest, project, uninstall, restore, statusline).
+- `askai.js`: the CLI — parses flags and dispatches to every command below.
 - `lib/components.js`: one entry per tool (detect, install, uninstall), for Claude Code and Cursor.
 - `lib/agents.js`: the Codex and Antigravity components, the handoff and the lean settings. `lib/pkg.js`: winget, Homebrew, installer scripts, cargo. `lib/toml-lite.js`: add-if-absent edits of Codex's `config.toml`.
-- `lib/session.js`, `lib/scaffold.js`, `lib/tips.js`: `askai session`, `askai scaffold`, `askai tips` and `askai peak`. `templates/`: the files scaffold and session write.
 - `lib/profiles.js`: the profiles and how a run's component set is chosen.
 - `lib/rules.js`: the path-scoped rules, as `~/.claude/rules` files and Cursor `.mdc` files.
 - `lib/cursor.js`: Cursor config paths, `mcp.json` and `hooks.json` edits, user and project rule files.
-- `lib/suggest.js`: the directory scan behind `askai suggest`.
 - `lib/claude-config.js`: safe edits of `settings.json` and `CLAUDE.md`, backups, manifest.
 - `lib/status.js`, `lib/sys.js`, `lib/winpath.js`: status/doctor/cache views, process helpers, user PATH edit.
-- `hooks/askai-report.js`: transcript-based spend report used by `askai report`.
+- `lib/mcp.js`: `askai mcp` — list, on/off and park/unpark for every MCP server across the four tools.
+- `lib/models.js`: `askai models` — model and effort per task tier, per tool.
+- `lib/plugins.js`, `lib/usage-guide.js`: `askai plugins` — the researched tool catalogue and each one's usage guide.
+- `lib/infra.js`: `askai infra` — everything askai set up, per tool and for the repository.
+- `lib/audit.js`: `askai audit` — the seven-point token audit.
+- `lib/savings.js`: `askai savings` — each installed plugin's own savings report.
+- `lib/todo.js`: `askai todo` — what only you can do, with auto-clearing checks.
+- `lib/check.js`, `lib/suggest.js`: `askai check` (machine and repo audit against the guide) and the directory scan behind `askai suggest`.
+- `lib/project.js`, `lib/kb.js`: `askai init`/`askai map` (the project knowledge pack) and `askai ask` (the offline etiquette knowledge base).
+- `lib/session.js`, `lib/scaffold.js`, `lib/tips.js`, `lib/launch.js`, `lib/prompt.js`, `lib/guide.js`: `askai session`, `scaffold`, `tips`/`peak`, `go`, `prompt`, and `guide`/`clear`/`context`/`work`/`etiquette`. `templates/`: the files scaffold and session write.
+- `lib/help.js`: one entry per command; also the source `scripts/gen-docs.js` reads for the command reference in `docs/ARCHITECTURE.md`.
+- `hooks/askai-report.js`: transcript-based spend report used by `askai report`. `lib/hook.js`: the Claude Code reminder hooks (`askai hook`), invoked by Claude Code itself, not typed by you.
 - `commands/`: `/askai-status` and `/askai-report` slash commands (copied to `~/.claude/commands`).
 - `legacy/`: the retired self-built hook system and its installer. Not used by anything above.
 - `test/`: the test suite.

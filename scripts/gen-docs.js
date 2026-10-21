@@ -22,13 +22,13 @@ const code = s => `\`${s}\``;
 const HOST = { claude: 'Claude Code', cursor: 'Cursor', codex: 'Codex', agy: 'Antigravity', any: 'all hosts' };
 
 // Plans are written with Windows' winget ids; askai prints the macOS and Linux route at run time (planText in askai.js).
-// The document shows all three, using the same pkg.describe.
+// The document shows all three, using pkg.describeOther so the text is the same regardless of which OS builds the docs.
 const pkg2 = require('../lib/pkg');
 function osPlan(plan) {
   return String(plan || '').replace(/winget install ([A-Za-z0-9.-]+)/g, (m, id) => {
     try {
-      const mac = pkg2.describe({ which: n => (n === 'brew' ? '/opt/homebrew/bin/brew' : null) }, id);
-      const linux = pkg2.describe({ which: () => null }, id);
+      const mac = pkg2.describeOther({ which: n => (n === 'brew' ? '/opt/homebrew/bin/brew' : null) }, id);
+      const linux = pkg2.describeOther({ which: () => null }, id);
       return `${m} on Windows, ${mac} on macOS, ${linux} on Linux`;
     } catch (_) { return m; }
   });

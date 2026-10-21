@@ -2,6 +2,11 @@
 
 AskAI follows semantic versioning from 1.0.0 (see [RELEASING.md](RELEASING.md)). Installs always take the latest version on `main`.
 
+## 1.0.1 (21 October 2026): CI on current Node, README caught up to the code
+
+- GitHub Actions (`.github/workflows/test.yml`) now tests Node 22 and 24; Node 20 reached end of life.
+- README: `## Commands` lists every real command and flag and all 36 component ids for `--only`/`--skip`; `## Tests` reports the current count and why a few are skipped; `## Repository layout` covers every file in `lib/`.
+
 ## 1.0.0 (21 October 2026): first public release
 
 - One command per project from https://github.com/aalokshah-business/AskAi (`get.sh`, `get.ps1`), always the latest version; `askai upgrade` refreshes it; an agent prompt runs the command for you.
