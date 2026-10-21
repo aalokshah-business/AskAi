@@ -16,7 +16,7 @@ const show = a => `gh ${a.map(x => (/[\s"]/.test(x) ? JSON.stringify(x) : x)).jo
 function gh(a, opts = {}) {
   if (dry && !opts.read) { console.log(`  [dry-run] ${show(a)}`); return { ok: true, out: opts.dryOut || '' }; }
   if (dry && opts.read) { console.log(`  [dry-run] ${show(a)}`); return { ok: false, out: '' }; }
-  const r = cp.spawnSync('gh', a, { encoding: 'utf8', shell: process.platform === 'win32' });
+  const r = cp.spawnSync('gh', a, { encoding: 'utf8' });
   return { ok: r.status === 0, out: `${r.stdout || ''}${r.stderr || ''}`.trim() };
 }
 let failed = 0;
