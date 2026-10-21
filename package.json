@@ -1,6 +1,6 @@
 {
   "name": "askai",
-  "version": "1.2.0",
+  "version": "1.2.1",
   "description": "Make AI coding subscriptions last longer: installs and wires up existing token-saving tools (RTK, Context Mode, Serena, markitdown, Caveman-style rules) for Claude Code, Cursor, OpenAI Codex and Google Antigravity on Windows, macOS, Linux and WSL, with a hook-free session ledger, handoff and cheat sheet.",
   "private": true,
   "bin": {

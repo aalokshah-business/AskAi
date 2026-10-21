@@ -2,6 +2,10 @@
 
 AskAI follows semantic versioning from 1.0.0 (see [RELEASING.md](RELEASING.md)). Installs always take the latest version on `main`.
 
+## 1.2.1 (21 October 2026): escape README text in generated Markdown
+
+- Escaped angle brackets from README evidence before placing it in generated project docs, so strings such as `<style>` render as text.
+
 ## 1.2.0 (21 October 2026): evidence-based project init
 
 - `askai init` now fills folder purposes from README layout and conventional names, architecture flow from entry code and package dependencies, features from README or page modules, and explicit README constraints. It leaves unsupported claims visible for review and preserves edited files on `--refresh`.
