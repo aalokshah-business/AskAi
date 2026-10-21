@@ -6,6 +6,7 @@ AskAI follows semantic versioning from 1.0.0 (see [RELEASING.md](RELEASING.md)).
 
 - GitHub Actions (`.github/workflows/test.yml`) now tests Node 22 and 24; Node 20 reached end of life.
 - README: `## Commands` lists every real command and flag and all 36 component ids for `--only`/`--skip`; `## Tests` reports the current count and why a few are skipped; `## Repository layout` covers every file in `lib/`.
+- Added: `scripts/validate-install.js`: read-only check of an install (`node scripts/validate-install.js <repo>`).
 
 ## 1.0.0 (21 October 2026): first public release
 

@@ -15,7 +15,7 @@ Checked against vendor docs and independent benchmarks, 20 October 2026. Run `/h
 | Unsure about a habit | `askai work`, `askai etiquette`, `askai guide <moment>`, `askai ask <words>` |
 | Before /clear or a break | `/askai-handoff`, then `askai clear` or `askai break` |
 | Coming back | `askai continue --copy` (same as `askai resume`) |
-| What is set up and used | `askai infra`, `askai check`, `askai mcp` |
+| What is set up and used | `askai infra`, `askai check`, `askai mcp`, `node scripts/validate-install.js <repo>` (read-only check of an install) |
 | Where tokens go | `askai audit`, `askai usage 7`, `askai report` |
 | Housekeeping | `askai update`, `askai doctor`, `askai uninstall` |
 
