@@ -115,9 +115,9 @@ test('codex-rtk and agy-rtk: run RTK\'s own init; uninstall only what askai wire
   const fakes = { tools: { rtk: '/fake/rtk', rg: '/fake/rg' }, probe: () => good };
   const ctx = hostCtx(home, {}, fakes);
   c('codex-rtk').install(ctx);
-  assert.ok(ctx.calls.includes('act rtk init -g --codex --auto-patch'));
+  assert.ok(ctx.calls.includes('act rtk init -g --codex'));
   c('agy-rtk').install(ctx);
-  assert.ok(ctx.calls.includes('act rtk init -g --agent antigravity --auto-patch'));
+  assert.ok(ctx.calls.includes('act rtk init --agent antigravity --auto-patch'));
   write(ctx.codexPaths.rtkMd, 'rtk');
   const other = hostCtx(home, {}, fakes);
   other.calls = [];
