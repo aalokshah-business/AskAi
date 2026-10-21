@@ -69,7 +69,7 @@ In the terminal: `askai help all` (every command), `askai plugins info <id>` (ho
 - **One command per project** from GitHub, for Claude Code, Codex, Antigravity and Cursor on Windows, macOS, Linux and WSL; `askai upgrade` keeps it on the latest version.
 - **Evidence-based defaults**: cheap default models and effort, idle drains off, output caps, short rules (terse replies, diff-only output, build-lean), reminder hooks that cost no tokens, a status line, handoff commands in every tool.
 - **Every optimiser on request** (`--profile max`): Serena, RTK, Context Mode, Headroom (MCP mode), Graphify, Context7, Repomix, the Caveman plugin, LSP plugins, MarkItDown, ccusage, ripgrep, jq, gh; codebase-memory-mcp and claude-mem one flag each.
-- **A project knowledge pack** (`askai init`): locally analyzes the README, manifest, entry file and folders to fill the project map, architecture and features with sourced evidence. Writes AGENTS.md router under 333 lines, CLAUDE.md, GEMINI.md, work order, model tiers, lead/build/chore subagents for all four tools, and four project skills. Review uncertain facts; refresh unedited generated docs with `askai init --project NAME --refresh --yes`. Each initialized folder gets a name in `~/.askai/projects.json`.
+- **A project knowledge pack** (`askai init`): scans eligible first-party source files, README and manifests for an on-demand source index, static architecture and feature evidence. Fetches page titles from detected frameworks' official docs into a references file; `--offline` skips web access. No source text is uploaded. Writes a short AGENTS.md router, CLAUDE.md, GEMINI.md, work order, model tiers, agents for all four tools and four project skills. `/askai-cli` (Codex: `$askai-cli`) runs `askai cli --prepare` in that chat: it picks the project folder, runs init, then the host AI verifies the pack and asks only for facts the repository cannot establish. That review uses model tokens. Refresh unedited generated docs with `askai init --project NAME --refresh --yes`. Each initialized folder gets a name in `~/.askai/projects.json`.
 - **Everything visible in the terminal**: `askai help all`, `askai todo` (what only you can do), `askai infra` (installed, configured, used), `askai savings`, `askai plugins info <id>`, `askai guide <moment>`, `askai work`, `askai audit`, `askai usage`.
 
 What changed in each version: [docs/CHANGELOG.md](docs/CHANGELOG.md).
@@ -322,6 +322,7 @@ askai profiles | suggest [dir] [--json]          which profile fits what
 askai scaffold [dir] [--dry-run]                 repo files every agent reads (never overwrites)
 askai init [dir] [--name NAME] [--path DIR] [--about "..."] [--type T] [--build "cmd"] [--test "cmd"] [--refresh] [--yes] [--dry-run]
                                                   project knowledge pack, so /clear can be run freely
+askai review status|done [--project NAME]          changed source since AI review; mark done only after host-agent review
 askai project [dir] [--print|--remove] [--force] Cursor: the token rules inside one repo
 askai projects [--json]                         registered project names and paths
 askai project show|rename OLD NEW|path NAME NEW_PATH|remove NAME|switch [NAME]

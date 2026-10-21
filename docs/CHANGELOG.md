@@ -2,6 +2,11 @@
 
 AskAI follows semantic versioning from 1.0.0 (see [RELEASING.md](RELEASING.md)). Installs always take the latest version on `main`.
 
+## Unreleased: full source inventory and official references
+
+- `askai init` and project installation now scan eligible first-party source files, generate an on-demand source index, and summarize static imports and routes with source paths. Official framework documentation links are checked and cached without uploading repository content or using model tokens; `--offline` skips requests. Infra reports source-scan and official-reference coverage.
+- The single `askai-cli` entry point in Claude Code, Codex, Cursor and Antigravity now performs AI-assisted setup for a new project, asks for missing facts, then launches the terminal. Established projects still open directly unless setup or refresh is requested.
+
 ## 1.2.1 (21 October 2026): escape README text in generated Markdown
 
 - Escaped angle brackets from README evidence before placing it in generated project docs, so strings such as `<style>` render as text.

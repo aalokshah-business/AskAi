@@ -83,10 +83,10 @@ test('AskAI CLI entry installs and uninstalls in all four hosts', () => withHome
   const first = cli(['install', ...flags]);
   assert.strictEqual(first.code, 0, first.out + first.err);
   for (const f of paths) assert.ok(fs.existsSync(f), `${f} exists`);
-  assert.match(fs.readFileSync(paths[0], 'utf8'), /allowed-tools: Bash\(askai cli --launch\)[\s\S]*Run `askai cli --launch`/);
-  assert.match(fs.readFileSync(paths[0], 'utf8'), /Print only its output, no commentary/);
-  assert.match(fs.readFileSync(paths[2], 'utf8'), /Run `askai cli --launch`/);
+  assert.match(fs.readFileSync(paths[0], 'utf8'), /disable-model-invocation: true[\s\S]*askai cli --prepare --json[\s\S]*askai init --path <project-folder> --yes[\s\S]*askai cli --launch/);
+  assert.match(fs.readFileSync(paths[2], 'utf8'), /askai cli --prepare --json[\s\S]*askai cli --launch/);
   assert.match(fs.readFileSync(paths[3], 'utf8'), /name: askai-cli/);
+  for (const f of paths) assert.match(fs.readFileSync(f, 'utf8'), /SOURCE_INDEX\.md[\s\S]*HANDOFF\.md/);
   for (const f of paths) assert.doesNotMatch(fs.readFileSync(f, 'utf8'), /\{\{ASKAI\}\}/);
   const second = cli(['install', ...flags]);
   assert.strictEqual(second.code, 0, second.out + second.err);
@@ -100,7 +100,7 @@ test('askai cli runs commands without prefixes and exits', () => {
   const cp = require('child_process');
   const r = cp.spawnSync(process.execPath, [path.join(__dirname, '..', 'askai.js'), 'cli'], { input: 'version\nhelp cli\nexit\n', encoding: 'utf8', timeout: 10000 });
   assert.strictEqual(r.status, 0, r.stdout + r.stderr);
-  assert.match(r.stdout, /AskAI CLI[\s\S]*askai> 1\.2\.1[\s\S]*askai cli: Open an AskAI-only terminal prompt/);
+  assert.match(r.stdout, /AskAI CLI[\s\S]*askai> 1\.2\.1[\s\S]*askai cli: Prepare a project from the chat folder/);
 });
 
 test('install replaces owned generic askai entry without deleting edited copies', () => withHome(home => {

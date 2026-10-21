@@ -189,7 +189,7 @@ askai infra --project myapp                  # everything set up for this reposi
 
 Or during install: `bash install.sh --project ~/code/myapp` (PowerShell: `-Project C:\code\myapp`).
 
-`askai init` reads the project folder locally: README, package manifest, entry file and directory layout. It writes `AGENTS.md` (the router every agent reads, under 333 lines), `CLAUDE.md`, `GEMINI.md`, `docs/ai/PROJECT_MAP.md`, `ARCHITECTURE.md`, `FEATURES.md`, `WORK_ORDER.md`, `MODELS.md`, the `architect`, `builder` and `runner` subagents for Claude Code, Codex, Cursor and Antigravity, four skills, `.cursorignore` and `.ai-work/`. Folder purposes, verified code flow, README features and explicit constraints are filled when evidence exists. The files label what is inferred or only documented. No model, network search or API token is used by init. Review the generated material; add facts the folder cannot establish, especially current work and architectural decisions. The table below lists the files that may still need your input.
+`askai init` scans README, manifests and every eligible first-party source file (up to 1 MiB per file; dependencies, build output and private files excluded). It records declarations, routes and static imports in `docs/ai/SOURCE_INDEX.md`, with short architecture and feature summaries. It checks page titles from up to four fixed official framework documentation sites and puts links in `docs/ai/REFERENCES.md`; only URLs are requested, and no repository content is uploaded. Results are cached for seven days. `--offline` skips web requests. No model or API token is used. Init also writes `AGENTS.md` (short router), `CLAUDE.md`, `GEMINI.md`, `PROJECT_MAP.md`, `ARCHITECTURE.md`, `FEATURES.md`, `WORK_ORDER.md`, `MODELS.md`, the `architect`, `builder` and `runner` agents for all four tools, four skills, `.cursorignore` and `.ai-work/`. Static findings are labeled as evidence, not proof of behavior. Current work and handoff state need user input.
 
 Repeat `askai init --name NAME --path FOLDER --yes` for each repository. AskAI resolves `--project NAME` or `-p NAME` without another path; `askai cli` also keeps `set project NAME` active for later commands. For ordinary shells, enable `askai shell init` or opt into the installer's managed shell-profile integration (`-ShellIntegration` in PowerShell, `--shell-integration` in Bash). See [Project management](PROJECT_MANAGEMENT.md) for the selection order, moving folders, separate terminals and migration from earlier installs. Global tool settings are shared, while each repository keeps its own files and `.ai-work/` state. After changes to AskAI, run `npm run test:commands`, `npm test` and `askai docs check`. The command test does not run external agents, downloads or paid services.
 
@@ -198,8 +198,10 @@ Repeat `askai init --name NAME --path FOLDER --yes` for each repository. AskAI r
 | `AGENTS.md` | Review the detected description, stack and commands. Keep it short: every agent reads it |
 | `CLAUDE.md` | Imports `@AGENTS.md`; add only Claude-specific notes |
 | `docs/ai/PROJECT_MAP.md` | Review inferred folder purposes; add any that remain blank |
+| `docs/ai/SOURCE_INDEX.md` | Search for a path or declaration; do not load the entire index into an agent session |
 | `docs/ai/ARCHITECTURE.md` | Review the evidenced flow and explicit constraints; add decisions and unrecorded invariants |
 | `docs/ai/FEATURES.md` | Confirm documented or detected features and their state |
+| `docs/ai/REFERENCES.md` | Open the official reference relevant to the current change; an unavailable lookup is marked |
 | `docs/ai/WORK_ORDER.md` | Add the current goal and acceptance criteria; init cannot infer your task |
 | `docs/ai/MODELS.md` | Review model tiers for this project |
 | `.cursorignore` | Keeps build output, lockfiles and `.env` out of Cursor |
@@ -209,7 +211,7 @@ For an existing initialized folder, run `askai init --project NAME --refresh --y
 
 ## 8a. Daily commands
 
-Use `/askai-cli` in Claude Code, Cursor or Antigravity (`$askai-cli` in Codex) to open a dedicated terminal. Or open a terminal yourself and run `askai cli`. There type `infra`, `todo`, `audit` or any other AskAI command without `askai`, `/` or `$`. Type `exit` to leave. The initial agent command uses model tokens; terminal commands use none unless they explicitly launch an AI agent.
+Use `/askai-cli` in Claude Code, Cursor or Antigravity (`$askai-cli` in Codex) from the project chat. It runs `askai cli --prepare`, which picks the project from the chat's folder (or the only registered project) and runs `askai init` when the pack is missing or source changed. The host agent then checks the generated files against code and official docs, asks one question for facts the repository cannot establish, records `askai review done`, and opens the terminal. The review marker lives in the project's gitignored `.ai-work/ai-review.json`; a terminal-only `askai init` does not mark itself AI-reviewed. If prepare cannot tell which project, it asks once. Add a refresh request to repeat the review. AI review costs model tokens; `askai init` in a terminal does not. In the opened terminal, type `infra`, `todo`, `audit` or another AskAI command without `askai`, `/` or `$`. Type `exit` to leave. Terminal commands use no model tokens unless they launch an AI agent.
 
 | Moment | Command |
 | --- | --- |

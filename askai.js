@@ -24,6 +24,8 @@ const kb = require('./lib/kb');
 const usage = require('./lib/usage');
 const help = require('./lib/help');
 const project = require('./lib/project');
+const projectReview = require('./lib/project-review');
+const cliPrepare = require('./lib/cli-prepare');
 const registry = require('./lib/project-registry');
 const models = require('./lib/models');
 const promptLib = require('./lib/prompt');
@@ -59,16 +61,17 @@ Setup
   set project NAME   select a project in the AskAI CLI or a shell with AskAI integration; set project --clear unsets it
 
 Every day
-  cli                  open an AskAI-only terminal prompt; type commands without askai, / or $ (exit to leave)
+  cli [--prepare]      from a host chat, --prepare finds the project and runs init; then the terminal (--launch opens it)
   check [dir]       audit this machine (and a repo) against the token guidelines; each gap with the command that fixes it (--fix: repo)
   ask <words>       offline answers on etiquette and the research: askai ask compact | askai ask coming back after a break
   start | break | resume   session shortcuts: ledger entry; before-break checklist; time away, advice and the resume prompt (--copy)
   usage [days]      what Claude Code and Codex spent, from their local data (Antigravity, Cursor: their own views)
   help <command>    detailed help for one command (also: askai <command> --help); docs/ARCHITECTURE.md has all of it
-  Open /askai-cli (Codex: $askai-cli) once, then type any AskAI command in that terminal without prefixes (zero model tokens).
+  Open /askai-cli (Codex: $askai-cli) once. It prepares the project, then the terminal runs commands with no model tokens.
 
 Project and sessions (AskAI as the mediator)
-  init [dir]        project knowledge pack and name registration (--name NAME --path DIR)
+  init [dir]        scan first-party source, check official docs, write project pack and register name (--offline to skip web)
+  review status|done  host-agent review state for the selected project; done only after checking the generated pack
   map [dir]         regenerate docs/ai/PROJECT_MAP.md (folders, languages, commands, entry points; keeps your purposes)
   go <tool> "task"  start claude | codex | cursor | agy with the tier's model and effort fixed for the session (--tier lead|build|chore)
   prompt "ask"      turn a rough or dictated ask into a structured prompt (--tier --files --done --mode blunt|brutal|...; --output-safe CMD; --resume)
@@ -123,7 +126,7 @@ Session options
 `;
 
 // ---- args --------------------------------------------------------------------------------------------------------
-const BOOL = { yes: 'yes', y: 'yes', 'dry-run': 'dry', json: 'json', launch: 'launch', clear: 'clear', 'no-statusline': 'noStatusline', 'no-path': 'noPath', 'caveman-plugin': 'cavemanPlugin', markitdown: 'markitdown', ccusage: 'ccusage', tools: 'tools', force: 'force', print: 'print', remove: 'remove', lean: 'lean', rtk: 'rtk', 'context-mode': 'contextMode', 'lean-git': 'leanGit', copy: 'copy', fix: 'fix', refresh: 'refresh', resume: 'resume', 'base-tools': 'baseTools', headroom: 'headroom', graphify: 'graphify', context7: 'context7', repomix: 'repomix', 'codebase-memory': 'codebaseMemory', 'claude-mem': 'claudeMem', all: 'all', help: 'help', h: 'help' };
+const BOOL = { yes: 'yes', y: 'yes', 'dry-run': 'dry', offline: 'offline', json: 'json', launch: 'launch', prepare: 'prepare', clear: 'clear', 'no-statusline': 'noStatusline', 'no-path': 'noPath', 'caveman-plugin': 'cavemanPlugin', markitdown: 'markitdown', ccusage: 'ccusage', tools: 'tools', force: 'force', print: 'print', remove: 'remove', lean: 'lean', rtk: 'rtk', 'context-mode': 'contextMode', 'lean-git': 'leanGit', copy: 'copy', fix: 'fix', refresh: 'refresh', resume: 'resume', 'base-tools': 'baseTools', headroom: 'headroom', graphify: 'graphify', context7: 'context7', repomix: 'repomix', 'codebase-memory': 'codebaseMemory', 'claude-mem': 'claudeMem', all: 'all', help: 'help', h: 'help' };
 const VAL = { output: 'output', kind: 'kind', about: 'about', type: 'type', tier: 'tier', files: 'files', done: 'done', mode: 'mode', used: 'used', window: 'window', 'output-safe': 'outputSafe', out: 'out', project: 'project', p: 'project', name: 'name', path: 'path', build: 'build', test: 'test', only: 'only', skip: 'skip', caveman: 'caveman', profile: 'profile', target: 'target', 'claude-home': 'claudeHome', 'cursor-home': 'cursorHome', hours: 'hours',
   'codex-home': 'codexHome', 'agy-home': 'agyHome', 'main-model': 'mainModel', 'subagent-model': 'subagentModel', 'codex-model': 'codexModel',
   repo: 'repo', tool: 'tool', model: 'model', effort: 'effort', task: 'task', difficulty: 'difficulty', summary: 'summary', next: 'next',
@@ -362,7 +365,7 @@ function installCommands(ctx, hosts = ctx.hostSel) {
   const files = ctx.manifest.files = (ctx.manifest.files || []);
   const source = path.join(SRC, 'commands');
   const askai = fs.readFileSync(path.join(source, 'askai-cli.md'), 'utf8');
-  const skill = askai.replace(/^---\n[\s\S]*?\n---\n/, '---\nname: askai-cli\ndescription: Open the AskAI-only terminal. Use only when the user invokes askai-cli.\n---\n');
+  const skill = askai.replace(/^---\n[\s\S]*?\n---\n/, '---\nname: askai-cli\ndescription: Set up a project with AskAI and AI review, then open its terminal. Use when the user invokes askai-cli.\n---\n');
   const entries = [];
   if (hosts.claude) entries.push({ target: path.join(ctx.paths.home, 'commands', 'askai-cli.md'), text: askai });
   if (hosts.cursor) entries.push({ target: path.join(ctx.cursorPaths.home, 'commands', 'askai-cli.md'), text: askai.replace(/^---\n[\s\S]*?\n---\n\n/, '') });
@@ -515,7 +518,7 @@ async function cmdInstall(o) {
     console.log(`\nDone. Open a NEW ${hostNames(hosts).join(' / ')} session so hooks, plugins and MCP servers load. Run askai status in a terminal to check tools.`);
     if (hosts.cursor) console.log('Cursor user rules are in ~/.cursor/rules and apply in every project on this machine. Restart Cursor so it reads the hooks, MCP servers and rules. `askai project` writes the same files into one repo for git; skip it here, or the always-applied rule is loaded twice.');
   }
-  if (o.project) { console.log(''); const dir = projectDir(o, o.project); const name = registrationName(o, dir); project.init(dir, { yes: true, dry: o.dry, about: o.about, type: o.type }, ctx); registerProject({ ...o, name }, dir); }
+  if (o.project) { console.log(''); const dir = projectDir(o, o.project); const name = registrationName(o, dir); const references = await project.research(dir, { offline: o.offline, dry: o.dry }); project.init(dir, { yes: true, dry: o.dry, about: o.about, type: o.type, references }, ctx); registerProject({ ...o, name }, dir); }
   if (!o.dry) { console.log('Check it: askai infra (everything set up, per tool), askai check (gaps), and askai status (tool state).'); try { const dir = o.project ? projectDir(o, o.project) : null; const list = todo.items(ctx, dir); const n = todo.open(list).length; if (n && dir) console.log(`\nRemaining setup and review steps (${n}); askai todo ${dir} shows them again:\n${todo.render(list)}`); else if (n) console.log(`Next: askai todo lists ${n} remaining setup and review steps.`); } catch (_) { /* best effort */ } }
   return failed.length ? 1 : 0;
 }
@@ -1065,7 +1068,54 @@ function launchCli() {
   if (r.status !== 0) { console.error(`Could not open a terminal. Run askai cli in a terminal. ${String(r.stderr || (r.error && r.error.message) || '').trim()}`); return 1; }
   console.log('Opened AskAI CLI.'); return 0;
 }
+async function cmdPrepare(o) {
+  const log = console.log;
+  if (o.json) console.log = () => {};
+  try {
+    const picked = cliPrepare.select(o);
+    const text = body => [
+      body.need ? body.question : `project: ${body.project || path.basename(body.path)} (${body.how})`,
+      body.need ? (body.candidates || []).map(c => `  ${c.name}  ${c.path}`).join('\n') : `path: ${body.path}`,
+      body.action ? `action: ${body.action}` : '',
+      body.init ? `init: ${body.init}` : '',
+      ...(body.questions || []).map(q => `ask: ${q.ask}`),
+      body.instruction || '',
+    ].filter(Boolean).join('\n');
+    const emit = (code, body) => { console.log = log; log(o.json ? JSON.stringify(body, null, 2) : text(body)); return code; };
+    if (picked.need) return emit(2, picked);
+    const dir = picked.path;
+    const review = projectReview.status(dir);
+    const initialized = fs.existsSync(path.join(dir, session.DIR, 'askai-init.json'));
+    let init = 'skipped';
+    let info = project.detect(dir);
+    if (review.state !== 'current' || o.refresh) {
+      if (review.state === 'needed' && initialized && !o.refresh) init = 'already';
+      else {
+        const name = registrationName({ ...o, name: o.name || picked.project }, dir);
+        picked.project = name;
+        const ctx = buildCtx({ ...o, yes: true }, true);
+        const references = await project.research(dir, { offline: o.offline || o.dry, dry: o.dry });
+        const result = project.init(dir, { ...o, yes: true, refresh: o.refresh || review.state === 'stale', references }, ctx);
+        if (!o.dry) registerProject({ ...o, name }, dir);
+        info = result.info;
+        init = o.dry ? 'planned' : 'ran';
+      }
+    }
+    const action = review.state === 'current' && !o.refresh ? 'launch' : 'review';
+    return emit(0, {
+      action, init, project: picked.project, path: dir, how: picked.how,
+      review: { state: review.state, changedCount: review.changedCount, removedCount: review.removedCount },
+      detected: { type: info.type, about: info.about || '', commands: info.commands },
+      read: ['docs/ai/SOURCE_INDEX.md', 'docs/ai/PROJECT_MAP.md', 'docs/ai/ARCHITECTURE.md', 'docs/ai/FEATURES.md', 'docs/ai/REFERENCES.md', 'AGENTS.md'],
+      questions: action === 'review' ? cliPrepare.questions(info) : [],
+      instruction: action === 'launch'
+        ? 'The pack matches the last AI review. Open the terminal with askai cli --launch.'
+        : 'Inspect the read list and the source it points at. Fill evidence-backed gaps. Ask the user one bundled question only for questions that code and this chat still cannot answer. Then askai review done and askai cli --launch.',
+    });
+  } finally { console.log = log; }
+}
 async function cmdCli(o) {
+  if (o.prepare) return cmdPrepare(o);
   if (o.launch) return launchCli();
   const rl = readline.createInterface({ input: process.stdin, output: process.stdout, terminal: !!process.stdin.isTTY });
   console.log('AskAI CLI. Type a command for Claude Code, Codex, Antigravity or Cursor; exit to leave.');
@@ -1109,7 +1159,8 @@ async function main() {
     case 'restore': return cmdRestore(o);
     case 'statusline': return cmdStatusline(o);
     case 'session': return cmdSession(o);
-    case 'init': { const dir = projectDir(o, o.path || o._[1]); const name = registrationName(o, dir); const ctx = buildCtx(o, true); const oo = await project.ask(dir, o); project.init(dir, { ...oo, dry: o.dry }, ctx); registerProject({ ...o, name }, dir); return 0; }
+    case 'init': { const dir = projectDir(o, o.path || o._[1]); const name = registrationName(o, dir); const ctx = buildCtx(o, true); const oo = await project.ask(dir, o); const references = await project.research(dir, { offline: o.offline, dry: o.dry }); project.init(dir, { ...oo, dry: o.dry, references }, ctx); registerProject({ ...o, name }, dir); return 0; }
+    case 'review': { const action = o._[1] || 'status'; if (!['status', 'done'].includes(action)) throw new Error('askai review accepts status or done'); const dir = projectDir(o, o.path || o._[2]); const result = action === 'done' ? projectReview.done(dir) : projectReview.status(dir); console.log(o.json ? JSON.stringify(result, null, 2) : `AI review ${result.state}: ${result.scanned}/${result.eligible} source files scanned${result.skipped ? `, ${result.skipped} skipped` : ''}${action === 'status' ? `; ${result.changedCount} changed, ${result.removedCount} removed` : ''}`); return 0; }
     case 'map': project.map(projectDir(o, o._[1]), { dry: o.dry }); return 0;
     case 'models': return cmdModels(o);
     case 'go': return launch.run(buildCtx(o, true), o._[1], { ...o, repo: projectDir(o), ask: o._.slice(2).join(' ') });

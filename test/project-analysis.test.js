@@ -4,6 +4,7 @@ const assert = require('node:assert/strict');
 const { tmpHome, rm, write, fs, path, makeCtx } = require('./helpers');
 const project = require('../lib/project');
 const infra = require('../lib/infra');
+const research = require('../lib/project-research');
 
 test('init fills project docs from README, manifest and entry code, and refresh preserves edits', () => {
   const home = tmpHome();
@@ -54,5 +55,45 @@ test('sparse projects leave unsupported architecture and features visibly unveri
     project.init(repo, { yes: true }, null, () => {});
     assert.match(fs.readFileSync(path.join(repo, 'docs', 'ai', 'ARCHITECTURE.md'), 'utf8'), /No flow verified automatically/);
     assert.doesNotMatch(fs.readFileSync(path.join(repo, 'docs', 'ai', 'FEATURES.md'), 'utf8'), /\| documented \|/);
+  } finally { rm(home); }
+});
+
+test('init scans every eligible source file and keeps detailed inventory out of AGENTS.md', () => {
+  const home = tmpHome();
+  try {
+    const repo = path.join(home, 'api'); fs.mkdirSync(repo);
+    write(path.join(repo, 'package.json'), JSON.stringify({ name: 'api', main: 'server.js', scripts: { test: 'node --test' } }));
+    write(path.join(repo, 'server.js'), "import './src/routes/users.js';\n");
+    write(path.join(repo, 'src', 'routes', 'users.js'), "import '../../lib/store.js';\nrouter.get('/users', listUsers);\nexport function listUsers() {}\n");
+    write(path.join(repo, 'lib', 'store.js'), 'export function saveUser() {}\n');
+    write(path.join(repo, '.env'), 'secret=do-not-read');
+    write(path.join(repo, 'node_modules', 'ignored.js'), 'function NeverIndexMe() {}');
+    project.init(repo, { yes: true }, null, () => {});
+    const get = n => fs.readFileSync(path.join(repo, 'docs', 'ai', n), 'utf8');
+    assert.match(get('SOURCE_INDEX.md'), /Scanned 3\/3 eligible/);
+    assert.match(get('SOURCE_INDEX.md'), /saveUser/);
+    assert.doesNotMatch(get('SOURCE_INDEX.md'), /NeverIndexMe|do-not-read/);
+    assert.match(get('ARCHITECTURE.md'), /`src\/` → `lib\/` \(import in `src\/routes\/users.js`\)/);
+    assert.match(get('FEATURES.md'), /GET \/users/);
+    assert.match(fs.readFileSync(path.join(repo, 'AGENTS.md'), 'utf8'), /docs\/ai\/SOURCE_INDEX.md/);
+    assert.doesNotMatch(fs.readFileSync(path.join(repo, 'AGENTS.md'), 'utf8'), /saveUser/);
+    assert.match(get('WORK_ORDER.md'), /`npm test`/);
+    assert.equal(infra.collect(makeCtx(home), repo).repo.analysis.sourceScan, '3/3');
+  } finally { rm(home); }
+});
+
+test('official research uses detected public docs only and supports offline refresh', async () => {
+  const home = tmpHome();
+  try {
+    const repo = path.join(home, 'site'); fs.mkdirSync(repo);
+    write(path.join(repo, 'package.json'), JSON.stringify({ dependencies: { react: '19', express: '5' } }));
+    const called = [];
+    const rows = await research.collect(repo, { fetchTitle: async url => { called.push(url); return 'React &amp; docs <script>alert(1)</script>'; } });
+    assert.deepEqual(called, ['https://react.dev/learn', 'https://expressjs.com/en/starter/installing.html']);
+    assert.match(research.markdown(rows), /React & docs/);
+    assert.doesNotMatch(research.markdown(rows), /<script>/);
+    const cached = await research.collect(repo, { offline: true, fetchTitle: async () => { throw new Error('network called'); } });
+    assert.equal(cached.length, 2);
+    assert.equal(cached[0].status, 'checked');
   } finally { rm(home); }
 });

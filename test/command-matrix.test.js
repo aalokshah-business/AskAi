@@ -11,7 +11,7 @@ const help = require('../lib/help');
 const ASKAI = path.join(__dirname, '..', 'askai.js');
 const SOURCE = fs.readFileSync(ASKAI, 'utf8');
 const FILES = ['AGENTS.md', 'CLAUDE.md', 'GEMINI.md', '.cursorignore',
-  'docs/ai/PROJECT_MAP.md', 'docs/ai/ARCHITECTURE.md', 'docs/ai/FEATURES.md',
+  'docs/ai/PROJECT_MAP.md', 'docs/ai/SOURCE_INDEX.md', 'docs/ai/ARCHITECTURE.md', 'docs/ai/FEATURES.md', 'docs/ai/REFERENCES.md',
   'docs/ai/WORK_ORDER.md', 'docs/ai/MODELS.md', '.ai-work/HANDOFF.md'];
 
 function fixture(fn) {
@@ -73,6 +73,15 @@ test('two projects: setup, isolated infra, repeat init, global uninstall', () =>
   const init = run('init', b, '--yes', '--about', 'Second project');
   assert.equal(init.code, 0, init.output);
   for (const file of FILES) assert.ok(fs.existsSync(path.join(b, file)), `B: ${file}`);
+  const reviewBefore = run('review', 'status', b, '--json');
+  assert.equal(reviewBefore.code, 0, reviewBefore.output);
+  assert.equal(JSON.parse(reviewBefore.output).state, 'needed');
+  assert.equal(run('review', 'done', b).code, 0);
+  assert.equal(JSON.parse(run('review', 'status', b, '--json').output).state, 'current');
+  fs.writeFileSync(path.join(b, 'new-feature.js'), 'export function feature() {}\n');
+  const reviewAfter = JSON.parse(run('review', 'status', b, '--json').output);
+  assert.equal(reviewAfter.state, 'stale');
+  assert.deepEqual(reviewAfter.changed, ['new-feature.js']);
   const aAgent = fs.readFileSync(path.join(a, 'AGENTS.md'), 'utf8');
   const bAgent = fs.readFileSync(path.join(b, 'AGENTS.md'), 'utf8');
   assert.notEqual(aAgent, bAgent, 'project descriptions are separate');
