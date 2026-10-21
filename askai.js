@@ -38,7 +38,7 @@ const launch = require('./lib/launch');
 const hookLib = require('./lib/hook');
 const todo = require('./lib/todo');
 
-const VERSION = '1.2.2';
+const VERSION = '1.2.3';
 const SRC = __dirname;
 
 const HELP = `askai ${VERSION}: make AI coding usage last longer. Installs and wires up token-saving tools for Claude Code, Cursor,
@@ -909,7 +909,7 @@ function cmdUpgrade(o, rest) {
   const git = ctx.which('git');
   if (!git) { console.log('git is not installed. Run the one-line installer again instead (README, Quick start); it downloads the latest AskAI without git.'); return 1; }
   const exists = fs.existsSync(path.join(src, '.git'));
-  if (o.dry) { console.log(`would ${exists ? 'update' : 'clone'} ${url} (latest) in ${src}, then run its install --yes${ctx.manifest.profile ? ` --profile ${ctx.manifest.profile}` : ''}${ctx.manifest.target ? ` --target ${ctx.manifest.target}` : ''}`); return 0; }
+  if (o.dry) { console.log(`would ${exists ? 'update' : 'clone'} ${url} (latest) in ${src}, then run its install --yes${ctx.manifest.profile ? ` --profile ${ctx.manifest.profile}` : ''}${ctx.manifest.target ? ` --target ${ctx.manifest.target}` : ''}`); if (o.agents) console.log('then open Claude Code, Cursor and Codex in sequence for review, synthesis and verified changes (uses model tokens)'); return 0; }
   const run = args => cp.spawnSync(git, args, { stdio: 'inherit' }).status;
   if (exists) { if (run(['-C', src, 'fetch', '--quiet', '--depth', '1', 'origin', 'HEAD']) || run(['-C', src, 'checkout', '--quiet', 'FETCH_HEAD'])) return 1; }
   else { fs.rmSync(src, { recursive: true, force: true }); fs.mkdirSync(path.dirname(src), { recursive: true }); if (run(['clone', '--quiet', '--depth', '1', url, src])) return 1; }
@@ -922,8 +922,24 @@ function cmdUpgrade(o, rest) {
   const r = cp.spawnSync(process.execPath, [...args, ...fwd], { stdio: 'inherit' });
   if (r.status === null || r.status) return r.status === null ? 1 : r.status;
   if (!o.agents) return 0;
-  console.log('Starting a lead review of the updated AskAI checkout. This uses model tokens.');
-  return launch.run(buildCtx(o, true), 'claude', { tier: 'lead', repo: src, ask: 'Review this AskAI checkout for duplicate commands, setup steps a person must still do by hand, and token waste. Propose the smallest code changes. Do not rewrite unrelated files.' });
+  const agentCtx = buildCtx(o, true);
+  const agents = [
+    ['claude', 'Review AskAI setup, installer safety and project templates. Record specific source-backed findings in .ai-work/upgrade-claude.md. Do not edit product code.'],
+    ['cursor', 'Review AskAI command UX, plugin activation evidence and token costs. Record specific source-backed findings in .ai-work/upgrade-cursor.md. Do not edit product code.'],
+    ['codex', 'Read the two upgrade reviews, verify findings against source and tests, then implement the smallest justified improvements. Update help, docs and tests; run the narrow tests and docs check. Leave unsupported suggestions in .ai-work/upgrade-followup.md.'],
+  ];
+  const missing = agents.map(([tool]) => launch.plan(agentCtx, tool).cmd).filter(cmd => !agentCtx.which(cmd));
+  if (missing.length) { console.log(`Upgrade installed AskAI, but agent review needs these CLIs on PATH: ${missing.join(', ')}. Run askai upgrade --agents after installing them.`); return 1; }
+  console.log('Starting Claude Code, Cursor and Codex in sequence. Each session uses model tokens. Exit each session to continue.');
+  for (const [tool, ask] of agents) {
+    const result = launch.run(agentCtx, tool, { tier: 'lead', repo: src, ask });
+    if (result) return result;
+    if (tool !== 'codex') {
+      const report = path.join(src, '.ai-work', `upgrade-${tool}.md`);
+      if (!fs.existsSync(report)) { console.log(`${tool} session ended without ${report}; review stopped. Run askai upgrade --agents after recording the report.`); return 1; }
+    }
+  }
+  return 0;
 }
 function cmdDiff(o) {
   const repo = projectDir(o, o._[1]); const g = a => require('child_process').spawnSync('git', ['-C', repo, ...a], { encoding: 'utf8' });
@@ -1143,7 +1159,7 @@ async function cmdPrepare(o) {
     const initialized = fs.existsSync(path.join(dir, session.DIR, 'askai-init.json'));
     const missing = required.filter(rel => !fs.existsSync(path.join(dir, rel)));
     const reviewing = review.state !== 'current' || !!o.refresh || missing.length > 0;
-    if (reviewing && !o.about && !o.yes) {
+    if (reviewing && !String(o.about || '').trim()) {
       const detected = project.detect(dir);
       return emit(2, {
         need: 'about', question: 'What is this project about, in one or two sentences?', default: detected.about || '',

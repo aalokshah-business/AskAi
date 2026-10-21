@@ -20,7 +20,7 @@ flowchart LR
 | `lib/` | Shared application modules |
 | `test/` | Automated tests |
 | `scripts/` | Maintenance scripts |
-| `hooks/` | 1 file, mostly .js |
+| `hooks/` | `askai-report.js` reads local transcripts for spend reports |
 
 ## Cross-folder imports
 - `(root)/` → `lib/` (import in `askai.js`).
@@ -31,6 +31,8 @@ flowchart LR
 ## Data flow
 - Start at `askai.js` (`package.json` bin `askai`). There is no build script.
 - `askai.js` loads modules from `lib/` (`require('./lib/...')` in `askai.js`).
+- `askai cli --prepare` selects a registered project, refreshes its pack through `lib/project.js`, then returns changed paths for host AI review. The review marker in `.ai-work/` is written only after that review.
+- `askai upgrade` fetches the latest checkout into the AskAI installation and reapplies its recorded profile. With `--agents`, separate host sessions review the checkout before Codex applies verified changes.
 
 ## Critical invariants (must never break)
 - AskAI never enters credentials. Sign-in stays in each tool. (README.md Safety)

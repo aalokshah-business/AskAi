@@ -13,6 +13,8 @@ const audit = require('../lib/audit');
 const hook = require('../lib/hook');
 const guide = require('../lib/guide');
 const launch = require('../lib/launch');
+const childProcess = require('node:child_process');
+const session = require('../lib/session');
 const plugins = require('../lib/plugins');
 const infra = require('../lib/infra');
 const withHome = fn => { const h = tmpHome(); try { return fn(h); } finally { rm(h); } };
@@ -44,6 +46,19 @@ test('prompt: dictation is cleaned, files found, tier and modes applied; output-
   assert.match(promptLib.outputSafe('npm test'), /4\. The short summary/);
   assert.throws(() => promptLib.task({ ask: '  ' }), /give the request/);
 });
+
+test('go starts the selected agent in the selected project folder', () => withHome(h => {
+  const repo = path.join(h, 'shop'); fs.mkdirSync(repo);
+  const ctx = ctxFor(h); ctx.which = () => 'agent';
+  const oldSpawn = childProcess.spawnSync, oldSession = session.run;
+  let launched;
+  childProcess.spawnSync = (cmd, args, options) => { launched = { cmd, options }; return { status: 0 }; };
+  session.run = () => 0;
+  try { assert.strictEqual(launch.run(ctx, 'codex', { repo, copy: false }, quiet), 0); }
+  finally { childProcess.spawnSync = oldSpawn; session.run = oldSession; }
+  assert.strictEqual(launched.cmd, 'codex');
+  assert.strictEqual(launched.options.cwd, repo);
+}));
 
 test('init: router under 333 lines, adapters, docs/ai, subagents in each tool format, skills; idempotent; keeps user text', () => withHome(h => {
   const repo = path.join(h, 'shop'); fs.mkdirSync(path.join(repo, 'src'), { recursive: true });

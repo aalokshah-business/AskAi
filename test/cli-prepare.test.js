@@ -55,7 +55,7 @@ test('cli --prepare inits a named folder offline and launches only after review 
   fs.writeFileSync(path.join(proj, 'package.json'), JSON.stringify({ name: 'shop', description: 'A shop', scripts: { test: 'node --test', build: 'node build.js' } }));
   fs.writeFileSync(path.join(proj, 'index.js'), 'console.log(1)\n');
   const env = { ASKAI_HOME: process.env.ASKAI_HOME };
-  const args = ['cli', '--prepare', '--json', '--offline', '--yes', '--path', proj];
+  const args = ['cli', '--prepare', '--json', '--offline', '--about', 'A shop for members', '--path', proj];
   const first = cli(args, { env });
   assert.strictEqual(first.code, 0, first.err + first.out);
   const body = JSON.parse(first.out);
@@ -117,6 +117,9 @@ test('cli --prepare requires a description before a review', () => withHome(root
   assert.strictEqual(body.need, 'about');
   assert.strictEqual(body.default, 'A shop');
   assert.ok(!fs.existsSync(path.join(proj, 'AGENTS.md')));
+  const bypass = cli(['cli', '--prepare', '--json', '--offline', '--yes', '--path', proj], { env });
+  assert.strictEqual(bypass.code, 2, '--yes must not skip the project description');
+  assert.strictEqual(JSON.parse(bypass.out).need, 'about');
   const ok = cli(['cli', '--prepare', '--json', '--offline', '--path', proj, '--about', 'A shop for members'], { env });
   assert.strictEqual(ok.code, 0, ok.err + ok.out);
   assert.match(fs.readFileSync(path.join(proj, 'AGENTS.md'), 'utf8'), /A shop for members/);

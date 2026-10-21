@@ -10,3 +10,4 @@ One line per feature. “documented” means README.md describes it; “detected
 | Every optimiser on request via `--profile max` | `lib/profiles.js` | documented | README.md names the profile. Confirm behavior before calling it finished |
 | Project knowledge pack (`askai init`) and `/askai-cli` review | `lib/project.js` | documented | README.md. Confirm behavior before calling it finished |
 | Terminal views: help, todo, infra, savings, plugins, guide, audit, usage | `askai.js` | documented | README.md. Confirm behavior before calling it finished |
+| Optional three-host upgrade review | `askai.js` | detected | `cmdUpgrade` opens Claude Code, Cursor and Codex in sequence with `--agents`; requires each CLI and uses model tokens |

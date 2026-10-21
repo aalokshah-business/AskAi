@@ -2,6 +2,12 @@
 
 AskAI follows semantic versioning from 1.0.0 (see [RELEASING.md](RELEASING.md)). Installs always take the latest version on `main`.
 
+## 1.2.3 (22 October 2026): verified project setup and agent upgrade review
+
+- `/askai-cli` now requires an explicit project description for a new or stale project even with `--yes`. A current reviewed project still opens directly.
+- `askai upgrade --agents` now opens Claude Code, Cursor and Codex in sequence for source-backed reviews and verified improvements. It checks all three CLIs before starting the reviews, and dry-run shows the workflow. `askai go` starts each CLI in its selected project folder.
+- Audited the 21 consolidated requests against current commands, project packs and official host guidance.
+
 ## 1.2.2 (22 October 2026): full source inventory and official references
 
 - AI review now becomes stale when README or build manifests change, not only source code. The default changed-path list stays capped at 40 for short agent output; `askai review status --all --json` exposes the full list. `askai-cli` repairs missing pack files, including agents and skills, before review.
