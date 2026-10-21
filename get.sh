@@ -1,6 +1,6 @@
 #!/usr/bin/env bash
 # Install AskAI straight from GitHub, then run install.sh with your options (macOS, Linux, WSL).
-#   curl -fsSL https://raw.githubusercontent.com/aalokshah-business/AskAi/main/get.sh | bash -s -- --target all --profile max --project ~/code/myapp --yes
+#   curl -fsSL https://raw.githubusercontent.com/aalokshah-business/AskAi/main/get.sh | bash -s -- --target all --project ~/code/myapp --yes
 # The source stays in ~/.claude/askai/src (a git checkout when git is installed, else GitHub's archive), so `askai upgrade` can
 # refresh it. It always installs the latest AskAI (the repository's default branch, main). Environment: ASKAI_REPO (owner/name)
 # and ASKAI_REPO_URL (a full git URL or path) point at a fork or a test copy; ASKAI_DIR is where the source goes.

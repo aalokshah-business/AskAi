@@ -2,7 +2,7 @@
 .SYNOPSIS
   Install AskAI straight from GitHub, then run install.ps1 with your options (Windows).
 .DESCRIPTION
-  & ([scriptblock]::Create((irm https://raw.githubusercontent.com/aalokshah-business/AskAi/main/get.ps1))) -Target all -Workflow max -Project C:\code\myapp -Yes
+  & ([scriptblock]::Create((irm https://raw.githubusercontent.com/aalokshah-business/AskAi/main/get.ps1))) -Target all -Project C:\code\myapp -Yes
 
   The source stays in %USERPROFILE%\.claude\askai\src (a git checkout when git is installed, else GitHub's zip), so
   `askai upgrade` can refresh it. Every option after the script goes to install.ps1 unchanged; -Project is resolved to a full
