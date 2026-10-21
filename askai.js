@@ -216,6 +216,17 @@ function buildCtx(o, quiet) {
       if (dry) { log.plan(`${add ? 'add' : 'remove'} ${dir} ${add ? 'to' : 'from'} user PATH`); return 'planned'; }
       return winpath.editUserPath(S.run, dir, add);
     },
+    // Git Bash doesn't do PATHEXT resolution, so bare `askai` (vs `askai.cmd`) fails to resolve there even
+    // though it's on PATH. Idempotently add/remove an alias in ~/.bashrc so Claude/Cursor/Codex/Antigravity
+    // sessions backed by Git Bash can run bare `askai`. Returns 'changed' | 'unchanged' | 'planned' | 'skipped (...)'.
+    editBashAlias(add) {
+      if (!S.IS_WIN) return 'skipped (not Windows)';
+      if (o.noPath) return 'skipped (--no-path)';
+      if (sandbox) return 'skipped (custom claude home)';
+      if (!S.which('bash')) return 'skipped (no bash on PATH)';
+      if (dry) { log.plan(`${add ? 'add' : 'remove'} askai alias in ~/.bashrc`); return 'planned'; }
+      return cfg.editBashrcAlias(add);
+    },
   };
   // Hosts in play, for components that write per host (handoff). Commands that need a hard error call cursor.hosts themselves.
   try { ctx.hostSel = cursor.hosts(ctx); } catch (_) { ctx.hostSel = { target: o.target || 'auto', claude: true, cursor: false, codex: false, agy: false }; }
@@ -392,7 +403,7 @@ async function cmdInstall(o) {
     console.log(`  ${pad(r.c.id, w)}  ${pad(r.d.state, 7)}  ${r.skip ? `skip: ${r.d.detail}` : `will install/wire: ${planText(ctx, r.c.plan)}`}`);
   }
   if (rows.some(r => r.c.id === 'token-kit' && !r.skip)) console.log('  note: token-kit runs first; every component after it is checked again and re-applies what the takeover removed');
-  console.log(`  ${pad('askai', w)}          copy to ${ctx.paths.app}, shim in ${ctx.paths.bin}${o.noPath || ctx.sandbox || !S.IS_WIN ? '' : ' (added to user PATH)'}${hosts.claude ? ', /askai-status, /askai-report and /askai-handoff commands' : ''}`);
+  console.log(`  ${pad('askai', w)}          copy to ${ctx.paths.app}, shim in ${ctx.paths.bin}${o.noPath || ctx.sandbox || !S.IS_WIN ? '' : ' (added to user PATH)'}${S.IS_WIN && !o.noPath && !ctx.sandbox && S.which('bash') ? ', askai alias in ~/.bashrc for Git Bash' : ''}${hosts.claude ? ', /askai-status, /askai-report and /askai-handoff commands' : ''}`);
   const files = [hosts.claude && 'settings.json, CLAUDE.md, .claude.json', hosts.cursor && "Cursor's mcp.json and hooks.json", hosts.codex && "Codex's config.toml and AGENTS.md", hosts.agy && "Antigravity's GEMINI.md and mcp_config.json"].filter(Boolean);
   console.log(`\nBacks up ${files.join('; ')} before every change; existing keys, entries and hooks are kept.`);
   if (!await confirm(o, '\nProceed?')) { console.log('Aborted, nothing changed.'); return 1; }
@@ -404,6 +415,7 @@ async function cmdInstall(o) {
     writeShim(ctx);
     if (hosts.claude) console.log(`  slash commands: ${installCommands(ctx)} written`);
     console.log(`  user PATH: ${pathStep(ctx, true)}`);
+    console.log(`  Git Bash alias (~/.bashrc): ${ctx.editBashAlias(true)}`);
     results.push({ id: 'askai', result: o.dry ? 'planned' : 'ok' });
   } catch (e) { console.error(`  failed: ${e.message}`); results.push({ id: 'askai', result: 'failed', detail: e.message }); }
 
@@ -680,6 +692,7 @@ async function cmdUninstall(o) {
   try {
     removeCommands(ctx);
     console.log(`  user PATH: ${pathStep(ctx, false)}`);
+    console.log(`  Git Bash alias (~/.bashrc): ${ctx.editBashAlias(false)}`);
     if (!o.dry) {
       for (const d of [ctx.paths.bin, ctx.paths.cache, ctx.paths.sessions]) fs.rmSync(d, { recursive: true, force: true });
       if (path.resolve(SRC) !== path.resolve(ctx.paths.app)) fs.rmSync(ctx.paths.app, { recursive: true, force: true });
