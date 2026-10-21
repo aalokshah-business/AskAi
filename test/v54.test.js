@@ -41,9 +41,9 @@ test('askai upgrade clones or updates the source and re-runs install with the re
     const ins = askai(['install', '--yes', '--profile', 'minimal', '--target', 'claude', '--skip', 'claude', '--no-path', '--claude-home', c]); assert.strictEqual(ins.status, 0, ins.stdout + ins.stderr);
     const dry = askai(['upgrade', '--dry-run', '--claude-home', c]); assert.match(dry.stdout, /would clone[\s\S]*--profile minimal --target claude/);
     const up = askai(['upgrade', '--only', 'caveman', '--no-path', '--claude-home', c]);
-    assert.strictEqual(up.status, 0, up.stdout + up.stderr); assert.match(up.stdout, /AskAI .* -> 1\.2\.4/);
+    assert.strictEqual(up.status, 0, up.stdout + up.stderr); assert.match(up.stdout, /AskAI .* -> 1\.2\.5/);
     assert.ok(fs.existsSync(path.join(c, 'askai', 'src', 'askai.js')));
-    const again = askai(['upgrade', '--only', 'caveman', '--no-path', '--claude-home', c]); assert.strictEqual(again.status, 0, 'update an existing checkout to the latest'); assert.match(again.stdout, /-> 1\.2\.4/);
+    const again = askai(['upgrade', '--only', 'caveman', '--no-path', '--claude-home', c]); assert.strictEqual(again.status, 0, 'update an existing checkout to the latest'); assert.match(again.stdout, /-> 1\.2\.5/);
     const agentPlan = askai(['upgrade', '--agents', '--dry-run', '--claude-home', c]);
     assert.strictEqual(agentPlan.status, 0, agentPlan.stdout + agentPlan.stderr);
     assert.match(agentPlan.stdout, /Claude Code, Cursor and Codex in sequence/);

@@ -21,7 +21,7 @@ if ! command -v node >/dev/null 2>&1; then
   echo "Node.js is not installed. askai needs 18+ (Context Mode needs 22.5+)."
   if [ "$DRY" -eq 1 ]; then echo "[dry-run] would install Node.js (brew install node), then run askai.js"; exit 0; fi
   if command -v brew >/dev/null 2>&1 && ask "Install Node.js with Homebrew now?"; then brew install node
-  else echo "Install Node.js 22 LTS from https://nodejs.org or with nvm (https://github.com/nvm-sh/nvm), then re-run."; exit 1; fi
+  else echo "Install Node.js 24 LTS from https://nodejs.org or with nvm (https://github.com/nvm-sh/nvm), then re-run."; exit 1; fi
 fi
 VER="$(node -p 'process.versions.node')"; MAJOR="${VER%%.*}"; REST="${VER#*.}"; MINOR="${REST%%.*}"
 if [ "$MAJOR" -lt 18 ]; then echo "Node.js $VER is too old for askai (needs 18+)."; exit 1; fi

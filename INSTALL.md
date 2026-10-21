@@ -15,6 +15,21 @@ powershell -NoProfile -ExecutionPolicy Bypass -File "$askaiSource\install.ps1" -
 
 Open a new PowerShell window, set `$projectPath` again, and run `askai setup --project $projectPath`. The `coding` profile is the default; use `max` only when you want its additional tools and token costs. See [the detailed installation guide](docs/INSTALL.md).
 
+**Linux Git clone route (Cursor).** Install Git, Node.js 24 LTS and [Cursor for Linux](https://cursor.com/download). Sign in to Cursor, clone your project, and set `project_path` to its local folder:
+
+```bash
+project_path="$HOME/code/myapp" # change to your existing project folder
+ls -ld "$project_path" # stop and correct the path if this fails
+askai_source="$HOME/.claude/askai/src"
+mkdir -p "$(dirname "$askai_source")"
+git clone https://github.com/aalokshah-business/AskAi.git "$askai_source"
+bash "$askai_source/install.sh" --dry-run --target cursor --profile coding --project "$project_path"
+bash "$askai_source/install.sh" --target cursor --profile coding --project "$project_path" --yes
+"$HOME/.claude/askai/bin/askai" setup --project "$project_path"
+```
+
+Restart Cursor, open the project and use `/askai-cli` in its chat. For all four hosts on Linux or Windows, use `--target all` and follow the [host checklist](docs/INSTALL.md#linux-and-windows-host-checklist). On Linux, `askai cli` opens AskAI's terminal interface.
+
 Windows (PowerShell):
 
 ```powershell

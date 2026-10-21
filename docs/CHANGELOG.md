@@ -2,6 +2,11 @@
 
 AskAI follows semantic versioning from 1.0.0 (see [RELEASING.md](RELEASING.md)). Installs always take the latest version on `main`.
 
+## 1.2.5 (22 October 2026): Linux and Windows host setup
+
+- Added a Git-clone-first Linux Cursor walkthrough to the README and both installation guides, plus a checklist for Claude Code, Cursor, Antigravity and Codex on Linux and Windows.
+- Clarified Cursor-only versus all-host targets, PATH refresh, project review and verification. Updated the Linux installer to recommend Node.js 24 LTS and corrected the Claude Code model check.
+
 ## 1.2.4 (22 October 2026): clearer first-time Windows setup
 
 - Added a Git-clone-first office-laptop path in the README and both install guides, including local project selection, dry run, validation, host restart and CLI entry points.

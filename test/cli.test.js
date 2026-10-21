@@ -103,7 +103,7 @@ test('askai cli runs commands without prefixes and exits', () => {
   const cp = require('child_process');
   const r = cp.spawnSync(process.execPath, [path.join(__dirname, '..', 'askai.js'), 'cli'], { input: 'version\nhelp cli\nexit\n', encoding: 'utf8', timeout: 10000 });
   assert.strictEqual(r.status, 0, r.stdout + r.stderr);
-  assert.match(r.stdout, /AskAI CLI[\s\S]*askai> 1\.2\.4[\s\S]*askai cli: Prepare a project from the chat folder/);
+  assert.match(r.stdout, /AskAI CLI[\s\S]*askai> 1\.2\.5[\s\S]*askai cli: Prepare a project from the chat folder/);
 });
 
 test('install replaces owned generic askai entry without deleting edited copies', () => withHome(home => {

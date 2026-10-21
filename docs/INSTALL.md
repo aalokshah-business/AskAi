@@ -26,6 +26,27 @@ Open a new PowerShell window and run `askai setup --project 'C:\code\myapp'` wit
 
 The `coding` profile is the recommended starting point. `max` adds RTK, Context Mode, Headroom and Graphify; some have measured token costs or require a one-time graph build. Check `askai plugins decisions` before adding them. If your project is not cloned yet, omit `-Project` during installation and later run `/askai-cli <local-project-path>` from a host chat.
 
+### Linux: Git clone and Cursor setup
+
+Install Git and [Node.js 24 LTS](https://nodejs.org/en/download), then install [Cursor for Linux](https://cursor.com/download) and sign in. Cursor offers `.deb`, RPM and AppImage builds; choose the one for your distribution. Clone your own project first. Run these commands in a Linux terminal, replacing the example folder with the project's existing local path:
+
+```bash
+git --version
+node --version
+project_path="$HOME/code/myapp" # change to your existing project folder
+ls -ld "$project_path" # stop and correct the path if this fails
+askai_source="$HOME/.claude/askai/src"
+mkdir -p "$(dirname "$askai_source")"
+git clone https://github.com/aalokshah-business/AskAi.git "$askai_source"
+bash "$askai_source/install.sh" --dry-run --target cursor --profile coding --project "$project_path"
+bash "$askai_source/install.sh" --target cursor --profile coding --project "$project_path" --yes
+"$HOME/.claude/askai/bin/askai" setup --project "$project_path"
+```
+
+The explicit shim path works even before your shell reloads PATH. Open a new terminal before typing `askai` by itself; if it is still missing, add `$HOME/.claude/askai/bin` to your shell PATH. Run `askai projects` to see the registered project. Restart Cursor, open that folder, and invoke `/askai-cli` in Cursor chat to have the host AI review the generated project pack. `askai cli` opens the terminal interface; commands typed there do not use model tokens unless they launch an AI agent.
+
+For Claude Code, Codex or Antigravity too, install and sign in to those hosts first, then use `--target all` in both installer commands instead of `--target cursor`. The installer accepts `--target claude`, `codex`, `agy`, `cursor`, or a comma-separated list. Run `askai setup --project "$project_path"` again after adding hosts.
+
 ### One-line bootstrap alternative
 
 Windows (PowerShell):
@@ -61,6 +82,19 @@ Then run, from the repository: askai setup .
 Reply with what was installed, anything that failed, the plugin-ready report, and my to-do list. Change no other files. Remind me to restart this session, then run /askai-plugins once.
 ```
 
+### Linux and Windows host checklist
+
+AskAI configures the hosts you select; it does not sign in to their accounts. These are the official host install sources and AskAI chat entries. Linux instructions refer to native Linux, not the Windows app running through WSL.
+
+| Host | Linux | Windows | In a project chat after restarting |
+| --- | --- | --- | --- |
+| Claude Code | [Native installer](https://code.claude.com/docs/en/setup), then run `claude` and sign in | [Native installer](https://code.claude.com/docs/en/setup), then run `claude` and sign in | `/askai-cli` |
+| Cursor | [Linux download](https://cursor.com/download), open project and sign in | [Windows download](https://cursor.com/download), open project and sign in | `/askai-cli` |
+| Antigravity | [Linux download or `agy` CLI](https://antigravity.google/download), then sign in | [Windows download or `agy` CLI](https://antigravity.google/download), then sign in | `/askai-cli` |
+| Codex CLI | [Install with npm](https://developers.openai.com/cookbook/examples/codex/using_goals_in_codex): `npm install -g @openai/codex`, then `codex` and sign in | Same npm install, then `codex` and sign in | `$askai-cli` |
+
+With **all four** installed, use `--target all` on Linux or `-Target all` on Windows. With only Cursor, use `--target cursor` or `-Target cursor`. The `coding` profile is the same on both operating systems (`--profile coding` / `-Workflow coding`); choose `max` only after reviewing `askai plugins decisions`. In every host, run `askai setup --project <local-folder>` in a terminal and `/askai-cli` (Codex: `$askai-cli`) in the project chat. AI review uses model tokens; `askai` terminal commands do not.
+
 **Other ways to get it.** Clone it (`git clone https://github.com/aalokshah-business/AskAi ~/tools/AskAI`) or download the ZIP from GitHub (Code, Download ZIP), then run the installer in that folder with the same options: `bash ~/tools/AskAI/install.sh --target all --project ~/code/myapp --yes`, or on Windows `powershell -ExecutionPolicy Bypass -File C:\tools\AskAI\install.ps1 -Target all -Project C:\code\myapp -Yes`. With Node.js and git installed, `npx github:aalokshah-business/AskAi install --target all --project . --yes` works too.
 
 **Keeping it current.** `askai upgrade` fetches the latest AskAI from GitHub and re-applies your profile; `askai update` upgrades the tools it installed. Add `--agents` to open Claude Code, Cursor and Codex in sequence for reviews and verified improvements; this spends model tokens and needs all three CLIs on PATH. Before running a script from the internet you can read it first: [get.sh](../get.sh), [get.ps1](../get.ps1), and [SECURITY.md](../SECURITY.md) for what the installer changes.
@@ -80,7 +114,7 @@ Connected MCP servers do not read each prompt. The agent calls Serena, Context7,
 
 | Need | Windows 10/11 | macOS | Linux and WSL |
 | --- | --- | --- | --- |
-| Node.js 18 or newer | `winget install OpenJS.NodeJS.LTS` (install.ps1 offers it) | `brew install node` (install.sh offers it) | nvm (`https://github.com/nvm-sh/nvm`) or your distribution's package |
+| Node.js 24 LTS recommended (AskAI minimum: 18) | `winget install OpenJS.NodeJS.LTS` (install.ps1 offers it) | `brew install node` (install.sh offers it) | [Node.js download](https://nodejs.org/en/download), nvm, or your distribution's package |
 | Package manager for tools | winget (built into Windows 11; "App Installer" from the Microsoft Store on 10) | Homebrew recommended | Homebrew optional; otherwise the vendors' installer scripts and cargo |
 | Shell | PowerShell 5.1 or later | zsh or bash | bash |
 | git | Recommended (the ledger records branch and commit) | Recommended | Recommended |
@@ -202,7 +236,7 @@ Then start a new session in each tool:
 
 | Tool | Look for |
 | --- | --- |
-| Claude Code | `/status` shows your plan; `/model` shows Haiku if you had no default; `/context` shows CLAUDE.md with the askai block loaded |
+| Claude Code | `/status` shows your plan; `/model` shows Sonnet 5.5 if you had no default; `/context` shows CLAUDE.md with the askai block loaded |
 | Codex | `/status`; `~/.codex/config.toml` has effort `medium` and verbosity `low` |
 | Antigravity | `/usage`; `~/.gemini/GEMINI.md` has the askai block |
 | Cursor | `~/.cursor/rules/` holds the `askai-*.mdc` files |

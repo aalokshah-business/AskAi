@@ -29,6 +29,21 @@ powershell -NoProfile -ExecutionPolicy Bypass -File "$askaiSource\install.ps1" -
 
 Open a new PowerShell window and run `askai setup --project $projectPath` (set `$projectPath` again in that window, or pass the path directly). If `askai` is not on PATH yet, run `& "$HOME\.claude\askai\bin\askai.cmd" setup --project 'C:\code\myapp'`. See [installation steps](docs/INSTALL.md) for prerequisites, project registration and checks.
 
+**Linux, Cursor first.** Install Git and Node.js 24 LTS, and install [Cursor for Linux](https://cursor.com/download) and sign in. Clone your project first; change the local path below. The same installer supports all four hosts: use `--target cursor` for Cursor only, or `--target all` after installing the other hosts.
+
+```bash
+project_path="$HOME/code/myapp" # existing local project folder
+ls -ld "$project_path" # stop and correct the path if this fails
+askai_source="$HOME/.claude/askai/src"
+mkdir -p "$(dirname "$askai_source")"
+git clone https://github.com/aalokshah-business/AskAi.git "$askai_source"
+bash "$askai_source/install.sh" --dry-run --target cursor --profile coding --project "$project_path"
+bash "$askai_source/install.sh" --target cursor --profile coding --project "$project_path" --yes
+"$HOME/.claude/askai/bin/askai" setup --project "$project_path"
+```
+
+Restart Cursor, open that project, then run `/askai-cli` in its chat for AI review. `askai cli` opens the terminal interface; shell commands use no model tokens. For install and chat entry points for **Claude Code, Cursor, Antigravity and Codex on Linux and Windows**, see the [host checklist](docs/INSTALL.md#linux-and-windows-host-checklist).
+
 Windows (PowerShell):
 
 ```powershell
