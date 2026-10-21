@@ -6,6 +6,7 @@ AskAI follows semantic versioning from 1.0.0 (see [RELEASING.md](RELEASING.md)).
 
 - AI review now becomes stale when README or build manifests change, not only source code. The default changed-path list stays capped at 40 for short agent output; `askai review status --all --json` exposes the full list. `askai-cli` repairs missing pack files, including agents and skills, before review.
 - `askai help --help` now shows its command usage, matching every other command in the matrix.
+- New-machine examples now use the lean `coding` default; `max` stays opt-in and an existing installation keeps its recorded profile when adding a project.
 - `/askai-plugins` and `askai plugins ready` say which connected tools wait for a matching task and which one-time step is left. The graph build is one of those steps. `askai setup <repo>` runs status, the guideline audit, infra, plugins, the to-do list, and the file validator in one command.
 - Claude Code's baseline default is `claude-sonnet-5-5` at high effort. The retired defaults (haiku, effort medium, `autoCompactWindow` 150000) are updated on the next baseline install. Compact stays in the tips.
 

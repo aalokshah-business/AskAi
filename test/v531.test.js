@@ -10,8 +10,8 @@ const read = f => fs.readFileSync(path.join(ROOT, f), 'utf8');
 test('README, INSTALL.md and docs/INSTALL.md lead with the one command and the agent prompt', () => {
   for (const f of ['README.md', 'INSTALL.md', 'docs/INSTALL.md']) {
     const t = read(f); const top = t.slice(0, t.indexOf('Or ask your agent') + 1200);
-    assert.ok(top.includes('get.ps1))) -Target all -Workflow max -Project C:\\code\\myapp -Yes'), `${f}: Windows command`);
-    assert.ok(top.includes('get.sh | bash -s -- --target all --profile max --project ~/code/myapp --yes'), `${f}: bash command`);
+    assert.ok(top.includes('get.ps1))) -Target all -Project C:\\code\\myapp -Yes'), `${f}: Windows command`);
+    assert.ok(top.includes('get.sh | bash -s -- --target all --project ~/code/myapp --yes'), `${f}: bash command`);
     assert.ok(top.includes('Set up AskAI for this repository') && top.includes('--project . --yes') && top.includes('-Project . -Yes'), `${f}: agent prompt`);
     assert.ok(t.indexOf('Or ask your agent') < 7000, `${f}: near the top`);
   }
