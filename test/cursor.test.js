@@ -239,6 +239,12 @@ test('removeProject: removes the marked askai files only; a project with none is
   assert.deepStrictEqual(fs.readdirSync(rd).sort(), ['askai-handmade.mdc', 'mine.mdc']);
 }));
 
+test('cursorCommandText keeps a description and drops Claude-only frontmatter', () => {
+  const text = cursor.cursorCommandText('---\ndescription: Set up a project.\ndisable-model-invocation: true\n---\n\nRun askai.\n');
+  assert.match(text, /^---\ndescription: Set up a project\.\n---\n\nRun askai\.\n$/);
+  assert.ok(!text.includes('disable-model-invocation'));
+});
+
 test('removeProject: dry-run leaves the files', () => withDirs((ctx, d) => {
   cursor.writeProject(makeCtx(d.home), d.proj, cursor.projectFiles(profiles.get('coding'), [], 'full'), false);
   assert.strictEqual(cursor.removeProject(ctx, d.proj).length, 2);

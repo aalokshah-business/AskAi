@@ -24,6 +24,8 @@ AskAI follows semantic versioning from 1.0.0 (see [RELEASING.md](RELEASING.md)).
 - AI review now becomes stale when README or build manifests change, not only source code. The default changed-path list stays capped at 40 for short agent output; `askai review status --all --json` exposes the full list. `askai-cli` repairs missing pack files, including agents and skills, before review.
 - `askai help --help` now shows its command usage, matching every other command in the matrix.
 - New-machine examples now use the lean `coding` default; `max` stays opt-in and an existing installation keeps its recorded profile when adding a project.
+- The guide and cheat sheet say how to fetch the latest AskAI and rerun so `/askai-cli` shows up in Cursor.
+- A Cursor-only install no longer fails Claude Code checks. `~/.claude/askai` is named as AskAI's own folder. On macOS and Linux the `askai` command is added to `~/.bashrc` and `~/.profile` even when a later component fails. Serena's download is retried, and a connection reset says to re-run `askai install --only cursor-serena`. `/askai-cli` is the project file `.cursor/commands/askai-cli.md`; a remote `~/.cursor/commands` is not enough.
 - `/askai-plugins` and `askai plugins ready` say which connected tools wait for a matching task and which one-time step is left. The graph build is one of those steps. `askai setup <repo>` runs status, the guideline audit, infra, plugins, the to-do list, and the file validator in one command.
 - Claude Code's baseline default is `claude-sonnet-5-5` at high effort. The retired defaults (haiku, effort medium, `autoCompactWindow` 150000) are updated on the next baseline install. Compact stays in the tips.
 

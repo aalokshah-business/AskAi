@@ -112,7 +112,33 @@ bash install.sh --dry-run     # preview
 bash install.sh               # install (asks once), then offers to add askai to your PATH
 ```
 
-After the install, `askai` works in any new terminal: on Windows the installer adds it to your user PATH, and on macOS and Linux `install.sh` adds one line to `~/.zshrc` or `~/.bashrc`. Choose tools with `--target claude`, `codex`, `agy`, `cursor`, `all`, or a list such as `claude,codex`; the default `auto` sets up Claude Code plus every other tool it finds. Choose the kind of work with `--profile minimal | coding | docs | full`. The full step-by-step guide is `docs/INSTALL.md` in the package.
+After the install, `askai` works in any new terminal: on Windows the installer adds it to your user PATH, and on macOS and Linux `install.sh` adds one line to `~/.bashrc` and `~/.profile` (or `~/.zshrc` when that is your shell). Choose tools with `--target claude`, `codex`, `agy`, `cursor`, `all`, or a list such as `claude,codex`; the default `auto` sets up Claude Code plus every other tool it finds. Choose the kind of work with `--profile minimal | coding | docs | full`. The full step-by-step guide is `docs/INSTALL.md` in the package.
+
+`~/.claude/askai` is AskAI's own program folder on every operating system, including a Cursor-only install. It is not a Claude Code setup.
+
+**Fetch the latest AskAI, then make `/askai-cli` show up.** Do this on a machine that already has AskAI, including a Linux Cursor or devcontainer install. `askai upgrade` downloads the latest source into `~/.claude/askai/src` and installs it again with the target and profile already recorded.
+
+```bash
+# macOS, Linux, WSL. Use the full path when `askai` is not on PATH yet.
+export PATH="$HOME/.claude/askai/bin:$PATH"
+askai upgrade --yes --target cursor --profile coding --project /path/to/the/project
+```
+
+```powershell
+# Windows
+askai upgrade --yes --target cursor --profile coding --project C:\path\to\the\project
+```
+
+Use `--target all` instead of `--target cursor` when Claude Code, Codex, or Antigravity should be installed too. Open a new terminal afterwards. `askai setup /path/to/the/project` checks the machine. A Cursor-only setup does not fail Claude Code checks.
+
+Then, so Cursor lists the command:
+
+1. Reload the Cursor window.
+2. Open the project folder itself, the one that contains `.cursor/commands/askai-cli.md`. A parent folder does not see that command.
+3. In chat, type `/` and choose `askai-cli`. Typing the words "Run /askai-cli" does not start it.
+4. On SSH or a devcontainer, Cursor does not load commands from the remote `~/.cursor/commands`. The project file is the one that counts.
+
+Serena still needs a network path to `astral.sh`. If that download fails, the rest of the install stays, and `askai install --only cursor-serena --yes` retries it later.
 
 **Environment setup, before installing.**
 
@@ -218,7 +244,7 @@ All 27 runs exited cleanly and wrote no files. The plans used the right route fo
 | Claude Code | `/askai-cli`, `/askai-plugins`; a status line with context and cache figures |
 | Codex | The `askai-cli` and `askai-plugins` skills (`$askai-cli`, `$askai-plugins`) |
 | Antigravity | The `askai-cli` and `askai-plugins` skills |
-| Cursor | `/askai-cli`, `/askai-plugins`, and the always-on token rule |
+| Cursor | `/askai-cli` and `/askai-plugins`, from `<project>/.cursor/commands/`. Type `/` and choose the command after a reload. On SSH or a devcontainer the remote `~/.cursor/commands` is not enough. |
 
 AskAI is a command-line tool plus these commands, not a Claude Code plugin from a marketplace. That keeps one install working across all four agents.
 

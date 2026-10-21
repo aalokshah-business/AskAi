@@ -45,6 +45,19 @@ test('validate-install: a good install passes; a broken one names the file and t
   } finally { fs.rmSync(H, { recursive: true, force: true }); }
 });
 
+test('validate-install: a Cursor-only install does not fail Claude Code checks', () => {
+  const { H, repo, env } = setup();
+  try {
+    const ins = cp.spawnSync(process.execPath, [path.join(ROOT, 'askai.js'), 'install', '--yes', '--target', 'cursor', '--profile', 'minimal', '--no-path', '--project', repo], { env, encoding: 'utf8', timeout: 180000 });
+    assert.strictEqual(ins.status, 0, ins.stdout + ins.stderr);
+    const r = cp.spawnSync(process.execPath, [path.join(ROOT, 'scripts', 'validate-install.js'), repo, '--files'], { encoding: 'utf8', env, timeout: 60000 });
+    assert.strictEqual(r.status, 0, r.stdout + r.stderr);
+    assert.match(r.stdout, /PASS\s+Claude Code\s+not part of this install/);
+    assert.match(r.stdout, /PASS\s+Cursor\s+\/askai-cli command in project workspace root/);
+    assert.ok(!/FAIL\s+Claude Code/.test(r.stdout));
+  } finally { fs.rmSync(H, { recursive: true, force: true }); }
+});
+
 test('validate-install: MCP servers the manifest expects must be in each tool config; an API key in the environment fails', () => {
   const { H, repo, env } = setup();
   try {

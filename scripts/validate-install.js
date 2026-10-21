@@ -5,6 +5,7 @@
 //   node scripts/validate-install.js [repo-folder] [--json]
 // Exit code 1 when anything FAILs. Paste the output when asking for help: the home folder is shown as ~ and no secrets are printed.
 const fs = require('fs'); const os = require('os'); const path = require('path'); const cp = require('child_process');
+const { targetIncludes } = require('../lib/cursor');
 const args = process.argv.slice(2); const asJson = args.includes('--json'); const filesOnly = args.includes('--files'); const repoArg = args.find(a => !a.startsWith('--'));
 const HOME = os.homedir(); const tilde = s => String(s).split(HOME).join('~');
 const DIR = { claude: path.join(HOME, '.claude'), codex: process.env.CODEX_HOME || path.join(HOME, '.codex'), agy: path.join(HOME, '.gemini'), cursor: path.join(HOME, '.cursor') };
@@ -26,6 +27,7 @@ if (!exists(appJs)) {
 const run = a => { const r = cp.spawnSync(process.execPath, [appJs, ...a], { encoding: 'utf8', timeout: 180000, env: process.env }); return { code: r.status, out: `${r.stdout || ''}${r.stderr || ''}` }; };
 const manifest = readJ(path.join(DIR.claude, 'askai', 'manifest.json')) || {};
 const comps = manifest.components || {};
+const selected = host => targetIncludes(manifest.target, host);
 if (filesOnly) add('PASS', 'askai', 'command checks skipped (--files); askai setup already ran them');
 else {
 const ver = run(['version']).out.trim();
@@ -36,7 +38,7 @@ which(process.platform === 'win32' ? 'askai.cmd' : 'askai') ? add('PASS', 'askai
 Object.keys(comps).length ? add('PASS', 'askai', `manifest: profile ${manifest.profile || '?'}, target ${manifest.target || '?'}, ${Object.keys(comps).length} components recorded`) : add('FAIL', 'askai', 'manifest has no components: nothing was installed', 'askai install --yes --target all --profile max --project <repo>');
 const helpN = (run(['help', 'all']).out.match(/^askai /gm) || []).length;
 helpN >= 45 ? add('PASS', 'askai', `askai help all prints ${helpN} commands`) : add('FAIL', 'askai', `askai help all printed only ${helpN} commands`);
-for (const [v, lvl, why] of [['ANTHROPIC_API_KEY', 'FAIL', 'Claude Code bills this key, not your plan'], ['ANTHROPIC_BASE_URL', 'FAIL', 'Claude Code goes through a proxy'], ['OPENAI_API_KEY', 'WARN', 'Codex may bill the API']]) if (process.env[v]) add(lvl, 'billing', `${v} is set in this terminal: ${why}`, `unset it (and remove it from your shell profile), then check /status inside the tool`);
+for (const [v, lvl, why] of [['ANTHROPIC_API_KEY', 'FAIL', 'Claude Code bills this key, not your plan'], ['ANTHROPIC_BASE_URL', 'FAIL', 'Claude Code goes through a proxy'], ['OPENAI_API_KEY', 'WARN', 'Codex may bill the API']]) if (process.env[v] && selected(v === 'OPENAI_API_KEY' ? 'codex' : 'claude')) add(lvl, 'billing', `${v} is set in this terminal: ${why}`, `unset it (and remove it from your shell profile), then check /status inside the tool`);
 const ready = run(['plugins', 'ready', '--json', ...(repo ? ['--path', repo] : [])]);
 ready.code === 0 && /"tools"/.test(ready.out) ? add('PASS', 'askai', 'askai plugins ready reports which tools wait and which one-time step is left') : add('FAIL', 'askai', 'askai plugins ready failed', tilde(ready.out.split('\n').slice(0, 3).join(' | ')));
 const infra = run(['infra', ...(repo ? [repo] : [])]);
@@ -64,7 +66,9 @@ function mcp(h) {
   missing.length ? add('FAIL', NAME[h], `MCP servers missing from its config: ${missing.join(', ')}`, `askai install --only ${missing.map(n => n === 'codebase-memory-mcp' ? 'codebase-memory' : n === 'serena' ? (h === 'claude' ? 'serena' : `${h}-serena`) : n).join(',')} --force`) : add('PASS', NAME[h], `MCP servers in its config: ${want[h].join(', ')}`);
 }
 
-if (exists(DIR.claude)) {
+if (!selected('claude')) add('PASS', 'Claude Code', 'not part of this install. ~/.claude/askai is AskAI\'s own folder, not Claude Code');
+else if (!which('claude') && !exists(path.join(DIR.claude, 'settings.json')) && !comps.baseline && !comps.caveman) add('PASS', 'Claude Code', 'Claude Code is not installed here. ~/.claude/askai is AskAI\'s own folder, so Claude file checks are skipped');
+else if (exists(DIR.claude)) {
   const s = readJ(path.join(DIR.claude, 'settings.json'));
   if (!s) add('FAIL', 'Claude Code', '~/.claude/settings.json is missing or unreadable', 'askai install --only baseline');
   else {
@@ -82,14 +86,14 @@ if (exists(DIR.claude)) {
   mcp('claude');
   which('claude') ? add('PASS', 'Claude Code', 'CLI on PATH') : add('WARN', 'Claude Code', 'CLI not on PATH in this terminal');
 }
-if (exists(DIR.codex)) {
+if (selected('codex') && exists(DIR.codex)) {
   has(path.join(DIR.codex, 'AGENTS.md'), /askai:begin/) ? add('PASS', 'Codex', 'rules block in ~/.codex/AGENTS.md') : add('FAIL', 'Codex', 'AskAI rules block missing from ~/.codex/AGENTS.md', 'askai install --only codex-rules');
   has(path.join(DIR.codex, 'config.toml'), /model_reasoning_effort/) ? add('PASS', 'Codex', 'config.toml has the effort setting') : add('WARN', 'Codex', 'no model_reasoning_effort in config.toml', 'askai install --only codex-baseline');
   exists(path.join(HOME, '.agents', 'skills', 'askai-cli', 'SKILL.md')) ? add('PASS', 'Codex', '$askai-cli skill present') : add('FAIL', 'Codex', '$askai-cli skill missing', 'askai install --target all --yes');
   exists(path.join(HOME, '.agents', 'skills', 'askai-plugins', 'SKILL.md')) ? add('PASS', 'Codex', '$askai-plugins skill present') : add('FAIL', 'Codex', '$askai-plugins skill missing', 'askai install --target all --yes');
   mcp('codex'); which('codex') ? add('PASS', 'Codex', 'CLI on PATH') : add('WARN', 'Codex', 'CLI not on PATH in this terminal');
 }
-if (exists(DIR.agy)) {
+if (selected('agy') && exists(DIR.agy)) {
   has(path.join(DIR.agy, 'GEMINI.md'), /askai:begin/) ? add('PASS', 'Antigravity', 'rules block in ~/.gemini/GEMINI.md') : add('FAIL', 'Antigravity', 'AskAI rules block missing from ~/.gemini/GEMINI.md', 'askai install --only agy-rules');
   const set = readJ(path.join(DIR.agy, 'antigravity-cli', 'settings.json')) || {};
   set.useG1Credits === true ? add('FAIL', 'Antigravity', 'useG1Credits is true: paid credits can be spent silently', 'set it to false (askai check --fix)') : add('PASS', 'Antigravity', 'paid credits are off');
@@ -97,10 +101,15 @@ if (exists(DIR.agy)) {
   exists(path.join(DIR.agy, 'antigravity-cli', 'skills', 'askai-plugins', 'SKILL.md')) || exists(path.join(DIR.agy, 'config', 'skills', 'askai-plugins', 'SKILL.md')) ? add('PASS', 'Antigravity', 'askai-plugins skill present') : add('FAIL', 'Antigravity', 'askai-plugins skill missing', 'askai install --target all --yes');
   mcp('agy'); which('agy') ? add('PASS', 'Antigravity', 'CLI (agy) on PATH') : add('WARN', 'Antigravity', 'CLI (agy) not on PATH in this terminal');
 }
-if (exists(DIR.cursor)) {
+if (selected('cursor') && exists(DIR.cursor)) {
   exists(path.join(DIR.cursor, 'rules', 'askai-tokens.mdc')) ? add('PASS', 'Cursor', 'always-on rules file present') : add('FAIL', 'Cursor', '~/.cursor/rules/askai-tokens.mdc missing', 'askai install --only cursor-rules');
-  exists(path.join(DIR.cursor, 'commands', 'askai-cli.md')) ? add('PASS', 'Cursor', '/askai-cli command present') : add('FAIL', 'Cursor', '/askai-cli command missing', 'askai install --target all --yes');
-  exists(path.join(DIR.cursor, 'commands', 'askai-plugins.md')) ? add('PASS', 'Cursor', '/askai-plugins command present') : add('FAIL', 'Cursor', '/askai-plugins command missing', 'askai install --target all --yes');
+  for (const name of ['askai-cli', 'askai-plugins']) {
+    const projectCommand = repo && path.join(repo, '.cursor', 'commands', `${name}.md`);
+    const globalCommand = path.join(DIR.cursor, 'commands', `${name}.md`);
+    if (projectCommand && exists(projectCommand)) add('PASS', 'Cursor', `/${name} command in project workspace root`);
+    else if (exists(globalCommand)) add(repo ? 'WARN' : 'PASS', 'Cursor', `/${name} global command present${repo ? ', but project command missing (remote workspaces may not see global commands)' : ''}`, repo ? `askai init ${tilde(repo)} --refresh --yes` : '');
+    else add('FAIL', 'Cursor', `/${name} command missing`, repo ? `askai init ${tilde(repo)} --refresh --yes` : 'askai install --target cursor --yes');
+  }
   mcp('cursor');
 }
 
@@ -108,7 +117,7 @@ if (exists(DIR.cursor)) {
 if (repo) {
   const f = p => path.join(repo, p);
   const need = ['AGENTS.md', 'CLAUDE.md', 'GEMINI.md', '.cursorignore', ...['PROJECT_MAP', 'ARCHITECTURE', 'FEATURES', 'WORK_ORDER', 'MODELS'].map(n => `docs/ai/${n}.md`)];
-  const agents = [['claude', '.claude/agents', 'md'], ['codex', '.codex/agents', 'toml'], ['cursor', '.cursor/agents', 'md'], ['agy', '.agents/agents', 'md']].filter(([h]) => exists(DIR[h]));
+  const agents = [['claude', '.claude/agents', 'md'], ['codex', '.codex/agents', 'toml'], ['cursor', '.cursor/agents', 'md'], ['agy', '.agents/agents', 'md']].filter(([h]) => selected(h) && exists(DIR[h]));
   for (const [, d, ext] of agents) for (const n of ['architect', 'builder', 'runner']) need.push(`${d}/${n}.${ext}`);
   for (const d of ['.claude/skills', '.agents/skills']) for (const n of ['architecture-map', 'prompt-refiner', 'investigate-bug', 'verify-and-review']) need.push(`${d}/${n}/SKILL.md`);
   const missing = need.filter(p => !exists(f(p)));
@@ -133,10 +142,10 @@ function finish() {
   for (const r of rows) console.log(`${r.level.padEnd(4)}  ${r.area.padEnd(11)} ${tilde(r.msg)}${r.level !== 'PASS' && r.fix ? `\n${' '.repeat(18)}fix: ${tilde(r.fix)}` : ''}`);
   console.log(`\n${n('PASS')} pass, ${n('WARN')} warn, ${n('FAIL')} FAIL`);
   const inTool = [];
-  if (exists(DIR.claude)) inTool.push('Claude Code (new session in the project): /status shows your plan, not API billing; /mcp lists ' + (want.claude.join(', ') || 'no servers') + '; /plugin lists the plugins above; /askai-cli opens the terminal; /askai-plugins does one-time plugin setup.');
-  if (exists(DIR.codex)) inTool.push('Codex: /mcp lists ' + (want.codex.join(', ') || 'no servers') + '; $askai-cli opens the AskAI terminal; $askai-plugins does one-time plugin setup; /model offers gpt-6.1-sol and gpt-6-luna.');
-  if (exists(DIR.agy)) inTool.push('Antigravity: /mcp lists ' + (want.agy.join(', ') || 'no servers') + '; /skills shows askai-cli and askai-plugins; /model flash, /effort high; app settings: AI Credit Overages = Never.');
-  if (exists(DIR.cursor)) inTool.push('Cursor (quit and reopen first): Settings, Rules shows the AskAI rules; Settings, MCP lists ' + (want.cursor.join(', ') || 'no servers') + '; /askai-cli and /askai-plugins are in the command list; Settings, Models: Auto or Grok 4.7.');
+  if (selected('claude') && exists(DIR.claude)) inTool.push('Claude Code (new session in the project): /status shows your plan, not API billing; /mcp lists ' + (want.claude.join(', ') || 'no servers') + '; /plugin lists the plugins above; /askai-cli opens the terminal; /askai-plugins does one-time plugin setup.');
+  if (selected('codex') && exists(DIR.codex)) inTool.push('Codex: /mcp lists ' + (want.codex.join(', ') || 'no servers') + '; $askai-cli opens the AskAI terminal; $askai-plugins does one-time plugin setup; /model offers the models on your plan.');
+  if (selected('agy') && exists(DIR.agy)) inTool.push('Antigravity: /mcp lists ' + (want.agy.join(', ') || 'no servers') + '; /skills shows askai-cli and askai-plugins; /model lists available models; app settings: AI Credit Overages = Never.');
+  if (selected('cursor') && exists(DIR.cursor)) inTool.push('Cursor (quit and reopen first): open the project folder as the workspace root; Settings, Rules shows AskAI rules; Settings, MCP lists ' + (want.cursor.join(', ') || 'no servers') + '; type /askai-cli or /askai-plugins in Agent chat; choose an available model in Settings, Models.');
   if (inTool.length) console.log('\nStill to check by hand, inside each tool:\n' + inTool.map(l => `  - ${l}`).join('\n'));
   console.log('\nThen the daily flow: askai go claude --tier build "small task"; ask the agent to write .ai-work/HANDOFF.md; askai clear (should say safe); askai continue.\nAfter a day of use: askai savings, askai usage 7, askai audit.\nChecks that change nothing: askai upgrade --dry-run, askai uninstall --dry-run.');
   process.exit(n('FAIL') ? 1 : 0);

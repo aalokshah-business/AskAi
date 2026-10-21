@@ -16,6 +16,7 @@ Checked against vendor docs and independent benchmarks, 20 October 2026. Run `/h
 | Before /clear or a break | Ask the agent to write `.ai-work/HANDOFF.md`, then `askai clear` or `askai break` |
 | Coming back | `askai continue --copy` (same as `askai resume`) |
 | What is set up and used | `askai setup <repo>` (status, check, infra, plugins, to-do, files) |
+| Fetch latest, then show `/askai-cli` | `askai upgrade --yes --target cursor --profile coding --project <repo>` (full path `~/.claude/askai/bin/askai` if needed). Reload Cursor, open that folder itself, type `/`, choose `askai-cli` |
 | Use connected plugins in a chat | `/askai-plugins` (Codex: `$askai-plugins`) |
 | Where tokens go | `askai audit`, `askai usage 7`, `askai report` |
 | Housekeeping | `askai update`, `askai doctor`, `askai uninstall` |

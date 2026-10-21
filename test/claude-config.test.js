@@ -2,7 +2,7 @@
 const test = require('node:test');
 const assert = require('node:assert');
 const cfg = require('../lib/claude-config');
-const { tmpHome, rm, write, path } = require('./helpers');
+const { tmpHome, rm, write, path, fs } = require('./helpers');
 
 test('applyBaseline adds only missing keys and never overrides', () => {
   const s = { autoCompactWindow: 200000, env: { CLAUDE_CODE_SUBAGENT_MODEL: 'opus', OTHER: '1' } };
@@ -43,6 +43,18 @@ test('applyBaseline: the main model is claude-sonnet-5-5 by default, never overr
   const other = {}; cfg.applyBaseline(other, { subagentModel: 'sonnet' });
   assert.strictEqual(other.env.CLAUDE_CODE_SUBAGENT_MODEL, 'sonnet');
   assert.strictEqual(cfg.BASELINE.env.CLAUDE_CODE_SUBAGENT_MODEL, 'haiku', 'BASELINE itself is never mutated');
+});
+
+test('editUnixPath adds the shim dir to bashrc and profile, and a second run changes nothing', () => {
+  const home = tmpHome();
+  try {
+    const dir = path.join(home, '.claude', 'askai', 'bin');
+    assert.strictEqual(cfg.editUnixPath(dir, true, home), 'changed');
+    for (const name of ['.bashrc', '.profile']) assert.ok(fs.readFileSync(path.join(home, name), 'utf8').includes(`export PATH="${dir}:$PATH"`));
+    assert.strictEqual(cfg.editUnixPath(dir, true, home), 'unchanged');
+    assert.strictEqual(cfg.editUnixPath(dir, false, home), 'changed');
+    for (const name of ['.bashrc', '.profile']) assert.ok(!fs.readFileSync(path.join(home, name), 'utf8').includes(dir));
+  } finally { rm(home); }
 });
 
 test('removeKey removes nested keys only while they still hold the value askai set', () => {

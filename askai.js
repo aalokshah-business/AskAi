@@ -239,12 +239,12 @@ function buildCtx(o, quiet) {
     },
     settings: () => cfg.readJson(paths.settings),
     editSettings: fn => editJson(paths.settings, fn),
-    // Add/remove one dir on the Windows user PATH. Returns 'changed' | 'unchanged' | 'planned' | 'skipped (...)' | 'error: ...'.
+    // Add/remove one dir on the user PATH. Windows uses the registry. macOS and Linux write ~/.bashrc and ~/.profile.
     editPath(dir, add) {
-      if (!S.IS_WIN) return 'skipped (not Windows)';
       if (o.noPath) return 'skipped (--no-path)';
       if (sandbox) return 'skipped (custom claude home)';
       if (dry) { log.plan(`${add ? 'add' : 'remove'} ${dir} ${add ? 'to' : 'from'} user PATH`); return 'planned'; }
+      if (!S.IS_WIN) return cfg.editUnixPath(dir, add);
       return winpath.editUserPath(S.run, dir, add);
     },
     // Git Bash doesn't do PATHEXT resolution, so bare `askai` (vs `askai.cmd`) fails to resolve there even
@@ -370,7 +370,7 @@ function installCommands(ctx, hosts = ctx.hostSel) {
     const skill = raw.replace(/^---\n[\s\S]*?\n---\n/, `---\nname: ${skillName}\ndescription: ${skillDescription}\n---\n`);
     const out = [];
     if (hosts.claude) out.push({ target: path.join(ctx.paths.home, 'commands', file), text: raw });
-    if (hosts.cursor) out.push({ target: path.join(ctx.cursorPaths.home, 'commands', file), text: raw.replace(/^---\n[\s\S]*?\n---\n\n/, '') });
+    if (hosts.cursor) out.push({ target: path.join(ctx.cursorPaths.home, 'commands', file), text: cursor.cursorCommandText(raw) });
     if (hosts.codex) {
       out.push({ target: path.join(ctx.codexPaths.home, 'prompts', file), text: raw.replace('disable-model-invocation: true\n', '') });
       out.push({ target: path.join(ctx.codexPaths.skills, skillName, 'SKILL.md'), text: skill });
@@ -478,7 +478,7 @@ async function cmdInstall(o) {
     console.log(`  ${pad(r.c.id, w)}  ${pad(r.d.state, 7)}  ${r.skip ? `skip: ${r.d.detail}` : `will install/wire: ${planText(ctx, r.c.plan)}`}`);
   }
   if (rows.some(r => r.c.id === 'token-kit' && !r.skip)) console.log('  note: token-kit runs first; every component after it is checked again and re-applies what the takeover removed');
-  console.log(`  ${pad('askai', w)}          copy to ${ctx.paths.app}, shim in ${ctx.paths.bin}${o.noPath || ctx.sandbox || !S.IS_WIN ? '' : ' (added to user PATH)'}${S.IS_WIN && !o.noPath && !ctx.sandbox && S.which('bash') ? ', askai alias in ~/.bashrc for Git Bash' : ''}, command entry points in selected hosts`);
+  console.log(`  ${pad('askai', w)}          copy to ${ctx.paths.app}, shim in ${ctx.paths.bin}${o.noPath || ctx.sandbox ? '' : ' (added to user PATH)'}${S.IS_WIN && !o.noPath && !ctx.sandbox && S.which('bash') ? ', askai alias in ~/.bashrc for Git Bash' : ''}, command entry points in selected hosts`);
   const files = [hosts.claude && 'settings.json, CLAUDE.md, .claude.json', hosts.cursor && "Cursor's mcp.json and hooks.json", hosts.codex && "Codex's config.toml and AGENTS.md", hosts.agy && "Antigravity's GEMINI.md and mcp_config.json"].filter(Boolean);
   console.log(`\nBacks up ${files.join('; ')} before every change; existing keys, entries and hooks are kept.`);
   if (!await confirm(o, '\nProceed?')) { console.log('Aborted, nothing changed.'); return 1; }
@@ -522,7 +522,9 @@ async function cmdInstall(o) {
   else if (failed.length) console.log(`\n${failed.length} component(s) failed. Fix the cause and re-run \`askai install\`: finished components are skipped.`);
   else {
     console.log(`\nDone. Open a NEW ${hostNames(hosts).join(' / ')} session so hooks, plugins and MCP servers load.`);
+    if (!hosts.claude) console.log(`AskAI's own program is in ${ctx.paths.askaiDir}. A Cursor-only install uses that folder too. It is not a Claude Code setup.`);
     if (hosts.cursor) console.log('Cursor user rules are in ~/.cursor/rules and apply in every project on this machine. Restart Cursor so it reads the hooks, MCP servers and rules. `askai project` writes the same files into one repo for git; skip it here, or the always-applied rule is loaded twice.');
+    if (hosts.cursor) console.log('In Cursor chat, type / and choose askai-cli. Cursor reads <project>/.cursor/commands/askai-cli.md. On SSH or a devcontainer it does not read ~/.cursor/commands from the remote home. Open the project folder itself, not its parent, then reload the window.');
   }
   if (o.project) { console.log(''); const dir = projectDir(o, o.project); const name = registrationName(o, dir); const references = await project.research(dir, { offline: o.offline, dry: o.dry }); project.init(dir, { yes: true, dry: o.dry, about: o.about, type: o.type, references }, ctx); registerProject({ ...o, name }, dir); }
   if (!o.dry) { console.log('Check this machine: askai setup' + (o.project ? ` ${o.project}` : ' <repo>') + '.'); console.log('In a new chat: /askai-cli sets up the project (Codex: $askai-cli). /askai-plugins finishes one-time plugin setup and says when each tool is called.'); try { const dir = o.project ? projectDir(o, o.project) : null; const list = todo.items(ctx, dir); const n = todo.open(list).length; if (n && dir) console.log(`\nRemaining setup and review steps (${n}); askai todo ${dir} shows them again:\n${todo.render(list)}`); else if (n) console.log(`Next: askai todo lists ${n} remaining setup and review steps.`); } catch (_) { /* best effort */ } }

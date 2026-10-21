@@ -36,7 +36,8 @@ set -e
 
 # askai puts its shim in ~/.claude/askai/bin. On Windows it edits the user PATH itself; here we offer the shell-profile line once.
 BIN="${CLAUDE_CONFIG_DIR:-$HOME/.claude}/askai/bin"
-if [ "$CODE" -eq 0 ] && [ "${ARGS[0]}" = "install" ] && [ "$DRY" -eq 0 ] && ! has --no-path && ! has --claude-home && [ -x "$BIN/askai" ]; then
+# A later component can fail (Serena's download, for example) after the shim exists. PATH is still added.
+if [ "${ARGS[0]}" = "install" ] && [ "$DRY" -eq 0 ] && ! has --no-path && ! has --claude-home && [ -x "$BIN/askai" ]; then
   case ":$PATH:" in *":$BIN:"*) ;; *)
     RC="$HOME/.bashrc"; [ -n "${ZSH_VERSION:-}" ] || [ "$(basename "${SHELL:-}")" = "zsh" ] && RC="$HOME/.zshrc"
     if ! grep -qF "$BIN" "$RC" 2>/dev/null && ask "Add $BIN to PATH in $RC so the \`askai\` command works?"; then

@@ -28,7 +28,7 @@ The `coding` profile is the recommended starting point. `max` adds RTK, Context 
 
 ### Linux: Git clone and Cursor setup
 
-Install Git and [Node.js 24 LTS](https://nodejs.org/en/download), then install [Cursor for Linux](https://cursor.com/download) and sign in. Cursor offers `.deb`, RPM and AppImage builds; choose the one for your distribution. Clone your own project first. Run these commands in a Linux terminal, replacing the example folder with the project's existing local path:
+Install Git and Node.js 18 or newer ([Node.js 24 LTS](https://nodejs.org/en/download) is fine; Context Mode needs 22.5+), then install [Cursor for Linux](https://cursor.com/download) and sign in. Cursor offers `.deb`, RPM and AppImage builds; choose the one for your distribution. Clone your own project first. Run these commands in a Linux terminal, replacing the example folder with the project's existing local path:
 
 ```bash
 git --version
@@ -43,7 +43,7 @@ bash "$askai_source/install.sh" --target cursor --profile coding --project "$pro
 "$HOME/.claude/askai/bin/askai" setup --project "$project_path"
 ```
 
-The explicit shim path works even before your shell reloads PATH. Open a new terminal before typing `askai` by itself; if it is still missing, add `$HOME/.claude/askai/bin` to your shell PATH. Run `askai projects` to see the registered project. Restart Cursor, open that folder, and invoke `/askai-cli` in Cursor chat to have the host AI review the generated project pack. `askai cli` opens the terminal interface; commands typed there do not use model tokens unless they launch an AI agent.
+`~/.claude/askai` is AskAI's own program folder on every operating system, including a Cursor-only install. It is not a Claude Code setup. The explicit shim path works even before your shell reloads PATH. Open a new terminal before typing `askai` by itself; the installer adds `$HOME/.claude/askai/bin` to `~/.bashrc` and `~/.profile` even when a later step such as Serena fails. Run `askai projects` to see the registered project. Reload Cursor and open that project folder itself, not its parent. Type `/` and choose `askai-cli`. The file Cursor reads is `<project>/.cursor/commands/askai-cli.md`. On SSH or a devcontainer, Cursor does not load commands from the remote `~/.cursor/commands`. `askai cli` opens the terminal interface; commands typed there do not use model tokens unless they launch an AI agent. `askai setup` does not fail Claude Code checks when Claude Code was not selected.
 
 For Claude Code, Codex or Antigravity too, install and sign in to those hosts first, then use `--target all` in both installer commands instead of `--target cursor`. The installer accepts `--target claude`, `codex`, `agy`, `cursor`, or a comma-separated list. Run `askai setup --project "$project_path"` again after adding hosts.
 
