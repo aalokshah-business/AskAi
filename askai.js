@@ -1074,30 +1074,10 @@ function cmdSetup(o) {
   const ctx = buildCtx(o, true);
   ctx.refreshPath();
   const dir = projectDir(o, o._[1]);
-  const fail = [];
-  console.log(`AskAI setup — ${dir}\n`);
-  console.log('## Terminal');
-  ensureSessionTerminal(o, true, ctx.sandbox);
-  console.log('\n## Status');
-  console.log(status.renderStatus(ctx).lines.join('\n'));
-  console.log('\n## Check');
-  if (check.run(ctx, dir, {}) !== 0) fail.push('check');
-  console.log('\n## Infra');
-  console.log(infra.render(infra.collect(ctx, dir)));
-  console.log('\n## Plugins');
-  const ready = require('./lib/plugins-ready');
-  console.log(ready.render(ready.ready(ctx, dir)));
-  console.log('\n## To do');
-  console.log(todo.render(todo.items(ctx, dir)));
-  const validator = path.join(SRC, 'scripts', 'validate-install.js');
-  if (fs.existsSync(validator)) {
-    console.log('\n## Files');
-    const r = require('child_process').spawnSync(process.execPath, [validator, dir, '--files'], { encoding: 'utf8', timeout: 180000 });
-    console.log((r.stdout || r.stderr || '').trimEnd());
-    if (r.status) fail.push('files');
-  }
-  console.log(fail.length ? `\nSetup has gaps: ${fail.join(', ')}.` : '\nSetup checks finished. Sign-in, restart, and model checks stay in the to-do list.');
-  return fail.length ? 1 : 0;
+  ensureSessionTerminal(o, false, ctx.sandbox);
+  const result = require('./lib/setup').report(ctx, dir);
+  console.log(result.text);
+  return result.code;
 }
 function cmdCheck(o) {
   const ctx = buildCtx(o, true);

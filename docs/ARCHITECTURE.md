@@ -132,7 +132,7 @@ Initialization also registers the canonical folder under a short name in `~/.ask
 
 Init scans eligible first-party source files locally (up to 1 MiB per file), records static declarations, routes and cross-folder imports, and fetches page titles from up to four fixed official framework documentation sites. It uses no model tokens and sends no repository contents. `--offline` skips the web lookup. Static evidence cannot establish runtime behavior, the current work order or handoff state; review those separately. Generated source detail is stored behind the short router and refreshed only when unedited.
 
-The installed `askai-cli` entry point in each host runs `askai cli --prepare`. Prepare chooses the project from a named path, otherwise the chat's repository, otherwise the only registered project, and it asks only when several projects remain. It runs `askai init` when the pack is missing or source changed. The host agent then verifies the pack against code and official docs, asks for facts the repository cannot establish, and calls `askai review done`. That marker is gitignored in `.ai-work/` and compares source hashes on later calls. AI review uses model tokens; `askai init` in a terminal does not. `/askai-plugins` runs `askai plugins ready`: connected servers wait until the task matches, and the one-time step still left (a missing Graphify graph, an unregistered RTK hook) is done then. A new machine is checked with `askai setup <repo>`, which runs status, the guideline audit, infra, plugins, the to-do list, and the file validator once.
+The installed `askai-cli` entry point in each host runs `askai cli --prepare`. Prepare chooses the project from a named path, otherwise the chat's repository, otherwise the only registered project, and it asks only when several projects remain. It runs `askai init` when the pack is missing or source changed. The host agent then verifies the pack against code and official docs, asks for facts the repository cannot establish, and calls `askai review done`. That marker is gitignored in `.ai-work/` and compares source hashes on later calls. AI review uses model tokens; `askai init` in a terminal does not. `/askai-plugins` runs `askai plugins ready`: connected servers wait until the task matches, and the one-time step still left (a missing Graphify graph, an unregistered RTK hook) is done then. A new machine is checked with `askai setup <repo>`, which prints the hosts it found, the check counts, and whether the file validator passed. Status, infra, plugins, and the to-do list stay on their own commands.
 
 ## 5b. Model and effort per tier
 
@@ -332,7 +332,7 @@ Where each command is implemented. Written from the `case` list in `askai.js` be
 | `askai graph` | `askai.js cmdGraph` |
 | `askai hook` | `lib/hook.js` |
 | `askai check` | `askai.js cmdCheck; lib/check.js; lib/findings.js` |
-| `askai setup` | `askai.js cmdSetup` |
+| `askai setup` | `askai.js cmdSetup; lib/setup.js` |
 | `askai ask` | `askai.js cmdAsk; lib/kb.js` |
 | `askai usage` | `askai.js cmdUsage; lib/usage.js` |
 | `askai start` | `lib/session.js` |
@@ -466,20 +466,20 @@ Exit: 0 healthy, 1 when a problem is found
 #### `askai setup`
 
 ```text
-askai setup: One check after install: status, the guideline audit, infra, which plugins are waiting, the to-do list, and the file validator.
+askai setup: Short check after install: which hosts are present, check counts, and whether the file validator passed.
 
 Usage: askai setup [dir]
 
-Replaces running askai check, askai status, askai infra, askai plugins ready, askai todo, and node scripts/validate-install.js one after another.
-The file validator runs with --files so infra, plugins, to-do, and check are not repeated.
-Sign-in, restart, and model checks stay in the to-do list. They cannot be completed from this command.
+Does not reprint status, infra, plugins, or the to-do list. Those stay on askai status, askai infra, askai plugins ready, and askai todo.
+A finding that needs a fix now is listed, up to three. The file validator prints only its failures.
+Sign-in, restart, and model checks stay in the to-do list.
 
 Examples:
   askai setup
   askai setup ~/code/shop
   askai setup --project shop
 
-Exit: 1 when the guideline audit or the file validator fails, else 0
+Exit: 1 when a finding needs a fix now or the file validator fails, else 0
 ```
 
 #### `askai check`
@@ -492,7 +492,7 @@ Usage: askai check [dir] [--fix] [--json]
 Machine: billing variables, default and subagent models, effort, idle drains, CLAUDE.md size, MCP counts, RTK and Context Mode, Codex keys and AGENTS.md size, Antigravity paid credits and GEMINI.md size, Cursor rules, peak hours.
 Repo: AGENTS.md and CLAUDE.md (present, size, import), .cursorignore, .ai-work/ gitignored, age of the last handoff.
 Each gap is printed with the command that fixes it.
-askai setup runs this together with status, infra, plugins, to-do, and the file validator.
+askai setup prints the counts. This command prints each row.
 
 Options:
   --fix                                    scaffold the repo and create .ai-work (never overwrites)

@@ -94,7 +94,7 @@ const COMMAND_SOURCE = {
   graph: 'askai.js cmdGraph',
   hook: 'lib/hook.js',
   check: 'askai.js cmdCheck; lib/check.js; lib/findings.js',
-  setup: 'askai.js cmdSetup',
+  setup: 'askai.js cmdSetup; lib/setup.js',
   ask: 'askai.js cmdAsk; lib/kb.js',
   usage: 'askai.js cmdUsage; lib/usage.js',
   start: 'lib/session.js',
@@ -299,7 +299,7 @@ Initialization also registers the canonical folder under a short name in ${code(
 
 Init scans eligible first-party source files locally (up to 1 MiB per file), records static declarations, routes and cross-folder imports, and fetches page titles from up to four fixed official framework documentation sites. It uses no model tokens and sends no repository contents. ${code('--offline')} skips the web lookup. Static evidence cannot establish runtime behavior, the current work order or handoff state; review those separately. Generated source detail is stored behind the short router and refreshed only when unedited.
 
-The installed ${code('askai-cli')} entry point in each host runs ${code('askai cli --prepare')}. Prepare chooses the project from a named path, otherwise the chat's repository, otherwise the only registered project, and it asks only when several projects remain. It runs ${code('askai init')} when the pack is missing or source changed. The host agent then verifies the pack against code and official docs, asks for facts the repository cannot establish, and calls ${code('askai review done')}. That marker is gitignored in ${code('.ai-work/')} and compares source hashes on later calls. AI review uses model tokens; ${code('askai init')} in a terminal does not. ${code('/askai-plugins')} runs ${code('askai plugins ready')}: connected servers wait until the task matches, and the one-time step still left (a missing Graphify graph, an unregistered RTK hook) is done then. A new machine is checked with ${code('askai setup <repo>')}, which runs status, the guideline audit, infra, plugins, the to-do list, and the file validator once.
+The installed ${code('askai-cli')} entry point in each host runs ${code('askai cli --prepare')}. Prepare chooses the project from a named path, otherwise the chat's repository, otherwise the only registered project, and it asks only when several projects remain. It runs ${code('askai init')} when the pack is missing or source changed. The host agent then verifies the pack against code and official docs, asks for facts the repository cannot establish, and calls ${code('askai review done')}. That marker is gitignored in ${code('.ai-work/')} and compares source hashes on later calls. AI review uses model tokens; ${code('askai init')} in a terminal does not. ${code('/askai-plugins')} runs ${code('askai plugins ready')}: connected servers wait until the task matches, and the one-time step still left (a missing Graphify graph, an unregistered RTK hook) is done then. A new machine is checked with ${code('askai setup <repo>')}, which prints the hosts it found, the check counts, and whether the file validator passed. Status, infra, plugins, and the to-do list stay on their own commands.
 
 ## 5b. Model and effort per tier
 

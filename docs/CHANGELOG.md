@@ -7,6 +7,7 @@ AskAI follows semantic versioning from 1.0.0 (see [RELEASING.md](RELEASING.md)).
 - `askai check` collects each finding once (`id`, area, host, severity, fix) and prints that list. The same context and folder are not scanned again in one run.
 - `askai doctor` prints the doctor view of that same findings list. It reads the health rows once until a watched file or billing variable changes.
 - `askai audit` prints the cost findings from that same list. The rest of the seven-point audit stays.
+- `askai setup` prints which hosts are present, the check counts, and the file-validator result. Status, infra, plugins, and the to-do list stay on their own commands.
 - `askai update` updates AskAI itself. `askai tools update` upgrades installed tools. `askai upgrade` still works and says so at most once a day.
 - `askai project` with no arguments shows the current project. `askai project rules` copies Cursor rules. Init prints created and changed files only. A review stays current when the only change is a small number of deletions.
 - Check skips a host that is not installed. Status hides retired handoff, token-kit and prompt-hook rows and shows how much of the requested profile is actually in effect. Sign-in and model confirmations are habits, not open to-dos.
