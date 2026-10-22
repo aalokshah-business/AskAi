@@ -61,6 +61,7 @@ Setup
 Every day
   cli [--prepare]      from a host chat, --prepare finds the project and runs init; then the terminal (--launch opens it)
   check [dir]       audit this machine (and a repo) against the token guidelines; each gap with the command that fixes it (--fix: repo)
+  test              run the safe commands, print a status, write one capture file (--out FILE)
   ask <words>       offline answers on etiquette and the research: askai ask compact | askai ask coming back after a break
   start | break | resume   session shortcuts: ledger entry; before-break checklist; time away, advice and the resume prompt (--copy)
   usage [days]      what Claude Code and Codex spent, from their local data (Antigravity, Cursor: their own views)
@@ -1099,6 +1100,13 @@ function cmdSetup(o) {
   console.log(fail.length ? `\nSetup has gaps: ${fail.join(', ')}.` : '\nSetup checks finished. Sign-in, restart, and model checks stay in the to-do list.');
   return fail.length ? 1 : 0;
 }
+function cmdTest(o) {
+  const selftest = require('./lib/selftest');
+  const cwd = projectDir(o);
+  const result = selftest.run({ cwd, out: o.out, version: VERSION });
+  console.log(result.summary);
+  return result.failedToRun ? 1 : 0;
+}
 function cmdCheck(o) {
   const ctx = buildCtx(o, true);
   const dir = projectDir(o, o._[1], false);
@@ -1484,6 +1492,7 @@ async function main() {
       let input = ''; try { input = fs.readFileSync(0, 'utf8'); } catch (_) { /* no stdin */ } const out = hookLib.run(buildCtx(o, true), o._[1], input); if (out) process.stdout.write(out + '\n'); return 0;
     }
     case 'check': return cmdCheck(o);
+    case 'test': return cmdTest(o);
     case 'setup': return cmdSetup(o);
     case 'ask': return cmdAsk(o);
     case 'usage': return cmdUsage(o);

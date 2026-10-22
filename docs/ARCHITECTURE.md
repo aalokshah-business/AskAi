@@ -332,6 +332,7 @@ Where each command is implemented. Written from the `case` list in `askai.js` be
 | `askai graph` | `askai.js cmdGraph` |
 | `askai hook` | `lib/hook.js` |
 | `askai check` | `askai.js cmdCheck; lib/check.js; lib/findings.js` |
+| `askai test` | `askai.js cmdTest; lib/selftest.js` |
 | `askai setup` | `askai.js cmdSetup` |
 | `askai ask` | `askai.js cmdAsk; lib/kb.js` |
 | `askai usage` | `askai.js cmdUsage; lib/usage.js` |
@@ -715,6 +716,27 @@ Examples:
   askai tips peak
 
 Exit: 0
+```
+
+#### `askai test`
+
+```text
+askai test: Run the safe commands one by one, print a short status, and write one capture file.
+
+Usage: askai test [--out FILE]
+
+For a person using AskAI: the status says whether each command finished, then lists action items already in that output.
+For someone improving AskAI: the capture file has the full output of every command that ran.
+Skips install, uninstall, update, setup, and anything that launches an agent or writes project files.
+
+Options:
+  --out FILE                               capture path (default .ai-work/askai-test.txt in the current folder)
+
+Examples:
+  askai test
+  askai test --out askai-test.txt
+
+Exit: 0 when every command finished, 1 when one did not run
 ```
 
 #### `askai statusline`

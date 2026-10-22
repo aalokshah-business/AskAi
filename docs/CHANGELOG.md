@@ -4,6 +4,7 @@ AskAI follows semantic versioning from 1.0.0 (see [RELEASING.md](RELEASING.md)).
 
 ## Unreleased
 
+- `askai test` runs the safe commands, prints a short status and action items, and writes the full output to one capture file. Install, update, and commands that launch an agent are skipped.
 - `askai check` collects each finding once (`id`, area, host, severity, fix) and prints that list. The same context and folder are not scanned again in one run.
 - `askai doctor` prints the doctor view of that same findings list. It reads the health rows once until a watched file or billing variable changes.
 - `askai update` updates AskAI itself. `askai tools update` upgrades installed tools. `askai upgrade` still works and says so at most once a day.
