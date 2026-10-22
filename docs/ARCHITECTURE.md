@@ -588,6 +588,8 @@ askai report: Claude Code: status, health, cache and context per session, ccusag
 
 Usage: askai report [hours] [--json]
 
+When the transcript window is empty, the spend section is the same two lines as askai usage. No zero ledger.
+
 Examples:
   askai report 24
 

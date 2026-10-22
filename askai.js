@@ -798,7 +798,12 @@ function cmdReport(o) {
     else console.log(cu.value.text + (cu.value.truncated ? `\n... first ${CCUSAGE_LINES} lines; run \`ccusage\` for the rest` : ''));
   }
   console.log(head(`SPEND FROM TRANSCRIPTS, LAST ${hours}h  (where tokens actually went)`));
-  console.log(spend.ok ? spend.text.trimEnd() : `unavailable: ${spend.error}`);
+  if (!spend.ok) console.log(`unavailable: ${spend.error}`);
+  else console.log(usage.spendWhenEmpty(spend.text, {
+    hours,
+    claudeInstalled: !!(ctx.which && ctx.which('claude')) || fs.existsSync(ctx.paths.settings),
+    codexInstalled: !!(ctx.which && ctx.which('codex')) || !!(ctx.codexPaths && fs.existsSync(ctx.codexPaths.home)),
+  }));
   if (hs.ok && hs.value.cursor) {
     console.log('\nNote: Cursor is wired, but askai measures Claude Code only. The cache, ccusage and spend sections do not include Cursor usage; use Cursor\'s own usage view for that.');
   }
