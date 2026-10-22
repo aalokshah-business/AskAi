@@ -4,6 +4,7 @@ const assert = require('node:assert');
 const { tmpHome, rm, write, makeCtx, fs, path } = require('./helpers');
 const check = require('../lib/check');
 const findings = require('../lib/findings');
+const status = require('../lib/status');
 
 const withHome = fn => { const h = tmpHome(); try { return fn(h); } finally { rm(h); } };
 const KEYS = ['ANTHROPIC_API_KEY', 'ANTHROPIC_BASE_URL', 'OPENAI_API_KEY'];
@@ -74,4 +75,29 @@ test('a fresh folder is scanned again after forget, and warns alone exit 0', () 
   const parsed = JSON.parse(lines.join('\n'));
   assert.ok(parsed.every(f => f.id && f.severity && typeof f.autoFix === 'boolean'));
   assert.ok(!parsed.some(f => f.severity === 'now'));
+})));
+
+test('doctor renders the memoized findings view and rereads when settings change', () => withoutBilling(() => withHome(home => {
+  const ctx = makeCtx(home);
+  const orig = status.healthRows;
+  let calls = 0;
+  status.healthRows = (...args) => { calls += 1; return orig(...args); };
+  try {
+    const first = findings.view(ctx, 'doctor');
+    const rendered = status.doctor(ctx);
+    const again = findings.view(ctx, 'doctor');
+    assert.strictEqual(first, again);
+    assert.strictEqual(calls, 1);
+    assert.deepStrictEqual(rendered.map(r => r.id), first.map(f => f.id));
+    assert.deepStrictEqual(rendered.map(r => r.msg), first.map(f => f.message));
+    assert.ok(rendered.some(r => r.id === 'settings' && r.level === 'ok'));
+    write(ctx.paths.settings, '{ broken');
+    const after = status.doctor(ctx);
+    assert.strictEqual(calls, 2);
+    assert.ok(after.some(r => r.id === 'settings' && r.level === 'fail'));
+    assert.ok(!after.some(r => r.id === 'rtk'));
+  } finally {
+    status.healthRows = orig;
+    findings.forget(ctx);
+  }
 })));

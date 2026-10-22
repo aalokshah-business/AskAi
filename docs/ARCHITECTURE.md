@@ -299,7 +299,7 @@ Where each command is implemented. Written from the `case` list in `askai.js` be
 | `askai update` | `askai.js cmdUpgrade` |
 | `askai tools` | `askai.js cmdUpdate; lib/components.js` |
 | `askai status` | `askai.js cmdStatus; lib/status.js` |
-| `askai doctor` | `askai.js cmdDoctor; lib/status.js` |
+| `askai doctor` | `askai.js cmdDoctor; lib/status.js; lib/findings.js` |
 | `askai report` | `askai.js cmdReport; lib/usage.js` |
 | `askai profiles` | `askai.js cmdProfiles; lib/profiles.js` |
 | `askai suggest` | `askai.js cmdSuggest; lib/suggest.js` |
