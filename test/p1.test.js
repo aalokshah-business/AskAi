@@ -5,6 +5,7 @@ const { tmpHome, rm, write, makeCtx, fs, path } = require('./helpers');
 const check = require('../lib/check');
 const findings = require('../lib/findings');
 const status = require('../lib/status');
+const audit = require('../lib/audit');
 
 const withHome = fn => { const h = tmpHome(); try { return fn(h); } finally { rm(h); } };
 const KEYS = ['ANTHROPIC_API_KEY', 'ANTHROPIC_BASE_URL', 'OPENAI_API_KEY'];
@@ -101,3 +102,35 @@ test('doctor renders the memoized findings view and rereads when settings change
     findings.forget(ctx);
   }
 })));
+
+test('audit cost rows are the cost findings, collected once', () => withHome(home => {
+  const saved = process.env.ANTHROPIC_API_KEY;
+  process.env.ANTHROPIC_API_KEY = 'test-key';
+  try {
+    const ctx = makeCtx(home);
+    write(ctx.paths.settings, JSON.stringify({ model: 'claude-haiku-5-5', effortLevel: 'low', promptSuggestionEnabled: false, awaySummaryEnabled: false, env: { CLAUDE_CODE_SUBAGENT_MODEL: 'haiku' } }));
+    const repo = path.join(home, 'repo');
+    fs.mkdirSync(repo);
+    const machine = check.machine;
+    let calls = 0;
+    check.machine = (...args) => { calls += 1; return machine(...args); };
+    try {
+      const cost = findings.view(ctx, 'cost', repo);
+      assert.strictEqual(findings.view(ctx, 'cost', repo), cost);
+      const bill = cost.find(f => f.id === 'billing.anthropic-key');
+      assert.ok(bill);
+      assert.strictEqual(bill.area, 'cost');
+      assert.ok(cost.every(f => f.area === 'cost'));
+      const lines = [];
+      audit.run(ctx, repo, {}, m => lines.push(m));
+      assert.strictEqual(calls, 1);
+      assert.ok(lines.some(l => l.includes(bill.message) && /HIGH/.test(l)));
+    } finally {
+      check.machine = machine;
+      findings.forget(ctx);
+    }
+  } finally {
+    if (saved === undefined) delete process.env.ANTHROPIC_API_KEY;
+    else process.env.ANTHROPIC_API_KEY = saved;
+  }
+}));

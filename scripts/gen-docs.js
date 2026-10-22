@@ -79,7 +79,7 @@ const COMMAND_SOURCE = {
   go: 'lib/launch.js',
   prompt: 'askai.js cmdPrompt; lib/prompt.js',
   mcp: 'askai.js cmdMcp; lib/mcp.js',
-  audit: 'lib/audit.js',
+  audit: 'lib/audit.js; lib/findings.js',
   infra: 'lib/infra.js',
   guide: 'lib/guide.js',
   docs: 'askai.js cmdDocs',

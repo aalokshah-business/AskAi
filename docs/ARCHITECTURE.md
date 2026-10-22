@@ -317,7 +317,7 @@ Where each command is implemented. Written from the `case` list in `askai.js` be
 | `askai go` | `lib/launch.js` |
 | `askai prompt` | `askai.js cmdPrompt; lib/prompt.js` |
 | `askai mcp` | `askai.js cmdMcp; lib/mcp.js` |
-| `askai audit` | `lib/audit.js` |
+| `askai audit` | `lib/audit.js; lib/findings.js` |
 | `askai infra` | `lib/infra.js` |
 | `askai guide` | `lib/guide.js` |
 | `askai docs` | `askai.js cmdDocs` |
