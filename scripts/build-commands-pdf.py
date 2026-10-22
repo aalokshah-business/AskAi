@@ -144,7 +144,7 @@ class Doc:
         self.new_page()
         self.page.insert_text((self.margin, self.y + 8), "AskAI command list", fontname="uib", fontsize=22, color=NAVY)
         self.y += 36
-        intro = "Same five sections as the poster on page 1. Each entry is what you type, then what it is for."
+        intro = "Same sections as the poster on page 1. Start with /askai-cli, then /askai-plugins."
         self.page.insert_text((self.margin, self.y), intro, fontname="ui", fontsize=11, color=SLATE)
         self.y += 18
         legend = "[ ] optional     < > required     a|b pick one     Full detail: askai help <command>"
@@ -156,7 +156,8 @@ class Doc:
         bar = 22
         self.need(bar + first_h + 8)
         rect = pymupdf.Rect(self.margin, self.y, self.page_w - self.margin, self.y + bar)
-        self.page.draw_rect(rect, color=None, fill=TEAL if self.n % 2 else NAVY)
+        fill = (176 / 255, 96 / 255, 16 / 255) if title == "Start here" else (TEAL if self.n % 2 else NAVY)
+        self.page.draw_rect(rect, color=None, fill=fill)
         self.page.insert_text((self.margin + 8, self.y + 16), title, fontname="uib", fontsize=12, color=WHITE)
         self.y += bar + 10
 
@@ -169,6 +170,11 @@ class Doc:
         if broke and self.current:
             self.text(self.current + "  ·  continued", "uib", 11, TEAL)
             self.y += 18
+        start = usage.startswith("/askai-cli") or usage.startswith("/askai-plugins")
+        if start:
+            self.page.draw_rect(
+                pymupdf.Rect(self.margin, self.y - 12, self.page_w - self.margin, self.y - 12 + h),
+                color=None, fill=(1, 244 / 255, 224 / 255))
         head, _rest = head_rest(usage)
         first = True
         for line in u_lines:
@@ -206,6 +212,13 @@ class Doc:
 
 
 def main():
+    import importlib.util
+    path = Path(__file__).with_name("build-commands-card.py")
+    spec = importlib.util.spec_from_file_location("askai_cards", path)
+    mod = importlib.util.module_from_spec(spec)
+    spec.loader.exec_module(mod)
+    mod.main()
+    return
     sections = load_sections()
     doc = Doc()
     doc.add_poster_page()

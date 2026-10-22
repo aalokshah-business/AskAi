@@ -19,6 +19,12 @@ HAIR = (218, 226, 234)
 RULE = (196, 208, 218)
 
 SECTIONS = [
+    ("Start here", [
+        ("/askai-cli Codex: $askai-cli",
+         "1. Start here. Looks at this folder, prepares it, and opens the terminal."),
+        ("/askai-plugins Codex: $askai-plugins",
+         "2. Then this. Looks at this folder and finishes the plugin setup still left."),
+    ]),
     ("Set up the machine", [
         ("askai install [--dry-run] [--yes]",
          "Install the token-saving setup. Skip what is already healthy. Flags below are this command."),
@@ -78,14 +84,10 @@ SECTIONS = [
          "Steps only you can do. done marks one after you did it."),
         ("askai plugins [list | ready [dir] | info <id> | install <id> | decisions]",
          "What a tool does, if it is installed, and how to turn it off."),
-        ("/askai-plugins     Codex: $askai-plugins",
-         "One time. askai install writes this command. Runs the plugin steps still left."),
     ]),
     ("Project pack", [
         ("askai cli [--prepare] [--launch] [--path DIR] [--about TEXT]",
          "From a chat: prepare the project, then open the terminal."),
-        ("/askai-cli     Codex: $askai-cli",
-         "The chat form of askai cli. askai install writes this command."),
         ("tmux attach -t askai",
          "Resume the session. tmux is installed by askai install, update, or setup on headless Linux. Or run askai cli here."),
         ("askai init [dir] [--name NAME] [--path DIR] [--about TEXT] [--type T] [--yes] [--refresh] [--offline] [--dry-run] [--build CMD] [--test CMD]",
@@ -292,6 +294,13 @@ def pick():
 
 
 def main():
+    import importlib.util
+    path = __import__("pathlib").Path(__file__).with_name("build-commands-card.py")
+    spec = importlib.util.spec_from_file_location("askai_cards", path)
+    mod = importlib.util.module_from_spec(spec)
+    spec.loader.exec_module(mod)
+    mod.main()
+    return
     spec = pick()
     f = spec["fonts"]
     size = spec["size"]
@@ -306,19 +315,23 @@ def main():
            f"A3 {orient}, print at 100%.      [ ] optional      < > required      a|b pick one      One command in full:  askai help <command>",
            font=f["sub"], fill=(214, 226, 234))
     d.text((spec["margin"], 156),
-           "Left: what you type.    Right: what it is for.",
+           "Start with /askai-cli, then /askai-plugins.    Left: what you type.    Right: what it is for.",
            font=f["sub"], fill=(170, 198, 206))
 
     for ci, col in enumerate(spec["columns"]):
         x = spec["margin"] + ci * (spec["col_w"] + spec["gutter"])
         y = hh
         for si, (title, bar_h, items, _spent) in enumerate(col):
-            color = TEAL if (ci + si) % 2 == 0 else NAVY
+            color = (176, 96, 16) if title == "Start here" else (TEAL if (ci + si) % 2 == 0 else NAVY)
             d.rounded_rectangle((x, y, x + spec["col_w"], y + bar_h), radius=8, fill=color)
             d.text((x + 16, y + 6), title, font=f["sec"], fill=WHITE)
             y += bar_h + 6
             for i, (usage, _desc, ih, u_lines, d_lines) in enumerate(items):
-                if i % 2 == 0:
+                start = usage.startswith("/askai-cli") or usage.startswith("/askai-plugins")
+                if start:
+                    d.rectangle((x, y, x + spec["col_w"], y + ih), fill=(255, 244, 224))
+                    d.rectangle((x, y, x + 8, y + ih), fill=(176, 96, 16))
+                elif i % 2 == 0:
                     d.rectangle((x, y, x + spec["col_w"], y + ih), fill=WHITE)
                 head, rest = head_rest(usage)
                 uy = y + 7
