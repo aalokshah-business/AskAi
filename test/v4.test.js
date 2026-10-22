@@ -35,7 +35,8 @@ test('check: flags billing traps, Opus default, Antigravity credits and repo gap
   assert.ok(check.repo(repo).some(r => /no AGENTS.md/.test(r.msg)));
   assert.strictEqual(check.run(ctx, repo, { fix: true }, quiet), 1, 'a failing item gives exit 1');
   assert.ok(fs.existsSync(path.join(repo, 'AGENTS.md')) && fs.existsSync(path.join(repo, '.cursorignore')), '--fix scaffolds the repo');
-  assert.ok(!check.repo(repo).some(r => r.level === 'warn'), 'no repo warnings after --fix');
+  const left = check.repo(repo).filter(r => r.level === 'warn').map(r => r.msg).sort();
+  assert.deepStrictEqual(left, ['Cursor commands /askai-cli and /askai-plugins are missing in this project', 'HANDOFF.md is the empty template']);
 }));
 
 test('break and resume: checklist, ledger entry, time away and advice; the prompt is always printed', () => withHome(home => {

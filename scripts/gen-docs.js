@@ -54,6 +54,65 @@ function claudeSettings() {
   rows.push([code('permissions.deny'), (lean.leanDeny || []).join(', '), 'lean', 'the most expensive useless reads, and secrets']);
   return table(['Key', 'Value', 'Component', 'Why'], rows);
 }
+// One row per switch case in askai.js. gen-docs refuses to write if a command is missing here.
+const COMMAND_SOURCE = {
+  cli: 'askai.js cmdCli; lib/cli-prepare.js',
+  install: 'askai.js cmdInstall; lib/components.js; lib/profiles.js; lib/agents.js',
+  update: 'askai.js cmdUpgrade',
+  tools: 'askai.js cmdUpdate; lib/components.js',
+  status: 'askai.js cmdStatus; lib/status.js',
+  doctor: 'askai.js cmdDoctor; lib/status.js',
+  report: 'askai.js cmdReport; lib/usage.js',
+  profiles: 'askai.js cmdProfiles; lib/profiles.js',
+  suggest: 'askai.js cmdSuggest; lib/suggest.js',
+  project: 'askai.js cmdProject; lib/project.js; lib/project-registry.js',
+  set: 'askai.js cmdSet; lib/project-registry.js',
+  shell: 'askai.js cmdShell; lib/project-shell.js',
+  uninstall: 'askai.js cmdUninstall; lib/components.js',
+  restore: 'askai.js cmdRestore',
+  statusline: 'askai.js cmdStatusline; lib/status.js',
+  session: 'askai.js cmdSession; lib/session.js',
+  init: 'askai.js; lib/project.js',
+  review: 'lib/project-review.js',
+  map: 'lib/project.js',
+  models: 'askai.js cmdModels; lib/models.js',
+  go: 'lib/launch.js',
+  prompt: 'askai.js cmdPrompt; lib/prompt.js',
+  mcp: 'askai.js cmdMcp; lib/mcp.js',
+  audit: 'lib/audit.js',
+  infra: 'lib/infra.js',
+  guide: 'lib/guide.js',
+  docs: 'askai.js cmdDocs',
+  plugins: 'lib/plugins.js; lib/plugins-ready.js; lib/usage-guide.js',
+  upgrade: 'askai.js cmdUpgrade',
+  savings: 'lib/savings.js',
+  convert: 'askai.js cmdConvert',
+  clear: 'lib/guide.js',
+  context: 'lib/guide.js',
+  todo: 'lib/todo.js',
+  diff: 'askai.js cmdDiff',
+  graph: 'askai.js cmdGraph',
+  hook: 'lib/hook.js',
+  check: 'askai.js cmdCheck; lib/check.js',
+  setup: 'askai.js cmdSetup',
+  ask: 'askai.js cmdAsk; lib/kb.js',
+  usage: 'askai.js cmdUsage; lib/usage.js',
+  start: 'lib/session.js',
+  break: 'lib/session.js',
+  resume: 'lib/session.js',
+  scaffold: 'askai.js cmdScaffold; lib/scaffold.js',
+  chat: 'lib/chat.js',
+  tips: 'lib/tips.js',
+  version: 'askai.js',
+  '--version': 'askai.js',
+};
+function commandMap() {
+  const src = fs.readFileSync(path.join(ROOT, 'askai.js'), 'utf8');
+  const cases = [...new Set([...src.matchAll(/case '([^']+)'/g)].map(m => m[1]))];
+  const missing = cases.filter(c => !COMMAND_SOURCE[c]);
+  if (missing.length) throw new Error('command map missing: ' + missing.join(', '));
+  return table(['Command', 'Source'], cases.map(c => [code('askai ' + c), code(COMMAND_SOURCE[c])]));
+}
 function commandRef() {
   return help.names().map(n => ['#### ' + code(`askai ${n}`), '', '```text', help.render(n), '```'].join('\n')).join('\n\n');
 }
@@ -304,6 +363,10 @@ ${claudeSettings()}
 | ${code('<repo>/.ai-work/LAST_BREAK')} | the time of the last askai break (askai resume) |
 
 ## 10. Commands
+
+Where each command is implemented. Written from the \`case\` list in \`askai.js\` before behavior changes; \`node scripts/gen-docs.js\` fails if a command has no row.
+
+${commandMap()}
 
 ${commandRef()}
 

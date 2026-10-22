@@ -22,7 +22,7 @@ test('install.ps1: every option it passes is an askai.js flag, every -Action is 
   assert.ok(flags.length >= 25, `found ${flags.length} flags`);
   for (const f of flags) assert.match(js, new RegExp(`['"]?${f.slice(2)}['"]?: ?'`), `askai.js accepts ${f}`);
   const actions = /\[ValidateSet\(([^)]*)\)\]\[string\]\$Action/.exec(ps)[1].match(/'([a-z]+)'/g).map(x => x.slice(1, -1));
-  for (const a of actions) assert.match(js, new RegExp(`case '${a}'`), `askai.js has command ${a}`);
+  for (const a of actions) assert.ok(new RegExp(`case '${a}'`).test(js) || new RegExp(`${a}: \\['`).test(js), `askai.js has command ${a}`);
   const params = [...ps.matchAll(/^\s*(?:\[[^\]]*\])*\$([A-Za-z0-9]+)/gm)].map(m => m[1]).filter(n => !['argv', 'node', 'script'].includes(n));
   const documented = [...ps.matchAll(/^\.PARAMETER (\w+)/gm)].map(m => m[1]);
   const declared = /param\(([\s\S]*?)\n\)/.exec(ps)[1].match(/\$([A-Za-z0-9]+)/g).map(x => x.slice(1));

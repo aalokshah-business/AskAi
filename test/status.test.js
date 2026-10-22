@@ -246,19 +246,17 @@ test('collect: Cursor rows appear when Cursor is in play, with what each one is 
 
 test('renderStatus: profile line, per-tool wiring, and the honesty footer', () => withCtx(ctx => {
   const r = status.renderStatus(ctx);
-  assert.match(r.lines[1], /^profile: coding \(default, none recorded yet\): /);
+  assert.match(r.lines[1], /^profile: machine coding \(default, none recorded yet\)/);
   assert.strictEqual(r.profile, 'coding');
   assert.match(r.lines.join('\n'), /Only tool-measured numbers are shown/);
   assert.ok(!/Cursor: the status line/.test(r.lines.join('\n')), 'no Cursor note when Cursor is not in play');
 }));
 
-test('doctor: a tool outside the profile is ok when absent, one inside it is a warning', () => {
+test('doctor: a tool outside the profile is omitted, one inside it is a warning', () => {
   withCtx(ctx => {
     ctx.manifest.profile = 'docs';
     const d = status.doctor(ctx);
-    const serena = d.find(r => r.id === 'serena');
-    assert.strictEqual(serena.level, 'ok');
-    assert.match(serena.msg, /\(not part of the docs profile\)/);
+    assert.strictEqual(d.find(r => r.id === 'serena'), undefined, 'a tool outside the profile is left out');
     assert.strictEqual(d.find(r => r.id === 'caveman').level, 'warn', 'in the docs profile and missing');
   });
   withCtx(ctx => {

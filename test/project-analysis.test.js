@@ -31,7 +31,7 @@ test('init fills project docs from README, manifest and entry code, and refresh 
     assert.match(arch, /no &lt;style&gt; blocks/);
     assert.doesNotMatch(arch, /seed-media/);
     assert.match(features, /Photo gallery with uploads for members/);
-    assert.match(features, /\| documented \| README\.md/);
+    assert.match(features, /Photo gallery with uploads for members \| `public\/pages\/gallery\.js` \| documented \|/);
     assert.match(features, /\| gallery \| `public\/pages\/gallery\.js` \| detected \|/);
     const report = infra.collect(ctx, repo);
     assert.equal(report.repo.analysis.features, 2);
@@ -158,6 +158,39 @@ test('a CLI bin, README folder labels, an includes list and Safety rules are wri
     assert.match(read('docs/ai/ARCHITECTURE.md'), /Never store a password/);
     assert.match(read('docs/ai/FEATURES.md'), /One command installs the tools/);
     assert.match(read('docs/ai/WORK_ORDER.md'), /`npm test`, `npm run test:commands` \(no build script\)/);
+  } finally { rm(home); }
+});
+
+test('work-order checks skip watch and e2e scripts, and an XcodeGen project is ios', () => {
+  const home = tmpHome();
+  try {
+    const web = path.join(home, 'web'); fs.mkdirSync(web);
+    write(path.join(web, 'package.json'), JSON.stringify({ name: 'web', scripts: { test: 'vitest run', 'test:i18n': 'node i18n.js', 'test:watch': 'vitest', 'test:e2e:all': 'playwright test', lint: 'oxlint', build: 'vite build' } }));
+    write(path.join(web, 'index.html'), '<!doctype html>\n');
+    project.init(web, { yes: true }, null, () => {});
+    const order = fs.readFileSync(path.join(web, 'docs', 'ai', 'WORK_ORDER.md'), 'utf8');
+    assert.match(order, /`npm test`/);
+    assert.match(order, /`npm run test:i18n`/);
+    assert.match(order, /`npm run lint`/);
+    assert.match(order, /`npm run build`/);
+    assert.doesNotMatch(order, /test:watch|test:e2e/);
+    write(path.join(web, 'docs', 'ai', 'WORK_ORDER.md'), order.replace(/\*\*Checks to run:\*\*.*/, '**Checks to run:** `npm test`, `bash qa/scripts/static-checks.sh`'));
+    project.init(web, { yes: true }, null, () => {});
+    assert.match(fs.readFileSync(path.join(web, 'docs', 'ai', 'WORK_ORDER.md'), 'utf8'), /static-checks\.sh/);
+    const ios = path.join(home, 'ios'); fs.mkdirSync(path.join(ios, 'Sources'), { recursive: true });
+    write(path.join(ios, 'project.yml'), 'name: App\n');
+    write(path.join(ios, 'Sources', 'App.swift'), 'import SwiftUI\n');
+    write(path.join(ios, 'qa', 'scripts', 'static-checks.js'), 'console.log(1)\n');
+    const info = project.detect(ios);
+    assert.equal(info.type, 'ios');
+    assert.equal(info.commands.test, 'node qa/scripts/static-checks.js');
+    assert.equal(info.commands.build, 'xcodegen generate');
+    write(path.join(ios, '.cursorignore'), 'node_modules/\ngraphify-out/graph.json\nResources/\n');
+    project.init(ios, { yes: true }, null, () => {});
+    const ignore = fs.readFileSync(path.join(ios, '.cursorignore'), 'utf8');
+    assert.match(ignore, /^graphify-out\/$/m);
+    assert.doesNotMatch(ignore, /graphify-out\/graph\.json/);
+    assert.match(ignore, /Resources\//);
   } finally { rm(home); }
 });
 

@@ -4,6 +4,17 @@ AskAI follows semantic versioning from 1.0.0 (see [RELEASING.md](RELEASING.md)).
 
 ## Unreleased
 
+- `askai update` updates AskAI itself. `askai tools update` upgrades installed tools. `askai upgrade` still works and says so at most once a day.
+- `askai project` with no arguments shows the current project. `askai project rules` copies Cursor rules. Init prints created and changed files only. A review stays current when the only change is a small number of deletions.
+- Check skips a host that is not installed. Status hides retired handoff, token-kit and prompt-hook rows and shows how much of the requested profile is actually in effect. Sign-in and model confirmations are habits, not open to-dos.
+- The session ledger stores one JSON event per line (branch, commit, tracked, untracked) and the readable note is rendered from those events. A template handoff is one line in check, clear, and resume.
+- `askai ask` with no topic lists topics by group. A topic prints the best match and a Related line.
+- `askai break` names running agent processes with pids, or says none are running. `askai diff` counts untracked files that are not in the diff. Doctor skips "not applicable" rows.
+- Unknown commands suggest a close name and stop. `askai sesion` no longer prints the whole banner. The banner's first sentence is one line again.
+- `askai savings` calls `headroom perf`. A plugin report that fails is one line and the vendor text goes to `.ai-work/askai.log`.
+- MCP and Graphify registration is one mark per host (`Cursor ✔ · Claude Code –`), not a joined sentence.
+- `askai statusline` on a terminal explains that it reads Claude Code's JSON. `askai hook` on a terminal says the hooks are retired. `askai graph` prints the file path when Linux has no display.
+- `askai go` no longer starts Claude Code, Codex, Cursor, or Antigravity when the process has no terminal. A container or a piped command used to wait forever. It prints the command and returns. Run it in the Cursor terminal.
 - Removed command names that only repeated another command: `continue` is `resume`, `etiquette` is `guide all`, `work` is `guide work`, `checkpoint` is `session pause`, `peak` is `tips peak`, and `projects` is `project list`. Typing an old name prints the command that replaced it.
 - `askai cli --prepare` installs the `max` profile for the recorded target and records that profile. `/askai-cli` then inits the project in the same run. Components already healthy are skipped.
 - When `astral.sh` is blocked, uv is installed with `python3 -m pip install --user uv` and the blocked host is not retried. Serena, Headroom, Graphify, and MarkItDown then continue. Context Mode stays off on Node older than 22.5 instead of asking for a Node replacement. `gh` without Homebrew names `sudo apt-get install -y gh`.

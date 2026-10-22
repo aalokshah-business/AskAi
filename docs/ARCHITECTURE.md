@@ -290,6 +290,60 @@ In install order. Evidence labels: measured (a third-party saving), mixed, claim
 
 ## 10. Commands
 
+Where each command is implemented. Written from the `case` list in `askai.js` before behavior changes; `node scripts/gen-docs.js` fails if a command has no row.
+
+| Command | Source |
+| --- | --- |
+| `askai cli` | `askai.js cmdCli; lib/cli-prepare.js` |
+| `askai install` | `askai.js cmdInstall; lib/components.js; lib/profiles.js; lib/agents.js` |
+| `askai update` | `askai.js cmdUpgrade` |
+| `askai tools` | `askai.js cmdUpdate; lib/components.js` |
+| `askai status` | `askai.js cmdStatus; lib/status.js` |
+| `askai doctor` | `askai.js cmdDoctor; lib/status.js` |
+| `askai report` | `askai.js cmdReport; lib/usage.js` |
+| `askai profiles` | `askai.js cmdProfiles; lib/profiles.js` |
+| `askai suggest` | `askai.js cmdSuggest; lib/suggest.js` |
+| `askai project` | `askai.js cmdProject; lib/project.js; lib/project-registry.js` |
+| `askai set` | `askai.js cmdSet; lib/project-registry.js` |
+| `askai shell` | `askai.js cmdShell; lib/project-shell.js` |
+| `askai uninstall` | `askai.js cmdUninstall; lib/components.js` |
+| `askai restore` | `askai.js cmdRestore` |
+| `askai statusline` | `askai.js cmdStatusline; lib/status.js` |
+| `askai session` | `askai.js cmdSession; lib/session.js` |
+| `askai init` | `askai.js; lib/project.js` |
+| `askai review` | `lib/project-review.js` |
+| `askai map` | `lib/project.js` |
+| `askai models` | `askai.js cmdModels; lib/models.js` |
+| `askai go` | `lib/launch.js` |
+| `askai prompt` | `askai.js cmdPrompt; lib/prompt.js` |
+| `askai mcp` | `askai.js cmdMcp; lib/mcp.js` |
+| `askai audit` | `lib/audit.js` |
+| `askai infra` | `lib/infra.js` |
+| `askai guide` | `lib/guide.js` |
+| `askai docs` | `askai.js cmdDocs` |
+| `askai plugins` | `lib/plugins.js; lib/plugins-ready.js; lib/usage-guide.js` |
+| `askai upgrade` | `askai.js cmdUpgrade` |
+| `askai savings` | `lib/savings.js` |
+| `askai convert` | `askai.js cmdConvert` |
+| `askai clear` | `lib/guide.js` |
+| `askai context` | `lib/guide.js` |
+| `askai todo` | `lib/todo.js` |
+| `askai diff` | `askai.js cmdDiff` |
+| `askai graph` | `askai.js cmdGraph` |
+| `askai hook` | `lib/hook.js` |
+| `askai check` | `askai.js cmdCheck; lib/check.js` |
+| `askai setup` | `askai.js cmdSetup` |
+| `askai ask` | `askai.js cmdAsk; lib/kb.js` |
+| `askai usage` | `askai.js cmdUsage; lib/usage.js` |
+| `askai start` | `lib/session.js` |
+| `askai break` | `lib/session.js` |
+| `askai resume` | `lib/session.js` |
+| `askai scaffold` | `askai.js cmdScaffold; lib/scaffold.js` |
+| `askai chat` | `lib/chat.js` |
+| `askai tips` | `lib/tips.js` |
+| `askai version` | `askai.js` |
+| `askai --version` | `askai.js` |
+
 #### `askai cli`
 
 ```text
@@ -354,14 +408,29 @@ Exit: 0 when every component is ok; 1 when one failed
 #### `askai update`
 
 ```text
-askai update: Upgrade the tools AskAI installed and refresh its rule blocks.
+askai update: Update AskAI itself from GitHub and re-apply the recorded profile.
 
-Usage: askai update [--target T]
+Usage: askai update
+
+askai tools update upgrades the installed tools. askai upgrade still does this and prints a one-line hint at most once a day.
+
+Examples:
+  askai update
+
+Exit: 0 or 1
+```
+
+#### `askai tools`
+
+```text
+askai tools: Upgrade the tools AskAI installed and refresh its rule blocks.
+
+Usage: askai tools update [--target T]
 
 Runs each component's update step (CLI upgrades, Serena, rule text) and keeps your own settings.
 
 Examples:
-  askai update
+  askai tools update
 
 Exit: 0 or 1
 ```
@@ -653,7 +722,9 @@ Exit: 0
 ```text
 askai statusline: Claude Code's status line command (reads the session JSON on stdin): model, context, cache; records snapshots for askai report.
 
-Usage: askai statusline
+Usage: askai statusline [--demo]
+
+On a terminal with no JSON, it prints how to try it. Claude Code pipes the session JSON; that path still prints one status line.
 
 Exit: 0
 ```
@@ -785,13 +856,14 @@ Usage: askai go <claude|codex|cursor|agy> [--tier lead|build|chore] ["task"] [--
 
 Claude Code: --model and CLAUDE_CODE_EFFORT_LEVEL; Codex: -m and model_reasoning_effort; Cursor: --model (effort is part of the ID); Antigravity: prints /model and /effort to type first.
 Shows peak hours and active MCP servers first: switch MCP servers before a session, not during it.
+A container, CI job, or piped command has no keyboard. askai go then prints the command and returns, instead of waiting on the agent. Run it in the Cursor terminal.
 
 Examples:
   askai go claude --tier build "fix the cart total rounding in src/cart.ts"
   askai go codex --tier chore "clean up unused imports"
   askai go agy --resume
 
-Exit: the agent's exit code
+Exit: the agent's exit code, or 0 when there is no terminal to hand over
 ```
 
 #### `askai prompt`
@@ -1028,16 +1100,6 @@ Writes .ai-work/architecture.html and opens it. The page loads Mermaid from the 
 Exit: 0, or 1 when there is none yet
 ```
 
-#### `askai hook`
-
-```text
-askai hook: The reminder hooks: read the hook JSON on stdin and answer with a one-line systemMessage shown only to you.
-
-Usage: askai hook prompt|session (run by Claude Code)
-
-Exit: 0 always
-```
-
 #### `askai chat`
 
 ```text
@@ -1236,7 +1298,7 @@ Exit: 0
 - **Cursor models and plans** (`askai ask cursor-models`): Free and Plus: Grok 4.7 and Composer only; Sonnet needs Premium or above (billed at API price).
   Why: Cursor help, Available models (2026).
   AskAI: askai models set cursor.useSonnet true
-- **Seeing what each plugin saves** (`askai ask savings`): askai savings runs each installed plugin's own report (rtk gain, ccusage daily, headroom stats, codebase-memory projects, Graphify graph status); askai plugins info <id> shows the in-agent commands.
+- **Seeing what each plugin saves** (`askai ask savings`): askai savings runs each installed plugin's own report (rtk gain, ccusage daily, headroom perf, codebase-memory projects, Graphify graph status); askai plugins info <id> shows the in-agent commands.
   Why: Tools report their own estimates; RTK's counter showed 96M saved during runs that cost more. Compare with askai usage and askai audit.
   AskAI: askai savings 7; askai usage 7
 - **Shorter replies** (`askai ask output-size`): On by default: the terse rule (Caveman-style), the diff-only rule, Codex verbosity low, and the output line in askai prompt. For one task: askai prompt --output diff.

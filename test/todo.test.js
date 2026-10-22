@@ -13,11 +13,13 @@ test('a confirmed to-do stays hidden until reopened; detected items cannot be di
     fs.mkdirSync(ctx.codexPaths.home, { recursive: true });
     fs.mkdirSync(home, { recursive: true });
     fs.writeFileSync(path.join(home, 'AGENTS.md'), '# Project\n(one or two sentences)\n');
-    assert.ok(todo.open(todo.items(ctx, home)).some(i => i.id === 'codex-signin'));
-    todo.mark(ctx, 'codex-signin', true);
+    assert.ok(todo.items(ctx, home).some(i => i.id === 'codex-signin' && i.habit));
     assert.ok(!todo.open(todo.items(ctx, home)).some(i => i.id === 'codex-signin'));
-    todo.mark(ctx, 'codex-signin', false);
-    assert.ok(todo.open(todo.items(ctx, home)).some(i => i.id === 'codex-signin'));
+    assert.ok(todo.open(todo.items(ctx, home)).some(i => i.id === 'codex-trust'));
+    todo.mark(ctx, 'codex-trust', true);
+    assert.ok(!todo.open(todo.items(ctx, home)).some(i => i.id === 'codex-trust'));
+    todo.mark(ctx, 'codex-trust', false);
+    assert.ok(todo.open(todo.items(ctx, home)).some(i => i.id === 'codex-trust'));
     todo.mark(ctx, 'agents-about', true);
     assert.ok(todo.open(todo.items(ctx, home)).some(i => i.id === 'agents-about'));
   } finally { rm(home); }

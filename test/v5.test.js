@@ -51,13 +51,31 @@ test('go starts the selected agent in the selected project folder', () => withHo
   const repo = path.join(h, 'shop'); fs.mkdirSync(repo);
   const ctx = ctxFor(h); ctx.which = () => 'agent';
   const oldSpawn = childProcess.spawnSync, oldSession = session.run;
+  const inTty = process.stdin.isTTY, outTty = process.stdout.isTTY;
   let launched;
+  process.stdin.isTTY = true; process.stdout.isTTY = true;
   childProcess.spawnSync = (cmd, args, options) => { launched = { cmd, options }; return { status: 0 }; };
   session.run = () => 0;
   try { assert.strictEqual(launch.run(ctx, 'codex', { repo, copy: false }, quiet), 0); }
-  finally { childProcess.spawnSync = oldSpawn; session.run = oldSession; }
+  finally { process.stdin.isTTY = inTty; process.stdout.isTTY = outTty; childProcess.spawnSync = oldSpawn; session.run = oldSession; }
   assert.strictEqual(launched.cmd, 'codex');
   assert.strictEqual(launched.options.cwd, repo);
+}));
+
+test('go does not start an agent when the process has no terminal', () => withHome(h => {
+  const repo = path.join(h, 'shop'); fs.mkdirSync(repo);
+  const ctx = ctxFor(h); ctx.which = () => 'agent';
+  const oldSpawn = childProcess.spawnSync, oldSession = session.run;
+  const inTty = process.stdin.isTTY, outTty = process.stdout.isTTY;
+  let launched = false; let ledger = false; const lines = [];
+  process.stdin.isTTY = false; process.stdout.isTTY = false;
+  childProcess.spawnSync = () => { launched = true; return { status: 0 }; };
+  session.run = () => { ledger = true; return 0; };
+  try { assert.strictEqual(launch.run(ctx, 'claude', { repo, ask: 'fix the cart', copy: false }, line => lines.push(line)), 0); }
+  finally { process.stdin.isTTY = inTty; process.stdout.isTTY = outTty; childProcess.spawnSync = oldSpawn; session.run = oldSession; }
+  assert.strictEqual(launched, false);
+  assert.strictEqual(ledger, false);
+  assert.match(lines.join('\n'), /No terminal here/);
 }));
 
 test('init: router under 333 lines, adapters, docs/ai, subagents in each tool format, skills; idempotent; keeps user text', () => withHome(h => {

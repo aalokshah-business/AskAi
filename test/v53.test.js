@@ -37,7 +37,7 @@ test('every plugin AskAI can install has a usage guide: commands, check, savings
   }
   for (const id of ['caveman', 'lsp', 'ponytail', 'karpathy']) assert.ok(ug.get(id), id);
   const hr = cli(['plugins', 'info', 'headroom']).out;
-  for (const w of ['headroom stats', 'headroom_compress', 'headroom_stats', 'Check it works', 'Switch it off', 'Careful']) assert.ok(hr.includes(w), w);
+  for (const w of ['headroom perf', 'headroom_compress', 'headroom_stats', 'Check it works', 'Switch it off', 'Careful']) assert.ok(hr.includes(w), w);
   assert.match(cli(['plugins', 'info', 'litellm']).out, /Not installed by AskAI/);
   assert.strictEqual(cli(['plugins', 'info']).code, 1);
 });
