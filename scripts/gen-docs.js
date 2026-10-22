@@ -169,7 +169,7 @@ AskAI does not sit inside a running agent and rewrite each message: none of the 
 | --- | --- | --- |
 | Day 0, each machine | Preview, install, open new sessions, confirm subscription billing | ${code('askai install --dry-run')}, ${code('askai install')}, ${code('askai check')} |
 | Each repository | Shared instruction file, ignore list, local handoff folder | ${code('askai scaffold .')}, ${code('askai check . --fix')} |
-| Start of a task | One task per chat; one complete prompt; plan for multi-file work | ${code('askai start')}, ${code('askai peak')} |
+| Start of a task | One task per chat; one complete prompt; plan for multi-file work | ${code('askai start')}, ${code('askai tips peak')} |
 | While working | Search then read ranges, smallest change, Esc early, few cheap subagents | Rules installed in every host; ${code('askai ask <topic>')} |
 | Before a break | Verified step, commit, handoff, stop background work | Ask the agent to write .ai-work/HANDOFF.md; ${code('askai break')} |
 | Coming back | Continue within the cache lifetime; otherwise fresh chat from the handoff | ${code('askai resume --copy')} |

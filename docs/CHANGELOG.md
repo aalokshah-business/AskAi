@@ -4,9 +4,12 @@ AskAI follows semantic versioning from 1.0.0 (see [RELEASING.md](RELEASING.md)).
 
 ## Unreleased
 
+- Removed command names that only repeated another command: `continue` is `resume`, `etiquette` is `guide all`, `work` is `guide work`, `checkpoint` is `session pause`, `peak` is `tips peak`, and `projects` is `project list`. Typing an old name prints the command that replaced it.
 - `askai cli --prepare` installs the `max` profile for the recorded target and records that profile. `/askai-cli` then inits the project in the same run. Components already healthy are skipped.
 - When `astral.sh` is blocked, uv is installed with `python3 -m pip install --user uv` and the blocked host is not retried. Serena, Headroom, Graphify, and MarkItDown then continue. Context Mode stays off on Node older than 22.5 instead of asking for a Node replacement. `gh` without Homebrew names `sudo apt-get install -y gh`.
 - The one-time Graphify build is `graphify update .` (source only, no tokens). `/graphify .` stays available when docs and images should be in the graph. `askai init` gitignores `graphify-out/` and turns off Graphify's always-on Cursor rule.
+- `askai chat` prints a short instruction for every Claude, ChatGPT, and Gemini chat, plus a brief for a separate project such as a book. Claude Code, Cursor, Codex, and Antigravity stay on `askai install`.
+- `docs/CHEAT_SHEET.md` lists each command with the job it does, including chat apps, Graphify, and Serena. `docs/AskAI-commands-A3.png` is that reference as an A3 portrait page. `docs/AskAI-commands.pdf` is the same list, one command at a time.
 - On a devcontainer or SSH session, `askai cli --launch` starts the CLI in `tmux` or `screen` and attaches the current terminal when it can. `askai upgrade`, `askai update`, and `askai setup` install `tmux` on that machine when the user is root or `sudo -n` works. They never wait for a password.
 
 ## 1.2.5 (22 October 2026): Linux and Windows host setup

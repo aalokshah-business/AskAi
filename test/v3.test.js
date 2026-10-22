@@ -260,7 +260,7 @@ test('tips and peak: every topic renders; the peak window follows US Eastern wee
 test('CLI: version, tips, peak and a four-host dry-run install that writes nothing', () => withHome(home => {
   assert.strictEqual(cli(['version']).out.trim(), '1.2.5');
   assert.strictEqual(cli(['tips', 'agy']).code, 0);
-  assert.strictEqual(cli(['peak', '--json']).code, 0);
+  assert.strictEqual(cli(['tips', 'peak', '--json']).code, 0);
   const homes = ['--claude-home', path.join(home, 'claude'), '--cursor-home', path.join(home, 'cursor'), '--codex-home', path.join(home, 'codex'), '--agy-home', path.join(home, 'gemini')];
   const r = cli(['install', '--dry-run', '--yes', '--target', 'all', '--profile', 'minimal', ...homes]);
   assert.ok(r.out.includes('codex-baseline') && r.out.includes('agy-rules') && !/\n\s+handoff\s/.test(r.out), r.out + r.err);

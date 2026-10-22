@@ -56,7 +56,7 @@ macOS, Linux or WSL:
 curl -fsSL https://raw.githubusercontent.com/aalokshah-business/AskAi/main/get.sh | bash -s -- --target all --project ~/code/myapp --yes
 ```
 
-Then open a new terminal and run `askai setup --project NAME`. That one command runs status, the guideline audit, infra, which plugins are waiting, the to-do list, and the file validator. Restart each tool. `/askai-cli` (Codex: `$askai-cli`) reviews the project pack. `/askai-plugins` finishes one-time plugin setup. The project passed during install is registered by folder name. Use `askai projects` to see it. [Project management](docs/PROJECT_MANAGEMENT.md) covers two or more repositories and shell integration. Add `-DryRun` / `--dry-run` to preview installation settings; the one-line bootstrap still downloads the AskAI source first.
+Then open a new terminal and run `askai setup --project NAME`. That one command runs status, the guideline audit, infra, which plugins are waiting, the to-do list, and the file validator. Restart each tool. `/askai-cli` (Codex: `$askai-cli`) reviews the project pack. `/askai-plugins` finishes one-time plugin setup. The project passed during install is registered by folder name. Use `askai project list` to see it. [Project management](docs/PROJECT_MANAGEMENT.md) covers two or more repositories and shell integration. Add `-DryRun` / `--dry-run` to preview installation settings; the one-line bootstrap still downloads the AskAI source first.
 
 **Or ask your agent to do it.** Paste this into Claude Code, Codex, Antigravity or Cursor, opened in the project:
 
@@ -80,7 +80,7 @@ Reply with what was installed, anything that failed, the plugin-ready report, an
 | [docs/INSTALL.md](docs/INSTALL.md) | Step-by-step install for Windows, macOS, Linux and WSL, every option, every file AskAI creates, troubleshooting |
 | [docs/ASKAI_GUIDE.md](docs/ASKAI_GUIDE.md) | The guide: AskAI, working etiquette, and the research behind every choice (also as .pdf and .docx) |
 | [docs/ARCHITECTURE.md](docs/ARCHITECTURE.md) | Architecture, components, settings and the full command reference, generated from the code |
-| [docs/CHEAT_SHEET.md](docs/CHEAT_SHEET.md) | Two pages of commands for all four tools (also as .pdf) |
+| [docs/CHEAT_SHEET.md](docs/CHEAT_SHEET.md) | Command and purpose, for the coding apps and for Claude, ChatGPT, and Gemini chat |
 | [docs/CHANGELOG.md](docs/CHANGELOG.md) | What changed in each version |
 | [docs/PREVIEW_MATRIX.md](docs/PREVIEW_MATRIX.md) | Install previews on every OS for every tool |
 | [docs/research/TOOLS_CATALOG.md](docs/research/TOOLS_CATALOG.md) | Every token-saving tool: claimed versus measured, and what AskAI does with it |
@@ -99,7 +99,7 @@ In the terminal: `askai help all` (every command), `askai plugins info <id>` (ho
 - **Evidence-based defaults**: cheap default models and effort, idle drains off, output caps, short rules (terse replies, diff-only output, build-lean), reminder hooks that cost no tokens, a status line, handoff commands in every tool.
 - **Every optimiser on request** (`--profile max`): Serena, RTK, Context Mode, Headroom (MCP mode), Graphify, Context7, Repomix, the Caveman plugin, LSP plugins, MarkItDown, ccusage, ripgrep, jq, gh; codebase-memory-mcp and claude-mem one flag each.
 - **A project knowledge pack** (`askai init`): scans eligible first-party source files, README and manifests for an on-demand source index, static architecture and feature evidence. Fetches page titles from detected frameworks' official docs into a references file; `--offline` skips web access. No source text is uploaded. Writes a short AGENTS.md router, CLAUDE.md, GEMINI.md, work order, model tiers, agents for all four tools and four project skills. `/askai-cli` (Codex: `$askai-cli`) runs `askai cli --prepare` in that chat: it picks the project folder, runs init, then the host AI verifies the pack and asks only for facts the repository cannot establish. Source, README and build-manifest changes trigger a new review; the review uses model tokens. Refresh unedited generated docs with `askai init --project NAME --refresh --yes`. Each initialized folder gets a name in `~/.askai/projects.json`.
-- **Everything visible in the terminal**: `askai help all`, `askai todo` (what only you can do), `askai infra` (installed, configured, used), `askai plugins ready` (when each connected tool is called), `askai savings`, `askai plugins info <id>`, `askai guide <moment>`, `askai work`, `askai audit`, `askai usage`. A new machine is checked with `askai setup <repo>`.
+- **Everything visible in the terminal**: `askai help all`, `askai todo` (what only you can do), `askai infra` (installed, configured, used), `askai plugins ready` (when each connected tool is called), `askai savings`, `askai plugins info <id>`, `askai guide <moment>`, `askai audit`, `askai usage`. A new machine is checked with `askai setup <repo>`.
 
 What changed in each version: [docs/CHANGELOG.md](docs/CHANGELOG.md).
 
@@ -313,7 +313,7 @@ Files live in `<repo>/.ai-work/` (`HANDOFF.md`, `SESSION_LEDGER.md`, `measuremen
 ```bash
 askai tips            # all of it: habits, then Claude Code, Codex, Antigravity, Cursor and session commands
 askai tips codex      # one host (claude | codex | agy | cursor | session | habits)
-askai peak            # PEAK / off-peak for Claude now, and the peak window in your local time
+askai tips peak       # PEAK / off-peak for Claude now, and the peak window in your local time
 ```
 
 Claude's peak window (announced March 2026) is weekdays 08:00-14:00 US Eastern: a session drains the 5-hour window faster then. In India that is 17:30-23:30 IST while the US is on daylight time and 18:30-00:30 IST after early November. Codex, Antigravity and Cursor publish no time-of-day pricing.
@@ -353,16 +353,14 @@ askai init [dir] [--name NAME] [--path DIR] [--about "..."] [--type T] [--build 
                                                   project knowledge pack, so /clear can be run freely
 askai review status|done [--project NAME]          changed source since AI review; mark done only after host-agent review
 askai project [dir] [--print|--remove] [--force] Cursor: the token rules inside one repo
-askai projects [--json]                         registered project names and paths
-askai project show|rename OLD NEW|path NAME NEW_PATH|remove NAME|switch [NAME]
+askai project list [--json] | show | rename OLD NEW | path NAME NEW_PATH | remove NAME | switch [NAME]
 askai set project NAME|project --clear           active project in askai cli or an integrated terminal
 askai set default NAME|default --clear           optional persistent fallback
 askai shell init powershell|bash|zsh             shell function for terminal-scoped project selection
 --project NAME or -p NAME                        select a registered project for one project-aware command
 askai check [dir] [--fix] [--json]              audit the machine and a repo against the token guidelines
 askai ask <words>                                offline answers on etiquette and the research
-askai start | break | resume | continue [--copy] session shortcuts: ledger, before-break checklist, coming back
-askai checkpoint --summary "..." --next "..."    ledger entry at a task boundary, without taking a break
+askai start | break | resume [--copy]              ledger entry, before-break checklist, coming back
 askai go <claude|codex|cursor|agy> [--tier lead|build|chore] ["task"] [--resume] [--dry-run]
                                                   start a session with the tier's model and effort fixed, a structured prompt
 askai prompt "ask" [--tier T] [--kind bug|feature|design|risky] [--mode ...] [--copy] | --output-safe "cmd" | --resume
@@ -370,10 +368,10 @@ askai prompt "ask" [--tier T] [--kind bug|feature|design|risky] [--mode ...] [--
 askai models [set <tool>.<tier> <model>[:effort] | verify [tool]]  model and effort per tier, per tool
 askai usage [days]                               Claude Code and Codex usage from local data
 askai savings [days] [--repo DIR]                each installed plugin's own savings report (rtk gain, ccusage, ...)
-askai session init|start|pause|resume|status|finish|measure|report [--repo DIR] [...]
-askai tips [claude|codex|agy|cursor|session|habits] | peak [--json]
-askai guide [install|start|work|break|resume|clear|compact|cache|models|subagents|mcp|output|prompts|docs|plugins|peak|all]
-askai work | etiquette                           the working etiquette, one moment or all of it, in the terminal
+askai session init|pause|status|finish|measure|report [--repo DIR] [...]
+askai session pause --summary "..." --next "..." ledger entry at a task boundary, without the break checklist
+askai tips [claude|codex|agy|cursor|session|habits|peak]
+askai guide [moment|all]                         etiquette for one moment, or all of it. guide work also lists open to-dos
 askai context <percent> | --used N --window M    continue, hand off, or clear at this context level
 askai diff [dir]                                 git diff --stat, staged changes, whitespace check before handoff
 askai graph [dir]                                print the Mermaid architecture diagram in the terminal

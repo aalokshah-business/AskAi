@@ -1,70 +1,113 @@
-# AskAI 1.1 cheat sheet: Claude Code, Codex, Antigravity, Cursor
-Checked against vendor docs and independent benchmarks, 20 October 2026. Run `/help` after upgrades. Full guide: docs/ASKAI_GUIDE.md.
+# AskAI cheat sheet
 
-## AskAI commands
+Printable page, every command and its arguments: [AskAI-commands-A3.png](AskAI-commands-A3.png) (A3 portrait, print at 100%). The same list, one command at a time: [AskAI-commands.pdf](AskAI-commands.pdf).
 
-| When | Command |
-|:--|:--|
-| Once per machine | `askai install --dry-run`, then `askai install --project <repo>` (Windows: `install.ps1 -DryRun`, then `install.ps1 -Project <repo>`) |
-| One command per project (from GitHub) | `curl -fsSL https://raw.githubusercontent.com/aalokshah-business/AskAi/main/get.sh \| bash -s -- --target all --profile max --project <repo> --yes` · Windows: `& ([scriptblock]::Create((irm https://raw.githubusercontent.com/aalokshah-business/AskAi/main/get.ps1))) -Target all -Workflow max -Project <repo> -Yes` · then `askai todo <repo>` · later `askai upgrade` |
-| Things only you can do | `askai todo` (per tool and repository; `askai todo done <id>`) · every tool and why: `askai plugins decisions` |
-| Every command, every plugin | `askai help all` · `askai plugins info <id>` (commands, checks, savings, off switch) · `askai savings` |
-| Once per repo | `askai init <repo>`: AGENTS.md router, CLAUDE.md, GEMINI.md, docs/ai/*, subagents for all four tools |
-| Start a task | `askai go claude --tier build "task"` (codex, cursor, agy; lead, build, chore) |
-| Shape a dictated ask | `askai prompt "..." --copy`; noisy command: `askai prompt --output-safe "cmd"` |
-| Unsure about a habit | `askai work`, `askai etiquette`, `askai guide <moment>`, `askai ask <words>` |
-| Before /clear or a break | Ask the agent to write `.ai-work/HANDOFF.md`, then `askai clear` or `askai break` |
-| Coming back | `askai continue --copy` (same as `askai resume`) |
-| What is set up and used | `askai setup <repo>` (status, check, infra, plugins, to-do, files) |
-| Fetch latest, then show `/askai-cli` | `askai upgrade --yes --target cursor --profile coding --project <repo>` (full path `~/.claude/askai/bin/askai` if needed). Reload Cursor, open that folder itself, type `/`, choose `askai-cli` |
-| Use connected plugins in a chat | `/askai-plugins` (Codex: `$askai-plugins`) |
-| Where tokens go | `askai audit`, `askai usage 7`, `askai report` |
-| Housekeeping | `askai update`, `askai doctor`, `askai uninstall` |
+Look up the command, then the purpose. Full detail: `askai help <command>`. Guide: [ASKAI_GUIDE.md](ASKAI_GUIDE.md).
 
-## Commands to keep handy
+## See what is set up
 
-| Need | Claude Code | Codex CLI | Antigravity CLI | Cursor |
-|:--|:--|:--|:--|:--|
-| What fills my context | `/context` | `/status` | `/context` | `/context` |
-| Usage left, where it went | `/usage` (d/w) | `/usage daily` / `weekly` | `/usage`, `/credits` | Dashboard, Usage |
-| New task, fresh chat | `/clear` | `/new` | `/clear` | `/clear` |
-| Shrink a chat you must keep | `/compact keep: goal, files, test` | `/compact` | fresh chat + handoff | `/summarize` |
-| Stop a wrong turn | `Esc`, `/rewind` | `Esc`, `Esc Esc` | `Esc`, `/rewind` | `Esc`, `/rewind` |
-| Branch an idea | `/rewind`, retry | `/fork` | `/fork` | `/fork` |
-| Plan before editing | `Shift+Tab`, `/plan` | `/plan` | `/plan` | `/plan`, `/ask` |
-| Side question | `/btw` | `/side` | `/btw` | `/ask` |
-| Lower thinking | `/effort medium` | `Alt+,` | `/effort low` | non-thinking model |
-| Strong model only when needed | `/advisor opus` (Sonnet session) | Sol for the hard step | Pro for the hard step | frontier for the hard step |
-| Unused tools off | `/mcp` | `/mcp` | `/mcp` | Settings, MCP |
-| Handoff before a break | Ask the agent to write `.ai-work/HANDOFF.md` | Same | Same | Same |
-| AskAI-only terminal | `/askai-cli` | `/prompts:askai-cli` or `$askai-cli` | `/askai-cli` | `/askai-cli` |
-| Connected plugins | `/askai-plugins` | `$askai-plugins` | `/askai-plugins` | `/askai-plugins` |
-| Resume later | `/resume`, `claude -c` | `codex resume --last` | `/resume` | `agent --continue` |
+| Purpose | Command |
+|---|---|
+| One check after install | `askai setup <repo>` |
+| What is installed, per app | `askai infra <repo>` |
+| What you still have to do | `askai todo <repo>` |
+| Mark a to-do done | `askai todo done <id>` |
+| Which plugins are waiting | `askai plugins ready <repo>` |
+| What one plugin does, and how to turn it off | `askai plugins info <id>` |
+| Billing and health | `askai doctor` |
+| Seven-point token audit | `askai audit <repo>` |
+| Every command | `askai help` |
+| One command | `askai help <command>` |
 
-## Cheapest model first
+## Install and keep current
 
-| Task | Claude Code | Codex | Antigravity | Cursor |
-|:--|:--|:--|:--|:--|
-| Search, small edits, tests, docs | Haiku, low | Luna-class, low | Flash, low | Auto |
-| Everyday features and fixes | Sonnet (Haiku if it copes), medium | Sol, medium | Flash or Pro, medium | Auto |
-| Hard debugging, architecture | Sonnet + `/advisor opus`, high | Sol, high | Pro or Claude, high | frontier, no Max Mode |
+| Purpose | Command |
+|---|---|
+| Preview, change nothing | `askai install --dry-run` |
+| Default install (coding profile) | `askai install --yes --project <repo>` |
+| Every optimiser, one host | `askai install --yes --profile max --target cursor --project <repo>` |
+| Add another host later | `askai install --yes --target claude` (or `codex`, `agy`, `all`) |
+| Fetch the latest AskAI and re-apply the recorded profile | `askai upgrade --yes` |
+| Upgrade the tools AskAI installed | `askai update` |
+| Cursor slash command missing | Reload the window. Open the project folder itself. Type `/` and choose `askai-cli` |
+| Devcontainer, no window | `askai cli` in the Cursor terminal. `tmux attach -t askai` only resumes a session that `--launch` already started |
 
-## Habits that save the most
-1. One task per chat; `/clear` between tasks. `/compact` is itself a big request.
-2. One complete prompt (goal, files, how to verify) instead of drip-fed follow-ups. Edit and regenerate instead of correcting.
-3. Name files with `@path`; search first, then read line ranges; batch independent reads in one message.
-4. Plan first for multi-file work; give a test or command that proves it is done.
-5. Ask for the smallest change that works; no unrequested refactors.
-6. Paste only the failing function or the last 10–40 log lines.
-7. Few subagents, on cheap models; no agent teams for routine work.
-8. `CLAUDE.md` / `AGENTS.md` / `GEMINI.md` under 200 lines; MCP servers off unless needed; CLIs (`gh`, `rg`, `jq`) instead.
-9. No speed or big-context modes: Claude fast mode, Codex Fast/Ultrafast, Cursor Max Mode. Unset `ANTHROPIC_API_KEY` / `OPENAI_API_KEY`.
-10. Claude peak hours: weekdays 08:00–14:00 US Eastern (17:30–23:30 IST in US summer, 18:30–00:30 IST after early November).
+`~/.claude/askai` is AskAI's own folder on every install, including Cursor-only. It is not Claude Code.
 
-## Before a break
-Finish the verified step, then commit or stash, then ask the agent to write `.ai-work/HANDOFF.md`, then run `askai break`. Stop `/loop`, `/goal`, teams and background agents, and note your reset time.
+## Coding session
 
-**Coming back:** `askai resume --copy` says whether to continue or start fresh and copies the prompt. The prompt: "Read AGENTS.md, then .ai-work/HANDOFF.md, then only the files it lists. Check them against git status and git log -1. Summarise in 6 lines, confirm the next step, and wait."
+| Purpose | Command |
+|---|---|
+| Set up the project from the chat | `/askai-cli` (Codex: `$askai-cli`) |
+| Finish one-time plugin setup | `/askai-plugins` |
+| Search, scripts, test runs | `askai go cursor --tier chore "task"` |
+| A normal edit | `askai go cursor --tier build "task"` |
+| Hard design or debugging | `askai go cursor --tier lead "task"` |
+| Same, other app | Replace `cursor` with `claude`, `codex`, or `agy` |
+| Turn a vague ask into a prompt | `askai prompt "ask" --tier build --files a,b --done "acceptance"` |
+| See or change the model for a tier | `askai models` · `askai models verify cursor` · `askai models set cursor.build <model>:<effort>` |
+| Write the project pack | `askai init <repo>` |
+| Refresh generated docs after the tree changes | `askai init <repo> --refresh` |
+| Refresh only the map | `askai map <repo>` |
+| Before a break | `askai break` |
+| Come back | `askai resume` |
+| What to do at a context level | `askai context 70` |
+| Whether a fresh chat is safe | `askai clear` |
 
-## Not worth installing for savings
-RTK (median +7% cost), Context Mode (+33% to +72%), Headroom (+32%), lean-ctx (+10%), proxies and routers (billing and data risk). AskAI installs what helps instead: Ponytail- and Caveman-style rules (−10% and −8%), LSP plugins with `--lsp` (−13%), ccusage for measurement.
+Use `claude`, `codex`, `cursor`, or `agy` in `askai go`. One chat per task. A model switch mid-chat re-reads the whole thread.
+
+## Code navigation, once per repo
+
+| Purpose | Command |
+|---|---|
+| Build the graph from source, no tokens | `graphify update .` |
+| Ask how two parts connect | `graphify query "question"` |
+| Index symbols for Serena, no tokens | `serena project create --language cpp --index` |
+| Rebuild the graph after code changes | `graphify update .` |
+| Turn an MCP server off between sessions | `askai mcp off <name>` · `askai mcp on <name>` |
+
+Do not run `/graphify .` unless you also want docs and images in the graph. That spends tokens. Leave Serena on for firmware work. Leave Headroom's proxy off.
+
+`graphify-out/` and `.serena/` stay out of git. They are local caches.
+
+## Chat that is not this code repo
+
+A book or any other non-code project stays in Claude chat, ChatGPT, or Gemini. Do not open it in Claude Code, Cursor, or Codex. Those load the code repo.
+
+| Purpose | Command |
+|---|---|
+| Where to paste the short instruction, and the project brief | `askai chat` |
+| Claude chat and the Claude desktop app only | `askai chat claude` |
+| ChatGPT web and desktop only | `askai chat chatgpt` |
+| Gemini app only | `askai chat gemini` |
+| The four coding apps | `askai chat code` |
+
+The account instruction is sent on every chat, so it stays short. The book gets its own project and a brief under 150 words. Put the current chapter in that project, not the whole manuscript. Start a new chat for each chapter.
+
+## Where usage shows
+
+| App | Where to look |
+|---|---|
+| Claude Code and Codex | `askai usage 7` |
+| Cursor | Cursor's usage page. AskAI does not see it |
+| Claude chat | claude.ai, Settings, Usage |
+| ChatGPT | ChatGPT settings |
+| Antigravity | `/usage` |
+
+AskAI cannot move a reset.
+
+## Inside each coding app
+
+| Purpose | Claude Code | Codex | Antigravity | Cursor |
+|---|---|---|---|---|
+| What fills the context | `/context` | `/status` | `/context` | `/context` |
+| Usage | `/usage` | `/usage daily` | `/usage` | Dashboard, Usage |
+| New task | `/clear` | `/new` | `/clear` | `/clear` |
+| Keep a long chat | `/compact keep: goal, files, test` | `/compact` | new chat plus a handoff | `/summarize` |
+| Plan before editing | `/plan` | `/plan` | `/plan` | `/plan` |
+| AskAI terminal | `/askai-cli` | `$askai-cli` | `/askai-cli` | `/askai-cli` |
+| Plugins | `/askai-plugins` | `$askai-plugins` | `/askai-plugins` | `/askai-plugins` |
+
+## Leave off unless you measured a gain
+
+RTK and Context Mode cost more in the measured runs. Headroom's proxy can move Claude Code onto per-token billing. Claude LSP does not run in Cursor. ccusage only reports Claude Code transcripts.

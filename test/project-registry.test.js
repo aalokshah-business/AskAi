@@ -38,7 +38,7 @@ test('registered names resolve for flags, active selection, cwd discovery and de
   const repeated = run(['init', '--project', 'alpha', '--refresh', '--yes']);
   assert.equal(repeated.code, 0, repeated.output, 'refresh of an existing alias must not need a registry write');
   fs.rmSync(lock);
-  const rows = JSON.parse(run(['projects', '--json']).output);
+  const rows = JSON.parse(run(['project', 'list', '--json']).output);
   assert.deepEqual(rows.map(r => r.name), ['alpha', 'beta']);
   const infra = (args, options) => {
     const r = run(['infra', '--json', ...args], options); assert.equal(r.code, 0, r.output);
@@ -72,7 +72,7 @@ test('rename, move and unregister preserve project files and reject bad registry
   assert.ok(fs.existsSync(path.join(moved, 'AGENTS.md')));
   assert.equal(run(['infra', '--project', 'newbeta']).code, 1);
   fs.writeFileSync(registry.file(config), '{broken');
-  const bad = run(['projects']); assert.equal(bad.code, 1); assert.match(bad.output, /registry is unreadable/);
+  const bad = run(['project', 'list']); assert.equal(bad.code, 1); assert.match(bad.output, /registry is unreadable/);
   assert.equal(fs.readFileSync(registry.file(config), 'utf8'), '{broken', 'corrupt file retained for repair');
 }));
 

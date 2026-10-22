@@ -7,7 +7,7 @@ AskAI installs tool integrations once per user. `askai init` creates each reposi
 ```powershell
 askai init --name app-a --path 'C:\code\AppA' --yes
 askai init --name app-b --path 'C:\code\AppB' --yes
-askai projects
+askai project list
 askai infra --project app-a
 askai todo -p app-b
 askai check --project app-a
@@ -53,6 +53,6 @@ askai project remove NAME
 askai project switch NAME
 ```
 
-`project remove NAME` unregisters only the name. It never deletes project files. The older `askai project [dir] --print|--remove` still manages repository-local Cursor rules. `askai projects --json` shows missing paths, which can be repaired with `askai project path` after moving a folder or restoring the registry on a new laptop. On another operating system, register each restored folder with `askai init --name NAME --path NEW_PATH --yes`; do not assume old absolute paths are valid.
+`project remove NAME` unregisters only the name. It never deletes project files. The older `askai project [dir] --print|--remove` still manages repository-local Cursor rules. `askai project list --json` shows missing paths, which can be repaired with `askai project path` after moving a folder or restoring the registry on a new laptop. On another operating system, register each restored folder with `askai init --name NAME --path NEW_PATH --yes`; do not assume old absolute paths are valid.
 
 Run `npm run test:commands`, `npm test` and `askai docs check` from the source checkout after changing project behavior. The command suite uses temporary project folders; it does not configure real repositories or start AI agents.

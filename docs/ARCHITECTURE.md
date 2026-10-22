@@ -61,7 +61,7 @@ AskAI does not sit inside a running agent and rewrite each message: none of the 
 | --- | --- | --- |
 | Day 0, each machine | Preview, install, open new sessions, confirm subscription billing | `askai install --dry-run`, `askai install`, `askai check` |
 | Each repository | Shared instruction file, ignore list, local handoff folder | `askai scaffold .`, `askai check . --fix` |
-| Start of a task | One task per chat; one complete prompt; plan for multi-file work | `askai start`, `askai peak` |
+| Start of a task | One task per chat; one complete prompt; plan for multi-file work | `askai start`, `askai tips peak` |
 | While working | Search then read ranges, smallest change, Esc early, few cheap subagents | Rules installed in every host; `askai ask <topic>` |
 | Before a break | Verified step, commit, handoff, stop background work | Ask the agent to write .ai-work/HANDOFF.md; `askai break` |
 | Coming back | Continue within the cache lifetime; otherwise fresh chat from the handoff | `askai resume --copy` |
@@ -527,12 +527,13 @@ Exit: 0, or 1 when the spend report fails
 #### `askai session`
 
 ```text
-askai session: The per-repo ledger in .ai-work/: entries, handoff, measurements, report.
+askai session: The per-repo ledger in .ai-work/: entries, handoff, measurements, report. askai start, askai break and askai resume are the daily names for those three actions.
 
-Usage: askai session init|start|pause|resume|break|status|finish|measure|report [--repo DIR] [...]
+Usage: askai session init|pause|status|finish|measure|report [--repo DIR] [...]
 
 measure: --tool --model --effort --task --difficulty --minutes --input-tokens --output-tokens --cached-tokens --success 0|1 --rework-minutes --usage-source --notes
 report [dirs...]: accepted tasks and tokens per tool and difficulty.
+session pause records a task boundary without the break checklist. session start, session break and session resume still run the same actions as the short commands.
 
 Examples:
   askai session measure --tool codex --difficulty simple --minutes 12 --input-tokens 8000 --output-tokens 1500 --success 1
@@ -585,30 +586,17 @@ Exit: 0
 ```text
 askai project: Manage registered projects, or copy Cursor rules into a repository for teammates.
 
-Usage: askai project [dir] [--print|--remove] | show | rename OLD NEW | path NAME NEW_PATH | remove NAME | switch [NAME]
+Usage: askai project [dir] [--print|--remove] | list | show | rename OLD NEW | path NAME NEW_PATH | remove NAME | switch [NAME]
 
-show reports the selected project. rename, path and remove change only the registry; remove never deletes project files.
+list prints every registered name and path. show reports the selected project. rename, path and remove change only the registry; remove never deletes project files.
 Without a subcommand, the existing Cursor rules behavior is preserved.
 
 Examples:
+  askai project list
   askai project show
   askai project rename old new
   askai project path app C:\code\app
   askai project .
-
-Exit: 0
-```
-
-#### `askai projects`
-
-```text
-askai projects: List registered project names and paths, with active, default and missing-folder status.
-
-Usage: askai projects [--json]
-
-Examples:
-  askai projects
-  askai projects --json
 
 Exit: 0
 ```
@@ -649,25 +637,13 @@ Exit: 0
 #### `askai tips`
 
 ```text
-askai tips: The cheat sheet, offline, per tool.
+askai tips: The cheat sheet, offline, per tool. peak says whether Claude is in peak hours now.
 
-Usage: askai tips [claude|codex|agy|cursor|session|habits]
+Usage: askai tips [claude|codex|agy|cursor|session|habits|peak]
 
 Examples:
   askai tips codex
-
-Exit: 0
-```
-
-#### `askai peak`
-
-```text
-askai peak: Is Claude in its peak hours now, and the peak window in your time zone.
-
-Usage: askai peak
-
-Examples:
-  askai peak
+  askai tips peak
 
 Exit: 0
 ```
@@ -1030,46 +1006,6 @@ Usage: askai todo [dir] [--all] | askai todo done <id> | askai todo undo <id>
 Exit: 0
 ```
 
-#### `askai work`
-
-```text
-askai work: The working etiquette in the terminal (same as askai guide work), with pointers to every other moment.
-
-Usage: askai work
-
-Exit: 0
-```
-
-#### `askai etiquette`
-
-```text
-askai etiquette: All the etiquette, every moment, in the terminal (same as askai guide all).
-
-Usage: askai etiquette
-
-Exit: 0
-```
-
-#### `askai continue`
-
-```text
-askai continue: Coming back after a break: the same as askai resume (time away, continue or start fresh, the handoff, the prompt).
-
-Usage: askai continue [--copy] [--repo DIR]
-
-Exit: 0
-```
-
-#### `askai checkpoint`
-
-```text
-askai checkpoint: Record a ledger entry at a task boundary without taking a break (askai session pause).
-
-Usage: askai checkpoint --summary "..." --next "..." [--repo DIR]
-
-Exit: 0
-```
-
 #### `askai diff`
 
 ```text
@@ -1100,6 +1036,25 @@ askai hook: The reminder hooks: read the hook JSON on stdin and answer with a on
 Usage: askai hook prompt|session (run by Claude Code)
 
 Exit: 0 always
+```
+
+#### `askai chat`
+
+```text
+askai chat: Where to paste a short standing instruction in Claude chat, ChatGPT, and Gemini, and how the four coding apps are set up instead.
+
+Usage: askai chat [claude|chatgpt|gemini|code]
+
+Claude chat (claude.ai and the Claude desktop app), ChatGPT web and desktop, and Gemini Apps have no settings file AskAI can write. The instruction is sent again on every turn, so it stays short.
+claude.ai and the Claude desktop app share Instructions for Claude. ChatGPT web and desktop share Custom instructions. Gemini Apps uses Instructions for Gemini. A project instruction replaces or adds to that only inside the project.
+Claude Code, Cursor, Codex, and Antigravity are not configured by this paste. askai install writes their rules. AskAI cannot read the chat apps' usage counters or move a plan reset.
+
+Examples:
+  askai chat
+  askai chat claude
+  askai chat chatgpt
+
+Exit: 0, or 1 for an unknown name
 ```
 
 #### `askai help`
@@ -1193,7 +1148,7 @@ Exit: 0
   Why: They spend allowance faster: fast mode bills credits at 2x; Codex Fast 2.5x, Ultrafast 8x.
 - **Avoid Claude peak hours for big jobs** (`askai ask peak`): Run big refactors and long agent runs outside weekdays 08:00-14:00 US Eastern.
   Why: Anthropic, March 2026: the 5-hour window drains faster at peak (your screenshot page 9).
-  AskAI: askai peak
+  AskAI: askai tips peak
 - **Before a break** (`askai ask break`): Finish the verified step, commit or stash, ask the agent to write .ai-work/HANDOFF.md, stop loops, goals and background agents.
   Why: Background work keeps spending; the cache expires after 1 h (5 min on usage credits).
   AskAI: askai break

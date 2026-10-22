@@ -147,6 +147,6 @@ function finish() {
   if (selected('agy') && exists(DIR.agy)) inTool.push('Antigravity: /mcp lists ' + (want.agy.join(', ') || 'no servers') + '; /skills shows askai-cli and askai-plugins; /model lists available models; app settings: AI Credit Overages = Never.');
   if (selected('cursor') && exists(DIR.cursor)) inTool.push('Cursor (quit and reopen first): open the project folder as the workspace root; Settings, Rules shows AskAI rules; Settings, MCP lists ' + (want.cursor.join(', ') || 'no servers') + '; type /askai-cli or /askai-plugins in Agent chat; choose an available model in Settings, Models.');
   if (inTool.length) console.log('\nStill to check by hand, inside each tool:\n' + inTool.map(l => `  - ${l}`).join('\n'));
-  console.log('\nThen the daily flow: askai go claude --tier build "small task"; ask the agent to write .ai-work/HANDOFF.md; askai clear (should say safe); askai continue.\nAfter a day of use: askai savings, askai usage 7, askai audit.\nChecks that change nothing: askai upgrade --dry-run, askai uninstall --dry-run.');
+  console.log('\nThen the daily flow: askai go claude --tier build "small task"; ask the agent to write .ai-work/HANDOFF.md; askai clear (should say safe); askai resume.\nAfter a day of use: askai savings, askai usage 7, askai audit.\nChecks that change nothing: askai upgrade --dry-run, askai uninstall --dry-run.');
   process.exit(n('FAIL') ? 1 : 0);
 }

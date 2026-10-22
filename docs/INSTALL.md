@@ -22,7 +22,7 @@ powershell -NoProfile -ExecutionPolicy Bypass -File "$askaiSource\install.ps1" -
 powershell -NoProfile -ExecutionPolicy Bypass -File "$askaiSource\install.ps1" -Target all -Workflow coding -Project $projectPath -Yes
 ```
 
-Open a new PowerShell window and run `askai setup --project 'C:\code\myapp'` with your actual project path. If PATH has not refreshed, run `& "$HOME\.claude\askai\bin\askai.cmd" setup --project 'C:\code\myapp'`. `askai projects` shows its registered name. Restart each AI tool; in a project chat run `/askai-cli` (Codex: `$askai-cli`), supply or accept the one-sentence project description for AI review, then run `/askai-plugins` only for the one-time actions you want. AskAI's terminal can be reopened with `askai cli`. A plain terminal command uses no model tokens; host AI review and Graphify builds do.
+Open a new PowerShell window and run `askai setup --project 'C:\code\myapp'` with your actual project path. If PATH has not refreshed, run `& "$HOME\.claude\askai\bin\askai.cmd" setup --project 'C:\code\myapp'`. `askai project list` shows its registered name. Restart each AI tool; in a project chat run `/askai-cli` (Codex: `$askai-cli`), supply or accept the one-sentence project description for AI review, then run `/askai-plugins` only for the one-time actions you want. AskAI's terminal can be reopened with `askai cli`. A plain terminal command uses no model tokens; host AI review and Graphify builds do.
 
 The `coding` profile is the recommended starting point. `max` adds RTK, Context Mode, Headroom and Graphify; some have measured token costs or require a one-time graph build. Check `askai plugins decisions` before adding them. If your project is not cloned yet, omit `-Project` during installation and later run `/askai-cli <local-project-path>` from a host chat.
 
@@ -43,7 +43,7 @@ bash "$askai_source/install.sh" --target cursor --profile coding --project "$pro
 "$HOME/.claude/askai/bin/askai" setup --project "$project_path"
 ```
 
-`~/.claude/askai` is AskAI's own program folder on every operating system, including a Cursor-only install. It is not a Claude Code setup. The explicit shim path works even before your shell reloads PATH. Open a new terminal before typing `askai` by itself; the installer adds `$HOME/.claude/askai/bin` to `~/.bashrc` and `~/.profile` even when a later step such as Serena fails. Run `askai projects` to see the registered project. Reload Cursor and open that project folder itself, not its parent. Type `/` and choose `askai-cli`. The file Cursor reads is `<project>/.cursor/commands/askai-cli.md`. On SSH or a devcontainer, Cursor does not load commands from the remote `~/.cursor/commands`. `askai cli` opens the terminal interface; commands typed there do not use model tokens unless they launch an AI agent. A devcontainer has no display, so `askai cli --launch` cannot open a new window there. `askai upgrade`, `askai update`, and `askai setup` install `tmux` on that machine when the user is root or `sudo -n` works, then `--launch` starts a session named `askai`. Attach with `tmux attach -t askai`. `askai setup` does not fail Claude Code checks when Claude Code was not selected.
+`~/.claude/askai` is AskAI's own program folder on every operating system, including a Cursor-only install. It is not a Claude Code setup. The explicit shim path works even before your shell reloads PATH. Open a new terminal before typing `askai` by itself; the installer adds `$HOME/.claude/askai/bin` to `~/.bashrc` and `~/.profile` even when a later step such as Serena fails. Run `askai project list` to see the registered project. Reload Cursor and open that project folder itself, not its parent. Type `/` and choose `askai-cli`. The file Cursor reads is `<project>/.cursor/commands/askai-cli.md`. On SSH or a devcontainer, Cursor does not load commands from the remote `~/.cursor/commands`. `askai cli` opens the terminal interface; commands typed there do not use model tokens unless they launch an AI agent. A devcontainer has no display, so `askai cli --launch` cannot open a new window there. `askai upgrade`, `askai update`, and `askai setup` install `tmux` on that machine when the user is root or `sudo -n` works, then `--launch` starts a session named `askai`. Attach with `tmux attach -t askai`. `askai setup` does not fail Claude Code checks when Claude Code was not selected.
 
 For Claude Code, Codex or Antigravity too, install and sign in to those hosts first, then use `--target all` in both installer commands instead of `--target cursor`. The installer accepts `--target claude`, `codex`, `agy`, `cursor`, or a comma-separated list. Run `askai setup --project "$project_path"` again after adding hosts.
 
@@ -289,8 +289,8 @@ Use `/askai-cli` in Claude Code, Cursor or Antigravity (`$askai-cli` in Codex) f
 | Use the connected plugins | `/askai-plugins` (Codex: `$askai-plugins`). Terminal: `askai plugins ready` |
 | How to use one plugin | `askai plugins info <id>`: commands in a terminal and inside the agent, how to check it, its savings, how to switch it off |
 | What each plugin saved | `askai savings` (runs rtk gain, ccusage, headroom stats and the rest for you) |
-| Check etiquette | `askai work`, `askai etiquette`, `askai guide <moment>`, `askai ask <words>` |
-| Coming back | `askai continue` (same as `askai resume`) |
+| Check etiquette | `askai guide work`, `askai guide all`, `askai guide <moment>`, `askai ask <words>` |
+| Coming back | `askai resume` |
 | Review before handing off | `askai diff`; architecture at a glance: `askai graph` |
 | Before /clear or a break | Ask the agent to write `.ai-work/HANDOFF.md`, then run `askai clear` or `askai break` |
 | Coming back | `askai resume --copy` |

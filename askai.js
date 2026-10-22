@@ -56,8 +56,7 @@ Setup
   profiles    list the profiles and what each installs
   suggest [dir]  which profile fits a directory (counts code and document files; read-only)
   scaffold [dir] write AGENTS.md, CLAUDE.md, docs/ai/PROJECT_PROFILE.md, .cursorignore and .ai-work/ into a repo (never overwrites)
-  project [dir]  optional: copy the Cursor rules into one repo (dir/.cursor/rules) for git; --print shows them, --remove deletes them
-  projects       list registered project names and paths; project show|rename|path|remove manages registrations
+  project [dir]  copy Cursor rules into one repo, or list | show | rename | path | remove | switch a registration
   set project NAME   select a project in the AskAI CLI or a shell with AskAI integration; set project --clear unsets it
 
 Every day
@@ -66,6 +65,7 @@ Every day
   ask <words>       offline answers on etiquette and the research: askai ask compact | askai ask coming back after a break
   start | break | resume   session shortcuts: ledger entry; before-break checklist; time away, advice and the resume prompt (--copy)
   usage [days]      what Claude Code and Codex spent, from their local data (Antigravity, Cursor: their own views)
+  chat [name]       standing instruction for Claude chat, ChatGPT, and Gemini; coding apps stay on askai install
   help <command>    detailed help for one command (also: askai <command> --help); docs/ARCHITECTURE.md has all of it
   Open /askai-cli (Codex: $askai-cli) once. It prepares the project, then the terminal runs commands with no model tokens.
 
@@ -86,14 +86,11 @@ Project and sessions (AskAI as the mediator)
   todo              remaining setup and project-review steps (askai todo done <id> marks one)
   convert <file>    PDF, Office, HTML or a YouTube URL to Markdown (MarkItDown)
   clear [compact]   is it safe to /clear now (fresh handoff?) and the native command for the tool (--tool)
-  work · etiquette  the working etiquette · all of it (same as askai guide work / askai guide all)
-  continue          coming back: same as askai resume     checkpoint: record a ledger entry (--summary --next)
   diff · graph      git diff summary and whitespace check · the project's architecture diagram (docs/ai/ARCHITECTURE.md)
   context <pct>     what to do at this context level (or --used N --window M)
   docs [name]       where the install, architecture and guide documents are (--print shows one)
-  session <action>  init | start | pause | resume | status | finish | measure | report  (local ledger in <repo>/.ai-work)
-  tips [host]       offline cheat sheet: claude | codex | agy | cursor | session | habits (default: all)
-  peak              is Claude in its peak hours now, and the peak window in your local time
+  session <action>  init | pause | status | finish | measure | report. start, break and resume are the commands above
+  tips [host]       offline cheat sheet: claude | codex | agy | cursor | session | habits | peak (default: all)
 
 Seeing what is saved
   status      profile, per-tool state, what is wired where, and the savings the tools measure
@@ -619,7 +616,7 @@ function cmdProjects(o) {
   if (o.json) console.log(JSON.stringify(rows, null, 2));
   else {
     console.log(rows.length ? rows.map(r => `${r.active ? '*' : ' '} ${r.name}${r.default ? ' (default)' : ''} -> ${r.path}${r.exists ? '' : ' (missing; askai project path NAME NEW_PATH)'}`).join('\n') : 'No projects registered. Run askai init --name NAME --path FOLDER.');
-    console.log('Selection: askai set project NAME; project details: askai project show.');
+    console.log('Selection: askai set project NAME; one project: askai project show.');
   }
   return 0;
 }
@@ -643,7 +640,7 @@ async function cmdProjectRegistry(o) {
   const dir = registryHome(o); const action = o._[1];
   if (action === 'show') {
     const found = registry.resolve(dir, o.project || o._[2]);
-    console.log(found ? `${found.name || '(unregistered folder)'} -> ${found.path}` : 'No project selected. Run askai projects or askai init <folder>.');
+    console.log(found ? `${found.name || '(unregistered folder)'} -> ${found.path}` : 'No project selected. Run askai project list or askai init <folder>.');
     return found ? 0 : 1;
   }
   if (action === 'rename') {
@@ -688,6 +685,7 @@ function cmdShell(o) {
 
 // Cursor: write (or show, or remove) the token rules of a project in <dir>/.cursor/rules.
 function cmdProject(o) {
+  if (o._[1] === 'list') return cmdProjects(o);
   if (['show', 'rename', 'path', 'remove', 'switch'].includes(o._[1])) return cmdProjectRegistry(o);
   const ctx = buildCtx(o);
   const dir = projectDir(o, o._[1]);
@@ -1102,7 +1100,12 @@ function cmdSession(o) {
 function cmdScaffold(o) {
   try { return scaffold.run(projectDir(o, o._[1]), o); } catch (e) { console.error(`askai scaffold: ${e.message}`); return 1; }
 }
+function cmdChat(o) {
+  try { console.log(require('./lib/chat').render(o._[1])); return 0; }
+  catch (e) { console.error(e.message); return 1; }
+}
 function cmdTips(o) {
+  if (o._[1] === 'peak') return cmdPeak(o);
   try { console.log(tips.render(o._[1])); return 0; } catch (e) { console.error(`askai tips: ${e.message}`); return 1; }
 }
 function cmdPeak(o) {
@@ -1391,7 +1394,7 @@ async function main() {
   o._.unshift(cmd);
   if (cmd === 'help' && o.help) { console.log(help.render('help')); return 0; }
   if (cmd === 'help' && o._[1] === 'all') { console.log(`askai ${VERSION}: every command in full\n\n` + help.names().map(n => help.render(n)).join(`\n\n${'-'.repeat(72)}\n\n`)); return 0; }
-  if (cmd === 'help' && !o._[1]) { console.log(help.names().slice().sort().join('\n')); console.log('\naskai help <command>    usage for one command\naskai help all          every command in full\nSame command: continue = resume, etiquette = guide all, checkpoint = session pause. update upgrades installed tools; upgrade updates AskAI.'); return 0; }
+  if (cmd === 'help' && !o._[1]) { console.log(help.names().slice().sort().join('\n')); console.log('\naskai help <command>    usage for one command\naskai help all          every command in full\nupdate upgrades installed tools; upgrade updates AskAI.'); return 0; }
   if (cmd === 'help' && o._[1]) { const t = help.render(o._[1]); console.log(t || `No help for "${o._[1]}". Commands: ${help.names().slice().sort().join(', ')}`); return t ? 0 : 1; }
   if (o.help && cmd && help.has(cmd)) { console.log(help.render(cmd)); return 0; }
   if (!cmd || cmd === 'help' || o.help) { console.log(HELP); return cmd ? 0 : 2; }
@@ -1405,7 +1408,6 @@ async function main() {
     case 'profiles': return cmdProfiles(o);
     case 'suggest': return cmdSuggest(o);
     case 'project': return cmdProject(o);
-    case 'projects': return cmdProjects(o);
     case 'set': return cmdSet(o);
     case 'shell': return cmdShell(o);
     case 'uninstall': return cmdUninstall(o);
@@ -1421,7 +1423,7 @@ async function main() {
     case 'mcp': return cmdMcp(o);
     case 'audit': return audit.run(buildCtx(o, true), projectDir(o, o._[1]), o);
     case 'infra': { const ctx = buildCtx(o, true); const r = infra.collect(ctx, projectDir(o, o._[1])); console.log(o.json ? JSON.stringify(r, null, 2) : infra.render(r)); return 0; }
-    case 'guide': { const t = guide.render(o._[1]); console.log(t || `No guide for "${o._[1]}". Topics: ${guide.ORDER.join(', ')}`); return t ? 0 : 1; }
+    case 'guide': { const t = guide.render(o._[1]); if (!t) { console.log(`No guide for "${o._[1]}". Topics: ${guide.ORDER.join(', ')}`); return 1; } console.log(t); if (o._[1] === 'work') { try { const ctx = buildCtx(o, true); const open = todo.open(todo.items(ctx, projectDir(o))); if (open.length) console.log(`\nYour open to-dos (${open.length}): ${open.slice(0, 3).map(i => i.text).join('; ')}${open.length > 3 ? '; ...' : ''}\nAll of them: askai todo`); } catch (_) { /* no context */ } } return 0; }
     case 'docs': return cmdDocs(o);
     case 'plugins': { const ctx = buildCtx(o, true); const a = o._[1] || 'list'; if (a === 'ready') { const ready = require('./lib/plugins-ready'); const report = ready.ready(ctx, projectDir(o, o.path || o._[2])); console.log(o.json ? JSON.stringify(report, null, 2) : ready.render(report)); return 0; } if (a === 'decisions') { console.log(plugins.decisions()); return 0; }
       if (a === 'info' || a === 'use') { if (!o._[2]) { console.log(`which one? askai plugins info <id>   ids: ${require('./lib/plugins').P.map(p => p.id).join(', ')}`); return 1; } const r = plugins.info(o._[2]); console.log(`\nHow to use it\n${require('./lib/usage-guide').render(o._[2])}`); return r; }
@@ -1434,10 +1436,6 @@ async function main() {
     case 'todo': { const ctx = buildCtx(o, true); const dir = !['done', 'undo'].includes(o._[1]) ? projectDir(o, o._[1]) : null;
       if (o._[1] === 'done' || o._[1] === 'undo') { if (!o._[2]) { console.log('which item? askai todo done <id>'); return 1; } todo.mark(ctx, o._[2], o._[1] === 'done'); console.log(`${o._[1] === 'done' ? 'marked done' : 'reopened'}: ${o._[2]}`); return 0; }
       console.log(todo.render(todo.items(ctx, dir), o.all)); return 0; }
-    case 'work': { console.log(guide.render('work')); try { const ctx = buildCtx(o, true); const open = todo.open(todo.items(ctx, projectDir(o))); if (open.length) console.log(`\nYour open to-dos (${open.length}): ${open.slice(0, 3).map(i => i.text).join('; ')}${open.length > 3 ? '; ...' : ''}\nAll of them: askai todo`); } catch (_) { /* no context */ } } console.log('\nMore: askai guide <moment> (start, break, resume, clear, compact, cache, models, subagents, mcp, output, prompts, docs, plugins, security, peak) · askai ask <words>'); return 0;
-    case 'etiquette': console.log(guide.render('all')); return 0;
-    case 'continue': return session.run('resume', { ...o, repo: projectDir(o) });
-    case 'checkpoint': return session.run('pause', { ...o, repo: projectDir(o) });
     case 'diff': return cmdDiff(o);
     case 'graph': return cmdGraph(o);
     case 'hook': { let input = ''; try { input = fs.readFileSync(0, 'utf8'); } catch (_) { /* no stdin */ } const out = hookLib.run(buildCtx(o, true), o._[1], input); if (out) process.stdout.write(out + '\n'); return 0; }
@@ -1447,10 +1445,14 @@ async function main() {
     case 'usage': return cmdUsage(o);
     case 'start': case 'break': case 'resume': return session.run(o._[0], { ...o, repo: projectDir(o) });
     case 'scaffold': return cmdScaffold(o);
+    case 'chat': return cmdChat(o);
     case 'tips': return cmdTips(o);
-    case 'peak': return cmdPeak(o);
     case 'version': case '--version': console.log(VERSION); return 0;
-    default: console.error(`askai: unknown command "${cmd}"\n\n${HELP}`); return 2;
+    default: {
+      const renamed = { continue: 'askai resume', etiquette: 'askai guide all', checkpoint: 'askai session pause', work: 'askai guide work', peak: 'askai tips peak', projects: 'askai project list' };
+      if (renamed[cmd]) { console.error(`askai ${cmd} is now ${renamed[cmd]}`); return 2; }
+      console.error(`askai: unknown command "${cmd}"\n\n${HELP}`); return 2;
+    }
   }
 }
 

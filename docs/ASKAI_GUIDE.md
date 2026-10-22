@@ -27,7 +27,7 @@ Then run, from the repository: askai setup .
 Reply with what was installed, anything that failed, the plugin-ready report, and my to-do list. Change no other files. Remind me to restart this session, then run /askai-plugins once.
 ```
 
-Other ways to get it: `git clone https://github.com/aalokshah-business/AskAi`, or the ZIP from GitHub, then run `install.sh` or `install.ps1` in that folder with the same options. Keep it current with `askai upgrade` (AskAI itself) and `askai update` (the tools it installed). In the terminal afterwards: `askai help all` lists every command, `askai plugins info <id>` explains each plugin, `askai work` shows the etiquette with your open to-dos.
+Other ways to get it: `git clone https://github.com/aalokshah-business/AskAi`, or the ZIP from GitHub, then run `install.sh` or `install.ps1` in that folder with the same options. Keep it current with `askai upgrade` (AskAI itself) and `askai update` (the tools it installed). In the terminal afterwards: `askai help all` lists every command, `askai plugins info <id>` explains each plugin, `askai guide work` shows the etiquette with your open to-dos.
 
 AskAI is one command-line tool that sets up Claude Code, Codex, Antigravity and Cursor for the longest possible usage, checks that they stay that way, and helps at the two moments that waste the most: taking a break and coming back. Part 1 covers AskAI itself. Part 2 covers the habits no tool can automate. Part 3 is the research behind both.
 
@@ -51,7 +51,7 @@ AskAI automates every part of the research that a program can do: the one-time s
 | Before a break, before `/clear`, coming back | `askai break`, `askai clear`, `askai resume --copy` | All four |
 | Write the handoff from inside the agent | Ask it to update `.ai-work/HANDOFF.md` | All four |
 | Convert documents to Markdown | `askai convert <file or url>` | All four |
-| See what was spent; Claude peak hours | `askai usage`, `askai report`, `askai peak` | Claude Code, Codex |
+| See what was spent; Claude peak hours | `askai usage`, `askai report`, `askai tips peak` | Claude Code, Codex |
 
 What AskAI deliberately does not install: RTK, Context Mode, Headroom, proxies and routers. Independent benchmarks found they cost the same or more (Part 3). RTK and Context Mode stay available with `--rtk` and `--context-mode` for anyone who wants to measure them on their own work.
 
@@ -151,6 +151,8 @@ Serena, Headroom, Graphify, and MarkItDown need `uv`. AskAI tries `astral.sh` fi
 
 **What it creates.** AskAI's program and command go in `~/.claude/askai/`, with the manifest of what it added and backups of every file it changed. It adds keys to each tool's settings, a marked rules block to `CLAUDE.md`, `AGENTS.md` and `GEMINI.md`, rule files, the handoff command or skill, and Claude Code's reminder hooks. For each repository, `askai init <repo>` (or `--project <repo>` during install; PowerShell `-Project`) writes the knowledge pack above. `docs/INSTALL.md` lists every path.
 
+**Chat apps.** `askai chat` prints one short instruction and where to paste it. Claude chat (claude.ai and the Claude desktop app) uses Settings, Instructions for Claude. ChatGPT web and desktop use Settings, Personalization, Custom instructions, with Enable customization on. Gemini Apps uses gemini.google.com, Settings and help, Personal Intelligence, Instructions for Gemini. A separate piece of work, such as a book, gets its own project and a brief under 150 words. Put the current chapter in that project, not the whole manuscript, and start a new chat for each chapter. The brief stays. The old chat is not sent again. AskAI cannot read those apps' usage counters or move a plan reset. Claude Code, Cursor, Codex, and Antigravity are not configured by this paste. Use `askai install` for them, then `/askai-cli` (Codex: `$askai-cli`).
+
 **Install everything in one command: the `max` profile.** "Opt-in" means off unless you ask for it. With `max`, AskAI installs every optimiser it can and registers each one in all four tools:
 
 ```powershell
@@ -180,7 +182,7 @@ Each optimiser can also be added on its own: `--rtk`, `--context-mode`, `--headr
 - **Measure it:** independent tests found RTK, Context Mode and Headroom can raise cost, and with `max` several compressors overlap. After a week, compare `askai audit` and `askai usage 7` against a week on the default, and switch off what does not pay with `askai uninstall --only <id>`.
 - **Skills:** AskAI writes the handoff skill or command for every tool, four project skills for each repository (architecture-map, prompt-refiner, investigate-bug, verify-and-review), and trims Claude Code's rarely used built-in skills to their names. Graphify and the Caveman plugin add their own skills.
 
-**Remaining steps: `askai todo`.** Sign-ins, restarts and app settings need you. Repository facts that source files do not establish need review. `askai todo` lists each step and how to complete it. Items AskAI can check, such as a missing project purpose or graph, disappear once done; mark the others with `askai todo done <id>`. `askai infra`, `askai work`, the end of every install and the Claude Code session reminder show how many are open.
+**Remaining steps: `askai todo`.** Sign-ins, restarts and app settings need you. Repository facts that source files do not establish need review. `askai todo` lists each step and how to complete it. Items AskAI can check, such as a missing project purpose or graph, disappear once done; mark the others with `askai todo done <id>`. `askai infra`, `askai guide work`, the end of every install and the Claude Code session reminder show how many are open.
 
 **Shorter replies by default.** Output costs about five times as much as input on Claude, so four layers keep replies short without a plugin: the terse rule (Caveman-style, level full; `--caveman lite|full|ultra|off` changes it), a diff-only rule in every tool (show changes as a diff, never whole files, no recap), Codex's low verbosity setting, and the output line in every `askai prompt`. For one task, `askai prompt "..." --output diff` asks for nothing but the diff and one line per check.
 
@@ -231,9 +233,9 @@ All 27 runs exited cleanly and wrote no files. The plans used the right route fo
 |  | `askai suggest <dir>` · `askai profiles` · `askai project <repo>` | Profile for a folder · what each profile installs · Cursor rules into one repo |
 | Every session | `askai go <tool> --tier lead, build or chore "task"` | Starts Claude Code, Codex, Cursor or Antigravity with the tier's model and effort fixed, a structured prompt and a ledger entry |
 |  | `askai prompt "ask" [--kind bug\|feature\|design\|risky] [--output diff\|full] [--copy]` · `--output-safe "cmd"` · `--resume` | Structured prompt from a rough or dictated ask · plan a noisy command first · fresh-session prompt |
-|  | `askai work` · `askai etiquette` · `askai guide <moment>` · `askai ask <words>` | Working etiquette with your open to-dos · all of it · one moment · one rule with its evidence |
-|  | `askai check [repo] [--fix]` · `askai peak` · `askai tips` | Guideline audit with fixes · Claude peak hours · offline cheat sheet |
-| Breaks | `askai checkpoint` · `askai break` · `askai clear [compact]` · `askai continue` · `askai context <pct>` | Ledger entry · before-break checklist · is it safe to clear · coming back · what to do at this context level |
+|  | `askai guide work` · `askai guide all` · `askai guide <moment>` · `askai ask <words>` | Working etiquette with your open to-dos · all of it · one moment · one rule with its evidence |
+|  | `askai check [repo] [--fix]` · `askai tips peak` · `askai tips` | Guideline audit with fixes · Claude peak hours · offline cheat sheet |
+| Breaks | `askai session pause` · `askai break` · `askai clear [compact]` · `askai resume` · `askai context <pct>` | Ledger entry · before-break checklist · is it safe to clear · coming back · what to do at this context level |
 | Observe | `askai infra [repo]` · `askai savings [days]` · `askai audit` · `askai usage [days]` | Everything set up and used, per tool · each plugin's own savings report · seven-point token audit · what Claude Code and Codex spent |
 |  | `askai diff` · `askai graph` · `askai report` · `askai status` · `askai doctor` · `askai session report` | Review before handing off · the architecture diagram · Claude Code spend · per-tool state · health and billing · compare tools |
 | Tools | `askai plugins [info <id> \| install <id> \| decisions]` · `askai mcp [off\|on <name>]` · `askai convert <file>` · `askai docs [name] [--print]` | Each plugin's commands, checks, savings and off switch · the MCP switch for all four tools · documents to Markdown · the guides in the terminal |
@@ -278,7 +280,7 @@ Every key is added only when you have not set it, so your own choices stay. Each
 ### A working day with AskAI
 
 1. **Once per repository:** `askai init .` asks what the project is about and writes the knowledge pack (or `askai install --project <repo>` during setup).
-2. **Start of day:** `askai check .` (fix anything marked `FAIL` first: those bill you outside your plan) and `askai peak` before a big job.
+2. **Start of day:** `askai check .` (fix anything marked `FAIL` first: those bill you outside your plan) and `askai tips peak` before a big job.
 3. **Start a task:** `askai go claude --tier build "fix the cart rounding in src/cart.ts"` (also `codex`, `cursor`, `agy`). The tier fixes the model and effort for the whole session. For a dictated ask, `askai prompt "..." --copy` shapes it first.
 4. **While working:** follow Part 2. In Claude Code, reminders appear at 60% and 80% context; for anything else, `askai guide work` or `askai ask <words>`.
 5. **Task done, or context past 60%:** ask the agent to write `.ai-work/HANDOFF.md`, then run `askai clear` to check the handoff is real. Then `/clear` in the same terminal and paste `askai prompt --resume`: the new session reads the handoff and project files, not the old chat.
@@ -364,7 +366,7 @@ AskAI sets a cheap default, but which model a task deserves is your call. Start 
 | Everyday features and fixes | Sonnet (Haiku when it copes), medium | Sol, medium | Flash, or Pro if Flash struggles | Auto, or a mid-tier model |
 | Hard debugging, architecture, security | Sonnet with `/advisor opus`, or Opus, high | Sol, high | Pro or Claude, high | A frontier model, without Max Mode |
 
-Leave the speed and big-context modes off unless speed matters more than usage: Claude fast mode (credits at 2x), Codex Fast (2.5x) and Ultrafast (8x), Cursor Max Mode, Antigravity `/boost`. Run big jobs outside Claude's peak hours, weekdays 08:00–14:00 US Eastern; `askai peak` shows them in your time zone.
+Leave the speed and big-context modes off unless speed matters more than usage: Claude fast mode (credits at 2x), Codex Fast (2.5x) and Ultrafast (8x), Cursor Max Mode, Antigravity `/boost`. Run big jobs outside Claude's peak hours, weekdays 08:00–14:00 US Eastern; `askai tips peak` shows them in your time zone.
 
 **Breaks: the steps only you can take.** `askai break` reminds you, but you stop the work: finish the verified step, commit or stash, and end any `/loop`, `/goal`, agent team or background agent. Coming back, decide with `askai resume`'s advice: within the cache lifetime and with a small context, continue; otherwise start fresh from the handoff.
 
@@ -520,7 +522,7 @@ You sent two screenshot sets, and every page was read.
 | 6 | Lean CLAUDE.md under 200 lines, as an index | True (Anthropic agrees) | `askai check` measures it |
 | 7 | Compact at \~60%; clear after 3–4 compacts | Partly: hand off and clear at a boundary instead | `askai break` / `resume` |
 | 8 | Agent workflows 7–10x tokens; Haiku subagents | True (about 7x for teams) | Haiku subagent default |
-| 9 | Peak hours 8 AM–2 PM ET weekdays | True for Claude; 17:30–23:30 IST in US summer, 18:30–00:30 IST in winter | `askai peak`, `askai check` |
+| 9 | Peak hours 8 AM–2 PM ET weekdays | True for Claude; 17:30–23:30 IST in US summer, 18:30–00:30 IST in winter | `askai tips peak`, `askai check` |
 | 10–11 | Headroom install | Works, but median +32% cost | Not installed |
 | 12 | `/doctor`; rules loaded by keyword; a cache-aware status line | `/doctor` is built in and worth a weekly run | `askai check`, status line |
 | 13 | Karpathy rules; a routing table using only Sonnet and Opus at high or max effort | Keep the rules; the table maximises quality, not usage | Build-lean rule; Haiku default |
