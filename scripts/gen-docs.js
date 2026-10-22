@@ -93,7 +93,7 @@ const COMMAND_SOURCE = {
   diff: 'askai.js cmdDiff',
   graph: 'askai.js cmdGraph',
   hook: 'lib/hook.js',
-  check: 'askai.js cmdCheck; lib/check.js',
+  check: 'askai.js cmdCheck; lib/check.js; lib/findings.js',
   setup: 'askai.js cmdSetup',
   ask: 'askai.js cmdAsk; lib/kb.js',
   usage: 'askai.js cmdUsage; lib/usage.js',

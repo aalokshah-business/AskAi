@@ -331,7 +331,7 @@ Where each command is implemented. Written from the `case` list in `askai.js` be
 | `askai diff` | `askai.js cmdDiff` |
 | `askai graph` | `askai.js cmdGraph` |
 | `askai hook` | `lib/hook.js` |
-| `askai check` | `askai.js cmdCheck; lib/check.js` |
+| `askai check` | `askai.js cmdCheck; lib/check.js; lib/findings.js` |
 | `askai setup` | `askai.js cmdSetup` |
 | `askai ask` | `askai.js cmdAsk; lib/kb.js` |
 | `askai usage` | `askai.js cmdUsage; lib/usage.js` |
@@ -502,7 +502,7 @@ Examples:
   askai check
   askai check . --fix
 
-Exit: 1 when an item fails (bills outside your plan), else 0
+Exit: 1 when a finding is severity now (bills outside your plan), else 0
 ```
 
 #### `askai ask`
