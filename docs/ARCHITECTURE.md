@@ -573,6 +573,7 @@ askai usage: What Claude Code and Codex spent, from their local data; where to l
 Usage: askai usage [days]
 
 Claude Code: ccusage when installed, else the transcript spend report. Codex: ~/.codex/sessions, read best effort.
+When neither has sessions, one reason is printed. No zero tables.
 
 Examples:
   askai usage 7

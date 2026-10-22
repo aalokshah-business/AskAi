@@ -1096,18 +1096,21 @@ function cmdAsk(o) {
 function cmdUsage(o) {
   const days = Number(o._[1] || o.hours || 7) || 7;
   const ctx = buildCtx(o, true);
-  console.log(`=== Claude Code, last ${days} day(s) ===`);
+  let claudeText = '';
+  let claudeError = '';
   if (ctx.which('ccusage')) {
     const r = ctx.probe('ccusage', ['daily', '--since', new Date(Date.now() - days * 86400000).toISOString().slice(0, 10).replace(/-/g, '')], { timeout: 90000 });
-    console.log(r.ok ? String(r.stdout).trimEnd().split(/\r?\n/).slice(0, 40).join('\n') : `ccusage failed: ${firstLineOf(r.stderr || r.stdout)}`);
+    if (r.ok) claudeText = String(r.stdout).trimEnd().split(/\r?\n/).slice(0, 40).join('\n');
+    else claudeError = `ccusage failed: ${firstLineOf(r.stderr || r.stdout)}`;
   } else {
     const script = path.join(SRC, 'hooks', 'askai-report.js');
     const r = require('child_process').spawnSync(process.execPath, [script, '--hours', String(days * 24)], { encoding: 'utf8', maxBuffer: 256 * 1024 * 1024, env: { ...process.env, ...(o.claudeHome ? { CLAUDE_CONFIG_DIR: ctx.paths.home } : {}) } });
-    console.log(r.status === 0 ? String(r.stdout).trimEnd().split(/\r?\n/).slice(0, 30).join('\n') : 'No Claude Code transcripts readable here. Install ccusage (askai install --ccusage) or use /usage in Claude Code.');
+    if (r.status === 0) claudeText = String(r.stdout || '').trimEnd().split(/\r?\n/).slice(0, 30).join('\n');
   }
-  console.log(`\n=== Codex, last ${days} day(s) ===`);
-  console.log(ctx.codexPaths ? usage.renderCodex(usage.codex(ctx.codexPaths.home, days)) : 'No Codex folder (sandboxed run without --codex-home).');
-  console.log('\n=== Antigravity and Cursor ===\nNo local usage log to read: Antigravity /usage (per-model quota) and /credits; Cursor Dashboard, Usage tab (tokens per request).');
+  const codex = ctx.codexPaths ? usage.codex(ctx.codexPaths.home, days) : { files: 0 };
+  const claudeInstalled = !!(ctx.which && ctx.which('claude')) || fs.existsSync(ctx.paths.settings);
+  const codexInstalled = !!(ctx.which && ctx.which('codex')) || !!(ctx.codexPaths && fs.existsSync(ctx.codexPaths.home));
+  console.log(usage.summarizeUsage({ days, claudeText, claudeError, codex, claudeInstalled, codexInstalled }));
   return 0;
 }
 function cmdSession(o) {
