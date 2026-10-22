@@ -9,6 +9,8 @@ Prepare finds the project itself: the named path, otherwise the repository or ma
 
 If `action` is `launch`, the pack is current. Open the terminal.
 
+Prepare installs the `max` profile for the recorded target before init, and records that profile so a later upgrade keeps it. Components already healthy are skipped. A download that fails, including Serena when `astral.sh` is blocked, is not a failed review. Claude LSP is part of `max` and is installed only when Claude Code is a selected target.
+
 If `action` is `review`, prepare already ran `askai init --path <project-folder> --yes` when the pack was missing or source had changed (scan, official docs, project files). Then:
 1. For a new project, inspect the small router and map, then search `docs/ai/SOURCE_INDEX.md` for relevant paths; do not load the whole index into the chat. For a stale project, begin with `review.changed`, `review.removed`, and `review.missing` from prepare, then inspect affected documentation and code. If `review.pathsTruncated` is true, get the full path list with `askai review status --project <name> --all --json` before marking review done. Check static conclusions against source and tests. Research the detected stack in official docs when web tools exist. Do not send private source to web services.
 2. Fill evidence-backed gaps in `AGENTS.md`, `CLAUDE.md`, `GEMINI.md`, `.cursorignore`, `docs/ai/PROJECT_MAP.md`, `ARCHITECTURE.md`, `FEATURES.md`, `MODELS.md`, and the generated agent files and skills. Keep always-loaded instructions short. Preserve user edits. Put the current goal in `WORK_ORDER.md` only if this chat established it. Write `HANDOFF.md` only from actual session progress. Do not invent decisions, security invariants, or feature completion.

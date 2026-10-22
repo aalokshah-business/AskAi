@@ -3,7 +3,7 @@
 // (baseline, caveman, statusline) are exercised, so no winget, uv, network or plugin command is ever run.
 const test = require('node:test');
 const assert = require('node:assert');
-const { parseArgs, select, launchPlan, sessionTerminalPlan, VERSION } = require('../askai');
+const { parseArgs, select, launchPlan, sessionTerminalPlan, cliInstallPlan, VERSION } = require('../askai');
 const { ASKAI, WIN, tmpHome, rm, write, readJson, cli, fs, path } = require('./helpers');
 
 const SAFE = ['--only', 'baseline,caveman,statusline', '--no-path', '--yes'];
@@ -25,6 +25,14 @@ test('launchPlan: a headless machine uses tmux, then screen, then this terminal'
   assert.equal(launchPlan({ platform: 'linux', display: ':0' }), 'message');
   assert.equal(launchPlan({ platform: 'win32', tmux: true }), 'win32');
   assert.equal(launchPlan({ platform: 'darwin', tmux: true }), 'darwin');
+});
+
+test('cliInstallPlan: prepare installs max, and skips dry, sandbox, and test runs', () => {
+  assert.equal(cliInstallPlan({}), 'max');
+  assert.equal(cliInstallPlan({ dry: true }), 'skip');
+  assert.equal(cliInstallPlan({ sandbox: true }), 'skip');
+  assert.equal(cliInstallPlan({ test: true }), 'skip');
+  assert.equal(cliInstallPlan({ need: 'about' }), 'skip');
 });
 
 test('sessionTerminalPlan: headless Linux installs tmux without a password prompt', () => {

@@ -1133,6 +1133,31 @@ function commandOnPath(name) {
   const found = cp.spawnSync('sh', ['-c', `command -v ${name}`], { encoding: 'utf8' });
   return found.status === 0 && !!String(found.stdout || '').trim();
 }
+function cliInstallPlan(env) {
+  if (env.dry || env.sandbox || env.test || env.skip || env.need) return 'skip';
+  return 'max';
+}
+async function installMaxFromCli(o) {
+  const ctx = buildCtx({ ...o, yes: true }, true);
+  const plan = cliInstallPlan({
+    dry: !!o.dry,
+    sandbox: !!ctx.sandbox,
+    test: !!process.env.NODE_TEST_CONTEXT || process.env.ASKAI_CLI_INSTALL === '0',
+    need: false,
+  });
+  if (plan === 'skip') return { profile: 'max', skipped: true };
+  const target = o.target || ctx.manifest.target;
+  const installOpts = { ...o, yes: true, profile: 'max', only: undefined, skip: undefined, project: undefined };
+  if (target) installOpts.target = target;
+  console.error(`Installing profile max${target ? ` for ${target}` : ''}. Already healthy components are skipped.`);
+  const prev = console.log;
+  console.log = console.error;
+  let code = 1;
+  try { code = await cmdInstall(installOpts) || 0; }
+  catch (e) { console.error(`askai cli: max install failed: ${e.message}`); code = 1; }
+  finally { console.log = prev; }
+  return { profile: 'max', target: target || 'auto', code };
+}
 function launchPlan(env) {
   if (env.platform === 'win32' || env.platform === 'darwin') return env.platform;
   if ((env.display || env.wayland) && env.xterm) return 'x-terminal-emulator';
@@ -1310,6 +1335,7 @@ async function cmdPrepare(o) {
         instruction: 'Ask the user. Dictation in the chat is enough. Run again with --about "their words", or pass the default text when they accept it. Do not review until --about is set. AskAI cannot open a microphone.',
       });
     }
+    const install = await installMaxFromCli(o);
     let init = 'skipped';
     let info = project.detect(dir);
     if (reviewing) {
@@ -1324,7 +1350,7 @@ async function cmdPrepare(o) {
     }
     const action = reviewing ? 'review' : 'launch';
     return emit(0, {
-      action, init, project: picked.project, path: dir, how: picked.how,
+      action, init, install, project: picked.project, path: dir, how: picked.how,
       review: { state: review.state, changedCount: review.changedCount, removedCount: review.removedCount,
         changed: review.changed, removed: review.removed, pathsTruncated: review.pathsTruncated,
         skipped: review.skippedFiles, missing },
@@ -1431,4 +1457,4 @@ async function main() {
 if (require.main === module) {
   main().then(code => { process.exitCode = code || 0; }, e => { console.error(`askai: ${e.message}`); process.exitCode = 1; });
 }
-module.exports = { parseArgs, buildCtx, select, main, launchPlan, sessionTerminalPlan, VERSION };
+module.exports = { parseArgs, buildCtx, select, main, launchPlan, sessionTerminalPlan, cliInstallPlan, VERSION };

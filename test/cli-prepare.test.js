@@ -54,7 +54,7 @@ test('cli --prepare inits a named folder offline and launches only after review 
   fs.mkdirSync(proj);
   fs.writeFileSync(path.join(proj, 'package.json'), JSON.stringify({ name: 'shop', description: 'A shop', scripts: { test: 'node --test', build: 'node build.js' } }));
   fs.writeFileSync(path.join(proj, 'index.js'), 'console.log(1)\n');
-  const env = { ASKAI_HOME: process.env.ASKAI_HOME };
+  const env = { ASKAI_HOME: process.env.ASKAI_HOME, ASKAI_CLI_INSTALL: '0' };
   const args = ['cli', '--prepare', '--json', '--offline', '--about', 'A shop for members', '--path', proj];
   const first = cli(args, { env });
   assert.strictEqual(first.code, 0, first.err + first.out);
@@ -110,7 +110,7 @@ test('cli --prepare requires a description before a review', () => withHome(root
   const proj = path.join(root, 'shop');
   fs.mkdirSync(proj);
   fs.writeFileSync(path.join(proj, 'package.json'), JSON.stringify({ name: 'shop', description: 'A shop' }));
-  const env = { ASKAI_HOME: process.env.ASKAI_HOME };
+  const env = { ASKAI_HOME: process.env.ASKAI_HOME, ASKAI_CLI_INSTALL: '0' };
   const blocked = cli(['cli', '--prepare', '--json', '--offline', '--path', proj], { env });
   assert.strictEqual(blocked.code, 2);
   const body = JSON.parse(blocked.out);

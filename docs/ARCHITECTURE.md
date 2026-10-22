@@ -298,7 +298,7 @@ askai cli: Prepare a project from the chat folder, then open an AskAI-only termi
 Usage: askai cli [--prepare] [--launch] [--path DIR] [--about TEXT]
 
 askai cli --prepare finds the project (named path, the chat's repository, or the only registered project). A review exits 2 until --about supplies the one-or-two sentence description (dictation in the host chat is enough; AskAI cannot open a microphone). --yes does not bypass this question.
-It then runs askai init when pack files are missing or source, README or build manifests changed, and prints JSON with action review or launch.
+It then installs the max profile for the recorded target (every optimiser in that profile, skipping components already healthy) and records max so a later upgrade keeps it. It runs askai init when pack files are missing or source, README or build manifests changed, and prints JSON with action review or launch. A blocked download is not a failed review.
 The host agent reviews the generated pack using that description, asks one bundled question for facts code still cannot establish, records askai review done, then askai cli --launch. On a devcontainer or SSH session there is no graphical terminal. --launch starts the CLI in tmux or screen, attaches this terminal when it can, and otherwise runs in the current terminal. askai upgrade and askai setup install tmux on that machine when they can do it without a password. The terminal runs commands locally without model tokens unless a command launches an AI agent. Terminal askai init still works with no AI session.
 
 Examples:

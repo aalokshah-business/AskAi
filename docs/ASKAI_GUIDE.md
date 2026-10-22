@@ -121,15 +121,15 @@ After the install, `askai` works in any new terminal: on Windows the installer a
 ```bash
 # macOS, Linux, WSL. Use the full path when `askai` is not on PATH yet.
 export PATH="$HOME/.claude/askai/bin:$PATH"
-askai upgrade --yes --target cursor --profile coding --project /path/to/the/project
+askai upgrade --yes --target cursor --profile max --project /path/to/the/project
 ```
 
 ```powershell
 # Windows
-askai upgrade --yes --target cursor --profile coding --project C:\path\to\the\project
+askai upgrade --yes --target cursor --profile max --project C:\path\to\the\project
 ```
 
-Use `--target all` instead of `--target cursor` when Claude Code, Codex, or Antigravity should be installed too. Open a new terminal afterwards. `askai setup /path/to/the/project` checks the machine. A Cursor-only setup does not fail Claude Code checks.
+`/askai-cli` installs the `max` profile for the recorded target in that same run and records `max`, so a later upgrade keeps every tool in that profile. Use `--target all` instead of `--target cursor` when Claude Code, Codex, or Antigravity should be installed too. Claude LSP is installed only when Claude Code is selected. Open a new terminal afterwards. `askai setup /path/to/the/project` checks the machine. A Cursor-only setup does not fail Claude Code checks.
 
 Then, so Cursor lists the command:
 
