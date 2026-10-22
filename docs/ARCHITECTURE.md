@@ -570,13 +570,15 @@ Exit: 0
 ```text
 askai usage: What Claude Code and Codex spent, from their local data; where to look for Antigravity and Cursor.
 
-Usage: askai usage [days]
+Usage: askai usage [days] [--cache]
 
 Claude Code: ccusage when installed, else the transcript spend report. Codex: ~/.codex/sessions, read best effort.
 When neither has sessions, one reason is printed. No zero tables.
+--cache prints cache hit per session from status-line snapshots for that window. One line when there are none.
 
 Examples:
   askai usage 7
+  askai usage --cache
 
 Exit: 0
 ```
