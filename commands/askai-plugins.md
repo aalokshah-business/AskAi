@@ -10,7 +10,7 @@ Run `askai plugins ready --json`. If the user named a project or folder, add `--
 These tools do not read a prompt by themselves. Serena, Context7, Headroom, and Context Mode start with the app and wait. Call one later in this chat only when its `when` line matches the task. Do not call them now just to prove they work. Leave Headroom's proxy off.
 
 Do the `actions` in order. They belong to this command:
-- `run` is `/graphify .`: run that once in the project folder. It reads the repository and spends tokens once. Skip it only if the user said not to build the graph.
+- `run` is `graphify update .`: run that once in the project folder. It reads source only and spends no tokens. Skip it only if the user said not to build the graph. Do not run `/graphify .` unless they asked for docs and images in the graph. That command needs the Graphify skill and spends tokens.
 - any other `run`: run that command in the terminal. Do not add flags.
 
 Then tell the user, in a few lines, which tools are connected, which you will call when the task matches, and which action you ran.

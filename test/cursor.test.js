@@ -245,6 +245,19 @@ test('cursorCommandText keeps a description and drops Claude-only frontmatter', 
   assert.ok(!text.includes('disable-model-invocation'));
 });
 
+test('scopeGraphifyRule turns an always-on graphify rule off', () => {
+  const home = tmpHome();
+  try {
+    const file = path.join(home, 'graphify.mdc');
+    write(file, '---\nalwaysApply: true\n---\nQuery before Read.\n');
+    assert.strictEqual(cursor.scopeGraphifyRule(file, true), true);
+    assert.match(read(file), /alwaysApply: true/);
+    assert.strictEqual(cursor.scopeGraphifyRule(file, false), true);
+    assert.match(read(file), /alwaysApply: false/);
+    assert.strictEqual(cursor.scopeGraphifyRule(file, false), false);
+  } finally { rm(home); }
+});
+
 test('removeProject: dry-run leaves the files', () => withDirs((ctx, d) => {
   cursor.writeProject(makeCtx(d.home), d.proj, cursor.projectFiles(profiles.get('coding'), [], 'full'), false);
   assert.strictEqual(cursor.removeProject(ctx, d.proj).length, 2);

@@ -119,6 +119,8 @@ test('init upgrades blank pack files and keeps a written goal, handoff and ignor
     assert.match(read('.ai-work/HANDOFF.md'), /No session recorded/);
     assert.doesNotMatch(read('.ai-work/HANDOFF.md'), /<one sentence>/);
     assert.match(read('.cursorignore'), /photos\//);
+    assert.match(read('.cursorignore'), /graphify-out\//);
+    assert.match(read('.gitignore'), /\/graphify-out\//);
     assert.match(read('.cursorignore'), /Terminal and MCP tools can still read ignored paths/);
     assert.match(read('docs/ai/PROJECT_MAP.md'), /`notes\/` \| 1 \| \.txt \| not stated in README or a known folder name/);
     assert.match(read('docs/ai/SOURCE_INDEX.md'), /## Folders/);

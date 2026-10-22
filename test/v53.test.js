@@ -121,7 +121,8 @@ test('plugins ready tells which tools wait and which one-time step is left', () 
   assert.strictEqual(row('context-mode').state, 'connected, waits for a matching task');
   assert.strictEqual(row('graphify').state, 'installed, graph not built');
   assert.strictEqual(row('rtk').state, 'installed, hook not registered');
-  assert.deepStrictEqual(report.actions.map(a => a.id), ['graphify', 'rtk']);
+  assert.deepStrictEqual(report.actions.map(a => a.run), ['graphify update .', 'askai install --only rtk,cursor-rtk --yes']);
+  assert.strictEqual(report.actions[0].tokens, false);
   write(path.join(dir, 'graphify-out', 'GRAPH_REPORT.md'), '# g');
   write(ctx.cursorPaths.hooks, JSON.stringify({ hooks: { beforeShellExecution: [{ command: 'rtk hook cursor' }] } }));
   const done = require('../lib/plugins-ready').ready(ctx, dir);

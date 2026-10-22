@@ -187,7 +187,7 @@ In install order. Evidence labels: measured (a third-party saving), mixed, claim
 - **`context7`** · all hosts · opt-in (--context7) · evidence: none.
   Context7 (current library docs over MCP). register `npx -y @upstash/context7-mcp` as an MCP server in Claude Code, Codex, Cursor and Antigravity (needs Node.js; the agent calls it only for library docs)
 - **`graphify`** · all hosts · opt-in (--graphify) · evidence: claims.
-  Graphify (code knowledge graph skill). uv tool install graphifyy if missing; `graphify install --platform claude|codex|cursor|antigravity` for each tool in play (its skill, a rule and, in Claude Code, a search hook). Build a project's graph once inside the agent: /graphify .
+  Graphify (code knowledge graph skill). uv tool install graphifyy if missing; `graphify install --platform claude|codex|cursor|antigravity` for each tool in play (its skill, a rule and, in Claude Code, a search hook). The Cursor rule is left off for ordinary turns. Build a project graph once with graphify update . (source only, no tokens). /graphify . also reads docs and images and spends tokens.
 - **`repomix`** · all hosts · opt-in (--repomix) · evidence: none.
   Repomix (repository snapshot CLI, used on demand). npm install -g repomix if missing; nothing loads into sessions; use it for handovers between tools: repomix --compress --include "src/**"
 - **`codebase-memory`** · all hosts · opt-in (--codebase-memory) · evidence: claims.
