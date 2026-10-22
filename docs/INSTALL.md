@@ -118,9 +118,9 @@ Connected MCP servers do not read each prompt. The agent calls Serena, Context7,
 | Package manager for tools | winget (built into Windows 11; "App Installer" from the Microsoft Store on 10) | Homebrew recommended | Homebrew optional; otherwise the vendors' installer scripts and cargo |
 | Shell | PowerShell 5.1 or later | zsh or bash | bash |
 | git | Recommended (the ledger records branch and commit) | Recommended | Recommended |
-| Network | claude.ai, astral.sh (uv, for Serena and markitdown), github.com, registry.npmjs.org, pypi.org | same | same |
+| Network | claude.ai, astral.sh or pypi.org (uv, for Serena, Headroom, Graphify, and markitdown), github.com, registry.npmjs.org | same | same |
 
-Install the AI tools you use first, or let AskAI install Claude Code. Codex: `npm i -g @openai/codex`. Antigravity: its installer from antigravity.google. Cursor: cursor.com/download. AskAI sets up every one it finds. Context Mode (opt-in only) needs Node 22.5 or newer.
+Install the AI tools you use first, or let AskAI install Claude Code. Codex: `npm i -g @openai/codex`. Antigravity: its installer from antigravity.google. Cursor: cursor.com/download. AskAI sets up every one it finds. Context Mode needs Node 22.5 or newer. Leave the Node already in a project image when other software depends on it; Context Mode stays off until that Node is new enough. RTK stays off without Homebrew or Rust. `gh` without Homebrew is `sudo apt-get install -y gh`.
 
 AskAI never prompts for a password or an administrator dialog. Settings go into your user folders. The one package install is `tmux` on a headless Linux machine, and only when the user is already root or `sudo -n` works.
 

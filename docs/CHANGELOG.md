@@ -5,6 +5,7 @@ AskAI follows semantic versioning from 1.0.0 (see [RELEASING.md](RELEASING.md)).
 ## Unreleased
 
 - `askai cli --prepare` installs the `max` profile for the recorded target and records that profile. `/askai-cli` then inits the project in the same run. Components already healthy are skipped.
+- When `astral.sh` is blocked, uv is installed with `python3 -m pip install --user uv` and the blocked host is not retried. Serena, Headroom, Graphify, and MarkItDown then continue. Context Mode stays off on Node older than 22.5 instead of asking for a Node replacement. `gh` without Homebrew names `sudo apt-get install -y gh`.
 - On a devcontainer or SSH session, `askai cli --launch` starts the CLI in `tmux` or `screen` and attaches the current terminal when it can. `askai upgrade`, `askai update`, and `askai setup` install `tmux` on that machine when the user is root or `sudo -n` works. They never wait for a password.
 
 ## 1.2.5 (22 October 2026): Linux and Windows host setup

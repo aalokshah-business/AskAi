@@ -180,11 +180,38 @@ test('pkg: off Windows it prefers Homebrew, then the vendor script, then cargo, 
   const script = mk({ curl: '/u/curl' });
   pkg.install(script, 'astral-sh.uv', () => true);
   assert.ok(script.calls.some(x => x.includes('astral.sh/uv/install.sh')));
+  assert.ok(!script.calls.some(x => x.includes('pip install')), 'a present uv does not also install from PyPI');
   const cargo = mk({ cargo: '/c/cargo' });
   pkg.install(cargo, 'rtk-ai.rtk', () => true);
   assert.ok(cargo.calls.includes('act cargo install --git https://github.com/rtk-ai/rtk'), 'git install, not the unrelated crate');
   assert.throws(() => pkg.install(mk({}), 'rtk-ai.rtk', () => false), /rustup|brew\.sh/);
   assert.match(pkg.describe(mk({ curl: '/u/curl' }), 'Anthropic.ClaudeCode'), /claude\.ai\/install\.sh/);
+}));
+
+test('pkg: uv falls back to pip when its installer host is blocked', () => withHome(home => {
+  const ctx = makeCtx(home);
+  const win = process.platform === 'win32';
+  const tools = win ? { winget: 'C:\\Windows\\winget.exe', python: 'C:\\Python\\python.exe' } : { curl: '/u/curl', python3: '/u/python3' };
+  const py = win ? 'python' : 'python3';
+  ctx.which = n => (n === 'uv' && ctx._uv ? (win ? 'C:\\Users\\u\\.local\\bin\\uv.exe' : '/home/.local/bin/uv') : tools[n] || null);
+  ctx.act = (label, cmd, args) => {
+    ctx.calls.push(['act', cmd, ...args].join(' '));
+    const primary = win ? cmd === 'winget' : cmd === 'sh';
+    if (primary) return { ok: false, status: 56, stdout: '', stderr: 'connection reset by peer', error: null };
+    ctx._uv = true;
+    return { ok: true, status: 0, stdout: '', stderr: '', error: null };
+  };
+  pkg.install(ctx, 'astral-sh.uv', () => !!ctx.which('uv'));
+  if (!win) assert.strictEqual(ctx.calls.filter(x => x.includes('astral.sh')).length, 1, 'a blocked uv host is not retried');
+  assert.ok(ctx.calls.some(x => x.includes(`${py} -m pip install --user uv`)));
+  const neither = makeCtx(home);
+  neither.which = n => tools[n] || null;
+  neither.act = (label, cmd, args) => {
+    neither.calls.push(['act', cmd, ...args].join(' '));
+    return { ok: false, status: 1, stdout: '', stderr: 'connection reset by peer', error: null };
+  };
+  assert.throws(() => pkg.install(neither, 'astral-sh.uv', () => false), /pip install --user uv/);
+  assert.match(pkg.describeOther({ which: () => null }, 'astral-sh.uv'), /pip install --user uv/);
 }));
 
 // ---- session, scaffold, tips -----------------------------------------------------------------------------------------

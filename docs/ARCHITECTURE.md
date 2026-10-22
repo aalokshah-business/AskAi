@@ -159,15 +159,15 @@ In install order. Evidence labels: measured (a third-party saving), mixed, claim
 - **`context-mode`** · Claude Code · opt-in (--context-mode) · evidence: reported.
   Context Mode (sandboxed tool output + session memory; opt-in). claude plugin marketplace add mksglu/context-mode; claude plugin install context-mode@context-mode (plugin hooks + ctx_* MCP tools; needs Node >= 22.5)
 - **`serena`** · Claude Code · in its profiles · evidence: unmeasured.
-  Serena (symbol-level code navigation). winget install astral-sh.uv on Windows, brew install uv on macOS, curl -fsSL https://astral.sh/uv/install.sh | sh on Linux if missing; uv tool install -p 3.13 serena-agent (a stale uv python link is repaired if it blocks this); serena init; add its bin dir to the user PATH; claude mcp add --scope user serena (dashboard auto-open off)
+  Serena (symbol-level code navigation). winget install astral-sh.uv on Windows, brew install uv on macOS, curl -fsSL https://astral.sh/uv/install.sh | sh; if that host is blocked, python3 -m pip install --user uv on Linux if missing; uv tool install -p 3.13 serena-agent (a stale uv python link is repaired if it blocks this); serena init; add its bin dir to the user PATH; claude mcp add --scope user serena (dashboard auto-open off)
 - **`cursor-rtk`** · Cursor · in its profiles · evidence: reported · mirrors `rtk`.
   RTK for Cursor (shell output compression hook). winget install rtk-ai.rtk on Windows, brew install rtk on macOS, cargo install --git https://github.com/rtk-ai/rtk (needs Rust from rustup.rs, or Homebrew) on Linux if missing; rtk init -g --agent cursor --auto-patch (registers RTK's shell hook in ~/.cursor/hooks.json); backup first
 - **`cursor-context-mode`** · Cursor · in its profiles · evidence: reported · mirrors `context-mode`.
   Context Mode for Cursor (MCP server). npm install -g context-mode@1.0.169 if missing (needs Node >= 22.5); add a "context-mode" entry to ~/.cursor/mcp.json (MCP tools only; Cursor does not run its hooks)
 - **`cursor-serena`** · Cursor · in its profiles · evidence: unmeasured · mirrors `serena`.
-  Serena for Cursor (MCP server). winget install astral-sh.uv on Windows, brew install uv on macOS, curl -fsSL https://astral.sh/uv/install.sh | sh on Linux if missing; uv tool install -p 3.13 serena-agent; serena init; add a "serena" entry (--context ide, project from the working directory) to ~/.cursor/mcp.json
+  Serena for Cursor (MCP server). winget install astral-sh.uv on Windows, brew install uv on macOS, curl -fsSL https://astral.sh/uv/install.sh | sh; if that host is blocked, python3 -m pip install --user uv on Linux if missing; uv tool install -p 3.13 serena-agent; serena init; add a "serena" entry (--context ide, project from the working directory) to ~/.cursor/mcp.json
 - **`markitdown`** · all hosts · opt-in (--markitdown) · evidence: unmeasured.
-  markitdown (PDF and Office files to Markdown). winget install astral-sh.uv on Windows, brew install uv on macOS, curl -fsSL https://astral.sh/uv/install.sh | sh on Linux if missing; uv tool install -p 3.13 markitdown[pdf,docx,pptx,xlsx,xls] (Microsoft, runs locally; converts a document to Markdown once so it is read as text); add its bin dir to the user PATH
+  markitdown (PDF and Office files to Markdown). winget install astral-sh.uv on Windows, brew install uv on macOS, curl -fsSL https://astral.sh/uv/install.sh | sh; if that host is blocked, python3 -m pip install --user uv on Linux if missing; uv tool install -p 3.13 markitdown[pdf,docx,pptx,xlsx,xls] (Microsoft, runs locally; converts a document to Markdown once so it is read as text); add its bin dir to the user PATH
 - **`cursor-rules`** · Cursor · in its profiles · evidence: unmeasured · mirrors `rules`.
   Cursor user rules (~/.cursor/rules). writes ~/.cursor/rules/askai-*.mdc for the profile (always-applied token rules, plus glob-scoped code and document rules). Cursor loads these in every project on this machine. A file without the askai marker is left alone
 - **`ccusage`** · Claude Code · opt-in (--ccusage) · evidence: none.
@@ -181,7 +181,7 @@ In install order. Evidence labels: measured (a third-party saving), mixed, claim
 - **`statusline`** · Claude Code · in its profiles · evidence: measured.
   Status line (measured savings). settings.json: statusLine -> `askai statusline` (RTK savings + Context Mode line); skipped if you already have a statusLine
 - **`base-tools`** · all hosts · opt-in (--base-tools) · evidence: none.
-  Base command-line tools (ripgrep, jq, gh). winget install BurntSushi.ripgrep.MSVC on Windows, brew install ripgrep on macOS, manual: sudo apt-get install ripgrep  (or dnf install ripgrep) on Linux, winget install jqlang.jq on Windows, brew install jq on macOS, manual: sudo apt-get install jq  (or dnf install jq) on Linux, winget install GitHub.cli on Windows, brew install gh on macOS, manual: see https://cli.github.com for your distribution on Linux, each only if missing
+  Base command-line tools (ripgrep, jq, gh). winget install BurntSushi.ripgrep.MSVC on Windows, brew install ripgrep on macOS, manual: sudo apt-get install ripgrep  (or dnf install ripgrep) on Linux, winget install jqlang.jq on Windows, brew install jq on macOS, manual: sudo apt-get install jq  (or dnf install jq) on Linux, winget install GitHub.cli on Windows, brew install gh on macOS, manual: sudo apt-get install -y gh  (or dnf install gh; https://cli.github.com) on Linux, each only if missing
 - **`headroom`** · all hosts · opt-in (--headroom) · evidence: reported.
   Headroom (MCP mode: on-demand compression tools, no proxy). uv tool install --python 3.13 "headroom-ai[mcp]" if missing; register `headroom mcp serve` as an MCP server in Claude Code, Codex, Cursor and Antigravity (headroom_compress, headroom_retrieve, headroom_stats). Proxy mode is NOT set up: it can move Claude Code to API billing
 - **`context7`** · all hosts · opt-in (--context7) · evidence: none.
@@ -318,7 +318,7 @@ askai install: Install and wire the token-saving setup for Claude Code, Codex, A
 Usage: askai install [--profile P] [--target T] [--dry-run] [--yes] [options]
 
 Detects each component, shows the plan, asks once, installs what is missing or partial, and records what it added in a manifest.
-Adds settings only when you have not set them; backs up every file before its first change; never prompts for a password. On a headless Linux machine, install, update and setup install tmux when the user is root or sudo -n works, so askai cli --launch can open a session.
+Adds settings only when you have not set them; backs up every file before its first change; never prompts for a password. On a headless Linux machine, install, update and setup install tmux when the user is root or sudo -n works, so askai cli --launch can open a session. If astral.sh is blocked, uv is installed with python3 -m pip install --user uv.
 If the standalone token-setup script was run on this machine, AskAI first runs its --uninstall (component token-kit) and then applies the same settings itself, so the rules load once.
 Step-by-step instructions for each OS, the environment setup and every file it creates: docs/INSTALL.md.
 

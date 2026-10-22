@@ -138,7 +138,7 @@ Then, so Cursor lists the command:
 3. In chat, type `/` and choose `askai-cli`. Typing the words "Run /askai-cli" does not start it.
 4. On SSH or a devcontainer, Cursor does not load commands from the remote `~/.cursor/commands`. The project file is the one that counts.
 
-Serena still needs a network path to `astral.sh`. If that download fails, the rest of the install stays, and `askai install --only cursor-serena --yes` retries it later.
+Serena, Headroom, Graphify, and MarkItDown need `uv`. AskAI tries `astral.sh` first. When that host is blocked it installs `uv` with `python3 -m pip install --user uv` from PyPI, then continues. If both hosts fail, the rest of the install stays, and `askai install --only cursor-serena --yes` retries it later. Context Mode needs Node 22.5 or newer and is skipped on an older Node; leave a project image's Node in place. RTK needs Rust (`rustup.rs`) or Homebrew and is skipped when neither is present. `gh` without Homebrew is a manual `sudo apt-get install -y gh`.
 
 **Why `/askai-cli` does not open a window.** `askai cli --launch` opens a new terminal only when the machine has one: PowerShell on Windows, Terminal.app on macOS, `x-terminal-emulator` on Linux when `DISPLAY` or `WAYLAND_DISPLAY` is set. A devcontainer or SSH session has no display, so no program inside it can open a window on your screen. On those machines `--launch` starts the CLI in `tmux` (or `screen`) and attaches the current terminal when it can. `askai upgrade`, `askai update`, and `askai setup` install `tmux` there when the user is root or `sudo -n` works. They never wait for a password. Then, in the Cursor terminal: `tmux attach -t askai`.
 
