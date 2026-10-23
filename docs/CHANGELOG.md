@@ -5,6 +5,7 @@ AskAI follows semantic versioning from 1.0.0 (see [RELEASING.md](RELEASING.md)).
 ## Unreleased
 
 - `askai todo` reuses its item list for the same context and folder until a watched file or the done-list changes. The printed list stays the same.
+- `askai next`, `askai handoff`, `askai weigh`, `askai run`, `askai errors`, `askai snapshot`, `askai stop`, `askai route`, and `askai project hide-local` are the daily commands from the v1.3 spec. `askai context` with no number reads the latest status-line snapshot. `askai status` adds the suggested profile when a folder is given, and names Context Mode skipped for Node below 22.5. `askai project refresh` skips the map rewrite when the review is already current and hides local AI paths. `askai clear` writes a handoff when the current one is missing or still the template. `askai usage --week` adds the top findings. `askai diff --review` names only the changed files. `askai install --seed-only` writes settings for a host that may not be installed yet.
 - `askai test` runs the safe commands, prints a short status and action items, and writes the full output to one capture file. Install, update, and commands that launch an agent are skipped.
 - `askai check` collects each finding once (`id`, area, host, severity, fix) and prints that list. The same context and folder are not scanned again in one run.
 - `askai doctor` prints the doctor view of that same findings list. It reads the health rows once until a watched file or billing variable changes.

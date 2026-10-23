@@ -303,7 +303,7 @@ Where each command is implemented. Written from the `case` list in `askai.js` be
 | `askai report` | `askai.js cmdReport; lib/usage.js` |
 | `askai profiles` | `askai.js cmdProfiles; lib/profiles.js` |
 | `askai suggest` | `askai.js cmdSuggest; lib/suggest.js` |
-| `askai project` | `askai.js cmdProject; lib/project.js; lib/project-registry.js; lib/project-refresh.js; lib/project-review.js` |
+| `askai project` | `askai.js cmdProject; lib/project.js; lib/project-registry.js; lib/project-refresh.js; lib/project-review.js; lib/daily.js` |
 | `askai set` | `askai.js cmdSet; lib/project-registry.js` |
 | `askai shell` | `askai.js cmdShell; lib/project-shell.js` |
 | `askai uninstall` | `askai.js cmdUninstall; lib/components.js` |
@@ -332,6 +332,14 @@ Where each command is implemented. Written from the `case` list in `askai.js` be
 | `askai graph` | `askai.js cmdGraph` |
 | `askai hook` | `lib/hook.js` |
 | `askai why` | `askai.js cmdWhy; lib/findings.js` |
+| `askai next` | `askai.js; lib/daily.js` |
+| `askai handoff` | `lib/daily.js` |
+| `askai route` | `askai.js; lib/models.js` |
+| `askai weigh` | `lib/daily.js` |
+| `askai run` | `lib/daily.js` |
+| `askai errors` | `lib/daily.js` |
+| `askai snapshot` | `lib/daily.js` |
+| `askai stop` | `lib/daily.js` |
 | `askai check` | `askai.js cmdCheck; lib/check.js; lib/findings.js` |
 | `askai test` | `askai.js cmdTest; lib/selftest.js` |
 | `askai setup` | `askai.js cmdSetup; lib/setup.js` |
@@ -381,6 +389,7 @@ Step-by-step instructions for each OS, the environment setup and every file it c
 Options:
   --profile minimal|coding|docs|full|max   tool set by kind of work (default coding; max = every optimiser)
   --target auto|claude|codex|agy|cursor|all|a,b hosts to wire (default auto: Claude Code plus every tool found)
+  --seed-only                              write settings for a host that may not be installed yet (default target claude)
   --dry-run                                show the plan, change nothing
   --only ID,ID / --skip ID,ID              limit or exclude components
   --main-model M / --subagent-model M      Claude Code models when unset (default claude-sonnet-5-5, subagent haiku; keep leaves the main model alone)
@@ -522,6 +531,117 @@ Examples:
 Exit: 1 when the id is unknown, else 0
 ```
 
+#### `askai next`
+
+```text
+askai next: The top actions from askai check: at most 3 to do now and 2 for later.
+
+Usage: askai next [dir]
+
+Examples:
+  askai next
+
+Exit: 0
+```
+
+#### `askai handoff`
+
+```text
+askai handoff: Write .ai-work/HANDOFF.md from git facts. Judgment fields stay as TODO(you).
+
+Usage: askai handoff [dir] [--for claude|codex|cursor|agy] [--fill]
+
+--for prints a short resume prompt for that host. --fill prints a prompt that asks the agent to complete only the TODO lines.
+
+Examples:
+  askai handoff
+  askai handoff --for codex
+
+Exit: 0
+```
+
+#### `askai weigh`
+
+```text
+askai weigh: Offline token estimate (chars/4), labeled estimate. Flags a file over the threshold.
+
+Usage: askai weigh <path> [--threshold N]
+
+Examples:
+  askai weigh docs/ai/SOURCE_INDEX.md
+
+Exit: 1 when the path cannot be read, else 0
+```
+
+#### `askai run`
+
+```text
+askai run: Run a command, keep the full log in .ai-work/last.log, and print the exit code plus the last lines.
+
+Usage: askai run -- <command>
+
+A command that looks like flash, reboot, or copy_dut waits for --yes.
+
+Examples:
+  askai run -- npm test
+
+Exit: the command exit code, or 1 when a risky command has no --yes
+```
+
+#### `askai errors`
+
+```text
+askai errors: Print error lines from a log, with two lines of context, de-duplicated.
+
+Usage: askai errors [log]
+
+Examples:
+  askai errors .ai-work/last.log
+
+Exit: 0
+```
+
+#### `askai snapshot`
+
+```text
+askai snapshot: Write a git diff patch and an untracked-file list under .ai-work/snapshots. Does not stash or commit.
+
+Usage: askai snapshot [dir] [--include-untracked]
+
+--include-untracked copies untracked work files under 1 MB, skipping tool directories.
+
+Examples:
+  askai snapshot
+
+Exit: 0
+```
+
+#### `askai route`
+
+```text
+askai route: Pick a tier from the task words and print the cheaper-first escalation rule. Does not launch an agent.
+
+Usage: askai route "task"
+
+Examples:
+  askai route "rename the helper"
+
+Exit: 0
+```
+
+#### `askai stop`
+
+```text
+askai stop: List running agent CLIs. --yes terminates them.
+
+Usage: askai stop [--yes]
+
+Examples:
+  askai stop
+
+Exit: 0
+```
+
 #### `askai ask`
 
 ```text
@@ -587,19 +707,21 @@ Exit: 0
 ```text
 askai usage: What Claude Code and Codex spent, from their local data; where to look for Antigravity and Cursor.
 
-Usage: askai usage [days] [--cache] [--plugins] [--full]
+Usage: askai usage [days] [--cache] [--plugins] [--full] [--week]
 
 Claude Code: ccusage when installed, else the transcript spend report. Codex: ~/.codex/sessions, read best effort.
 When neither has sessions, one reason is printed. No zero tables.
 --cache prints cache hit per session from status-line snapshots for that window. One line when there are none.
 --plugins prints one savings line for each installed plugin. One line when none are installed. A missing plugin is omitted.
 --full prints the session summary, then the cache section, then the plugin lines.
+--week is the 7-day summary plus the top three findings.
 
 Examples:
   askai usage 7
   askai usage --cache
   askai usage --plugins
   askai usage --full
+  askai usage --week
 
 Exit: 0
 ```
@@ -681,10 +803,11 @@ Exit: 0
 ```text
 askai project: Manage registered projects, or copy Cursor rules into a repository for teammates.
 
-Usage: askai project [dir] [--print|--remove] | list | show | rename OLD NEW | path NAME NEW_PATH | remove NAME | switch [NAME] | refresh [dir]
+Usage: askai project [dir] [--print|--remove] | list | show | rename OLD NEW | path NAME NEW_PATH | remove NAME | switch [NAME] | refresh [dir] | hide-local [dir] [--personal|--shared|--undo]
 
 list prints every registered name and path. show reports the selected project. rename, path and remove change only the registry; remove never deletes project files.
-refresh creates only missing init files, then rewrites the project map and prints the review state. At most 8 lines.
+refresh creates only missing init files, then rewrites the project map and prints the review state. At most 8 lines. A current review skips the map rewrite. It also hides local AI paths.
+hide-local adds AskAI paths to the local git exclude list. --personal is that default. --shared prints the team checklist and writes nothing. --undo removes that block.
 Without a subcommand, the existing Cursor rules behavior is preserved.
 
 Examples:
@@ -694,6 +817,8 @@ Examples:
   askai project path app C:\code\app
   askai project .
   askai project refresh .
+  askai project hide-local
+  askai project hide-local --shared
 
 Exit: 0
 ```
@@ -920,13 +1045,13 @@ Exit: the agent's exit code, or 0 when there is no terminal to hand over
 ```text
 askai prompt: Turn a rough or dictated ask into a structured prompt: goal, files, done-when, constraints, output limit, tier.
 
-Usage: askai prompt "ask" [--tier T] [--kind bug|feature|design|risky] [--files a,b] [--done "..."] [--mode blunt,brutal,assume,counter,contrast] [--copy] | --output-safe "cmd" | --resume
+Usage: askai prompt "ask" [--tier T] [--kind bug|feature|design|risky|commit|firmware] [--files a,b] [--done "..."] [--mode blunt,brutal,assume,counter,contrast] [--copy] | --output-safe "cmd" | --resume
 
 Removes dictation fillers, finds file names, picks a tier from the words (file names do not count). --output-safe asks the agent to plan a noisy command before running it. --resume prints the fresh-session prompt from the handoff.
 
 Options:
   --output diff|brief|full                 diff: only the diff and one line per check; brief (default); full: with reasoning
-  --kind bug|feature|design|risky          the pattern for that kind of task
+  --kind bug|feature|design|risky|commit|firmware the pattern for that kind of task
 
 Examples:
   askai prompt "um so fix the login bug in src/auth.ts"
@@ -1132,7 +1257,9 @@ Exit: 0
 ```text
 askai diff: git diff --stat, staged changes and the whitespace check, so you review a change before handing off; the agent gets only the files it needs.
 
-Usage: askai diff [dir]
+Usage: askai diff [dir] [--review]
+
+--review prints a short prompt that names only the changed files.
 
 Exit: 1 when the whitespace check finds problems
 ```

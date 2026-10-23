@@ -1,0 +1,99 @@
+'use strict';
+const test = require('node:test');
+const assert = require('node:assert');
+const fs = require('fs');
+const path = require('path');
+const project = require('../lib/project');
+const daily = require('../lib/daily');
+const { cli, tmpHome, rm, write, makeCtx } = require('./helpers');
+
+test('detect scans the folder again after a file changes', () => {
+  const home = tmpHome();
+  const dir = path.join(home, 'app');
+  fs.mkdirSync(dir);
+  write(path.join(dir, 'src.js'), 'module.exports = 1;\n');
+  try {
+    const a = project.detect(dir);
+    write(path.join(dir, 'more.js'), 'module.exports = 2;\n');
+    const b = project.detect(dir);
+    assert.ok(b.source.scanned > a.source.scanned);
+  } finally { rm(home); }
+});
+
+test('next stays within 15 lines', () => {
+  const home = tmpHome();
+  try {
+    const text = daily.next(makeCtx(home), home);
+    assert.ok(text.split(/\n/).length <= 15, text);
+    assert.match(text, /Do now/);
+    assert.match(text, /Later/);
+  } finally { rm(home); }
+});
+
+test('handoff writes ticket and TODO fields', () => {
+  const home = tmpHome();
+  const dir = path.join(home, 'app');
+  fs.mkdirSync(dir);
+  try {
+    const r = daily.writeHandoff(dir);
+    assert.match(fs.readFileSync(r.file, 'utf8'), /TODO\(you\): acceptance criteria/);
+    assert.match(r.text, /Goal draft:/);
+  } finally { rm(home); }
+});
+
+test('weigh labels an estimate and flags a large file', () => {
+  const home = tmpHome();
+  const file = path.join(home, 'big.txt');
+  write(file, 'x'.repeat(40000));
+  try {
+    const r = daily.weigh(file, 8000);
+    assert.match(r.text, /estimate: 10000 tokens/);
+    assert.match(r.text, /ctx.large-file/);
+  } finally { rm(home); }
+});
+
+test('run keeps a risky command until --yes', () => {
+  const home = tmpHome();
+  try {
+    const refused = daily.runCmd(home, 'echo flash', {});
+    assert.strictEqual(refused.code, 1);
+    const ran = daily.runCmd(home, 'node -e "console.log(1)"', {});
+    assert.strictEqual(ran.code, 0);
+    assert.match(ran.text, /exit 0/);
+  } finally { rm(home); }
+});
+
+test('errors pulls a failing line with context', () => {
+  const home = tmpHome();
+  const log = path.join(home, 'build.log');
+  write(log, 'ok\nbefore\nerror: boom\nafter\n');
+  try {
+    assert.match(daily.errors(log), /error: boom/);
+  } finally { rm(home); }
+});
+
+test('route picks chore for a rename', () => {
+  const r = cli(['route', 'rename the helper']);
+  assert.strictEqual(r.code, 0, r.err);
+  assert.match(r.out, /tier: chore/);
+});
+
+test('prompt --kind commit names the log style', () => {
+  const r = cli(['prompt', '--kind', 'commit', 'save the helper rename']);
+  assert.strictEqual(r.code, 0, r.err);
+  assert.match(r.out, /git log subject style/);
+});
+
+test('askai next and askai weigh run from the CLI', () => {
+  const home = tmpHome();
+  const file = path.join(home, 'note.txt');
+  write(file, 'hello');
+  try {
+    const n = cli(['next', '--claude-home', home, '--repo', home]);
+    assert.strictEqual(n.code, 0, n.err);
+    assert.match(n.out, /Do now/);
+    const w = cli(['weigh', file, '--claude-home', home]);
+    assert.strictEqual(w.code, 0, w.err);
+    assert.match(w.out, /estimate:/);
+  } finally { rm(home); }
+});

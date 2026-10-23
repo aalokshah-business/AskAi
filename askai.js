@@ -125,12 +125,12 @@ Session options
 `;
 
 // ---- args --------------------------------------------------------------------------------------------------------
-const BOOL = { yes: 'yes', y: 'yes', 'dry-run': 'dry', offline: 'offline', json: 'json', launch: 'launch', prepare: 'prepare', clear: 'clear', 'no-statusline': 'noStatusline', 'no-path': 'noPath', 'caveman-plugin': 'cavemanPlugin', markitdown: 'markitdown', ccusage: 'ccusage', tools: 'tools', force: 'force', print: 'print', remove: 'remove', lean: 'lean', rtk: 'rtk', 'context-mode': 'contextMode', 'lean-git': 'leanGit', copy: 'copy', fix: 'fix', refresh: 'refresh', resume: 'resume', 'base-tools': 'baseTools', headroom: 'headroom', graphify: 'graphify', context7: 'context7', repomix: 'repomix', 'codebase-memory': 'codebaseMemory', 'claude-mem': 'claudeMem', all: 'all', help: 'help', h: 'help', agents: 'agents', demo: 'demo', cache: 'cache', plugins: 'plugins', full: 'full' };
+const BOOL = { yes: 'yes', y: 'yes', 'dry-run': 'dry', offline: 'offline', json: 'json', launch: 'launch', prepare: 'prepare', clear: 'clear', 'no-statusline': 'noStatusline', 'no-path': 'noPath', 'caveman-plugin': 'cavemanPlugin', markitdown: 'markitdown', ccusage: 'ccusage', tools: 'tools', force: 'force', print: 'print', remove: 'remove', lean: 'lean', rtk: 'rtk', 'context-mode': 'contextMode', 'lean-git': 'leanGit', copy: 'copy', fix: 'fix', refresh: 'refresh', resume: 'resume', 'base-tools': 'baseTools', headroom: 'headroom', graphify: 'graphify', context7: 'context7', repomix: 'repomix', 'codebase-memory': 'codebaseMemory', 'claude-mem': 'claudeMem', all: 'all', help: 'help', h: 'help', agents: 'agents', demo: 'demo', cache: 'cache', plugins: 'plugins', full: 'full', undo: 'undo', review: 'review', week: 'week', shared: 'shared', personal: 'personal', 'include-untracked': 'includeUntracked', 'seed-only': 'seedOnly', fill: 'fill' };
 const VAL = { output: 'output', kind: 'kind', about: 'about', type: 'type', tier: 'tier', files: 'files', done: 'done', mode: 'mode', used: 'used', window: 'window', 'output-safe': 'outputSafe', out: 'out', project: 'project', p: 'project', name: 'name', path: 'path', build: 'build', test: 'test', only: 'only', skip: 'skip', caveman: 'caveman', profile: 'profile', target: 'target', 'claude-home': 'claudeHome', 'cursor-home': 'cursorHome', hours: 'hours',
   'codex-home': 'codexHome', 'agy-home': 'agyHome', 'main-model': 'mainModel', 'subagent-model': 'subagentModel', 'codex-model': 'codexModel',
   repo: 'repo', tool: 'tool', model: 'model', effort: 'effort', task: 'task', difficulty: 'difficulty', summary: 'summary', next: 'next',
   result: 'result', minutes: 'minutes', 'input-tokens': 'inputTokens', 'output-tokens': 'outputTokens', 'cached-tokens': 'cachedTokens',
-  success: 'success', 'rework-minutes': 'reworkMinutes', 'usage-source': 'usageSource', notes: 'notes', lsp: 'lsp' };
+  success: 'success', 'rework-minutes': 'reworkMinutes', 'usage-source': 'usageSource', notes: 'notes', lsp: 'lsp', threshold: 'threshold', for: 'for' };
 const has = (o, k) => Object.prototype.hasOwnProperty.call(o, k);
 
 function parseArgs(argv) {
@@ -461,6 +461,7 @@ const hostNames = h => [h.claude && 'Claude Code', h.cursor && 'Cursor', h.codex
 const planText = (ctx, plan) => (S.IS_WIN ? plan : plan.replace(/winget install ([A-Za-z0-9.-]+)/g, (m, id) => require('./lib/pkg').describe(ctx, id)));
 
 async function cmdInstall(o) {
+  if (o.seedOnly && (!o.target || o.target === 'auto')) o.target = 'claude';
   if (o.profile === 'max' && !o.lsp) o.lsp = 'ts,py'; // the max profile includes Claude Code's TypeScript and Python code intelligence
   if (o.project) registrationName(o, projectDir(o, o.project));
   const ctx = buildCtx(o);
@@ -472,7 +473,7 @@ async function cmdInstall(o) {
   const skipOf = (c, d) => d.state === 'other' || (d.state === 'ok' && !o.force && !(c.id === 'caveman' && o.caveman));
   const rows = sel.map(c => { const d = safeDetect(c, ctx); return { c, d, skip: skipOf(c, d) }; });
 
-  console.log(`askai install${o.dry ? ' (dry-run: nothing is written or installed)' : ''}   for ${hostLine(ctx, hosts)}`);
+  console.log(`askai install${o.dry ? ' (dry-run: nothing is written or installed)' : ''}${o.seedOnly ? ' (seed-only: settings for a host that may not be installed yet)' : ''}   for ${hostLine(ctx, hosts)}`);
   console.log(list(o.only).length ? `components chosen with --only; the ${prof.name} profile is not applied\n` : `profile: ${prof.name}: ${prof.summary}\n`);
   if (!rows.length) { console.log('Nothing selected.'); return 0; }
   const w = Math.max(...rows.map(r => r.c.id.length));
@@ -569,7 +570,7 @@ function cmdStatus(o) {
   const ctx = buildCtx(o, false);
   ctx.refreshPath();
   if (o.json) { console.log(JSON.stringify(status.collect(ctx), null, 2)); return 0; }
-  console.log(status.renderStatus(ctx).lines.join('\n'));
+  console.log(status.renderStatus(ctx, projectDir(o)).lines.join('\n'));
   return 0;
 }
 
@@ -709,6 +710,12 @@ function cmdProject(o) {
     const result = require('./lib/project-refresh').run(dir, { dry: !!o.dry, ctx: buildCtx(o, true) });
     console.log(result.text);
     return 0;
+  }
+  if (o._[1] === 'hide-local') {
+    const dir = projectDir(o, o._[2]);
+    const result = require('./lib/daily').hideLocal(dir, o);
+    console.log(result.text);
+    return result.code;
   }
   if (o._[1] === 'rules') o = { ...o, _: ['project', ...o._.slice(2)] };
   if (o._[1] === 'list') return cmdProjects(o);
@@ -1007,6 +1014,10 @@ function cmdDiff(o) {
   if (extra.length) console.log(`+${extra.length} untracked (${ai.length} AI/tool files) not in this diff`);
   console.log(`\nwhitespace check: ${check.status === 0 ? 'ok' : `problems\n${String(check.stdout).split(/\n/).slice(0, 40).join('\n')}`}`);
   console.log('Review the full diff yourself; give the agent only the files it needs, not the whole diff.');
+  if (o.review) {
+    const names = String(g(['diff', '--name-only']).stdout || '').split(/\n/).map(s => s.trim()).filter(Boolean).slice(0, 12);
+    console.log(['', 'Review only these files:', ...names.map(n => `  ${n}`), 'Say what is wrong. Do not rewrite files that are not in this list.'].join('\n'));
+  }
   return check.status === 0 ? 0 : 1;
 }
 function cmdGraph(o) {
@@ -1104,7 +1115,14 @@ function cmdWhy(o) {
   if (!id) { console.log('Usage: askai why <finding-id>'); return 1; }
   const findings = require('./lib/findings');
   const text = findings.why(findings.collectFindings(buildCtx(o, true), projectDir(o)), id);
-  console.log(text);
+  let rule = '';
+  if (text !== `No finding ${id}.`) {
+    try {
+      const topic = require('./lib/knowledge').load(path.join(__dirname, 'knowledge'), id);
+      if (topic && topic.rule) rule = `\nRule: ${topic.rule}`;
+    } catch (_) { /* this finding has no knowledge topic */ }
+  }
+  console.log(text + rule);
   return text === `No finding ${id}.` ? 1 : 0;
 }
 function cmdTest(o) {
@@ -1129,7 +1147,7 @@ function cmdAsk(o) {
   return 0;
 }
 function cmdUsage(o) {
-  const days = Number(o._[1] || o.hours || 7) || 7;
+  const days = o.week ? 7 : Number(o._[1] || o.hours || 7) || 7;
   const ctx = buildCtx(o, true);
   const summary = () => {
     let claudeText = '';
@@ -1164,7 +1182,10 @@ function cmdUsage(o) {
     console.log(require('./lib/savings').pluginLines(ctx, projectDir(o)));
     return 0;
   }
-  console.log(summary());
+  const text = summary();
+  if (!o.week) { console.log(text); return 0; }
+  const top = require('./lib/findings').collectFindings(ctx, projectDir(o)).filter(f => f.severity === 'now' || f.severity === 'later').slice(0, 3);
+  console.log([text, '', 'Top findings', ...(top.length ? top.map(f => `  ${f.id}  ${f.message}`) : ['  ✔ none'])].join('\n'));
   return 0;
 }
 function cmdSession(o) {
@@ -1508,8 +1529,25 @@ async function main() {
     case 'upgrade': { const ctx = buildCtx(o, true); hintOnce(ctx, 'upgrade-alias', 'askai upgrade is now askai update'); return cmdUpgrade(o, rest); }
     case 'savings': { const ctx = buildCtx(o, true); console.log(require('./lib/savings').report(ctx, Number(o._[1]) || 7, projectDir(o))); return 0; }
     case 'convert': return cmdConvert(o);
-    case 'clear': { const g = guide.clearGate(projectDir(o), o.tool || 'claude', o._[1] === 'compact' ? 'compact' : 'clear'); console.log(g.text); return g.fresh ? 0 : 1; }
-    case 'context': { const pct = o.used !== undefined && o.window ? 100 * Number(o.used) / Number(o.window) : Number(o._[1]); if (!isFinite(pct)) { console.log('Give the level: askai context 62, or askai context --used 124000 --window 200000 (read it from /context or /status). Claude Code: the AskAI status line shows it live.'); return 1; } console.log(`Context ${Math.round(pct)}%: ${guide.advice(pct)}.`); return 0; }
+    case 'clear': {
+      const dir = projectDir(o);
+      const hs = require('./lib/session').handoffState(dir);
+      if (hs.state === 'missing' || hs.state === 'template') require('./lib/daily').writeHandoff(dir);
+      const g = guide.clearGate(dir, o.tool || 'claude', o._[1] === 'compact' ? 'compact' : 'clear');
+      console.log(g.text); return g.fresh ? 0 : 1;
+    }
+    case 'context': {
+      if ((o._[1] === undefined || o._[1] === '') && o.used === undefined) {
+        const ctx = buildCtx(o, true);
+        const snaps = status.sessionSnapshots(ctx, 24 * 14);
+        const hit = snaps.find(s => s.ctxPct != null);
+        if (!hit) { console.log('No context snapshot. Give the level: askai context 62. Claude Code: /context. Codex: /status. Cursor: the context ring.'); return 0; }
+        const pct = hit.ctxPct;
+        const band = pct < 40 ? 'fine' : pct < 60 ? 'finish the step, then handoff' : pct < 80 ? 'handoff, then clear' : 'handoff now';
+        console.log(`Context ${Math.round(pct)}%: ${band}.`);
+        return 0;
+      }
+      const pct = o.used !== undefined && o.window ? 100 * Number(o.used) / Number(o.window) : Number(o._[1]); if (!isFinite(pct)) { console.log('Give the level: askai context 62, or askai context --used 124000 --window 200000 (read it from /context or /status). Claude Code: the AskAI status line shows it live.'); return 1; } console.log(`Context ${Math.round(pct)}%: ${guide.advice(pct)}.`); return 0; }
     case 'todo': { const ctx = buildCtx(o, true); const dir = !['done', 'undo'].includes(o._[1]) ? projectDir(o, o._[1]) : null;
       if (o._[1] === 'done' && o.all) { const ids = todo.open(todo.items(ctx, projectDir(o))).map(i => i.id); for (const id of ids) todo.mark(ctx, id, true); console.log(ids.length ? `marked done: ${ids.join(', ')}` : 'nothing open'); return 0; }
       if (o._[1] === 'done' || o._[1] === 'undo') { if (!o._[2]) { console.log('which item? askai todo done <id>'); return 1; } todo.mark(ctx, o._[2], o._[1] === 'done'); console.log(`${o._[1] === 'done' ? 'marked done' : 'reopened'}: ${o._[2]}`); return 0; }
@@ -1521,6 +1559,14 @@ async function main() {
       let input = ''; try { input = fs.readFileSync(0, 'utf8'); } catch (_) { /* no stdin */ } const out = hookLib.run(buildCtx(o, true), o._[1], input); if (out) process.stdout.write(out + '\n'); return 0;
     }
     case 'why': return cmdWhy(o);
+    case 'next': { console.log(require('./lib/daily').next(buildCtx(o, true), projectDir(o))); return 0; }
+    case 'handoff': { const r = require('./lib/daily').writeHandoff(projectDir(o), o); console.log(r.file); if (r.extra) console.log(r.extra); return 0; }
+    case 'route': { const ask = o._.slice(1).join(' '); if (!ask) { console.log('Usage: askai route "task"'); return 1; } const tier = require('./lib/models').guessTier(ask); console.log(`tier: ${tier}\nCheaper first: chore, then build, then lead. Escalate after two failed attempts.`); return 0; }
+    case 'weigh': { if (!o._[1]) { console.log('Usage: askai weigh <path>'); return 1; } const r = require('./lib/daily').weigh(o._[1], Number(o.threshold) || 8000); console.log(r.text); return r.ok ? 0 : 1; }
+    case 'run': { const cmd = o._.slice(1).join(' '); if (!cmd) { console.log('Usage: askai run -- <command>'); return 1; } const r = require('./lib/daily').runCmd(projectDir(o), cmd, o); console.log(r.text); return r.code ? 1 : 0; }
+    case 'errors': { console.log(require('./lib/daily').errors(o._[1] || require('path').join(projectDir(o), '.ai-work', 'last.log'))); return 0; }
+    case 'snapshot': { console.log(require('./lib/daily').snapshot(projectDir(o), o)); return 0; }
+    case 'stop': { const r = require('./lib/daily').stop(o); console.log(r.text); return r.code; }
     case 'check': return cmdCheck(o);
     case 'test': return cmdTest(o);
     case 'setup': return cmdSetup(o);
