@@ -108,6 +108,8 @@ AskAI is MIT-licensed. Only the maintainer pushes to this repository; changes fr
 
 In the terminal: `askai help` lists seven categories, `askai help work` lists short command descriptions, and `askai help check` gives detailed command instructions. For shared names, use `askai help category setup` or `askai help command setup`. `askai help all` shows every command in detail. Use `askai plugins info <id>` for a plugin and `askai docs <name> --print` for a document above.
 
+To check consumption, run `askai savings 7` directly in a terminal. Codex cached input is part of total input; AskAI shows uncached input and cache share separately. Raw session-token counts are not weekly plan usage or proof of savings. Read plan limits in Codex's account view. Chat skills and AI review use model tokens; terminal commands use none unless they launch an AI agent. `rtk proxy` passes raw output through without compression. `askai cli --prepare` skips tool installation on an already configured machine; source changes still require AI review, and `--refresh` explicitly reruns setup.
+
 ## What AskAI includes
 
 - **One command per project** from GitHub, for Claude Code, Codex, Antigravity and Cursor on Windows, macOS, Linux and WSL; `askai update` keeps it current.

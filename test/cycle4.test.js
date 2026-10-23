@@ -74,14 +74,13 @@ test('map excludes ThirdParty and does not tell you to read the graph report who
   } finally { rm(dir); }
 });
 
-test('help shows the twelve daily commands without flags and keeps the old group metadata', () => {
+test('help shows seven categories and keeps the command group metadata', () => {
   const help = require('../lib/help');
   const text = help.index(80);
   const lines = text.split('\n').filter(l => l.length);
   assert.ok(lines.length <= 30, `help is ${lines.length} lines`);
-  assert.match(text, /Start here\. askai with no command is askai next/);
-  assert.doesNotMatch(text, /--[a-z]/);
-  for (const [name] of require('../lib/surface').TIER1) assert.match(text, new RegExp(`\\b${name}\\b`));
+  assert.match(text, /help by category/);
+  for (const name of Object.keys(help.CATEGORIES)) assert.match(text, new RegExp(`\\b${name}\\s+\\d+ commands`));
   for (const name of help.names()) {
     const meta = help.groupOf(name);
     assert.ok(meta.group && meta.desc && meta.desc.length <= 25, name);

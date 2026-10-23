@@ -1210,7 +1210,7 @@ function commandOnPath(name) {
   return found.status === 0 && !!String(found.stdout || '').trim();
 }
 function cliInstallPlan(env) {
-  if (env.dry || env.sandbox || env.test || env.skip || env.need) return 'skip';
+  if (env.dry || env.sandbox || env.test || env.skip || env.need || (env.configured && !env.refresh)) return 'skip';
   return 'max';
 }
 async function installMaxFromCli(o) {
@@ -1220,8 +1220,10 @@ async function installMaxFromCli(o) {
     sandbox: !!ctx.sandbox,
     test: !!process.env.NODE_TEST_CONTEXT || process.env.ASKAI_CLI_INSTALL === '0',
     need: false,
+    configured: fs.existsSync(ctx.paths.manifest) && !!ctx.manifest.profile,
+    refresh: !!o.refresh,
   });
-  if (plan === 'skip') return { profile: 'max', skipped: true };
+  if (plan === 'skip') return { profile: ctx.manifest.profile || profiles.DEFAULT, skipped: true, reason: 'Installation skipped; use askai install to change tools.' };
   const target = o.target || ctx.manifest.target;
   const installOpts = { ...o, yes: true, profile: 'max', only: undefined, skip: undefined, project: undefined };
   if (target) installOpts.target = target;

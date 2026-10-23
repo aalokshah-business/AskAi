@@ -87,9 +87,9 @@ test('ask with no topic lists groups, and a topic prints one answer', () => {
   assert.match(one.out, /Related:/);
 });
 
-test('the short banner names the twelve home commands and no flags', () => {
+test('the short banner names seven categories and no flags', () => {
   const out = cli(['help']).out;
-  for (const name of ['next', 'go', 'prompt', 'run', 'check', 'break', 'resume', 'handoff', 'savings', 'project', 'install', 'help']) assert.match(out, new RegExp('^  ' + name + ' ', 'm'));
+  for (const name of ['work', 'project', 'setup', 'health', 'cost', 'learn', 'system']) assert.match(out, new RegExp('^  ' + name + '\\s+\\d+ commands', 'm'));
   assert.doesNotMatch(out, /--[a-z]/);
   assert.strictEqual(cli([]).code, 0);
 });

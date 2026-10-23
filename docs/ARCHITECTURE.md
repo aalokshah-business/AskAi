@@ -295,6 +295,8 @@ Install and update refresh both the active runtime and an existing managed legac
 
 ## 10. Commands
 
+`askai cli --prepare` installs tools on first setup or explicit `--refresh`; an existing manifest preserves the selected profile and skips installation. Source changes can still require host AI review. Run diagnostics directly in a terminal when the model does not need their output. `askai savings 7` shows uncached Codex input and cache share; cached input is already included in input, and raw totals are not weekly plan usage or measured savings. `rtk proxy` passes raw output through.
+
 Where each command is implemented. Written from the `case` list in `askai.js` before behavior changes; `node scripts/gen-docs.js` fails if a command has no row.
 
 | Command | Source |
