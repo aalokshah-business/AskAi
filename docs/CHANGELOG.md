@@ -4,6 +4,8 @@ AskAI follows semantic versioning from 1.0.0 (see [RELEASING.md](RELEASING.md)).
 
 ## Unreleased
 
+- The default profile is lean. `askai install --add` adds components and `--list` prints ids. `askai check` on a folder also reports the project pack. A devcontainer home is a finding. `askai break` writes a snapshot and a handoff draft. `askai convert scan --yes` converts when markitdown is installed and caches the Markdown. `models.ladder.json` stores the model order.
+- A repeated project scan is reused until a file's size or time changes. `askai setup --yes` runs install, then init. `askai usage` with sessions prints one row per tool. `askai go` keeps the preflight to six lines. Profiles `lean`, `code`, and `experimental` sit beside the existing names. A firmware tree asks for `compile_commands.json`. Prompt hooks stay available with `--only` and are no longer in the default set.
 - `askai todo` reuses its item list for the same context and folder until a watched file or the done-list changes. The printed list stays the same.
 - `askai status` reads `.ai-work/profile.json` for the project profile and still prints a suggestion. `askai init` records that file once. `askai install` prints how many components it will install and skip. `askai setup` adds a preflight line. Chore effort defaults to medium, and Claude lead effort defaults to high. `askai go` with a task and no host uses Claude Code. When the agent exits, go writes a snapshot and a handoff draft. `askai bootstrap` writes a devcontainer post-create script. `askai convert scan` lists PDF and Office files.
 - `askai test` runs the safe commands, prints a short status and action items, and writes the full output to one capture file. Install, update, and commands that launch an agent are skipped.

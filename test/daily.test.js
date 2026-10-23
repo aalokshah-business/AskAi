@@ -14,6 +14,7 @@ test('detect scans the folder again after a file changes', () => {
   write(path.join(dir, 'src.js'), 'module.exports = 1;\n');
   try {
     const a = project.detect(dir);
+    assert.strictEqual(project.detect(dir), a);
     write(path.join(dir, 'more.js'), 'module.exports = 2;\n');
     const b = project.detect(dir);
     assert.ok(b.source.scanned > a.source.scanned);
@@ -122,6 +123,28 @@ test('go without a host uses Claude Code and the chore tier for a rename', () =>
     const pl = require('../lib/launch').plan(makeCtx(home), 'rename the helper', {});
     assert.strictEqual(pl.tool, 'claude');
     assert.strictEqual(pl.tier, 'chore');
+  } finally { rm(home); }
+});
+
+test('go preflight stays within 6 lines before a paste note', () => {
+  const home = tmpHome();
+  const lines = [];
+  try {
+    const code = require('../lib/launch').run(makeCtx(home), 'rename the helper', { dry: true, repo: home, copy: false }, l => lines.push(l));
+    assert.strictEqual(code, 0);
+    const head = [];
+    for (const l of lines) { if (String(l).startsWith('  Paste this')) break; head.push(l); }
+    assert.ok(head.length <= 6, head.join('\n'));
+    assert.match(head[0], /askai go claude/);
+  } finally { rm(home); }
+});
+
+test('a firmware tree asks for compile_commands.json', () => {
+  const home = tmpHome();
+  write(path.join(home, 'prj.conf'), 'CONFIG_PRINTK=y\n');
+  try {
+    const list = require('../lib/todo').collectItems(makeCtx(home), home);
+    assert.ok(list.some(i => i.id === 'compile-commands'));
   } finally { rm(home); }
 });
 

@@ -24,6 +24,7 @@ test('setup is a short wizard and does not reprint the other commands', () => {
     assert.match(result.text, /FIX billing\.g1-credits/);
     assert.match(result.text, /4 Files\s+FIX/);
     assert.match(result.text, /AskAI is not installed/);
+    assert.match(result.text, /Wizard: askai setup --yes/);
     assert.match(result.text, /Next: askai check/);
     assert.ok(result.text.split(/\n/).length <= 40);
     assert.strictEqual(result.code, 1);
@@ -47,7 +48,7 @@ test('setup with nothing to fix now points at the to-do list', () => {
     const result = setup.report(ctx, repo, { files: () => ({ code: 0, lines: [] }) });
     assert.match(result.text, /Claude Code n-a · Codex n-a · Antigravity n-a/);
     assert.match(result.text, /4 Files\s+ok/);
-    assert.match(result.text, /Next: askai todo/);
+    assert.match(result.text, /Next: askai next/);
     assert.strictEqual(result.code, 0);
   } finally {
     if (prev === undefined) delete process.env.NO_COLOR;

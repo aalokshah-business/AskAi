@@ -225,11 +225,14 @@ In install order. Evidence labels: measured (a third-party saving), mixed, claim
 
 | Profile | What it is | Components | Path rules |
 | --- | --- | --- | --- |
-| `minimal` | cheap model defaults, token and terse rules, status line; no MCP servers or plugins | token-kit, claude, baseline, caveman, statusline, rules, lean, prompt-hooks | none |
-| `coding` (default) | minimal + Serena (symbol-level navigation) + code rules | token-kit, claude, baseline, caveman, statusline, rules, lean, prompt-hooks, serena, ccusage | coding |
-| `docs` | minimal + markitdown (PDF/Office to Markdown before reading) + document rules; no code navigation | token-kit, claude, baseline, caveman, statusline, rules, lean, prompt-hooks, markitdown, ccusage | docs |
-| `full` | coding + markitdown + ccusage (third-party usage report), both rule sets | token-kit, claude, baseline, caveman, statusline, rules, lean, prompt-hooks, serena, markitdown, ccusage | coding, docs |
-| `max` | everything: full + RTK, Context Mode, Headroom (MCP mode), Graphify, Context7, Repomix, Caveman plugin, LSP plugins (ts, py), base tools | token-kit, claude, baseline, caveman, statusline, rules, lean, prompt-hooks, serena, markitdown, ccusage, rtk, context-mode, caveman-plugin, headroom, graphify, context7, repomix, code-intel, base-tools | coding, docs |
+| `minimal` | cheap model defaults, token and terse rules, status line; no MCP servers or plugins | token-kit, claude, baseline, caveman, statusline, rules, lean | none |
+| `coding` | minimal + Serena (symbol-level navigation) + code rules | token-kit, claude, baseline, caveman, statusline, rules, lean, serena, ccusage | coding |
+| `docs` | minimal + markitdown (PDF/Office to Markdown before reading) + document rules; no code navigation | token-kit, claude, baseline, caveman, statusline, rules, lean, markitdown, ccusage | docs |
+| `full` | coding + markitdown + ccusage (third-party usage report), both rule sets | token-kit, claude, baseline, caveman, statusline, rules, lean, serena, markitdown, ccusage | coding, docs |
+| `max` | everything: full + RTK, Context Mode, Headroom (MCP mode), Graphify, Context7, Repomix, Caveman plugin, LSP plugins (ts, py), base tools | token-kit, claude, baseline, caveman, statusline, rules, lean, serena, markitdown, ccusage, rtk, context-mode, caveman-plugin, headroom, graphify, context7, repomix, code-intel, base-tools | coding, docs |
+| `lean` (default) | rules, terse mode, status line, baseline, tier defaults, base tools; no MCP servers | token-kit, claude, baseline, caveman, statusline, rules, lean, base-tools | none |
+| `code` | same set as coding: Serena, code rules, ccusage | token-kit, claude, baseline, caveman, statusline, rules, lean, serena, ccusage | coding |
+| `experimental` | same set as max; not recommended | token-kit, claude, baseline, caveman, statusline, rules, lean, serena, markitdown, ccusage, rtk, context-mode, caveman-plugin, headroom, graphify, context7, repomix, code-intel, base-tools | coding, docs |
 
 ## 8. Settings written
 
@@ -388,7 +391,13 @@ If the standalone token-setup script was run on this machine, AskAI first runs i
 Step-by-step instructions for each OS, the environment setup and every file it creates: docs/INSTALL.md.
 
 Options:
-  --profile minimal|coding|docs|full|max   tool set by kind of work (default coding; max = every optimiser)
+  --profile minimal|coding|docs|full|max|lean|code|experimental tool set by kind of work (default lean; code = coding; experimental = max)
+  --add ID,ID                              add components to the profile
+  --list                                   print component ids and stop
+  --host cursor|claude|codex|agy           limit one command to that host
+  --brief                                  shorter status
+  --quiet                                  skip the once-a-day hints
+  --no-color                               plain text
   --target auto|claude|codex|agy|cursor|all|a,b hosts to wire (default auto: Claude Code plus every tool found)
   --seed-only                              write settings for a host that may not be installed yet (default target claude)
   --dry-run                                show the plan, change nothing
@@ -480,16 +489,17 @@ Exit: 0 healthy, 1 when a problem is found
 ```text
 askai setup: Short check after install: which hosts are present, check counts, and whether the file validator passed.
 
-Usage: askai setup [dir]
+Usage: askai setup [dir] [--yes]
 
 Does not reprint status, infra, plugins, or the to-do list. Those stay on askai status, askai infra, askai plugins ready, and askai todo.
 A finding that needs a fix now is listed, up to three. The file validator prints only its failures.
 Sign-in, restart, and model checks stay in the to-do list.
+--yes runs install, then init. --yes --dry-run prints those two commands and changes nothing.
 
 Examples:
   askai setup
   askai setup ~/code/shop
-  askai setup --project shop
+  askai setup --yes
 
 Exit: 1 when a finding needs a fix now or the file validator fails, else 0
 ```
@@ -967,6 +977,7 @@ Reads README, manifests and every eligible first-party source file up to 1 MiB e
   docs/ai/PROJECT_MAP.md, SOURCE_INDEX.md, ARCHITECTURE.md, FEATURES.md, REFERENCES.md, WORK_ORDER.md, MODELS.md
   architect, builder and runner agents for all four tools; four skills; .cursorignore; .ai-work/ (gitignored)
 Current task and session handoff cannot be inferred from source. Existing user text is preserved. --refresh updates generated files only when unedited.
+askai project refresh runs init for missing files, then the map and the review.
 
 Options:
   --name NAME / --path DIR                 register a short name and project folder

@@ -103,8 +103,9 @@ Install options
   --yes, -y            do not ask for confirmation            --dry-run   show what would happen; nothing is written or installed
   --target WHERE       auto | claude | cursor | both | codex | agy | all, or a list like claude,codex (default auto: Claude Code plus
                        every other host found on this machine)
-  --profile NAME       ${profiles.names().join(' | ')} (default coding; the last install's profile is kept)
-  --only a,b / --skip a,b   pick components (see README for the ids)
+  --profile NAME       ${profiles.names().join(' | ')} (default ${profiles.DEFAULT}; the last install's profile is kept)
+  --only a,b / --skip a,b   pick components (see README for the ids)          --add a,b   add ids to the profile
+  --list               print component ids          --host cursor|claude|codex|agy   --brief   --quiet   --no-color
   --markitdown --ccusage    add those tools to the profile
   --rtk --context-mode      opt in to RTK / Context Mode (off by default: paired benchmarks found no net saving)
   --lsp ts,py               install Claude Code's official code-intelligence plugins (ts, py, kotlin, ruby, swift) and language servers
@@ -125,12 +126,12 @@ Session options
 `;
 
 // ---- args --------------------------------------------------------------------------------------------------------
-const BOOL = { yes: 'yes', y: 'yes', 'dry-run': 'dry', offline: 'offline', json: 'json', launch: 'launch', prepare: 'prepare', clear: 'clear', 'no-statusline': 'noStatusline', 'no-path': 'noPath', 'caveman-plugin': 'cavemanPlugin', markitdown: 'markitdown', ccusage: 'ccusage', tools: 'tools', force: 'force', print: 'print', remove: 'remove', lean: 'lean', rtk: 'rtk', 'context-mode': 'contextMode', 'lean-git': 'leanGit', copy: 'copy', fix: 'fix', refresh: 'refresh', resume: 'resume', 'base-tools': 'baseTools', headroom: 'headroom', graphify: 'graphify', context7: 'context7', repomix: 'repomix', 'codebase-memory': 'codebaseMemory', 'claude-mem': 'claudeMem', all: 'all', help: 'help', h: 'help', agents: 'agents', demo: 'demo', cache: 'cache', plugins: 'plugins', full: 'full', undo: 'undo', review: 'review', week: 'week', shared: 'shared', personal: 'personal', 'include-untracked': 'includeUntracked', 'seed-only': 'seedOnly', fill: 'fill' };
+const BOOL = { yes: 'yes', y: 'yes', 'dry-run': 'dry', offline: 'offline', json: 'json', launch: 'launch', prepare: 'prepare', clear: 'clear', 'no-statusline': 'noStatusline', 'no-path': 'noPath', 'caveman-plugin': 'cavemanPlugin', markitdown: 'markitdown', ccusage: 'ccusage', tools: 'tools', force: 'force', print: 'print', remove: 'remove', lean: 'lean', rtk: 'rtk', 'context-mode': 'contextMode', 'lean-git': 'leanGit', copy: 'copy', fix: 'fix', refresh: 'refresh', resume: 'resume', 'base-tools': 'baseTools', headroom: 'headroom', graphify: 'graphify', context7: 'context7', repomix: 'repomix', 'codebase-memory': 'codebaseMemory', 'claude-mem': 'claudeMem', all: 'all', help: 'help', h: 'help', agents: 'agents', demo: 'demo', cache: 'cache', plugins: 'plugins', full: 'full', undo: 'undo', review: 'review', week: 'week', shared: 'shared', personal: 'personal', 'include-untracked': 'includeUntracked', 'seed-only': 'seedOnly', fill: 'fill', brief: 'brief', quiet: 'quiet', 'no-color': 'noColor', list: 'list' };
 const VAL = { output: 'output', kind: 'kind', about: 'about', type: 'type', tier: 'tier', files: 'files', done: 'done', mode: 'mode', used: 'used', window: 'window', 'output-safe': 'outputSafe', out: 'out', project: 'project', p: 'project', name: 'name', path: 'path', build: 'build', test: 'test', only: 'only', skip: 'skip', caveman: 'caveman', profile: 'profile', target: 'target', 'claude-home': 'claudeHome', 'cursor-home': 'cursorHome', hours: 'hours',
   'codex-home': 'codexHome', 'agy-home': 'agyHome', 'main-model': 'mainModel', 'subagent-model': 'subagentModel', 'codex-model': 'codexModel',
   repo: 'repo', tool: 'tool', model: 'model', effort: 'effort', task: 'task', difficulty: 'difficulty', summary: 'summary', next: 'next',
   result: 'result', minutes: 'minutes', 'input-tokens': 'inputTokens', 'output-tokens': 'outputTokens', 'cached-tokens': 'cachedTokens',
-  success: 'success', 'rework-minutes': 'reworkMinutes', 'usage-source': 'usageSource', notes: 'notes', lsp: 'lsp', threshold: 'threshold', for: 'for' };
+  success: 'success', 'rework-minutes': 'reworkMinutes', 'usage-source': 'usageSource', notes: 'notes', lsp: 'lsp', threshold: 'threshold', for: 'for', host: 'host', add: 'add' };
 const has = (o, k) => Object.prototype.hasOwnProperty.call(o, k);
 
 function parseArgs(argv) {
@@ -285,8 +286,8 @@ function preflight(ctx) {
 // narrowed by --only / --skip; uninstall runs in reverse order.
 function select(o, mode, recordedProfile, hostSel) {
   const known = comps.ALL.map(c => c.id);
-  const only = list(o.only), skip = list(o.skip);
-  for (const id of [...only, ...skip]) if (!known.includes(id)) throw new Error(`unknown component "${id}" (known: ${known.join(', ')})`);
+  const only = list(o.only), skip = list(o.skip), extra = list(o.add);
+  for (const id of [...only, ...skip, ...extra]) if (!known.includes(id)) throw new Error(`unknown component "${id}" (known: ${known.join(', ')})`);
   const on = hostSel || { claude: true, cursor: false };
   let sel;
   if (only.length) sel = comps.ALL.filter(c => only.includes(c.id));
@@ -300,6 +301,10 @@ function select(o, mode, recordedProfile, hostSel) {
   } else sel = [...comps.ALL];
   if (o.noStatusline && !only.length) sel = sel.filter(c => c.id !== 'statusline');
   sel = sel.filter(c => !skip.includes(c.id));
+  if (extra.length) {
+    const have = new Set(sel.map(c => c.id));
+    for (const c of comps.ALL) if (extra.includes(c.id) && !have.has(c.id)) sel.push(c);
+  }
   return mode === 'uninstall' ? [...sel].reverse() : sel;
 }
 
@@ -461,6 +466,7 @@ const hostNames = h => [h.claude && 'Claude Code', h.cursor && 'Cursor', h.codex
 const planText = (ctx, plan) => (S.IS_WIN ? plan : plan.replace(/winget install ([A-Za-z0-9.-]+)/g, (m, id) => require('./lib/pkg').describe(ctx, id)));
 
 async function cmdInstall(o) {
+  if (o.list) { for (const c of comps.ALL) console.log(c.id); return 0; }
   if (o.seedOnly && (!o.target || o.target === 'auto')) o.target = 'claude';
   if (o.profile === 'max' && !o.lsp) o.lsp = 'ts,py'; // the max profile includes Claude Code's TypeScript and Python code intelligence
   if (o.project) registrationName(o, projectDir(o, o.project));
@@ -475,6 +481,7 @@ async function cmdInstall(o) {
 
   console.log(`askai install${o.dry ? ' (dry-run: nothing is written or installed)' : ''}${o.seedOnly ? ' (seed-only: settings for a host that may not be installed yet)' : ''}   for ${hostLine(ctx, hosts)}`);
   console.log(list(o.only).length ? `components chosen with --only; the ${prof.name} profile is not applied\n` : `profile: ${prof.name}: ${prof.summary}\n`);
+  if ((o.profile || recordedProfile(ctx)) === 'max') console.log('note: max is the previous name of experimental. This run keeps max. Measure each extra tool with askai usage before adding it.');
   if (!rows.length) { console.log('Nothing selected.'); return 0; }
   const installing = rows.filter(r => !r.skip);
   const skipping = rows.filter(r => r.skip);
@@ -540,6 +547,7 @@ async function cmdInstall(o) {
 }
 
 function hintOnce(ctx, key, line) {
+  if (process.env.ASKAI_QUIET) return;
   const f = path.join(ctx.paths.askaiDir, 'hints.json');
   let j = {};
   try { j = JSON.parse(fs.readFileSync(f, 'utf8')); } catch (_) { /* first hint */ }
@@ -1095,7 +1103,7 @@ function cmdDocs(o) {
 }
 function cmdConvert(o) {
   const ctx = buildCtx(o, true);
-  if (o._[1] === 'scan') { console.log(require('./lib/daily').scanOffice(projectDir(o))); return 0; }
+  if (o._[1] === 'scan') { console.log(require('./lib/daily').scanOffice(projectDir(o), o)); return 0; }
   const src = o._[1];
   if (!src) { console.log('askai convert <file|url> [--out file.md]: PDF, Word, PowerPoint, Excel, HTML, YouTube URL -> Markdown (Microsoft MarkItDown, local)'); return 1; }
   if (!ctx.which('markitdown')) { console.log('MarkItDown is not installed: askai install --only markitdown (or --profile docs). Videos other than YouTube need a transcriber first (graphifyy[video] or Whisper).'); return 1; }
@@ -1107,14 +1115,23 @@ function cmdConvert(o) {
   if (r.status === 0) { const n = fs.readFileSync(out, 'utf8').length; console.log(`wrote ${out} (~${Math.ceil(n / 4).toLocaleString('en-US')} tokens). Point the agent at the section it needs, not the whole file.`); }
   return r.status || 0;
 }
-function cmdSetup(o) {
+async function cmdSetup(o) {
   const ctx = buildCtx(o, true);
   ctx.refreshPath();
   const dir = projectDir(o, o._[1]);
   ensureSessionTerminal(o, false, ctx.sandbox);
   const result = require('./lib/setup').report(ctx, dir);
   console.log(result.text);
-  return result.code;
+  if (!o.yes) return result.code;
+  console.log('Wizard: install, then init.');
+  if (o.dry) {
+    console.log('would run: askai install --yes');
+    console.log(`would run: askai init ${dir}`);
+    return result.code;
+  }
+  const code = await cmdInstall({ ...o, yes: true, _: ['install'] });
+  if (code) return code;
+  return cmdInit({ ...o, _: ['init', dir] }) || 0;
 }
 function cmdWhy(o) {
   const id = o._[1];
@@ -1494,6 +1511,8 @@ async function main() {
   const [cmd, ...rest] = process.argv.slice(2);
   let o;
   try { o = parseArgs(rest); } catch (e) { console.error(`askai: ${e.message}`); return 2; }
+  if (o.noColor) process.env.NO_COLOR = '1';
+  if (o.quiet) process.env.ASKAI_QUIET = '1';
   o._.unshift(cmd);
   if (cmd === 'help' && o.help) { console.log(help.render('help')); return 0; }
   if (cmd === 'help' && o._[1] === 'all') { console.log(`askai ${VERSION}: every command in full\n\n` + help.names().map(n => help.render(n)).join(`\n\n${'-'.repeat(72)}\n\n`)); return 0; }

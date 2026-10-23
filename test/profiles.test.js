@@ -10,10 +10,10 @@ const { tmpHome, rm, readJson, cli, fs } = require('./helpers');
 const ids = (o, mode = 'install', rec, hosts) => select(o, mode, rec, hosts).map(c => c.id);
 
 test('profiles: default is coding, unknown name throws and lists the valid ones', () => {
-  assert.strictEqual(profiles.DEFAULT, 'coding');
-  assert.strictEqual(profiles.get().name, 'coding');
+  assert.strictEqual(profiles.DEFAULT, 'lean');
+  assert.strictEqual(profiles.get().name, 'lean');
   assert.strictEqual(profiles.get('docs').name, 'docs');
-  assert.throws(() => profiles.get('nope'), /unknown profile "nope" \(known: minimal, coding, docs, full, max\)/);
+  assert.throws(() => profiles.get('nope'), /unknown profile "nope" \(known: minimal, coding, docs, full, max, lean, code, experimental\)/);
   assert.throws(() => profiles.get('constructor'), /unknown profile/, 'prototype keys are not profiles');
 });
 
@@ -25,7 +25,7 @@ test('profiles: every profile lists real components and rule kinds, and rules is
     for (const id of p.components) assert.ok(known.includes(id), `${name}: ${id} is a component`);
     for (const k of p.rules) assert.ok(rules.kinds().includes(k), `${name}: ${k} is a rule kind`);
     assert.ok(p.components.includes('rules'), `${name} carries the rules component so a narrower profile can remove wider rule files`);
-    assert.ok(p.components.includes('caveman') && !p.components.includes('handoff') && (name === 'max' || !p.components.includes('rtk')), `${name} keeps the basics; RTK is opt-in outside max`);
+    assert.ok(p.components.includes('caveman') && !p.components.includes('handoff') && (name === 'max' || name === 'experimental' || !p.components.includes('rtk')), `${name} keeps the basics; RTK is opt-in outside max and experimental`);
   }
 });
 
@@ -41,10 +41,10 @@ test('profiles: work kinds differ the way the README says', () => {
 });
 
 test('select: a profile picks its components for install, opt-in flags add to it, --skip removes', () => {
-  assert.deepStrictEqual(ids({ profile: 'minimal' }), ['token-kit', 'claude', 'baseline', 'caveman', 'rules', 'statusline', 'prompt-hooks', 'lean']);
+  assert.deepStrictEqual(ids({ profile: 'minimal' }), ['token-kit', 'claude', 'baseline', 'caveman', 'rules', 'statusline', 'lean']);
   assert.ok(ids({ profile: 'minimal', rtk: true }).includes('rtk') && ids({ contextMode: true }).includes('context-mode'), '--rtk and --context-mode opt in');
   assert.ok(ids({ profile: 'docs' }).includes('markitdown') && !ids({ profile: 'docs' }).includes('serena'));
-  assert.ok(ids({}).includes('serena'), 'no profile means the default one (coding)');
+  assert.ok(ids({}).includes('base-tools') && !ids({}).includes('serena'), 'no profile means the default one (lean)');
   assert.ok(ids({ profile: 'minimal', markitdown: true, ccusage: true }).includes('markitdown'), 'flag adds markitdown');
   assert.ok(ids({ profile: 'minimal', ccusage: true }).includes('ccusage'));
   assert.ok(!ids({ profile: 'minimal', cavemanPlugin: false }).includes('caveman-plugin'));
@@ -65,6 +65,15 @@ test('select: --only replaces the profile and ignores --no-statusline; unknown i
   assert.deepStrictEqual(ids({ only: 'statusline', noStatusline: true }), ['statusline']);
   assert.throws(() => select({ only: 'nope' }, 'install'), /unknown component "nope" \(known: /);
   assert.throws(() => select({ skip: 'nope' }, 'install'), /unknown component "nope"/);
+});
+
+test('code and experimental match coding and max; lean is the small set', () => {
+  const code = profiles.get('code');
+  const coding = profiles.get('coding');
+  assert.deepStrictEqual(code.components, coding.components);
+  assert.deepStrictEqual(profiles.get('experimental').components, profiles.get('max').components);
+  assert.ok(profiles.get('lean').components.includes('base-tools'));
+  assert.ok(!profiles.get('lean').components.includes('serena'));
 });
 
 test('select: update and uninstall take every component; uninstall is in reverse order', () => {
@@ -100,7 +109,7 @@ test('profiles command: lists every profile, marks the one in use and where it c
     const j = JSON.parse(cli(['profiles', '--json', '--claude-home', home, '--profile', 'docs']).out);
     assert.strictEqual(j.current, 'docs');
     assert.match(j.source, /--profile/);
-    assert.ok(Array.isArray(j.profiles) ? j.profiles.length === 5 : Object.keys(j.profiles).length === 5);
+    assert.ok(Array.isArray(j.profiles) ? j.profiles.length === 8 : Object.keys(j.profiles).length === 8);
   } finally { rm(home); }
 });
 
