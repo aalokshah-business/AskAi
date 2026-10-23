@@ -96,7 +96,7 @@ const COMMAND_SOURCE = {
   check: 'askai.js cmdCheck; lib/check.js; lib/findings.js',
   setup: 'askai.js cmdSetup; lib/setup.js',
   ask: 'askai.js cmdAsk; lib/kb.js',
-  usage: 'askai.js cmdUsage; lib/usage.js',
+  usage: 'askai.js cmdUsage; lib/usage.js; lib/savings.js',
   start: 'lib/session.js',
   break: 'lib/session.js',
   resume: 'lib/session.js',

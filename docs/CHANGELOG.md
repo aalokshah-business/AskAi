@@ -11,6 +11,7 @@ AskAI follows semantic versioning from 1.0.0 (see [RELEASING.md](RELEASING.md)).
 - `askai usage` with no Claude Code or Codex sessions prints one reason and where to read Cursor usage. It does not print a table of zeros.
 - `askai report` with no transcripts prints that same two-line message in the spend section. It does not print a zero ledger.
 - `askai usage --cache` prints cache hit per session from status-line snapshots. An empty window is one line, not a table of zeros.
+- `askai usage --plugins` prints one savings line for each installed plugin. None installed is one line. A missing plugin is omitted, including its usage text.
 - `askai update` updates AskAI itself. `askai tools update` upgrades installed tools. `askai upgrade` still works and says so at most once a day.
 - `askai project` with no arguments shows the current project. `askai project rules` copies Cursor rules. Init prints created and changed files only. A review stays current when the only change is a small number of deletions.
 - Check skips a host that is not installed. Status hides retired handoff, token-kit and prompt-hook rows and shows how much of the requested profile is actually in effect. Sign-in and model confirmations are habits, not open to-dos.

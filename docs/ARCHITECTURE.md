@@ -334,7 +334,7 @@ Where each command is implemented. Written from the `case` list in `askai.js` be
 | `askai check` | `askai.js cmdCheck; lib/check.js; lib/findings.js` |
 | `askai setup` | `askai.js cmdSetup; lib/setup.js` |
 | `askai ask` | `askai.js cmdAsk; lib/kb.js` |
-| `askai usage` | `askai.js cmdUsage; lib/usage.js` |
+| `askai usage` | `askai.js cmdUsage; lib/usage.js; lib/savings.js` |
 | `askai start` | `lib/session.js` |
 | `askai break` | `lib/session.js` |
 | `askai resume` | `lib/session.js` |
@@ -570,15 +570,17 @@ Exit: 0
 ```text
 askai usage: What Claude Code and Codex spent, from their local data; where to look for Antigravity and Cursor.
 
-Usage: askai usage [days] [--cache]
+Usage: askai usage [days] [--cache] [--plugins]
 
 Claude Code: ccusage when installed, else the transcript spend report. Codex: ~/.codex/sessions, read best effort.
 When neither has sessions, one reason is printed. No zero tables.
 --cache prints cache hit per session from status-line snapshots for that window. One line when there are none.
+--plugins prints one savings line for each installed plugin. One line when none are installed. A missing plugin is omitted.
 
 Examples:
   askai usage 7
   askai usage --cache
+  askai usage --plugins
 
 Exit: 0
 ```
