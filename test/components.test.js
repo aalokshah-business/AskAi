@@ -27,7 +27,7 @@ test('baseline: installs keys, keeps user values, removes legacy hooks, uninstal
   c('baseline').install(ctx);
   let s = settingsOf(home);
   assert.strictEqual(s.env.CLAUDE_CODE_SUBAGENT_MODEL, 'opus', 'user model choice not overridden');
-  assert.strictEqual(s.model, 'claude-sonnet-5-5');
+  assert.strictEqual(s.model, 'claude-haiku-5-5');
   assert.strictEqual(s.effortLevel, 'high');
   assert.ok(!('autoCompactWindow' in s));
   assert.ok(!s.hooks, 'legacy hook removed');

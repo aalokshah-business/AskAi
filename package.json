@@ -7,7 +7,7 @@
     "askai": "askai.js"
   },
   "engines": {
-    "node": ">=18"
+    "node": ">=20"
   },
   "scripts": {
     "test": "node --test test/*.test.js",

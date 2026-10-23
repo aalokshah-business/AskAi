@@ -111,7 +111,7 @@ test('statusline: a snapshot keeps the compact fields; the throttle keeps it for
   assert.deepStrictEqual(Object.keys(snap).sort(), ['at', 'cache', 'ctxPct', 'id', 'rate']);
   assert.strictEqual(snap.id, 'sess-1');
   assert.strictEqual(snap.ctxPct, 20);
-  assert.deepStrictEqual(snap.cache, { hitRatio: 0.9, requests: 10, misses: 1, expectedRebuilds: 0, cacheWriteTokens: 500, missRecacheTokens: 42000, lastMissCause: 'ttl' });
+  assert.deepStrictEqual(snap.cache, { hitRatio: 0.9, requests: 10, misses: 1, expectedRebuilds: 0, cacheWriteTokens: 500, missRecacheTokens: 42000, lastMissCause: 'ttl', warm: null, ttl: null, expiresAt: null, recacheTokensIfCold: null });
   assert.deepStrictEqual(snap.rate, { fiveHour: 30, sevenDay: 12.5 });
   assert.ok(!fs.readFileSync(f, 'utf8').includes('/secret/path'), 'transcript paths are not stored');
 

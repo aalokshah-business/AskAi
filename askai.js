@@ -41,93 +41,29 @@ const todo = require('./lib/todo');
 const VERSION = '1.2.5';
 const SRC = __dirname;
 
-const HELP = `askai ${VERSION}: make AI coding usage last longer. Installs and wires up token-saving tools for Claude Code, Cursor, OpenAI Codex and Google Antigravity, by kind of work, and keeps a hook-free session ledger so any agent can pick a task up again.
-Every command in full: askai help all   One command: askai help <command>   Each plugin: askai plugins info <id>
-Install or refresh from GitHub: README, Quick start (get.sh, get.ps1). askai upgrade fetches the latest AskAI and re-applies your profile.
+const HELP = `askai ${VERSION}: token-saving setup for Claude Code, Cursor, Codex and Google Antigravity.
+askai help <command> for one command. askai help all for every command. --help on a command does the same. askai plugins info <id> for one plugin.
 
-Usage: askai <command> [options]
+Setup: install, update, tools update, uninstall, restore, profiles, suggest, scaffold, project, set
+Every day: check, why, test, ask, next, handoff, weigh, run, errors, stop, break, resume, usage, go, prompt
+Project: init, review, map, refresh, models, mcp, audit, setup, todo, convert, clear, diff, graph, context, snapshot
+Reference: status, doctor, report, savings, infra, guide, tips, docs, session, chat, statusline, bootstrap, route
 
-Setup
-  install     install/wire up the tools of a profile (default: coding) for every host in play; skips what is already ok
-  update      update AskAI itself (askai tools update upgrades the installed tools)
-  uninstall   remove only what askai added (backups are kept)
-  restore [stamp]  list backups, or restore a backed-up settings / rules / MCP file
-  profiles    list the profiles and what each installs
-  suggest [dir]  which profile fits a directory (counts code and document files; read-only)
-  scaffold [dir] write AGENTS.md, CLAUDE.md, docs/ai/PROJECT_PROFILE.md, .cursorignore and .ai-work/ into a repo (never overwrites)
-  project [dir]  copy Cursor rules into one repo, or list | show | rename | path | remove | switch a registration
-  set project NAME   select a project in the AskAI CLI or a shell with AskAI integration; set project --clear unsets it
-
-Every day
-  cli [--prepare]      from a host chat, --prepare finds the project and runs init; then the terminal (--launch opens it)
-  check [dir]       audit this machine (and a repo) against the token guidelines; each gap with the command that fixes it (--fix: repo)
-  why <id>          message and fix for one finding from askai check
-  test              run the safe commands, print a status, write one capture file (--out FILE)
-  ask <words>       offline answers on etiquette and the research: askai ask compact | askai ask coming back after a break
-  start | break | resume   session shortcuts: ledger entry; before-break checklist; time away, advice and the resume prompt (--copy)
-  usage [days]      what Claude Code and Codex spent, from their local data (Antigravity, Cursor: their own views)
-  chat [name]       standing instruction for Claude chat, ChatGPT, and Gemini; coding apps stay on askai install
-  help <command>    detailed help for one command (also: askai <command> --help); docs/ARCHITECTURE.md has all of it
-  Open /askai-cli (Codex: $askai-cli) once. It prepares the project, then the terminal runs commands with no model tokens.
-
-Project and sessions (AskAI as the mediator)
-  init [dir]        scan first-party source, check official docs, write project pack and register name (--offline to skip web)
-  review status|done  host-agent review state for the selected project; done only after checking the generated pack
-  map [dir]         regenerate docs/ai/PROJECT_MAP.md (folders, languages, commands, entry points; keeps your purposes)
-  go <tool> "task"  start claude | codex | cursor | agy with the tier's model and effort fixed for the session (--tier lead|build|chore)
-  prompt "ask"      turn a rough or dictated ask into a structured prompt (--tier --files --done --mode blunt|brutal|...; --output-safe CMD; --resume)
-  models            model and effort per tier and tool (models set <tool>.<tier> <model>[:<effort>]; models verify)
-  mcp               MCP servers in all four tools, on, off or parked (mcp off <name>, mcp on <name>)
-  audit [dir]       the seven-point token audit: memory, tools, model, hooks, subagents, scheduled work, cache
-  setup [dir]       one check: status, check, infra, plugins ready, to-do, and the file validator
-  infra [dir]       everything AskAI set up, per tool and for the repo, with usage evidence
-  guide [moment]    etiquette for install | start | work | break | resume | clear | compact | cache | models | subagents | mcp | output | prompts | docs | plugins | peak
-  plugins           every token tool: evidence and state; plugins ready (what runs on a prompt); plugins info <id>, plugins install <id>, plugins decisions
-  savings [days]    run each installed plugin's own savings report (rtk gain, ccusage, headroom stats, ...)
-  todo              remaining setup and project-review steps (askai todo done <id> marks one)
-  convert <file>    PDF, Office, HTML or a YouTube URL to Markdown (MarkItDown)
-  clear [compact]   is it safe to /clear now (fresh handoff?) and the native command for the tool (--tool)
-  diff · graph      git diff summary and whitespace check · the project's architecture diagram (docs/ai/ARCHITECTURE.md)
-  context <pct>     what to do at this context level (or --used N --window M)
-  docs [name]       where the install, architecture and guide documents are (--print shows one)
-  session <action>  init | pause | status | finish | measure | report. start, break and resume are the commands above
-  tips [host]       offline cheat sheet: claude | codex | agy | cursor | session | habits | peak (default: all)
-
-Seeing what is saved
-  status      profile, per-tool state, what is wired where, and the savings the tools measure
-  doctor      health and billing-safety checks (exit 1 on a failure)
-  report [h]  everything in one: status, doctor, cache and context per session, ccusage (if installed), transcript spend for h hours
-  statusline  one line for Claude Code's statusLine (reads session JSON on stdin)
-
-Install options
-  --yes, -y            do not ask for confirmation            --dry-run   show what would happen; nothing is written or installed
-  --target WHERE       auto | claude | cursor | both | codex | agy | all, or a list like claude,codex (default auto: Claude Code plus
-                       every other host found on this machine)
-  --profile NAME       ${profiles.names().join(' | ')} (default ${profiles.DEFAULT}; the last install's profile is kept)
-  --only a,b / --skip a,b   pick components (see README for the ids)          --add a,b   add ids to the profile
-  --list               print component ids          --host cursor|claude|codex|agy   --brief   --quiet   --no-color
-  --markitdown --ccusage    add those tools to the profile
-  --rtk --context-mode      opt in to RTK / Context Mode (off by default: paired benchmarks found no net saving)
-  --lsp ts,py               install Claude Code's official code-intelligence plugins (ts, py, kotlin, ruby, swift) and language servers
-  --lean-git           also drop Claude Code's git instructions from every turn (lean settings are in every profile)
-  --main-model M       Claude Code model when settings.json has none: claude-sonnet-5-5 (default) | haiku | sonnet | opus | keep | a full model id
-  --subagent-model M   CLAUDE_CODE_SUBAGENT_MODEL when unset (default haiku)
-  --codex-model M      also set Codex's model when config.toml has none (for example a Luna-class model for routine work)
-  --caveman LEVEL      lite | full | ultra | off (default full): terse-output directive in every host's rules
-  --caveman-plugin     also install the Caveman plugin (adds its own hooks; off by default)
-  --no-statusline --no-path --tools --force --print --remove --json --hours N   (see README)
-  --claude-home DIR --cursor-home DIR --codex-home DIR --agy-home DIR   sandbox folders for testing (RTK's own init may still write
-                       to the real ~/.claude, ~/.cursor, ~/.codex or ~/.gemini)
-
-Session options
-  --project NAME or -p NAME (registered project)   --repo DIR (legacy)   --tool T  --model M  --effort E
-  --summary "..."  --next "..."  --result "..."  --minutes N  --input-tokens N  --output-tokens N  --cached-tokens N
-  --success 0|1  --rework-minutes N  --usage-source "/usage|ccusage|dashboard|estimate"  --notes "..."
+Flags: --yes --dry-run --profile (default ${profiles.DEFAULT}) --add --list --host --brief --quiet --no-color
+       --target --only --skip --main-model (default claude-haiku-5-5) --subagent-model --codex-model --effort --json --seed-only --ignore-originals
+       --no-statusline --no-path --tools --force --print --remove --hours --claude-home --cursor-home --codex-home --agy-home --repo --project
+       --minutes --input-tokens --output-tokens --cached-tokens --success --rework-minutes --usage-source --notes --summary --next --result
+       --tool --model --caveman --lsp --lean-git --markitdown --ccusage --rtk --context-mode --base-tools --headroom --graphify --context7
+       --repomix --codebase-memory --claude-mem --caveman-plugin --output --kind --about --type --tier --files --done --mode --used --window
+       --output-safe --out --name --path --build --test --threshold --for --include-untracked --personal --shared --undo --review --week --fill
+       --cache --plugins --full --agents --demo --launch --prepare --clear --offline --copy --fix --refresh --resume --import-cursor --env
+Profiles: minimal | code | docs | full | experimental. Aliases: coding = code, max = experimental.
+Old names stay: askai upgrade = update, askai tools update = components.
 `;
 
 // ---- args --------------------------------------------------------------------------------------------------------
-const BOOL = { yes: 'yes', y: 'yes', 'dry-run': 'dry', offline: 'offline', json: 'json', launch: 'launch', prepare: 'prepare', clear: 'clear', 'no-statusline': 'noStatusline', 'no-path': 'noPath', 'caveman-plugin': 'cavemanPlugin', markitdown: 'markitdown', ccusage: 'ccusage', tools: 'tools', force: 'force', print: 'print', remove: 'remove', lean: 'lean', rtk: 'rtk', 'context-mode': 'contextMode', 'lean-git': 'leanGit', copy: 'copy', fix: 'fix', refresh: 'refresh', resume: 'resume', 'base-tools': 'baseTools', headroom: 'headroom', graphify: 'graphify', context7: 'context7', repomix: 'repomix', 'codebase-memory': 'codebaseMemory', 'claude-mem': 'claudeMem', all: 'all', help: 'help', h: 'help', agents: 'agents', demo: 'demo', cache: 'cache', plugins: 'plugins', full: 'full', undo: 'undo', review: 'review', week: 'week', shared: 'shared', personal: 'personal', 'include-untracked': 'includeUntracked', 'seed-only': 'seedOnly', fill: 'fill', brief: 'brief', quiet: 'quiet', 'no-color': 'noColor', list: 'list' };
-const VAL = { output: 'output', kind: 'kind', about: 'about', type: 'type', tier: 'tier', files: 'files', done: 'done', mode: 'mode', used: 'used', window: 'window', 'output-safe': 'outputSafe', out: 'out', project: 'project', p: 'project', name: 'name', path: 'path', build: 'build', test: 'test', only: 'only', skip: 'skip', caveman: 'caveman', profile: 'profile', target: 'target', 'claude-home': 'claudeHome', 'cursor-home': 'cursorHome', hours: 'hours',
+const BOOL = { yes: 'yes', y: 'yes', 'dry-run': 'dry', offline: 'offline', json: 'json', launch: 'launch', prepare: 'prepare', clear: 'clear', 'no-statusline': 'noStatusline', 'no-path': 'noPath', 'caveman-plugin': 'cavemanPlugin', markitdown: 'markitdown', ccusage: 'ccusage', tools: 'tools', force: 'force', print: 'print', remove: 'remove', lean: 'lean', rtk: 'rtk', 'context-mode': 'contextMode', 'lean-git': 'leanGit', copy: 'copy', fix: 'fix', refresh: 'refresh', resume: 'resume', 'base-tools': 'baseTools', headroom: 'headroom', graphify: 'graphify', context7: 'context7', repomix: 'repomix', 'codebase-memory': 'codebaseMemory', 'claude-mem': 'claudeMem', all: 'all', help: 'help', h: 'help', agents: 'agents', demo: 'demo', cache: 'cache', plugins: 'plugins', full: 'full', undo: 'undo', review: 'review', week: 'week', shared: 'shared', personal: 'personal', 'include-untracked': 'includeUntracked', 'seed-only': 'seedOnly', fill: 'fill', brief: 'brief', quiet: 'quiet', 'no-color': 'noColor', list: 'list', 'ignore-originals': 'ignoreOriginals', env: 'env' };
+const VAL = { output: 'output', kind: 'kind', about: 'about', type: 'type', tier: 'tier', files: 'files', done: 'done', mode: 'mode', used: 'used', window: 'window', 'output-safe': 'outputSafe', out: 'out', project: 'project', p: 'project', name: 'name', path: 'path', build: 'build', test: 'test', only: 'only', skip: 'skip', caveman: 'caveman', profile: 'profile', target: 'target', 'claude-home': 'claudeHome', 'cursor-home': 'cursorHome', hours: 'hours', 'import-cursor': 'importCursor',
   'codex-home': 'codexHome', 'agy-home': 'agyHome', 'main-model': 'mainModel', 'subagent-model': 'subagentModel', 'codex-model': 'codexModel',
   repo: 'repo', tool: 'tool', model: 'model', effort: 'effort', task: 'task', difficulty: 'difficulty', summary: 'summary', next: 'next',
   result: 'result', minutes: 'minutes', 'input-tokens': 'inputTokens', 'output-tokens': 'outputTokens', 'cached-tokens': 'cachedTokens',
@@ -770,78 +706,13 @@ function cmdProject(o) {
   return res.skipped.length && !res.written.length && !res.unchanged.length ? 1 : 0;
 }
 
-// One view of everything: tool status and measured savings, health checks, cache and context per session, the ccusage report
-// when that tool is installed, then the transcript-based spend ledger. Each part is independent, so one failing does not hide
-// the others.
+// report is usage --full plus one check --brief line. It has no sections of its own.
 function cmdReport(o) {
-  const hours = String(o.hours || o._[1] || '6');
-  const ctx = buildCtx(o, true);
-  ctx.refreshPath();
-  const part = fn => { try { return { ok: true, value: fn() }; } catch (e) { return { ok: false, error: e.message }; } };
-  const st = part(() => status.renderStatus(ctx));
-  const dr = part(() => status.doctor(ctx));
-  const ca = part(() => status.renderCache(ctx, hours));
-  const hs = part(() => cursor.hosts(ctx));
-  // ccusage prints its own table; its format is not parsed, only shown (first lines).
-  const cu = part(() => {
-    if (!ctx.which('ccusage')) return null;
-    const r = ctx.probe('ccusage', ['daily'], { timeout: 90000 });
-    if (!r.ok) throw new Error(firstLineOf(r.stderr || r.stdout) || 'ccusage failed');
-    const lines = String(r.stdout).replace(/\s+$/, '').split(/\r?\n/);
-    return { text: lines.slice(0, CCUSAGE_LINES).join('\n'), truncated: lines.length > CCUSAGE_LINES };
-  });
-
-  const script = path.join(SRC, 'hooks', 'askai-report.js');
-  let spend = { ok: false, error: 'hooks/askai-report.js not found next to askai.js' };
-  if (fs.existsSync(script)) {
-    const r = require('child_process').spawnSync(process.execPath, [script, '--hours', hours, ...(o.json ? ['--json'] : [])], { encoding: 'utf8', maxBuffer: 256 * 1024 * 1024 });
-    spend = r.status === 0 && !r.error ? { ok: true, text: r.stdout } : { ok: false, error: (r.error && r.error.message) || (r.stderr || '').trim() || `exit ${r.status}` };
-  }
-
-  if (o.json) {
-    let spendJson = null;
-    if (spend.ok) { try { spendJson = JSON.parse(spend.text); } catch (_) { spendJson = { raw: spend.text }; } }
-    console.log(JSON.stringify({
-      hours: Number(hours),
-      hosts: hs.ok ? hs.value : { error: hs.error },
-      tools: st.ok ? st.value.rows : { error: st.error },
-      health: dr.ok ? dr.value : { error: dr.error },
-      cache: ca.ok ? (ca.value ? ca.value.rows : null) : { error: ca.error },
-      ccusage: cu.ok ? cu.value : { error: cu.error },
-      spend: spend.ok ? spendJson : { error: spend.error },
-    }, null, 2));
-    return spend.ok ? 0 : 1;
-  }
-
-  // Numbered as printed: the ccusage section exists only when that tool is installed.
-  let n = 0;
-  const showCu = !cu.ok || !!cu.value;
-  const total = 4 + (showCu ? 1 : 0);
-  const head = t => `\n${'='.repeat(78)}\n${++n}/${total}  ${t}\n${'='.repeat(78)}`;
-  console.log(head('TOOLS AND MEASURED SAVINGS  (askai status)'));
-  console.log(st.ok ? st.value.lines.join('\n') : `unavailable: ${st.error}`);
-  console.log(head('HEALTH  (askai doctor)'));
-  console.log(dr.ok ? doctorLines(dr.value).join('\n') : `unavailable: ${dr.error}`);
-  console.log(head(`CACHE AND CONTEXT PER SESSION, LAST ${hours}h  (from the askai status line)`));
-  if (!ca.ok) console.log(`unavailable: ${ca.error}`);
-  else if (ca.value) console.log(ca.value.lines.join('\n'));
-  else console.log('No snapshots yet. The askai status line records cache hit and context use per session (Claude Code only); it fills in as sessions run.');
-  if (showCu) {
-    console.log(head('USAGE AND COST BY DAY  (ccusage, its own output)'));
-    if (!cu.ok) console.log(`unavailable: ${cu.error}`);
-    else console.log(cu.value.text + (cu.value.truncated ? `\n... first ${CCUSAGE_LINES} lines; run \`ccusage\` for the rest` : ''));
-  }
-  console.log(head(`SPEND FROM TRANSCRIPTS, LAST ${hours}h  (where tokens actually went)`));
-  if (!spend.ok) console.log(`unavailable: ${spend.error}`);
-  else console.log(usage.spendWhenEmpty(spend.text, {
-    hours,
-    claudeInstalled: !!(ctx.which && ctx.which('claude')) || fs.existsSync(ctx.paths.settings),
-    codexInstalled: !!(ctx.which && ctx.which('codex')) || !!(ctx.codexPaths && fs.existsSync(ctx.codexPaths.home)),
-  }));
-  if (hs.ok && hs.value.cursor) {
-    console.log('\nNote: Cursor is wired, but askai measures Claude Code only. The cache, ccusage and spend sections do not include Cursor usage; use Cursor\'s own usage view for that.');
-  }
-  return spend.ok ? 0 : 1;
+  const code = cmdUsage({ ...o, full: true });
+  const lines = [];
+  check.run(buildCtx(o, true), projectDir(o, null, false), { brief: true }, line => lines.push(line));
+  if (lines.length) console.log(lines.join('\n'));
+  return code;
 }
 
 async function cmdUninstall(o) {
@@ -1151,11 +1022,16 @@ function cmdWhy(o) {
 function cmdTest(o) {
   const selftest = require('./lib/selftest');
   const cwd = projectDir(o);
-  const result = selftest.run({ cwd, out: o.out, version: VERSION });
-  console.log(result.summary);
+  const result = selftest.run({ cwd, out: o.out, version: VERSION, json: !!o.json });
+  if (o.json) console.log(JSON.stringify({ file: result.file, failedToRun: !!result.failedToRun, header: result.header, commands: result.results.length }, null, 2));
+  else console.log(result.summary);
   return result.failedToRun ? 1 : 0;
 }
 function cmdCheck(o) {
+  if (o.env) {
+    console.log(require('./lib/platform').envReport({ dir: projectDir(o) || process.cwd() }));
+    return 0;
+  }
   const ctx = buildCtx(o, true);
   const dir = projectDir(o, o._[1], false);
   return check.run(ctx, dir, o);
@@ -1170,6 +1046,10 @@ function cmdAsk(o) {
   return 0;
 }
 function cmdUsage(o) {
+  if (o.importCursor) {
+    try { console.log(usage.importCursorCsv(o.importCursor)); return 0; }
+    catch (e) { console.error(e.message); return 1; }
+  }
   const days = o.week ? 7 : Number(o._[1] || o.hours || 7) || 7;
   const ctx = buildCtx(o, true);
   const summary = () => {
@@ -1208,7 +1088,7 @@ function cmdUsage(o) {
   const text = summary();
   if (!o.week) { console.log(text); return 0; }
   const top = require('./lib/findings').collectFindings(ctx, projectDir(o)).filter(f => f.severity === 'now' || f.severity === 'later').slice(0, 3);
-  console.log([text, '', 'Top findings', ...(top.length ? top.map(f => `  ${f.id}  ${f.message}`) : ['  ✔ none'])].join('\n'));
+  console.log([text, '', 'Top findings', ...(top.length ? top.map(f => `  ${f.id}  ${f.message}`) : [`  ${require('./lib/platform').mark('ok')} none`])].join('\n'));
   return 0;
 }
 function cmdSession(o) {
@@ -1508,6 +1388,8 @@ async function cmdCli(o) {
   rl.close(); return 0;
 }
 async function main() {
+  const nodeLine = require('./lib/platform').nodeNotice();
+  if (nodeLine && !process.env.ASKAI_QUIET) console.error(nodeLine);
   const [cmd, ...rest] = process.argv.slice(2);
   let o;
   try { o = parseArgs(rest); } catch (e) { console.error(`askai: ${e.message}`); return 2; }
@@ -1555,13 +1437,13 @@ async function main() {
     case 'mcp': return cmdMcp(o);
     case 'audit': return audit.run(buildCtx(o, true), projectDir(o, o._[1]), o);
     case 'infra': { const ctx = buildCtx(o, true); const r = infra.collect(ctx, projectDir(o, o._[1])); console.log(o.json ? JSON.stringify(r, null, 2) : infra.render(r)); return 0; }
-    case 'guide': { const t = guide.render(o._[1]); if (!t) { console.log(`No guide for "${o._[1]}". Topics: ${guide.ORDER.join(', ')}`); return 1; } console.log(t); if (o._[1] === 'work') { try { const ctx = buildCtx(o, true); const open = todo.open(todo.items(ctx, projectDir(o))); if (open.length) console.log(`\nYour open to-dos (${open.length}): ${open.slice(0, 3).map(i => i.text).join('; ')}${open.length > 3 ? '; ...' : ''}\nAll of them: askai todo`); } catch (_) { /* no context */ } } return 0; }
+    case 'guide': { const t = guide.render(o._[1], projectDir(o)); if (!t) { console.log(`No guide for "${o._[1]}". Topics: ${guide.ORDER.join(', ')}`); return 1; } console.log(t); if (o._[1] === 'work') { try { const ctx = buildCtx(o, true); const open = todo.open(todo.items(ctx, projectDir(o))); if (open.length) console.log(`\nYour open to-dos (${open.length}): ${open.slice(0, 3).map(i => i.text).join('; ')}${open.length > 3 ? '; ...' : ''}\nAll of them: askai todo`); } catch (_) { /* no context */ } } return 0; }
     case 'docs': return cmdDocs(o);
     case 'plugins': { const ctx = buildCtx(o, true); const a = o._[1] || 'list'; if (a === 'ready') { const ready = require('./lib/plugins-ready'); const report = ready.ready(ctx, projectDir(o, o.path || o._[2])); console.log(o.json ? JSON.stringify(report, null, 2) : ready.render(report)); return 0; } if (a === 'decisions') { console.log(plugins.decisions()); return 0; }
       if (a === 'info' || a === 'use') { if (!o._[2]) { console.log(`which one? askai plugins info <id>   ids: ${require('./lib/plugins').P.map(p => p.id).join(', ')}`); return 1; } const r = plugins.info(o._[2]); console.log(`\nHow to use it\n${require('./lib/usage-guide').render(o._[2])}`); return r; }
       return a === 'install' ? plugins.install(ctx, o._[2], o) : plugins.list(ctx); }
     case 'upgrade': { const ctx = buildCtx(o, true); hintOnce(ctx, 'upgrade-alias', 'askai upgrade is now askai update'); return cmdUpgrade(o, rest); }
-    case 'savings': { const ctx = buildCtx(o, true); console.log(require('./lib/savings').report(ctx, Number(o._[1]) || 7, projectDir(o))); return 0; }
+    case 'savings': return cmdUsage({ ...o, plugins: true });
     case 'convert': return cmdConvert(o);
     case 'clear': {
       const dir = projectDir(o);
@@ -1611,7 +1493,7 @@ async function main() {
     case 'scaffold': return cmdScaffold(o);
     case 'chat': return cmdChat(o);
     case 'tips': return cmdTips(o);
-    case 'version': case '--version': console.log(VERSION); return 0;
+    case 'version': case '--version': console.log(o.all ? require('./lib/platform').supportText(VERSION) : VERSION); return 0;
     default: {
       const renamed = { continue: ['resume'], etiquette: ['guide', 'all'], checkpoint: ['session', 'pause'], work: ['guide', 'work'], peak: ['tips', 'peak'], projects: ['project', 'list'] };
       if (renamed[cmd]) {

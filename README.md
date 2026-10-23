@@ -73,6 +73,21 @@ Reply with what was installed, anything that failed, the plugin-ready report, an
 
 **Keeping it current.** `askai upgrade` fetches the latest AskAI from GitHub and re-applies your profile; `askai update` upgrades the tools it installed. `askai upgrade --agents` then opens Claude Code, Cursor and Codex in sequence for reviews and verified improvements; it uses model tokens and needs all three CLIs on PATH. Before running a script from the internet you can read it first: [get.sh](get.sh), [get.ps1](get.ps1), and [SECURITY.md](SECURITY.md) for what the installer changes.
 
+## Platforms
+
+AskAI runs on Windows 11, Ubuntu, and a Debian-based devcontainer (Tier 1). macOS, Alpine, and WSL2 are Tier 2. `askai version --all` prints the same matrix. Node 22 and 24 are the CI versions. Node 20 still runs and prints one end-of-life line. Context Mode needs Node 22.5 or newer.
+
+| Tier | Environment | Shell | Node | Gate |
+| --- | --- | --- | --- | --- |
+| 1 | Ubuntu (bookworm/jammy) | bash | 22, 24 | CI must pass |
+| 1 | Windows 11 | Windows PowerShell 5.1 and PowerShell 7 | 22, 24 | CI must pass |
+| 1 | Devcontainer / Docker, non-root | bash | 22, 24 | CI must pass |
+| 2 | macOS (Apple Silicon) | zsh, bash 3.2 | 22, 24 | CI, may fail |
+| 2 | Alpine | ash, bash if installed | 22 | CI, may fail |
+| 2 | WSL2 | bash | 22, 24 | manual |
+
+Troubleshooting: a `#!/bin/bash` script with a trailing CR fails in Linux (`*.sh` is LF in `.gitattributes`). `fatal: detected dubious ownership` is fixed with the `safe.directory` line `askai check --env` prints; git features are skipped, the rest keeps going. Windows PowerShell 5.1: `powershell -NoProfile -ExecutionPolicy Bypass -File .\get.ps1`. A host CLI that is a `.cmd` is started with `shell: true` so Node does not throw `EINVAL`.
+
 ## Documentation
 
 | Document | What it covers |
@@ -240,7 +255,7 @@ A rule file without askai's marker line is not askai's: it is skipped unless `--
 |---|---|---|---|
 | `token-kit` | Takeover of a previous standalone `token-setup.mjs` run | Only if `~/.token-kit/state.json` exists: runs `standalone/token-setup.mjs --uninstall` (removes its keys, rule blocks and handoff files, with backups) so askai's settings and rules are not applied twice | Once, during install |
 | `claude` | Claude Code CLI | winget `Anthropic.ClaudeCode` (Windows); Homebrew cask `claude-code` or `claude.ai/install.sh` (macOS, Linux), only if missing | - |
-| `baseline` | The zero-cost settings | `~/.claude/settings.json`: `model` `claude-sonnet-5-5` when none is set (Claude Code starts on Opus otherwise; `--main-model`), `effortLevel` high, `env.CLAUDE_CODE_SUBAGENT_MODEL=haiku`, `skillOverrides` (rarely used bundled skills to `name-only`). Added only when absent. The retired AskAI defaults (haiku, effort medium, `autoCompactWindow` 150000) are updated. Also removes registrations of the retired askai hook | Every session |
+| `baseline` | The zero-cost settings | `~/.claude/settings.json`: `model` `claude-haiku-5-5` when none is set (Claude Code starts on Opus otherwise; `--main-model`), `effortLevel` high, `env.CLAUDE_CODE_SUBAGENT_MODEL=haiku`, `skillOverrides` (rarely used bundled skills to `name-only`). Added only when absent. The retired AskAI defaults (haiku, effort medium, `autoCompactWindow` 150000) are updated. Also removes registrations of the retired askai hook | Every session |
 | `rtk` | [RTK](https://github.com/rtk-ai/rtk), **opt-in** (`--rtk`) | winget `rtk-ai.rtk`, then `rtk init -g --auto-patch` (a PreToolUse hook on Bash calls) | Every Bash tool call, automatically |
 | `context-mode` | [Context Mode](https://github.com/mksglu/context-mode), **opt-in** (`--context-mode`) | `claude plugin marketplace add mksglu/context-mode`, `claude plugin install context-mode@context-mode` | Plugin hooks fire automatically; the model chooses when to call `ctx_*` tools |
 | `serena` | [Serena](https://github.com/oraios/serena) | `uv tool install -p 3.13 serena-agent`, `serena init`, uv's tool bin dir added to the user PATH, `claude mcp add --scope user serena ...` (dashboard off) | The model chooses to call its tools; the `CLAUDE.md` block and the coding rule nudge it |
@@ -445,7 +460,7 @@ Components for `--only` and `--skip`: `token-kit, claude, baseline, rtk, context
 
 - Codex and Antigravity wiring follows each vendor's documentation (October 2026), but has not had a real first run on a machine with those tools: whether `rtk init -g --codex` and `--agent antigravity` accept `--auto-patch`, the exact shape of `codex mcp add`, and whether Antigravity's app reads `~/.gemini/config/skills` as documented. Start with `--dry-run`, then `askai doctor`.
 - On macOS and Linux askai runs the vendors' installer scripts (`claude.ai/install.sh`, `astral.sh/uv/install.sh`) when Homebrew is absent; the install plan names each URL before the one confirmation. If `astral.sh` is blocked, uv is installed with `python3 -m pip install --user uv` from PyPI. It never prompts for a password: ripgrep and `gh` without Homebrew are a manual `apt`/`dnf` step. On a headless Linux machine, upgrade, update, and setup install `tmux` when the user is root or `sudo -n` works.
-- `--main-model` is applied only when `settings.json` has no `model`. The default is `claude-sonnet-5-5`. If you rely on Opus for everyday work, pass `--main-model keep`.
+- `--main-model` is applied only when `settings.json` has no `model`. The default is `claude-haiku-5-5`. If you rely on Opus for everyday work, pass `--main-model keep`.
 
 ## Tests
 

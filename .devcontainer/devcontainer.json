@@ -1,0 +1,9 @@
+{
+  "name": "AskAI",
+  "image": "node:22-bookworm",
+  "remoteUser": "node",
+  "postCreateCommand": "bash .devcontainer/post-create.sh",
+  "mounts": [
+    "source=askai-home,target=/home/node/.claude/askai,type=volume"
+  ]
+}

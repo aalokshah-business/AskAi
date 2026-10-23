@@ -43,7 +43,7 @@
 .PARAMETER Rtk            Opt in to RTK (benchmarks found no net saving).
 .PARAMETER ContextMode    Opt in to Context Mode (benchmarks found higher cost).
 .PARAMETER Lsp            Claude Code's official code-intelligence plugins: ts,py,kotlin,ruby,swift.
-.PARAMETER MainModel      Claude Code model when settings.json has none: claude-sonnet-5-5 (default) | haiku | sonnet | opus | keep.
+.PARAMETER MainModel      Claude Code model when settings.json has none: claude-haiku-5-5 (default) | haiku | sonnet | opus | keep.
 .PARAMETER SubagentModel  CLAUDE_CODE_SUBAGENT_MODEL when unset (default haiku).
 .PARAMETER CodexModel     Codex model when config.toml has none.
 .PARAMETER Topic          With -Action tips: claude | codex | agy | cursor | session | habits.

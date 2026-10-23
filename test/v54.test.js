@@ -81,7 +81,7 @@ test('bootstrap refuses to replace an unrelated source folder', { skip: !hasGit 
 
 test('CI workflow and community files are in place; package.json points at the repository', () => {
   const ci = read('.github/workflows/test.yml');
-  for (const s of ['ubuntu-latest', 'macos-latest', 'windows-latest', 'node --test test/*.test.js', 'gen-docs.js --check', 'windows-selftest.ps1', 'preview-matrix.sh']) assert.ok(ci.includes(s), s);
+  for (const s of ['ubuntu-latest', 'macos-latest', 'windows-latest', 'node --test --test-reporter tap test/*.test.js', 'gen-docs.js --check', 'windows-selftest.ps1', 'preview-matrix.sh', 'node:22-bookworm', 'node:22-alpine']) assert.ok(ci.includes(s), s);
   for (const f of ['CONTRIBUTING.md', 'SECURITY.md', 'docs/RELEASING.md', 'scripts/sums.js']) assert.ok(fs.existsSync(path.join(ROOT, f)), f);
   assert.strictEqual(JSON.parse(read('package.json')).repository.url, 'https://github.com/aalokshah-business/AskAi.git');
   assert.match(read('README.md'), /raw\.githubusercontent\.com\/aalokshah-business\/AskAi\/main\/get\.sh \| bash -s --/);

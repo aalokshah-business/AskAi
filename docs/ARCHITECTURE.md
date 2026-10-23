@@ -153,7 +153,7 @@ In install order. Evidence labels: measured (a third-party saving), mixed, claim
 - **`claude`** · Claude Code · in its profiles · evidence: none.
   Claude Code CLI. winget install Anthropic.ClaudeCode on Windows, brew install --cask claude-code on macOS, curl -fsSL https://claude.ai/install.sh | bash on Linux, only if the claude CLI is missing
 - **`baseline`** · Claude Code · in its profiles · evidence: none.
-  Settings baseline. settings.json: add (never override) model=claude-sonnet-5-5 (Claude Code otherwise starts on Opus; --main-model), CLAUDE_CODE_SUBAGENT_MODEL=haiku, effortLevel=high, name-only skillOverrides; replace the retired haiku, medium, and autoCompactWindow 150000 defaults; remove leftover self-built askai hook registrations
+  Settings baseline. settings.json: add (never override) model=claude-haiku-5-5 (Claude Code otherwise starts on Opus; --main-model), CLAUDE_CODE_SUBAGENT_MODEL=haiku, effortLevel=high, name-only skillOverrides; replace the retired haiku, medium, and autoCompactWindow 150000 defaults; remove leftover self-built askai hook registrations
 - **`rtk`** · Claude Code · opt-in (--rtk) · evidence: reported.
   RTK (Bash output compression; opt-in, see README for the benchmarks). winget install rtk-ai.rtk on Windows, brew install rtk on macOS, cargo install --git https://github.com/rtk-ai/rtk (needs Rust from rustup.rs, or Homebrew) on Linux; check `rtk gain` works; winget install BurntSushi.ripgrep.MSVC on Windows, brew install ripgrep on macOS, manual: sudo apt-get install ripgrep  (or dnf install ripgrep) on Linux if rg is missing; `rtk init -g --auto-patch` (registers a PreToolUse hook on Bash)
 - **`context-mode`** · Claude Code · opt-in (--context-mode) · evidence: reported.
@@ -240,7 +240,7 @@ In install order. Evidence labels: measured (a third-party saving), mixed, claim
 
 | Key | Value | Component | Why |
 | --- | --- | --- | --- |
-| `model` | claude-sonnet-5-5 | baseline | Claude Code starts on Opus otherwise; --main-model changes it |
+| `model` | claude-haiku-5-5 | baseline | Claude Code starts on Opus otherwise; --main-model changes it |
 | `effortLevel` | "high" | baseline | high for the session; max only for the hard step |
 | `env.CLAUDE_CODE_SUBAGENT_MODEL` | "haiku" | baseline | subagents mostly search and read |
 | `skillOverrides` | 20 bundled skills set to name-only | baseline | smaller skill listing in every session |
@@ -402,7 +402,7 @@ Options:
   --seed-only                              write settings for a host that may not be installed yet (default target claude)
   --dry-run                                show the plan, change nothing
   --only ID,ID / --skip ID,ID              limit or exclude components
-  --main-model M / --subagent-model M      Claude Code models when unset (default claude-sonnet-5-5, subagent haiku; keep leaves the main model alone)
+  --main-model M / --subagent-model M      Claude Code models when unset (default claude-haiku-5-5, subagent haiku; keep leaves the main model alone)
   --codex-model M                          Codex model when config.toml has none
   --caveman off|lite|full|ultra            terse-reply level (default full)
   --lsp ts,py,kotlin,ruby,swift            Claude Code's official code-intelligence plugins
@@ -509,20 +509,23 @@ Exit: 1 when a finding needs a fix now or the file validator fails, else 0
 ```text
 askai check: Audit this machine and a repository against the token-saving guidelines.
 
-Usage: askai check [dir] [--fix] [--json]
+Usage: askai check [dir] [--fix] [--json] [--env]
 
 Machine: billing variables, default and subagent models, effort, idle drains, CLAUDE.md size, MCP counts, RTK and Context Mode, Codex keys and AGENTS.md size, Antigravity paid credits and GEMINI.md size, Cursor rules, peak hours.
 Repo: AGENTS.md and CLAUDE.md (present, size, import), .cursorignore, .ai-work/ gitignored, age of the last handoff.
 Each gap is printed with the command that fixes it.
+askai check --env prints the platform block only: OS, shell, Node, TTY, git, package manager, container, HOME, clipboard.
 askai setup prints the counts. This command prints each row.
 
 Options:
   --fix                                    scaffold the repo and create .ai-work (never overwrites)
   --json                                   machine-readable rows
+  --env                                    platform block only
 
 Examples:
   askai check
   askai check . --fix
+  askai check --env
 
 Exit: 1 when a finding is severity now (bills outside your plan), else 0
 ```
@@ -753,16 +756,14 @@ Exit: 0
 #### `askai report`
 
 ```text
-askai report: Claude Code: status, health, cache and context per session, ccusage by day, and spend from transcripts.
+askai report: Alias of askai usage --full plus one line from askai check --brief.
 
-Usage: askai report [hours] [--json]
-
-When the transcript window is empty, the spend section is the same two lines as askai usage. No zero ledger.
+Usage: askai report [days]
 
 Examples:
-  askai report 24
+  askai report
 
-Exit: 0, or 1 when the spend report fails
+Exit: 0
 ```
 
 #### `askai session`
@@ -1191,14 +1192,14 @@ Exit: 0
 ```text
 askai convert: Convert a PDF, Office file, web page or YouTube URL to Markdown with Microsoft MarkItDown, locally; never overwrites.
 
-Usage: askai convert <file|url> [--out file.md] | askai convert scan [dir]
+Usage: askai convert <file|url> [--out file.md] | askai convert scan [dir] [--yes] [--ignore-originals]
 
-scan lists PDF and Office files and an offline token estimate. It does not call MarkItDown.
+scan lists PDF and Office files and an offline token estimate. --yes converts when markitdown is installed and caches under .ai-work/converted/. --ignore-originals writes the originals into .cursorignore.
 
 Examples:
   askai convert spec.pdf
   askai convert scan
-  askai convert https://www.youtube.com/watch?v=ID
+  askai convert scan --yes --ignore-originals
 
 Exit: 0, or 1 when MarkItDown is missing
 ```
@@ -1259,15 +1260,12 @@ Exit: 0, or 1 when install or the agent workflow fails
 #### `askai savings`
 
 ```text
-askai savings: Run each installed plugin's own savings report: rtk gain, ccusage daily, headroom stats, the codebase-memory-mcp projects and whether the Graphify graph is built; lists the reports that only exist inside the agent.
+askai savings: Alias of askai usage --plugins.
 
-Usage: askai savings [days] [--repo DIR]
-
-These are the tools' own estimates. Compare with askai usage <days> and askai audit, which read what the tools actually spent.
+Usage: askai savings
 
 Examples:
   askai savings
-  askai savings 30
 
 Exit: 0
 ```

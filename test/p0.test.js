@@ -85,8 +85,9 @@ test('ask with no topic lists groups, and a topic prints one answer', () => {
   assert.match(one.out, /Related:/);
 });
 
-test('the short banner lists every profile, including max', () => {
-  assert.match(cli([]).out, /minimal \| coding \| docs \| full \| max/);
+test('the short banner names the primary profiles and keeps max as an alias', () => {
+  assert.match(cli([]).out, /minimal \| code \| docs \| full \| experimental/);
+  assert.match(cli([]).out, /coding = code, max = experimental/);
 });
 
 test('a host that is not installed adds no warnings', () => {
@@ -94,7 +95,9 @@ test('a host that is not installed adds no warnings', () => {
   try {
     const ctx = makeCtx(h, {}, { tools: {} });
     const rows = require('../lib/check').machine(ctx);
-    assert.ok(!rows.some(r => /default model|starts on Opus|Claude Code/.test(r.msg)), rows.map(r => r.msg).join(' | '));
+    const hints = rows.filter(r => /Claude Code/.test(r.msg));
+    assert.deepStrictEqual(hints.map(r => r.msg), ['Claude Code not installed: askai install --target claude --seed-only']);
+    assert.ok(!rows.some(r => /default model|starts on Opus/.test(r.msg)));
   } finally { rm(h); }
 });
 

@@ -302,7 +302,7 @@ Use `/askai-cli` in Claude Code, Cursor or Antigravity (`$askai-cli` in Codex) f
 | Option | Effect |
 | --- | --- |
 | `--lsp ts,py` (also kotlin, ruby, swift) | Claude Code's official code-intelligence plugins, plus the npm language servers for ts and py |
-| `--main-model NAME` | Claude Code's default when you have none set. The default is `claude-sonnet-5-5` at high effort |
+| `--main-model NAME` | Claude Code's default when you have none set. The default is `claude-haiku-5-5` at high effort |
 | `--codex-model NAME` | A cheaper default model for Codex |
 | `--ccusage`, `--markitdown` | The usage reporter; the document converter |
 | `--lean-git` | Also remove Claude Code's git instructions from every turn, if you never use it for commits |

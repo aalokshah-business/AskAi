@@ -66,7 +66,7 @@ test('askai install takes over a previous token-setup run: same settings, one ru
   assert.ok(!fs.existsSync(path.join(H, '.claude', 'commands', 'handoff.md')) && fs.existsSync(path.join(H, '.claude', 'commands', 'askai-cli.md')));
   assert.ok(!fs.existsSync(path.join(H, '.cursor', 'rules', 'token-rules.mdc')));
   const s = JSON.parse(read(path.join(H, '.claude', 'settings.json')));
-  assert.strictEqual(s.model, 'claude-sonnet-5-5'); assert.strictEqual(s.effortLevel, 'high'); assert.strictEqual(s.promptSuggestionEnabled, false);
+  assert.strictEqual(s.model, 'claude-haiku-5-5'); assert.strictEqual(s.effortLevel, 'high'); assert.strictEqual(s.promptSuggestionEnabled, false);
   // and token-setup now steps aside
   const again = ts(H, '--apply');
   assert.strictEqual(again.status, 0); assert.match(again.stdout, /AskAI is installed/);

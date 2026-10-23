@@ -258,28 +258,12 @@ test('status --json and doctor run read-only against an empty home', () => withH
   for (const f of ['askai', 'settings.json', 'CLAUDE.md', 'commands']) assert.ok(!fs.existsSync(path.join(home, f)), `${f} not created`);
 }));
 
-test('report prints status, health, cache and spend sections and touches nothing of askai\'s', () => withHome(home => {
+test('report is usage --full plus one check --brief line', () => withHome(home => {
   const r = run(home, 'report', '1');
   assert.strictEqual(r.code, 0, r.out + r.err);
-  // 4 sections, or 5 when ccusage happens to be on PATH: the total in the headings is dynamic.
-  const at = [/1\/[45] +TOOLS AND MEASURED SAVINGS/, /2\/[45] +HEALTH/, /3\/[45] +CACHE AND CONTEXT PER SESSION, LAST 1h/, /\d\/[45] +SPEND FROM TRANSCRIPTS, LAST 1h/].map(re => r.out.search(re));
-  assert.ok(at.every(i => i >= 0), `all four headings present: ${at}`);
-  assert.deepStrictEqual([...at].sort((a, b) => a - b), at, 'sections appear in order');
-  assert.match(r.out, /(ok|warn) +node/, 'doctor rows are included');
+  assert.match(r.out, /^check: \d+ ok, \d+ to improve, \d+ failing$/m);
+  assert.doesNotMatch(r.out, /TOOLS AND MEASURED SAVINGS/);
   for (const f of ['askai', 'settings.json', 'CLAUDE.md', 'commands']) assert.ok(!fs.existsSync(path.join(home, f)), `${f} not created`);
-}));
-
-test('report --json is one JSON object with tools, health, cache, hosts and spend', () => withHome(home => {
-  const r = run(home, 'report', '--hours', '1', '--json');
-  assert.strictEqual(r.code, 0, r.out + r.err);
-  const j = JSON.parse(r.out);
-  assert.strictEqual(j.hours, 1);
-  for (const k of ['hosts', 'cache', 'ccusage']) assert.ok(k in j, `${k} key present`);
-  assert.strictEqual(j.hosts.claude, true);
-  assert.strictEqual(j.hosts.cursor, false, 'a sandboxed run does not look at the real Cursor directory');
-  assert.ok(Array.isArray(j.tools) && j.tools.length > 0);
-  assert.ok(Array.isArray(j.health) && j.health.some(h => h.id === 'node'));
-  assert.ok(j.spend && typeof j.spend === 'object' && !j.spend.error, JSON.stringify(j.spend).slice(0, 200));
 }));
 
 test('statusline prints a single line and never fails, even on garbage stdin', () => withHome(home => {

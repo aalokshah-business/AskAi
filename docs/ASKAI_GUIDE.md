@@ -258,7 +258,7 @@ Every key is added only when you have not set it, so your own choices stay. Each
 
 | Tool | Setting | Value | Why |
 | --- | --- | --- | --- |
-| Claude Code | `model` | `claude-sonnet-5-5` (`--main-model` to change) | Claude Code starts on Opus otherwise |
+| Claude Code | `model` | `claude-haiku-5-5` (`--main-model` to change) | Claude Code starts on Opus otherwise |
 |  | `env.CLAUDE_CODE_SUBAGENT_MODEL` | `haiku` | Subagents mostly search and read |
 |  | `effortLevel` | `high` | Everyday effort. Use max only for the hard step |
 |  | `promptSuggestionEnabled`, `awaySummaryEnabled` | `false` | Requests you did not ask for |

@@ -13,4 +13,4 @@ bash standalone/setup.sh --uninstall
 powershell -ExecutionPolicy Bypass -File .\standalone\setup.ps1 --apply   # Windows
 ```
 
-Options: `--tools claude,codex,agy,cursor`, `--install-clis`, `--claude-model ID` (default `claude-sonnet-5-5`), `--lsp ts,py`, `--lean-git`, `--home DIR` (testing). `templates/` holds the exact files it writes. Its settings match `askai install` (see docs/ARCHITECTURE.md); the full reasoning is in docs/research/TOKEN_SAVING_GUIDE.md.
+Options: `--tools claude,codex,agy,cursor`, `--install-clis`, `--claude-model ID` (default `claude-haiku-5-5`), `--lsp ts,py`, `--lean-git`, `--home DIR` (testing). `templates/` holds the exact files it writes. Its settings match `askai install` (see docs/ARCHITECTURE.md); the full reasoning is in docs/research/TOKEN_SAVING_GUIDE.md.
