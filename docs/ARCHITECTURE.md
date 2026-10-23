@@ -1471,7 +1471,7 @@ Exit: 0
   Why: A cleared session that reads a 40-line handoff and two files costs far less than a long chat re-sent every turn.
   AskAI: askai init, askai map
 - **What breaks the prompt cache** (`askai ask cache-breakers`): Choose the model and MCP servers before the session and keep them; compact rarely.
-  Why: A model switch, connecting or disconnecting an MCP server, a plugin that adds MCP tools, compaction and fast mode rebuild the cache; an effort change keeps it (Anthropic).
+  Why: A model switch, connecting or disconnecting an MCP server, a plugin that adds MCP tools, compaction and fast mode rebuild the cache; an effort change keeps it (Anthropic). Legacy env names still seen in the wild, not recommended: ENABLE_PROMPT_CACHING_1H, FORCE_PROMPT_CACHING_5M.
   AskAI: askai go, askai audit (shows switches and cache share)
 - **Limit tool output** (`askai ask tool-output`): Cap, grep or summarise output before it reaches the chat: quiet flags, tail -n 40, only failing lines.
   Why: Bash output above the cap is never read; AskAI sets bashOutputMaxChars to 15,000. Hooks that rewrite commands measured no net saving (RTK).

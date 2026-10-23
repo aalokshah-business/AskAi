@@ -116,7 +116,7 @@ if (selected('cursor') && exists(DIR.cursor)) {
 // ---- the repository -----------------------------------------------------------------------------------------------------
 if (repo) {
   const f = p => path.join(repo, p);
-  const need = ['AGENTS.md', 'CLAUDE.md', 'GEMINI.md', '.cursorignore', ...['PROJECT_MAP', 'ARCHITECTURE', 'FEATURES', 'WORK_ORDER', 'MODELS'].map(n => `docs/ai/${n}.md`)];
+  const need = require('../lib/validate-files').NEED.slice();
   const agents = [['claude', '.claude/agents', 'md'], ['codex', '.codex/agents', 'toml'], ['cursor', '.cursor/agents', 'md'], ['agy', '.agents/agents', 'md']].filter(([h]) => selected(h) && exists(DIR[h]));
   for (const [, d, ext] of agents) for (const n of ['architect', 'builder', 'runner']) need.push(`${d}/${n}.${ext}`);
   for (const d of ['.claude/skills', '.agents/skills']) for (const n of ['architecture-map', 'prompt-refiner', 'investigate-bug', 'verify-and-review']) need.push(`${d}/${n}/SKILL.md`);

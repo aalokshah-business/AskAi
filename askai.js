@@ -56,14 +56,14 @@ Flags: --yes --dry-run --profile (default ${profiles.DEFAULT}) --add --list --ho
        --tool --model --caveman --lsp --lean-git --markitdown --ccusage --rtk --context-mode --base-tools --headroom --graphify --context7
        --repomix --codebase-memory --claude-mem --caveman-plugin --output --kind --about --type --tier --files --done --mode --used --window
        --output-safe --out --name --path --build --test --threshold --for --include-untracked --personal --shared --undo --review --week --fill
-       --cache --plugins --full --agents --demo --launch --prepare --clear --offline --copy --fix --refresh --resume --import-cursor --env
+       --cache --plugins --full --agents --demo --launch --prepare --clear --offline --copy --fix --refresh --resume --import-cursor --env --save
 Profiles: minimal | code | docs | full | experimental. Aliases: coding = code, max = experimental.
 Old names stay: askai upgrade = update, askai tools update = components.
 `;
 
 // ---- args --------------------------------------------------------------------------------------------------------
 const BOOL = { yes: 'yes', y: 'yes', 'dry-run': 'dry', offline: 'offline', json: 'json', launch: 'launch', prepare: 'prepare', clear: 'clear', 'no-statusline': 'noStatusline', 'no-path': 'noPath', 'caveman-plugin': 'cavemanPlugin', markitdown: 'markitdown', ccusage: 'ccusage', tools: 'tools', force: 'force', print: 'print', remove: 'remove', lean: 'lean', rtk: 'rtk', 'context-mode': 'contextMode', 'lean-git': 'leanGit', copy: 'copy', fix: 'fix', refresh: 'refresh', resume: 'resume', 'base-tools': 'baseTools', headroom: 'headroom', graphify: 'graphify', context7: 'context7', repomix: 'repomix', 'codebase-memory': 'codebaseMemory', 'claude-mem': 'claudeMem', all: 'all', help: 'help', h: 'help', agents: 'agents', demo: 'demo', cache: 'cache', plugins: 'plugins', full: 'full', undo: 'undo', review: 'review', week: 'week', shared: 'shared', personal: 'personal', 'include-untracked': 'includeUntracked', 'seed-only': 'seedOnly', fill: 'fill', brief: 'brief', quiet: 'quiet', 'no-color': 'noColor', list: 'list', 'ignore-originals': 'ignoreOriginals', env: 'env' };
-const VAL = { output: 'output', kind: 'kind', about: 'about', type: 'type', tier: 'tier', files: 'files', done: 'done', mode: 'mode', used: 'used', window: 'window', 'output-safe': 'outputSafe', out: 'out', project: 'project', p: 'project', name: 'name', path: 'path', build: 'build', test: 'test', only: 'only', skip: 'skip', caveman: 'caveman', profile: 'profile', target: 'target', 'claude-home': 'claudeHome', 'cursor-home': 'cursorHome', hours: 'hours', 'import-cursor': 'importCursor',
+const VAL = { output: 'output', kind: 'kind', about: 'about', type: 'type', tier: 'tier', files: 'files', done: 'done', mode: 'mode', used: 'used', window: 'window', 'output-safe': 'outputSafe', out: 'out', project: 'project', p: 'project', name: 'name', path: 'path', build: 'build', test: 'test', only: 'only', skip: 'skip', caveman: 'caveman', profile: 'profile', target: 'target', 'claude-home': 'claudeHome', 'cursor-home': 'cursorHome', hours: 'hours', 'import-cursor': 'importCursor', save: 'save',
   'codex-home': 'codexHome', 'agy-home': 'agyHome', 'main-model': 'mainModel', 'subagent-model': 'subagentModel', 'codex-model': 'codexModel',
   repo: 'repo', tool: 'tool', model: 'model', effort: 'effort', task: 'task', difficulty: 'difficulty', summary: 'summary', next: 'next',
   result: 'result', minutes: 'minutes', 'input-tokens': 'inputTokens', 'output-tokens': 'outputTokens', 'cached-tokens': 'cachedTokens',
@@ -544,6 +544,16 @@ function cmdDoctor(o) {
 // The profiles and what each installs; the one in effect is marked.
 function cmdProfiles(o) {
   const ctx = buildCtx(o, true);
+  if (o._[1] === 'migrate') {
+    const before = Object.keys(ctx.manifest.components || {}).sort().join(',');
+    if (ctx.manifest.profile !== 'max') { console.log('No recorded max profile. Nothing renamed.'); return 0; }
+    ctx.manifest.profile = 'experimental';
+    saveManifest(ctx, 'profiles migrate', []);
+    const after = Object.keys(ctx.manifest.components || {}).sort().join(',');
+    if (before !== after) { console.error('profiles migrate changed the tool list'); return 1; }
+    console.log('note: recorded profile max is now experimental. Installed tools were not changed.');
+    return 0;
+  }
   const cur = status.profileInfo(ctx);
   const rows = profiles.names().map(n => ({ ...profiles.get(n), current: n === cur.name }));
   if (o.json) { console.log(JSON.stringify({ current: cur.name, source: cur.source, profiles: rows }, null, 2)); return 0; }
@@ -993,7 +1003,14 @@ async function cmdSetup(o) {
   ensureSessionTerminal(o, false, ctx.sandbox);
   const result = require('./lib/setup').report(ctx, dir);
   console.log(result.text);
-  if (!o.yes) return result.code;
+  let go = !!o.yes;
+  if (!go && process.stdin.isTTY && process.stdout.isTTY) {
+    const rl = readline.createInterface({ input: process.stdin, output: process.stdout });
+    const ans = await new Promise(res => rl.question('Continue? [Y/n] ', res));
+    rl.close();
+    go = ans.trim() === '' || /^y(es)?$/i.test(ans.trim());
+  } else if (!go) go = true;
+  if (!go) return result.code;
   console.log('Wizard: install, then init.');
   if (o.dry) {
     console.log('would run: askai install --yes');

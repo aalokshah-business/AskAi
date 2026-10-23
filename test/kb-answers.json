@@ -185,7 +185,7 @@
   },
   {
     "id": "cache-breakers",
-    "render": "What breaks the prompt cache\n  Rule: Choose the model and MCP servers before the session and keep them; compact rarely.\n  Why:  A model switch, connecting or disconnecting an MCP server, a plugin that adds MCP tools, compaction and fast mode rebuild the cache; an effort change keeps it (Anthropic).\n  Claude Code  askai go claude --tier build\n  askai:       askai go, askai audit (shows switches and cache share)"
+    "render": "What breaks the prompt cache\n  Rule: Choose the model and MCP servers before the session and keep them; compact rarely.\n  Why:  A model switch, connecting or disconnecting an MCP server, a plugin that adds MCP tools, compaction and fast mode rebuild the cache; an effort change keeps it (Anthropic). Legacy env names still seen in the wild, not recommended: ENABLE_PROMPT_CACHING_1H, FORCE_PROMPT_CACHING_5M.\n  Claude Code  askai go claude --tier build\n  askai:       askai go, askai audit (shows switches and cache share)"
   },
   {
     "id": "tool-output",
