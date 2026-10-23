@@ -303,7 +303,7 @@ Where each command is implemented. Written from the `case` list in `askai.js` be
 | `askai report` | `askai.js cmdReport; lib/usage.js` |
 | `askai profiles` | `askai.js cmdProfiles; lib/profiles.js` |
 | `askai suggest` | `askai.js cmdSuggest; lib/suggest.js` |
-| `askai project` | `askai.js cmdProject; lib/project.js; lib/project-registry.js` |
+| `askai project` | `askai.js cmdProject; lib/project.js; lib/project-registry.js; lib/project-refresh.js; lib/project-review.js` |
 | `askai set` | `askai.js cmdSet; lib/project-registry.js` |
 | `askai shell` | `askai.js cmdShell; lib/project-shell.js` |
 | `askai uninstall` | `askai.js cmdUninstall; lib/components.js` |
@@ -664,9 +664,10 @@ Exit: 0
 ```text
 askai project: Manage registered projects, or copy Cursor rules into a repository for teammates.
 
-Usage: askai project [dir] [--print|--remove] | list | show | rename OLD NEW | path NAME NEW_PATH | remove NAME | switch [NAME]
+Usage: askai project [dir] [--print|--remove] | list | show | rename OLD NEW | path NAME NEW_PATH | remove NAME | switch [NAME] | refresh [dir]
 
 list prints every registered name and path. show reports the selected project. rename, path and remove change only the registry; remove never deletes project files.
+refresh creates only missing init files, then rewrites the project map and prints the review state. At most 8 lines.
 Without a subcommand, the existing Cursor rules behavior is preserved.
 
 Examples:
@@ -675,6 +676,7 @@ Examples:
   askai project rename old new
   askai project path app C:\code\app
   askai project .
+  askai project refresh .
 
 Exit: 0
 ```

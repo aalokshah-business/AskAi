@@ -695,6 +695,15 @@ function cmdShell(o) {
 // Cursor: write (or show, or remove) the token rules of a project in <dir>/.cursor/rules.
 function cmdProject(o) {
   if (!o._[1] && !o.print && !o.remove && !o.profile && !o.force) return cmdProjectRegistry({ ...o, _: ['project', 'show'] });
+  if (o._[1] === 'refresh') {
+    const dir = projectDir(o, o._[2]);
+    let isDir = false;
+    try { isDir = fs.statSync(dir).isDirectory(); } catch (_) { /* missing */ }
+    if (!isDir) { console.error(`askai: ${dir} is not a directory`); return 1; }
+    const result = require('./lib/project-refresh').run(dir, { dry: !!o.dry, ctx: buildCtx(o, true) });
+    console.log(result.text);
+    return 0;
+  }
   if (o._[1] === 'rules') o = { ...o, _: ['project', ...o._.slice(2)] };
   if (o._[1] === 'list') return cmdProjects(o);
   if (['show', 'rename', 'path', 'remove', 'switch'].includes(o._[1])) return cmdProjectRegistry(o);
