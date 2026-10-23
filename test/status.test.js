@@ -190,7 +190,7 @@ test('renderCache: adds the plan-limits line from the newest report that has rat
 // ---- profile, rows, doctor ------------------------------------------------------------------------------------------------
 test('profileInfo: --profile, then the recorded profile, then the default; a bad recorded name falls back', () => {
   withCtx(ctx => {
-    assert.deepStrictEqual([status.profileInfo(ctx).name, status.profileInfo(ctx).source], ['coding', 'default, none recorded yet']);
+    assert.deepStrictEqual([status.profileInfo(ctx).name, status.profileInfo(ctx).source], ['lean', 'default, none recorded yet']);
   });
   withCtx(ctx => {
     ctx.manifest.profile = 'docs';
@@ -202,7 +202,7 @@ test('profileInfo: --profile, then the recorded profile, then the default; a bad
   }, { profile: 'minimal' });
   withCtx(ctx => {
     ctx.manifest.profile = 'gone';
-    assert.deepStrictEqual([status.profileInfo(ctx).name, status.profileInfo(ctx).source], ['coding', 'default (recorded profile unknown)']);
+    assert.deepStrictEqual([status.profileInfo(ctx).name, status.profileInfo(ctx).source], ['lean', 'default (recorded profile unknown)']);
   });
 });
 
@@ -246,8 +246,8 @@ test('collect: Cursor rows appear when Cursor is in play, with what each one is 
 
 test('renderStatus: profile line, per-tool wiring, and the honesty footer', () => withCtx(ctx => {
   const r = status.renderStatus(ctx);
-  assert.match(r.lines[1], /^profile: machine coding \(default, none recorded yet\)/);
-  assert.strictEqual(r.profile, 'coding');
+  assert.match(r.lines[1], /^profile: machine lean \(default, none recorded yet\)/);
+  assert.strictEqual(r.profile, 'lean');
   assert.match(r.lines.join('\n'), /Only tool-measured numbers are shown/);
   assert.ok(!/Cursor: the status line/.test(r.lines.join('\n')), 'no Cursor note when Cursor is not in play');
 }));
@@ -261,7 +261,8 @@ test('doctor: a tool outside the profile is omitted, one inside it is a warning'
   });
   withCtx(ctx => {
     const d = status.doctor(ctx);
-    assert.strictEqual(d.find(r => r.id === 'serena').level, 'warn', 'coding profile wants serena');
+    assert.strictEqual(d.find(r => r.id === 'serena'), undefined, 'lean does not include serena');
+    assert.strictEqual(d.find(r => r.id === 'caveman').level, 'warn', 'lean wants caveman');
   });
 });
 

@@ -85,7 +85,7 @@ These are your preferences, used by `askai go` and written into each tool's agen
 | --- | --- | --- | --- | --- | --- |
 | lead (`architect`) | Architecture and design, hard bugs, security | sonnet, max | gpt-6.1-sol, high | grok-4.7, extra high (Sonnet 5, max on Premium) | flash, high |
 | build (`builder`) | Features and fixes within the design | sonnet, high | gpt-6.1-sol, medium | grok-4.7, high (Sonnet 5, high) | flash, high |
-| chore (`runner`) | Cleanup, scripts, git, test runs, search | haiku, high (or sonnet, medium) | gpt-6-luna, high | grok-4.7, medium (Sonnet 5, medium) | flash, high |
+| chore (`runner`) | Cleanup, scripts, git, test runs, search | haiku, medium (or sonnet, medium) | gpt-6-luna, medium | grok-4.7, medium (Sonnet 5, medium) | flash, high |
 
 - **Claude Code:** subagent files take `model` and `effort`. For `max` in the main session, AskAI sets `CLAUDE_CODE_EFFORT_LEVEL=max`; the settings key reportedly downgrades it.
 - **Codex:** custom agents are TOML files with `name`, `description` and `developer_instructions`. Codex never spawns them by itself, so ask for them by name. A reported bug (openai/codex #32587) can make in-app workers inherit the parent's expensive model; `askai infra` shows the model each session really ran.

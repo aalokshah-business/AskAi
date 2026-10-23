@@ -138,9 +138,9 @@ The installed `askai-cli` entry point in each host runs `askai cli --prepare`. P
 
 | Tier | Agent | Use for | Claude Code | Codex | Cursor (Grok / Sonnet) | Antigravity |
 | --- | --- | --- | --- | --- | --- | --- |
-| lead | `architect` | Architecture and design, ambiguous debugging, security, cross-module integration | sonnet, max | gpt-6.1-sol, high | grok-4.7, xhigh / claude-sonnet-5, max | flash, high (model: flash in the file; /effort per session) |
+| lead | `architect` | Architecture and design, ambiguous debugging, security, cross-module integration | sonnet, high | gpt-6.1-sol, high | grok-4.7, xhigh / claude-sonnet-5, max | flash, high (model: flash in the file; /effort per session) |
 | build | `builder` | Features, enhancements and bug fixes within the existing design | sonnet, high | gpt-6.1-sol, medium | grok-4.7, high / claude-sonnet-5, high | flash, high (model: flash in the file; /effort per session) |
-| chore | `runner` | Cleanup, running scripts and tests, git, search, small docs edits | haiku, high | gpt-6-luna, high | grok-4.7, medium / claude-sonnet-5, medium | flash, high (model: flash in the file; /effort per session) |
+| chore | `runner` | Cleanup, running scripts and tests, git, search, small docs edits | haiku, medium | gpt-6-luna, medium | grok-4.7, medium / claude-sonnet-5, medium | flash, high (model: flash in the file; /effort per session) |
 
 Change one with `askai models set <tool>.<tier> <model>[:<effort>]`; `askai init --refresh` rewrites the agent files. Antigravity agent files accept only a tier (`flash`, `pro`, `flash_lite`, `inherit`); any other value makes Antigravity skip the file silently.
 
@@ -225,11 +225,14 @@ In install order. Evidence labels: measured (a third-party saving), mixed, claim
 
 | Profile | What it is | Components | Path rules |
 | --- | --- | --- | --- |
-| `minimal` | cheap model defaults, token and terse rules, status line; no MCP servers or plugins | token-kit, claude, baseline, caveman, statusline, rules, lean, prompt-hooks | none |
-| `coding` (default) | minimal + Serena (symbol-level navigation) + code rules | token-kit, claude, baseline, caveman, statusline, rules, lean, prompt-hooks, serena, ccusage | coding |
-| `docs` | minimal + markitdown (PDF/Office to Markdown before reading) + document rules; no code navigation | token-kit, claude, baseline, caveman, statusline, rules, lean, prompt-hooks, markitdown, ccusage | docs |
-| `full` | coding + markitdown + ccusage (third-party usage report), both rule sets | token-kit, claude, baseline, caveman, statusline, rules, lean, prompt-hooks, serena, markitdown, ccusage | coding, docs |
-| `max` | everything: full + RTK, Context Mode, Headroom (MCP mode), Graphify, Context7, Repomix, Caveman plugin, LSP plugins (ts, py), base tools | token-kit, claude, baseline, caveman, statusline, rules, lean, prompt-hooks, serena, markitdown, ccusage, rtk, context-mode, caveman-plugin, headroom, graphify, context7, repomix, code-intel, base-tools | coding, docs |
+| `minimal` | cheap model defaults, token and terse rules, status line; no MCP servers or plugins | token-kit, claude, baseline, caveman, statusline, rules, lean | none |
+| `coding` | minimal + Serena (symbol-level navigation) + code rules | token-kit, claude, baseline, caveman, statusline, rules, lean, serena, ccusage | coding |
+| `docs` | minimal + markitdown (PDF/Office to Markdown before reading) + document rules; no code navigation | token-kit, claude, baseline, caveman, statusline, rules, lean, markitdown, ccusage | docs |
+| `full` | coding + markitdown + ccusage (third-party usage report), both rule sets | token-kit, claude, baseline, caveman, statusline, rules, lean, serena, markitdown, ccusage | coding, docs |
+| `max` | everything: full + RTK, Context Mode, Headroom (MCP mode), Graphify, Context7, Repomix, Caveman plugin, LSP plugins (ts, py), base tools | token-kit, claude, baseline, caveman, statusline, rules, lean, serena, markitdown, ccusage, rtk, context-mode, caveman-plugin, headroom, graphify, context7, repomix, code-intel, base-tools | coding, docs |
+| `lean` (default) | rules, terse mode, status line, baseline, tier defaults, base tools; no MCP servers | token-kit, claude, baseline, caveman, statusline, rules, lean, base-tools | none |
+| `code` | same set as coding: Serena, code rules, ccusage | token-kit, claude, baseline, caveman, statusline, rules, lean, serena, ccusage | coding |
+| `experimental` | same set as max; not recommended | token-kit, claude, baseline, caveman, statusline, rules, lean, serena, markitdown, ccusage, rtk, context-mode, caveman-plugin, headroom, graphify, context7, repomix, code-intel, base-tools | coding, docs |
 
 ## 8. Settings written
 
@@ -303,7 +306,7 @@ Where each command is implemented. Written from the `case` list in `askai.js` be
 | `askai report` | `askai.js cmdReport; lib/usage.js` |
 | `askai profiles` | `askai.js cmdProfiles; lib/profiles.js` |
 | `askai suggest` | `askai.js cmdSuggest; lib/suggest.js` |
-| `askai project` | `askai.js cmdProject; lib/project.js; lib/project-registry.js; lib/project-refresh.js; lib/project-review.js` |
+| `askai project` | `askai.js cmdProject; lib/project.js; lib/project-registry.js; lib/project-refresh.js; lib/project-review.js; lib/daily.js` |
 | `askai set` | `askai.js cmdSet; lib/project-registry.js` |
 | `askai shell` | `askai.js cmdShell; lib/project-shell.js` |
 | `askai uninstall` | `askai.js cmdUninstall; lib/components.js` |
@@ -327,11 +330,20 @@ Where each command is implemented. Written from the `case` list in `askai.js` be
 | `askai convert` | `askai.js cmdConvert` |
 | `askai clear` | `lib/guide.js` |
 | `askai context` | `lib/guide.js` |
-| `askai todo` | `lib/todo.js` |
+| `askai todo` | `lib/todo.js; lib/findings.js` |
 | `askai diff` | `askai.js cmdDiff` |
 | `askai graph` | `askai.js cmdGraph` |
 | `askai hook` | `lib/hook.js` |
 | `askai why` | `askai.js cmdWhy; lib/findings.js` |
+| `askai next` | `askai.js; lib/daily.js` |
+| `askai handoff` | `lib/daily.js` |
+| `askai route` | `askai.js; lib/models.js` |
+| `askai weigh` | `lib/daily.js` |
+| `askai run` | `lib/daily.js` |
+| `askai errors` | `lib/daily.js` |
+| `askai snapshot` | `lib/daily.js` |
+| `askai stop` | `lib/daily.js` |
+| `askai bootstrap` | `lib/daily.js` |
 | `askai check` | `askai.js cmdCheck; lib/check.js; lib/findings.js` |
 | `askai test` | `askai.js cmdTest; lib/selftest.js` |
 | `askai setup` | `askai.js cmdSetup; lib/setup.js` |
@@ -379,8 +391,15 @@ If the standalone token-setup script was run on this machine, AskAI first runs i
 Step-by-step instructions for each OS, the environment setup and every file it creates: docs/INSTALL.md.
 
 Options:
-  --profile minimal|coding|docs|full|max   tool set by kind of work (default coding; max = every optimiser)
+  --profile minimal|coding|docs|full|max|lean|code|experimental tool set by kind of work (default lean; code = coding; experimental = max)
+  --add ID,ID                              add components to the profile
+  --list                                   print component ids and stop
+  --host cursor|claude|codex|agy           limit one command to that host
+  --brief                                  shorter status
+  --quiet                                  skip the once-a-day hints
+  --no-color                               plain text
   --target auto|claude|codex|agy|cursor|all|a,b hosts to wire (default auto: Claude Code plus every tool found)
+  --seed-only                              write settings for a host that may not be installed yet (default target claude)
   --dry-run                                show the plan, change nothing
   --only ID,ID / --skip ID,ID              limit or exclude components
   --main-model M / --subagent-model M      Claude Code models when unset (default claude-sonnet-5-5, subagent haiku; keep leaves the main model alone)
@@ -470,16 +489,17 @@ Exit: 0 healthy, 1 when a problem is found
 ```text
 askai setup: Short check after install: which hosts are present, check counts, and whether the file validator passed.
 
-Usage: askai setup [dir]
+Usage: askai setup [dir] [--yes]
 
 Does not reprint status, infra, plugins, or the to-do list. Those stay on askai status, askai infra, askai plugins ready, and askai todo.
 A finding that needs a fix now is listed, up to three. The file validator prints only its failures.
 Sign-in, restart, and model checks stay in the to-do list.
+--yes runs install, then init. --yes --dry-run prints those two commands and changes nothing.
 
 Examples:
   askai setup
   askai setup ~/code/shop
-  askai setup --project shop
+  askai setup --yes
 
 Exit: 1 when a finding needs a fix now or the file validator fails, else 0
 ```
@@ -520,6 +540,130 @@ Examples:
   askai why repo.agents-missing
 
 Exit: 1 when the id is unknown, else 0
+```
+
+#### `askai next`
+
+```text
+askai next: The top actions from askai check: at most 3 to do now and 2 for later.
+
+Usage: askai next [dir]
+
+Examples:
+  askai next
+
+Exit: 0
+```
+
+#### `askai handoff`
+
+```text
+askai handoff: Write .ai-work/HANDOFF.md from git facts. Judgment fields stay as TODO(you).
+
+Usage: askai handoff [dir] [--for claude|codex|cursor|agy] [--fill]
+
+--for prints a short resume prompt for that host. --fill prints a prompt that asks the agent to complete only the TODO lines.
+
+Examples:
+  askai handoff
+  askai handoff --for codex
+
+Exit: 0
+```
+
+#### `askai weigh`
+
+```text
+askai weigh: Offline token estimate (chars/4), labeled estimate. Flags a file over the threshold.
+
+Usage: askai weigh <path> [--threshold N]
+
+Examples:
+  askai weigh docs/ai/SOURCE_INDEX.md
+
+Exit: 1 when the path cannot be read, else 0
+```
+
+#### `askai run`
+
+```text
+askai run: Run a command, keep the full log in .ai-work/last.log, and print the exit code plus the last lines.
+
+Usage: askai run -- <command>
+
+A command that looks like flash, reboot, or copy_dut waits for --yes.
+
+Examples:
+  askai run -- npm test
+
+Exit: the command exit code, or 1 when a risky command has no --yes
+```
+
+#### `askai errors`
+
+```text
+askai errors: Print error lines from a log, with two lines of context, de-duplicated.
+
+Usage: askai errors [log]
+
+Examples:
+  askai errors .ai-work/last.log
+
+Exit: 0
+```
+
+#### `askai snapshot`
+
+```text
+askai snapshot: Write a git diff patch and an untracked-file list under .ai-work/snapshots. Does not stash or commit.
+
+Usage: askai snapshot [dir] [--include-untracked]
+
+--include-untracked copies untracked work files under 1 MB, skipping tool directories.
+
+Examples:
+  askai snapshot
+
+Exit: 0
+```
+
+#### `askai route`
+
+```text
+askai route: Pick a tier from the task words and print the cheaper-first escalation rule. Does not launch an agent.
+
+Usage: askai route "task"
+
+Examples:
+  askai route "rename the helper"
+
+Exit: 0
+```
+
+#### `askai stop`
+
+```text
+askai stop: List running agent CLIs. --yes terminates them.
+
+Usage: askai stop [--yes]
+
+Examples:
+  askai stop
+
+Exit: 0
+```
+
+#### `askai bootstrap`
+
+```text
+askai bootstrap: Write .devcontainer/askai-postcreate.sh so a rebuild runs askai install and project refresh.
+
+Usage: askai bootstrap [dir] [--profile P]
+
+Examples:
+  askai bootstrap
+
+Exit: 0
 ```
 
 #### `askai ask`
@@ -587,19 +731,21 @@ Exit: 0
 ```text
 askai usage: What Claude Code and Codex spent, from their local data; where to look for Antigravity and Cursor.
 
-Usage: askai usage [days] [--cache] [--plugins] [--full]
+Usage: askai usage [days] [--cache] [--plugins] [--full] [--week]
 
 Claude Code: ccusage when installed, else the transcript spend report. Codex: ~/.codex/sessions, read best effort.
 When neither has sessions, one reason is printed. No zero tables.
 --cache prints cache hit per session from status-line snapshots for that window. One line when there are none.
 --plugins prints one savings line for each installed plugin. One line when none are installed. A missing plugin is omitted.
 --full prints the session summary, then the cache section, then the plugin lines.
+--week is the 7-day summary plus the top three findings.
 
 Examples:
   askai usage 7
   askai usage --cache
   askai usage --plugins
   askai usage --full
+  askai usage --week
 
 Exit: 0
 ```
@@ -681,10 +827,11 @@ Exit: 0
 ```text
 askai project: Manage registered projects, or copy Cursor rules into a repository for teammates.
 
-Usage: askai project [dir] [--print|--remove] | list | show | rename OLD NEW | path NAME NEW_PATH | remove NAME | switch [NAME] | refresh [dir]
+Usage: askai project [dir] [--print|--remove] | list | show | rename OLD NEW | path NAME NEW_PATH | remove NAME | switch [NAME] | refresh [dir] | hide-local [dir] [--personal|--shared|--undo]
 
 list prints every registered name and path. show reports the selected project. rename, path and remove change only the registry; remove never deletes project files.
-refresh creates only missing init files, then rewrites the project map and prints the review state. At most 8 lines.
+refresh creates only missing init files, then rewrites the project map and prints the review state. At most 8 lines. A current review skips the map rewrite. It also hides local AI paths.
+hide-local adds AskAI paths to the local git exclude list. --personal is that default. --shared prints the team checklist and writes nothing. --undo removes that block.
 Without a subcommand, the existing Cursor rules behavior is preserved.
 
 Examples:
@@ -694,6 +841,8 @@ Examples:
   askai project path app C:\code\app
   askai project .
   askai project refresh .
+  askai project hide-local
+  askai project hide-local --shared
 
 Exit: 0
 ```
@@ -828,6 +977,7 @@ Reads README, manifests and every eligible first-party source file up to 1 MiB e
   docs/ai/PROJECT_MAP.md, SOURCE_INDEX.md, ARCHITECTURE.md, FEATURES.md, REFERENCES.md, WORK_ORDER.md, MODELS.md
   architect, builder and runner agents for all four tools; four skills; .cursorignore; .ai-work/ (gitignored)
 Current task and session handoff cannot be inferred from source. Existing user text is preserved. --refresh updates generated files only when unedited.
+askai project refresh runs init for missing files, then the map and the review.
 
 Options:
   --name NAME / --path DIR                 register a short name and project folder
@@ -884,8 +1034,8 @@ askai models: Model and effort per task tier (lead, build, chore) for each tool;
 
 Usage: askai models [set <tool>.<tier> <model>[:<effort>] | verify [tool]]
 
-Defaults: Claude Code sonnet/max, sonnet/high, haiku/high; Codex gpt-6.1-sol/high, gpt-6.1-sol/medium, gpt-6-luna/high (there is no gpt-6.1-luna); Cursor grok-4.7 xhigh/high/medium (Sonnet tiers with cursor.useSonnet true); Antigravity flash, effort high.
-Antigravity agent files accept only a tier (flash, pro, flash_lite, inherit). verify lists the IDs your Cursor and Antigravity accounts offer.
+Defaults: Claude Code sonnet/high, sonnet/high, haiku/medium; Codex gpt-6.1-sol/high, gpt-6.1-sol/medium, gpt-6-luna/medium (there is no gpt-6.1-luna); Cursor grok-4.7 xhigh/high/medium (Sonnet tiers with cursor.useSonnet true); Antigravity flash, effort high.
+Antigravity agent files accept only a tier (flash, pro, flash_lite, inherit). verify lists the IDs your Cursor and Antigravity accounts offer. Lead effort max is opt-in: askai go --effort is not a flag; set the tier with askai models set.
 
 Examples:
   askai models
@@ -901,14 +1051,16 @@ Exit: 0
 ```text
 askai go: Start a session with the tier's model and effort fixed for the whole session, a structured first prompt, and a ledger entry.
 
-Usage: askai go <claude|codex|cursor|agy> [--tier lead|build|chore] ["task"] [--files a,b] [--done "..."] [--resume] [--dry-run]
+Usage: askai go <claude|codex|cursor|agy|task> [--tier lead|build|chore] ["task"] [--files a,b] [--done "..."] [--resume] [--dry-run]
 
+A task with no host name uses Claude Code and a tier chosen from the words. Cheaper first: chore, then build, then lead.
 Claude Code: --model and CLAUDE_CODE_EFFORT_LEVEL; Codex: -m and model_reasoning_effort; Cursor: --model (effort is part of the ID); Antigravity: prints /model and /effort to type first.
 Shows peak hours and active MCP servers first: switch MCP servers before a session, not during it.
-A container, CI job, or piped command has no keyboard. askai go then prints the command and returns, instead of waiting on the agent. Run it in the Cursor terminal.
+When the agent exits, AskAI writes a snapshot and a handoff draft. A container, CI job, or piped command has no keyboard. askai go then prints the command and returns, instead of waiting on the agent. Run it in the Cursor terminal.
 
 Examples:
   askai go claude --tier build "fix the cart total rounding in src/cart.ts"
+  askai go "rename the helper"
   askai go codex --tier chore "clean up unused imports"
   askai go agy --resume
 
@@ -920,13 +1072,13 @@ Exit: the agent's exit code, or 0 when there is no terminal to hand over
 ```text
 askai prompt: Turn a rough or dictated ask into a structured prompt: goal, files, done-when, constraints, output limit, tier.
 
-Usage: askai prompt "ask" [--tier T] [--kind bug|feature|design|risky] [--files a,b] [--done "..."] [--mode blunt,brutal,assume,counter,contrast] [--copy] | --output-safe "cmd" | --resume
+Usage: askai prompt "ask" [--tier T] [--kind bug|feature|design|risky|commit|firmware] [--files a,b] [--done "..."] [--mode blunt,brutal,assume,counter,contrast] [--copy] | --output-safe "cmd" | --resume
 
 Removes dictation fillers, finds file names, picks a tier from the words (file names do not count). --output-safe asks the agent to plan a noisy command before running it. --resume prints the fresh-session prompt from the handoff.
 
 Options:
   --output diff|brief|full                 diff: only the diff and one line per check; brief (default); full: with reasoning
-  --kind bug|feature|design|risky          the pattern for that kind of task
+  --kind bug|feature|design|risky|commit|firmware the pattern for that kind of task
 
 Examples:
   askai prompt "um so fix the login bug in src/auth.ts"
@@ -1039,10 +1191,13 @@ Exit: 0
 ```text
 askai convert: Convert a PDF, Office file, web page or YouTube URL to Markdown with Microsoft MarkItDown, locally; never overwrites.
 
-Usage: askai convert <file|url> [--out file.md]
+Usage: askai convert <file|url> [--out file.md] | askai convert scan [dir]
+
+scan lists PDF and Office files and an offline token estimate. It does not call MarkItDown.
 
 Examples:
   askai convert spec.pdf
+  askai convert scan
   askai convert https://www.youtube.com/watch?v=ID
 
 Exit: 0, or 1 when MarkItDown is missing
@@ -1132,7 +1287,9 @@ Exit: 0
 ```text
 askai diff: git diff --stat, staged changes and the whitespace check, so you review a change before handing off; the agent gets only the files it needs.
 
-Usage: askai diff [dir]
+Usage: askai diff [dir] [--review]
+
+--review prints a short prompt that names only the changed files.
 
 Exit: 1 when the whitespace check finds problems
 ```

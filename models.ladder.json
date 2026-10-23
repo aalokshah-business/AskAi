@@ -1,0 +1,4 @@
+{
+  "claude": ["claude-haiku-5-5", "claude-sonnet-5-5", "claude-opus-5-5"],
+  "orderNote": "Organization preference from the v1.3 spec: Haiku 5.5 before Sonnet 5.5, Sonnet 5 before Opus 5.5. askai models verify checks what the host offers. This file does not change the install default."
+}

@@ -41,7 +41,7 @@ AskAI configures project guidance and token-saving tools across Claude Code, Cod
 - When a feature or the structure changes, update one line in FEATURES.md or ARCHITECTURE.md.
 
 ## Delegation
-- Tiers: lead `architect` (architecture, design, hard bugs, security), build `builder` (features and fixes within the design), chore `runner` (cleanup, scripts, git, test runs, search). Claude Code: sonnet/max, sonnet/high, haiku/high; other tools: docs/ai/MODELS.md.
+- Tiers: lead `architect` (architecture, design, hard bugs, security), build `builder` (features and fixes within the design), chore `runner` (cleanup, scripts, git, test runs, search). Claude Code: sonnet/high, sonnet/high, haiku/medium; other tools: docs/ai/MODELS.md.
 - Routine work: no subagents. Give a subagent one bounded task, the files it owns, and a limit (15 tool calls, 1,500 characters).
 - After two failed attempts: stop, report the cause, escalate one tier. Never relax a test to make it pass; verify results yourself.
 <!-- askai:end -->
