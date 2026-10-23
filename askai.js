@@ -541,15 +541,19 @@ function cmdProfiles(o) {
   const cur = status.profileInfo(ctx);
   const rows = profiles.names().map(n => ({ ...profiles.get(n), current: n === cur.name }));
   if (o.json) { console.log(JSON.stringify({ current: cur.name, source: cur.source, profiles: rows }, null, 2)); return 0; }
-  console.log(`profile in effect: ${cur.name} (${cur.source})\n`);
-  for (const p of rows) {
-    console.log(`${p.current ? '*' : ' '} ${pad(p.name, 8)} ${p.summary}`);
-    console.log(`  ${pad('', 8)} installs: ${p.components.join(', ')}`);
-    console.log(`  ${pad('', 8)} path rules: ${p.rules.length ? p.rules.join(' + ') : 'none'}`);
+  if (o._[1] === 'show' && o._[2]) {
+    const p = profiles.get(o._[2]);
+    console.log(`${p.name}: ${p.summary}\ninstalls: ${p.components.filter(id => id !== 'token-kit').join(', ')}`);
+    return 0;
   }
-  console.log('\nInstall one with `askai install --profile NAME`; `askai suggest [dir]` picks by what a directory holds.');
-  console.log('A profile only adds: switching to a smaller one never uninstalls tools; it keeps what is there and removes only the rule files it no longer wants.');
-  console.log('For Cursor, cursor-rtk / cursor-context-mode / cursor-serena follow rtk / context-mode / serena, and cursor-rules (with the rules component) writes ~/.cursor/rules for every project. `askai project` copies those rules into one repo.');
+  const primary = ['lean', 'code', 'docs', 'full'];
+  console.log(`profile in effect: ${cur.name} (${cur.source})`);
+  for (const name of primary) {
+    const p = profiles.get(name);
+    console.log(`${p.name === cur.name ? '*' : ' '} ${pad(p.name, 12)} ${p.summary}`);
+  }
+  console.log('aliases: coding = code, max = experimental. also: minimal, experimental.');
+  console.log('askai profiles show NAME prints that install list.');
   return 0;
 }
 
@@ -888,7 +892,7 @@ function cmdDiff(o) {
   const short = g(['status', '--short', '--untracked-files=all']);
   const extra = String(short.stdout || '').split(/\n/).filter(l => l.startsWith('??'));
   const ai = extra.filter(l => /^\?\? (\.agents\/|\.claude\/|\.codex\/|\.cursor\/|\.ai-work\/|\.cursorignore|AGENTS\.md|CLAUDE\.md|GEMINI\.md|docs\/ai\/)/.test(l));
-  if (extra.length) console.log(`+${extra.length} untracked (${ai.length} AI/tool files) not in this diff`);
+  if (extra.length) console.log(`+${extra.length} entries (${extra.length} files) not in this diff`);
   console.log(`\nwhitespace check: ${check.status === 0 ? 'ok' : `problems\n${String(check.stdout).split(/\n/).slice(0, 40).join('\n')}`}`);
   console.log('Review the full diff yourself; give the agent only the files it needs, not the whole diff.');
   if (o.review) {
@@ -1388,9 +1392,23 @@ async function cmdCli(o) {
   }
   rl.close(); return 0;
 }
+function emitNodeNotice(o, cmd) {
+  const platform = require('./lib/platform');
+  const line = platform.nodeNotice();
+  const always = (cmd === 'check' && o.env) || (cmd === 'version' && o.all) || cmd === 'setup';
+  if (!line || o.json || o.quiet || process.env.ASKAI_QUIET) return;
+  if (!always) {
+    const home = path.resolve(o.claudeHome || require('./lib/claude-config').defaultClaudeHome());
+    const stamp = path.join(home, 'askai', 'node-eol.txt');
+    const day = new Date().toISOString().slice(0, 10);
+    let prev = '';
+    try { prev = fs.readFileSync(stamp, 'utf8').trim(); } catch (_) { /* first time today */ }
+    if (prev === day) return;
+    try { fs.mkdirSync(path.dirname(stamp), { recursive: true }); fs.writeFileSync(stamp, `${day}\n`); } catch (_) { /* still print */ }
+  }
+  console.error(line);
+}
 async function main() {
-  const nodeLine = require('./lib/platform').nodeNotice();
-  if (nodeLine && !process.env.ASKAI_QUIET) console.error(nodeLine);
   const [cmd, ...rest] = process.argv.slice(2);
   let o;
   try { o = parseArgs(rest); } catch (e) { console.error(`askai: ${e.message}`); return 2; }
@@ -1400,10 +1418,13 @@ async function main() {
   if (!o.agyHome && process.env.ASKAI_AGY_HOME) o.agyHome = process.env.ASKAI_AGY_HOME;
   if (o.noColor) process.env.NO_COLOR = '1';
   if (o.quiet) process.env.ASKAI_QUIET = '1';
+  emitNodeNotice(o, cmd);
   o._.unshift(cmd);
   if (cmd === 'help' && o.help) { console.log(help.render('help')); return 0; }
+  if (cmd === 'help' && o.list) { console.log(help.names().slice().sort().join('\n')); return 0; }
   if (cmd === 'help' && o._[1] === 'all') { console.log(`askai ${VERSION}: every command in full\n\n` + help.names().map(n => help.render(n)).join(`\n\n${'-'.repeat(72)}\n\n`)); return 0; }
-  if (cmd === 'help' && !o._[1]) { console.log(help.names().slice().sort().join('\n')); console.log('\naskai help <command>    usage for one command\naskai help all          every command in full\naskai update updates AskAI itself; askai tools update upgrades installed tools.'); return 0; }
+  if (cmd === 'help' && !o._[1]) { console.log(help.index(process.stdout.columns)); return 0; }
+  if (cmd === 'help' && help.groupText(o._[1])) { console.log(help.groupText(o._[1])); return 0; }
   if (cmd === 'help' && o._[1]) { const t = help.render(o._[1]); console.log(t || `No help for "${o._[1]}". Commands: ${help.names().slice().sort().join(', ')}`); return t ? 0 : 1; }
   if (o.help && cmd && help.has(cmd)) { console.log(help.render(cmd)); return 0; }
   if (!cmd || cmd === 'help' || o.help) { console.log(HELP); return cmd ? 0 : 2; }
@@ -1453,8 +1474,17 @@ async function main() {
     case 'clear': {
       const dir = projectDir(o);
       const hs = require('./lib/session').handoffState(dir);
-      if (hs.state === 'missing' || hs.state === 'template') require('./lib/daily').writeHandoff(dir);
-      const g = guide.clearGate(dir, o.tool || 'claude', o._[1] === 'compact' ? 'compact' : 'clear');
+      if (hs.state === 'missing' || hs.state === 'template') {
+        const wrote = require('./lib/daily').writeHandoff(dir);
+        console.log(`wrote draft ${wrote.file}`);
+      }
+      let tool = o.tool || '';
+      if (!tool) {
+        const ctx = buildCtx(o, true);
+        if (ctx.which && ctx.which('claude')) tool = 'claude';
+        else if (ctx.cursorPaths && fs.existsSync(ctx.cursorPaths.home)) tool = 'cursor';
+      }
+      const g = guide.clearGate(dir, tool, o._[1] === 'compact' ? 'compact' : 'clear');
       console.log(g.text); return g.fresh ? 0 : 1;
     }
     case 'context': {

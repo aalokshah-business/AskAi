@@ -240,13 +240,13 @@ test('collect: Cursor rows appear when Cursor is in play, with what each one is 
   assert.deepStrictEqual(ids, ['cursor-rtk', 'cursor-context-mode', 'cursor-serena', 'cursor-rules']);
   assert.match(rows.find(r => r.id === 'cursor-rtk').wiring, /hooks\.json/);
   const r = status.renderStatus(ctx);
-  assert.match(r.lines[0], new RegExp(`cursor home: ${cursorHome.replace(/[\\^$.*+?()[\]{}|]/g, '\\$&')}`));
+  assert.match(r.lines[0], new RegExp(`cursor ${cursorHome.replace(/[\\^$.*+?()[\]{}|]/g, '\\$&')}`));
   assert.match(r.lines.join('\n'), /Cursor: the status line, cache figures, ccusage and the spend report read Claude Code only/);
 }, { profile: 'coding', cursor: true }));
 
 test('renderStatus: profile line, per-tool wiring, and the honesty footer', () => withCtx(ctx => {
   const r = status.renderStatus(ctx);
-  assert.match(r.lines[1], /^profile: machine lean \(default, none recorded yet\)/);
+  assert.match(r.lines[0], /^machine  lean \(default/);
   assert.strictEqual(r.profile, 'lean');
   assert.match(r.lines.join('\n'), /Only tool-measured numbers are shown/);
   assert.ok(!/Cursor: the status line/.test(r.lines.join('\n')), 'no Cursor note when Cursor is not in play');

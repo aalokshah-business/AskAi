@@ -1,0 +1,15 @@
+{
+  "help": 30,
+  "next": 15,
+  "check": 30,
+  "status": 25,
+  "usage": 40,
+  "tips": 20,
+  "profiles": 12,
+  "plugins": 40,
+  "infra": 30,
+  "session status": 12,
+  "chat": 30,
+  "break": 15,
+  "resume": 15
+}
