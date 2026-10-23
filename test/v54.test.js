@@ -41,9 +41,9 @@ test('askai upgrade clones or updates the source and re-runs install with the re
     const ins = askai(['install', '--yes', '--profile', 'minimal', '--target', 'claude', '--skip', 'claude', '--no-path', '--claude-home', c]); assert.strictEqual(ins.status, 0, ins.stdout + ins.stderr);
     const dry = askai(['upgrade', '--dry-run', '--claude-home', c]); assert.match(dry.stdout, /would clone[\s\S]*--profile minimal --target claude/);
     const up = askai(['upgrade', '--only', 'caveman', '--no-path', '--claude-home', c]);
-    assert.strictEqual(up.status, 0, up.stdout + up.stderr); assert.match(up.stdout, /AskAI .* -> 1\.2\.5/);
+    assert.strictEqual(up.status, 0, up.stdout + up.stderr); assert.match(up.stdout, /AskAI .* -> 1\.3\.0/);
     assert.ok(fs.existsSync(path.join(c, 'askai', 'src', 'askai.js')));
-    const again = askai(['upgrade', '--only', 'caveman', '--no-path', '--claude-home', c]); assert.strictEqual(again.status, 0, 'update an existing checkout to the latest'); assert.match(again.stdout, /-> 1\.2\.5/);
+    const again = askai(['upgrade', '--only', 'caveman', '--no-path', '--claude-home', c]); assert.strictEqual(again.status, 0, 'update an existing checkout to the latest'); assert.match(again.stdout, /-> 1\.3\.0/);
     const agentPlan = askai(['upgrade', '--agents', '--dry-run', '--claude-home', c]);
     assert.strictEqual(agentPlan.status, 0, agentPlan.stdout + agentPlan.stderr);
     assert.match(agentPlan.stdout, /Claude Code, Cursor and Codex in sequence/);
@@ -84,5 +84,6 @@ test('CI workflow and community files are in place; package.json points at the r
   for (const s of ['ubuntu-latest', 'macos-latest', 'windows-latest', 'node --test --test-reporter tap test/*.test.js', 'gen-docs.js --check', 'windows-selftest.ps1', 'preview-matrix.sh', 'node:22-bookworm', 'node:22-alpine']) assert.ok(ci.includes(s), s);
   for (const f of ['CONTRIBUTING.md', 'SECURITY.md', 'docs/RELEASING.md', 'scripts/sums.js']) assert.ok(fs.existsSync(path.join(ROOT, f)), f);
   assert.strictEqual(JSON.parse(read('package.json')).repository.url, 'https://github.com/aalokshah-business/AskAi.git');
-  assert.match(read('README.md'), /raw\.githubusercontent\.com\/aalokshah-business\/AskAi\/main\/get\.sh \| bash -s --/);
+  const version = JSON.parse(read('package.json')).version;
+  assert.ok(read('README.md').includes(`raw.githubusercontent.com/aalokshah-business/AskAi/v${version}/get.sh | bash -s --`));
 });

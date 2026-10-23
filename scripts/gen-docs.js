@@ -5,6 +5,7 @@
 //   node scripts/gen-docs.js           write docs/ARCHITECTURE.md
 //   node scripts/gen-docs.js --check   exit 1 when the file is out of date (the test suite runs this)
 const fs = require('fs');
+const crypto = require('crypto');
 const path = require('path');
 const ROOT = path.join(__dirname, '..');
 const comps = require('../lib/components');
@@ -47,7 +48,7 @@ function claudeSettings() {
   for (const [k, v] of Object.entries(cfg.BASELINE)) {
     if (k === 'skillOverrides') rows.push([code('skillOverrides'), `${Object.keys(v).length} bundled skills set to name-only`, 'baseline', 'smaller skill listing in every session']);
     else if (k === 'env') for (const [ek, ev] of Object.entries(v)) rows.push([code(`env.${ek}`), JSON.stringify(ev), 'baseline', 'subagents mostly search and read']);
-    else rows.push([code(k), JSON.stringify(v), 'baseline', k === 'effortLevel' ? 'high for the session; max only for the hard step' : '']);
+    else rows.push([code(k), JSON.stringify(v), 'baseline', k === 'effortLevel' ? 'medium for routine work; raise it for a hard step' : '']);
   }
   for (const k of lean.leanKeys || []) rows.push([code(k.env ? `env.${k.key}` : k.key), JSON.stringify(k.value), 'lean', k.why || '']);
   rows.push([code('includeGitInstructions'), 'false', 'lean with --lean-git', 'no commit and PR instructions or git snapshot in every turn']);
@@ -115,6 +116,7 @@ const COMMAND_SOURCE = {
   scaffold: 'askai.js cmdScaffold; lib/scaffold.js',
   chat: 'lib/chat.js',
   tips: 'lib/tips.js',
+  cheat: 'lib/surface.js',
   version: 'askai.js',
   '--version': 'askai.js',
 };
@@ -223,7 +225,7 @@ AskAI does not sit inside a running agent and rewrite each message: none of the 
 | AskAI feature | Mechanism | Evidence |
 | --- | --- | --- |
 | Sonnet 5.5 default, Haiku subagents (when unset) | Everyday model at high effort; subagents mostly search | A model switch is the only repeated large saving across eight benchmarks |
-| ${code('effortLevel')} high; Codex effort medium, verbosity low | High for the session; max only for the hard step | Thinking is billed as output (Anthropic) |
+| ${code('effortLevel')} medium; Codex effort medium, verbosity low | Raise effort for a hard step | Thinking is billed as output (Anthropic) |
 | Lean settings (suggestions, recaps, goal check-ins, cross-session wake-ups off) | No requests you did not ask for | Anthropic's cost guide lists each as a background request |
 | ${code('bashOutputMaxChars')} and deny-read rules | Less tool output and no useless reads in context | Reads are about 90% of tool-result tokens |
 | Token rules, build-lean rule, terse block in every host | Fewer turns, smaller diffs, shorter replies | Ponytail -10.3%, Caveman-style -8% |
@@ -365,10 +367,10 @@ ${claudeSettings()}
 
 | Where | What |
 | --- | --- |
-| ${code('~/.claude/askai/manifest.json')} | every key, file and registration AskAI added (drives uninstall) |
-| ${code('~/.claude/askai/backups/')} | a copy of each file before its first change (askai restore) |
-| ${code('~/.claude/askai/sessions/')} | status-line snapshots of context and cache per session (askai report) |
-| ${code('~/.claude/askai/cache/')} | cached tool checks for askai status |
+| ${code('~/.askai/manifest.json')} | every key, file and registration AskAI added (drives uninstall) |
+| ${code('~/.askai/backups/')} | a copy of each file before its first change (askai restore) |
+| ${code('~/.askai/sessions/')} | status-line snapshots of context and cache per session (askai usage) |
+| ${code('~/.askai/cache/')} | cached tool checks for askai status |
 | ${code('<repo>/.ai-work/HANDOFF.md')} | the current handoff, overwritten each time |
 | ${code('<repo>/.ai-work/SESSION_LEDGER.md')} | append-only ledger of starts, breaks and finishes |
 | ${code('<repo>/.ai-work/measurements.csv')} | one row per measured task |
@@ -434,9 +436,22 @@ The two never run side by side: ${code('askai install')} applies every setting t
 }
 
 const out = path.join(ROOT, 'docs', 'ARCHITECTURE.md');
-const text = build();
+const text = build().replace(/[ \t]+$/gm, '');
+const cheatOut = path.join(ROOT, 'docs', 'CHEAT_SHEET.md');
+const cheat = require('../lib/surface').markdown();
 if (process.argv.includes('--check')) {
   const cur = fs.existsSync(out) ? fs.readFileSync(out, 'utf8').replace(/\r\n/g, '\n') : '';
   if (cur !== text) { console.error('docs/ARCHITECTURE.md is out of date: run node scripts/gen-docs.js'); process.exit(1); }
-  console.log('docs/ARCHITECTURE.md is up to date');
-} else { fs.writeFileSync(out, text); console.log(`wrote ${out} (${text.split('\n').length} lines)`); }
+  const curCheat = fs.existsSync(cheatOut) ? fs.readFileSync(cheatOut, 'utf8').replace(/\r\n/g, '\n') : '';
+  if (curCheat !== cheat) { console.error('docs/CHEAT_SHEET.md is out of date: run node scripts/gen-docs.js'); process.exit(1); }
+  const pdf = path.join(ROOT, 'docs', 'CHEAT_SHEET.pdf');
+  const digest = crypto.createHash('sha256').update(fs.readFileSync(cheatOut)).digest('hex');
+  if (!fs.existsSync(pdf) || !fs.readFileSync(pdf).includes(Buffer.from(`askai-md-sha256:${digest}`))) {
+    console.error('docs/CHEAT_SHEET.pdf is out of date: run python scripts/build-cheat-pdf.py'); process.exit(1);
+  }
+  console.log('generated documents are up to date');
+} else {
+  fs.writeFileSync(out, text);
+  fs.writeFileSync(cheatOut, cheat);
+  console.log(`wrote ${out} (${text.split('\n').length} lines) and ${cheatOut} (${cheat.split('\n').length} lines)`);
+}

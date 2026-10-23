@@ -170,7 +170,7 @@ test('guide, clear gate and context advice', () => withHome(h => {
   write(path.join(h, '.ai-work', 'HANDOFF.md'), fs.readFileSync(path.join(__dirname, '..', 'templates', 'HANDOFF.md'), 'utf8'));
   assert.strictEqual(guide.clearGate(h).fresh, false, 'the shipped template is not a handoff');
   assert.match(guide.clearGate(h).text, /still the empty template/);
-  write(path.join(h, '.ai-work', 'HANDOFF.md'), '# HANDOFF\nGoal: ship the cart totals fix; tests green\n');
+  write(path.join(h, '.ai-work', 'HANDOFF.md'), '# HANDOFF\nBranch: main\nNext: ship the cart totals fix; tests green\n');
   const g = guide.clearGate(h, 'codex'); assert.strictEqual(g.fresh, true); assert.strictEqual(g.native, '/new');
   assert.match(guide.advice(30), /continue/); assert.match(guide.advice(65), /HANDOFF\.md/); assert.match(guide.advice(90), /now/);
 }));

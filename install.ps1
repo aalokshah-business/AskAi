@@ -219,7 +219,8 @@ if ($askaiCode -eq 0 -and $Action -eq 'install' -and $ShellIntegration -and -not
   $profilePath = $PROFILE.CurrentUserCurrentHost
   if ($DryRun) { Write-Host "[dry-run] would add AskAI shell integration to $profilePath" }
   else {
-    $appPath = Join-Path (Join-Path $HOME '.claude') 'askai\app\askai.js'
+    $appPath = Join-Path $HOME '.askai\app\askai.js'
+    if (-not (Test-Path -LiteralPath $appPath -PathType Leaf)) { $appPath = Join-Path $HOME '.claude\askai\app\askai.js' }
     & $node $appPath shell install powershell --path $profilePath
     if ($LASTEXITCODE -ne 0) { exit $LASTEXITCODE }
     Write-Host 'Open a new PowerShell terminal to use askai set project NAME.'

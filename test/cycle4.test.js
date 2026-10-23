@@ -74,19 +74,21 @@ test('map excludes ThirdParty and does not tell you to read the graph report who
   } finally { rm(dir); }
 });
 
-test('help is two columns at 80 and every visible command has a group', () => {
+test('help shows the twelve daily commands without flags and keeps the old group metadata', () => {
   const help = require('../lib/help');
   const text = help.index(80);
   const lines = text.split('\n').filter(l => l.length);
   assert.ok(lines.length <= 30, `help is ${lines.length} lines`);
-  assert.ok(text.includes('DAILY') && text.includes('SESSION'));
+  assert.match(text, /Start here\. askai with no command is askai next/);
+  assert.doesNotMatch(text, /--[a-z]/);
+  for (const [name] of require('../lib/surface').TIER1) assert.match(text, new RegExp(`\\b${name}\\b`));
   for (const name of help.names()) {
     const meta = help.groupOf(name);
     assert.ok(meta.group && meta.desc && meta.desc.length <= 25, name);
   }
   assert.strictEqual(help.layout(120).cols, 3);
   assert.strictEqual(help.layout(40).cols, 1);
-  assert.ok(help.index(120).split('\n').filter(l => l.length).length <= 22);
+  assert.ok(help.index(120).split('\n').filter(l => l.length).length <= 30);
 });
 
 test('next ranks only findings that check already shows, and check has no peak-hours row', () => {
@@ -161,7 +163,7 @@ test('a stale agent file is agents.drift and plugins use the short columns', () 
     const ctx = makeCtx(dir);
     const text = [];
     require('../lib/check').run(ctx, dir, {}, s => text.push(String(s)));
-    assert.match(text.join('\n'), /agents\.drift/);
+    assert.match(text.join('\n'), /generated agent files differ from the current tiers/);
     assert.match(text.join('\n'), /askai project refresh --agents/);
     const lines = [];
     require('../lib/plugins').list(ctx, s => lines.push(s));

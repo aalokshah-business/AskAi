@@ -1,109 +1,154 @@
 # AskAI cheat sheet
 
-Printable page, every command once: [AskAI-commands-A3.png](AskAI-commands-A3.png) (A3 portrait, print at 100%). The same cards, one command at a time: [AskAI-commands.pdf](AskAI-commands.pdf).
+Twelve commands cover a working day. `askai` with no command is `askai next`. Everything else is `askai help more` or `askai help all`.
 
-Each command is listed once below. Flags and examples are on `help` for that command. Guide: [ASKAI_GUIDE.md](ASKAI_GUIDE.md).
+## How AskAI fits together
 
-## Daily
+Run AskAI in a terminal for local checks and file generation. Opening an AskAI skill or slash command in an AI chat uses model tokens. `askai go` launches an AI tool; that session uses the tool's model allowance.
 
-| Command | What it does |
+```mermaid
+flowchart LR
+  you[Terminal: askai commands] --> machine[Machine: rules, models, optional tools]
+  you --> project[Project: short router, docs/ai, local handoff]
+  machine --> hosts[Cursor / Claude Code / Codex / Antigravity]
+  project --> hosts
+  hosts --> result[Shorter context and reviewable work]
+```
+
+AskAI stores local session state under `.ai-work/` and excludes it through `.git/info/exclude`. Project guidance remains in the repository. Cursor must open the initialized project as its workspace root to find `.cursor/commands/askai-cli.md`.
+
+## The loop
+
+```mermaid
+flowchart LR
+  machine[Once per machine] --> project[Once per project]
+  project --> task[Each task]
+  task --> away[Taking a break]
+  away --> back[Coming back]
+  back --> task
+  task --> week[Weekly]
+```
+
+| Phase | Sequence |
 |---|---|
-| `askai next [dir]` | At most 3 things to do now and 2 for later |
-| `askai prompt "ask" [--tier T] [--files a,b] [--done TEXT] [--copy]` | Turn a rough ask into a task |
-| `askai run -- <command>` | Run a build or test and keep the log |
-| `askai errors [log]` | First error lines of the last run |
-| `askai check [dir] [--fix] [--env]` | Health and the fix for each gap. `askai doctor` prints the same rows |
-| `askai diff [dir]` | Changes and a token-cost reminder |
+| Once per machine | `askai install` then `askai check --fix` then `askai infra`. Retry only failed items with `askai install --retry` |
+| Once per project | `askai init` or `askai project refresh`, then `askai project hide-local`, then `askai check` |
+| Each task | `askai next`, `askai prompt`, `askai go <tool> "task"`, `askai run -- <command>`, `askai errors`, then `askai diff` |
+| Taking a break | `askai break`, complete the draft with `askai handoff "next step"`, then `askai clear` when it says safe |
+| Coming back | `askai resume --copy` then `askai next` |
+| Weekly | `askai usage --week`, `askai check`, `askai mcp`, then `askai plugins` |
 
-## Session
+## I want to… run…
 
-| Command | What it does |
+| I want to | Run |
 |---|---|
-| `askai go <claude\|codex\|cursor\|agy> [--tier chore\|build\|lead] "task"` | Start that app on the cheapest tier that fits |
-| `askai route "task"` | Print the tier. Does not launch an agent |
-| `askai break` | Checklist before you step away |
-| `askai resume [--copy]` | Back from a break |
-| `askai handoff [dir] [--for claude\|codex\|cursor\|agy]` | Write `.ai-work/HANDOFF.md`. A `TODO(you)` draft is not safe to clear |
-| `askai clear [--tool claude\|codex\|cursor\|agy]` | Whether a fresh chat is safe, and the command to type |
-| `askai snapshot [dir]` | Save a patch. Does not commit |
-| `askai start --tool T --task "task"` | Ledger entry for a task |
-| `askai session init\|pause\|status\|finish\|measure\|report\|compact` | The rest of the ledger. `compact` rewrites old lines |
-| `askai stop [--yes]` | List running agent CLIs. `--yes` stops them |
-| `askai context <percent>` | What to do at that context level |
+| See what to do | `askai next` |
+| Turn an idea into a task | `askai prompt "idea" --copy` |
+| Start Cursor, Claude Code, Codex, or Antigravity | `askai go <tool> "task" --tier chore\|build\|lead` |
+| Keep a noisy build or test | `askai run -- <command>` |
+| Read the failure | `askai errors` |
+| Leave the session | `askai break` |
+| Finish the note | `askai handoff "next step"` |
+| Come back | `askai resume --copy` |
+| See spend | `askai usage` |
+| See whether a tool is worth it | `askai plugins` |
+| Turn MCP servers off | `askai mcp off <name>` |
+| Fix what AskAI can fix | `askai check --fix` |
 
-## Project
+## The twelve
 
-| Command | What it does |
+| Command | Use when | Form |
+|---|---|---|
+| `askai next` | you are not sure what to do | `askai next` |
+| `askai go` | start the coding app on a task | `askai go <tool> "task"` |
+| `askai prompt` | turn a rough idea into a task | `askai prompt "idea"` |
+| `askai run` | a build or test prints too much | `askai run -- <command>` |
+| `askai check` | just installed, or something feels off | `askai check` |
+| `askai break` | you are stepping away | `askai break` |
+| `askai resume` | you are back from a break | `askai resume` |
+| `askai handoff` | finish the note for the next session | `askai handoff ["next step"]` |
+| `askai usage` | cost feels high | `askai usage` |
+| `askai project` | this folder needs its pack | `askai project <sub>` |
+| `askai install` | set up or finish this machine | `askai install` |
+| `askai help` | you need the exact command | `askai help [command]` |
+
+Global flags, on any command: `--yes` `--dry-run` `--json` `--project`. A command shows at most four of its own flags. The rest are `askai help <command> --advanced`.
+
+## When you need one more
+
+| Command | Use when |
 |---|---|
-| `askai cli [--prepare] [--launch]` | Prepare this folder from chat, then open the terminal |
-| `askai init [dir] [--refresh]` | Write the project pack |
-| `askai project list\|show\|refresh [--agents]\|hide-local [--undo]` | Registry, pack refresh, or local excludes. `--agents` rewrites agent files |
-| `askai set project NAME` | Select the project for this terminal |
-| `askai suggest [dir]` | Recommend a profile from the folder |
-| `askai map [dir] [--dry-run] [--diff]` | Rebuild the project map. `--dry-run` is one summary line |
-| `askai scaffold [dir] [--dry-run]` | Write starter files. Never overwrites |
-| `askai review status\|done` | What changed since the review, or record that it is done |
-| `askai weigh <path>` | Token estimate for one file |
-| `askai graph [dir]` | Architecture diagram |
-| `askai convert <file\|url\|scan>` | PDF or Office to Markdown. `scan` only lists the files |
-| `askai bootstrap [dir]` | Devcontainer script that runs install and project refresh |
-| `askai docs <name>\|--print` | Open one AskAI document |
+| `askai errors` | the last build failed |
+| `askai diff` | you want the change list |
+| `askai clear` | the chat is long (over 60%) |
+| `askai snapshot` | save work without a commit |
+| `askai weigh` | a file may be too big to read |
+| `askai route` | you want the tier, not a launch |
+| `askai models` | the model or effort looks wrong |
+| `askai mcp` | too many tool servers are on |
+| `askai plugins` | deciding whether a tool is worth keeping |
+| `askai convert` | a PDF or Office file should be text |
+| `askai update` | AskAI itself is old |
+| `askai tools` | an installed tool is old |
+| `askai why` | one finding needs the reason |
+| `askai stop` | an agent CLI is still running |
 
-## Cost
+## Complete command index
 
-| Command | What it does |
+The commands below are also implemented. This table plus the twelve and the additional commands above covers every name in `askai help --list`. Use `askai help <command> --advanced` for less common flags.
+
+| Command | Purpose | Form |
+|---|---|---|
+| `askai cli` | Prepare a project from the chat folder, then open an AskAI-only terminal. | `askai cli [--prepare] [--launch] [--path DIR] [--about TEXT]` |
+| `askai status` | Per-tool state against your profile, with measured savings where a tool reports them. | `askai status` |
+| `askai doctor` | Alias of askai check. Same rows, same exit code. | `askai doctor` |
+| `askai setup` | Short check after install: which hosts are present, check counts, and whether the file validator passed. | `askai setup [dir] [--yes]` |
+| `askai bootstrap` | Show a personal devcontainer setup; --repo writes a post-create script into this project. | `askai bootstrap [dir] [--profile P] [--repo]` |
+| `askai ask` | Offline answers on etiquette and the research: the rule, why, the command in each tool, and what AskAI automates. | `askai ask <words>` |
+| `askai start` | Start a task: ledger entry with tool, task, branch and last commit. | `askai start --tool T --task "..." [--repo DIR]` |
+| `askai report` | Alias of askai usage --full plus one line from askai check --brief. | `askai report [days]` |
+| `askai session` | The per-repo ledger in .ai-work/: entries, handoff, measurements, report. askai start, askai break and askai resume are the daily names for those three actions. | `askai session init\|pause\|status\|finish\|measure\|report [--repo DIR] [...]` |
+| `askai scaffold` | Write the files every agent reads: AGENTS.md, CLAUDE.md, docs/ai/PROJECT_PROFILE.md, .cursorignore, .ai-work/. Never overwrites. | `askai scaffold [dir] [--dry-run]` |
+| `askai suggest` | Recommend a profile from the files in a folder. | `askai suggest [dir]` |
+| `askai profiles` | What each profile installs. | `askai profiles` |
+| `askai set` | Select a project for this terminal or set a persistent fallback. | `askai set project NAME \| project --clear \| default NAME \| default --clear` |
+| `askai shell` | Enable terminal-scoped project selection in a shell. | `askai shell init powershell\|bash\|zsh \| install SHELL --path PROFILE \| uninstall` |
+| `askai tips` | The cheat sheet, offline, per tool. peak says whether Claude is in peak hours now. | `askai tips [claude\|codex\|agy\|cursor\|session\|habits\|peak]` |
+| `askai test` | Run the safe commands one by one, print a short status, and write one capture file. | `askai test [--out FILE] [--json] [--real] [--notty] [--compare FILE]` |
+| `askai statusline` | Claude Code's status line command (reads the session JSON on stdin): model, context, cache; records snapshots for askai report. | `askai statusline [--demo]` |
+| `askai restore` | List backups, or put a backed-up file back. | `askai restore [file]` |
+| `askai uninstall` | Remove only what AskAI added: keys still holding AskAI's value, its marked blocks, its own files and registrations. | `askai uninstall [--only ID,ID] [--dry-run]` |
+| `askai version` | Print the AskAI version. | `askai version` |
+| `askai init` | Scan eligible first-party source files, consult detected frameworks' official docs, write a compact project knowledge pack and register its path. | `askai init [dir] [--name NAME] [--path DIR] [--about "..."] [--type T] [--yes] [--refresh] [--offline] [--dry-run] [--build "cmd"] [--test "cmd"]` |
+| `askai review` | Show which project inputs changed since host AI review; record completion after review. | `askai review [status\|done] [--project NAME] [--json] [--all]` |
+| `askai map` | Regenerate docs/ai/PROJECT_MAP.md from README folder descriptions and conventional names; preserve purposes you edited. | `askai map [dir] [--dry-run] [--diff]` |
+| `askai audit` | The seven-point token audit: memory files, tools and proxies, model and effort, hooks, subagents, scheduled work, cache reuse. | `askai audit [dir] [--json]` |
+| `askai infra` | Tools and repository files. Alias of askai inventory. | `askai infra [dir] [--json]` |
+| `askai inventory` | Tools and repository files. Alias of askai infra. | `askai inventory [dir] [--json]` |
+| `askai guide` | The etiquette for each moment of work, offline. | `askai guide [install\|start\|work\|break\|resume\|clear\|compact\|cache\|models\|subagents\|mcp\|output\|prompts\|docs\|plugins\|peak\|all]` |
+| `askai docs` | Find AskAI documents or check generated command documentation for drift. | `askai docs [install\|architecture\|projects\|guide\|cheatsheet\|changelog\|preview\|check] [--print]` |
+| `askai context` | What to do at this context level: continue, hand off, clear. 60% is a warning, not an order to compact. | `askai context <percent> \| --used N --window M` |
+| `askai upgrade` | Older spelling of askai update: fetch AskAI and re-apply the recorded profile. | `askai upgrade [--dry-run] [--agents] [install options]` |
+| `askai savings` | Alias of askai usage --plugins. | `askai savings` |
+| `askai todo` | Remaining setup and project-review steps: sign-ins, restarts, app settings, model IDs, one-time plugin steps, and repository facts that need confirmation. Checkable items clear themselves. | `askai todo [dir] [--all] \| askai todo done <id> \| askai todo undo <id>` |
+| `askai graph` | Print the Mermaid architecture diagram from docs/ai/ARCHITECTURE.md and open it in the browser when the terminal is interactive. | `askai graph [dir]` |
+| `askai chat` | Where to paste a short standing instruction in Claude chat, ChatGPT, and Gemini, and how the four coding apps are set up instead. | `askai chat [claude\|chatgpt\|gemini\|code] [--copy]` |
+| `askai cheat` | Print the one-screen working loop and the most useful command choices. | `askai cheat` |
+
+Legacy spellings `continue`, `etiquette`, `checkpoint`, `work`, `peak`, and `projects` still route to their current commands. Prefer `resume`, `guide`, `session pause`, `guide work`, `tips peak`, and `project list` in new scripts.
+
+## Which command, when
+
+| You are | Next command |
 |---|---|
-| `askai usage [days] [--cache] [--plugins] [--import-cursor FILE.csv]` | Spend for Claude Code and Codex. The CSV counts tokens, not dollars |
-| `askai report [days]` | The full spend report plus one line from check |
-| `askai savings` | One savings line per installed plugin |
-| `askai audit [dir]` | Where tokens leak |
-| `askai models [set <tool>.<tier> <model>:<effort> \| verify]` | Model and effort per tier |
-| `askai mcp on\|off <name>` | MCP servers between sessions |
-| `askai plugins [ready \| info <id>]` | Evidence, state, and how to turn a tool off |
-| `askai status` | Per-tool state for hosts that are installed |
-| `askai statusline [--demo]` | Claude Code's one status line |
-
-## Setup
-
-| Command | What it does |
-|---|---|
-| `askai install [--yes] [--dry-run] [--profile lean\|code\|docs\|full\|experimental] [--target auto\|claude\|codex\|agy\|cursor\|all] [--project DIR]` | Install a profile. Default is lean |
-| `askai profiles [show NAME \| migrate]` | The four profiles. `migrate` renames a recorded max to experimental |
-| `askai update` | Fetch AskAI from GitHub and re-apply the recorded profile. `askai upgrade` is the same command |
-| `askai tools update` | Upgrade the tools AskAI installed. This does not update AskAI |
-| `askai setup [dir] [--yes] [--dry-run]` | Short check after install. `--yes` installs. A pipe continues |
-| `askai infra [dir]` | Tools and repository files. `askai inventory` is the same command |
-| `askai todo [dir \| done <id>]` | Steps only you can do |
-| `askai shell init powershell\|bash\|zsh` | Remember the selected project in the shell |
-| `askai restore [file]` | List backups, or put one file back |
-| `askai uninstall [--dry-run]` | Remove only what AskAI added |
-| `askai version [--all]` | The version. `--all` adds the machine |
-| `askai test [--json] [--real] [--compare FILE]` | Run commands on a throwaway fixture. `--real` is read-only on this machine |
-
-## Learn
-
-| Command | What it does |
-|---|---|
-| `askai help [command \| all]` | The column list, one command, or every command |
-| `askai guide [moment]` | Etiquette for this moment |
-| `askai tips [claude\|codex\|agy\|cursor]` | Five habits, or one host |
-| `askai ask <topic>` | One rule and why |
-| `askai why <id>` | One finding from check |
-| `askai chat [claude\|chatgpt\|gemini\|code] [--copy]` | Where to paste the short instruction |
-
-Old names still work and are not separate commands: `work`, `etiquette`, `continue`, `checkpoint`, `peak`, `projects`. `hook` is retired.
-
-## Once per repo, not an AskAI command
-
-| Purpose | Command |
-|---|---|
-| Build or rebuild the code graph. No tokens | `graphify update .` |
-| Ask how two parts connect. Read only the matching section | `graphify query "question"` |
-| Index symbols for Serena | `serena project create --language LANG --index` |
-
-Do not run `/graphify .` unless you also want docs and images in the graph. That spends tokens. `graphify-out/` and `.serena/` stay out of git.
-
-`~/.claude/askai` is AskAI's own folder on every install, including Cursor-only. It is not Claude Code.
+| Not sure | `askai next` |
+| About to edit | `askai go <tool> "task"` |
+| About to build or test | `askai run -- <command>` |
+| Over 60% context | `askai handoff "next step"` then `askai clear` |
+| Stepping away | `askai break` |
+| Back | `askai resume` |
+| Looking at cost | `askai usage` |
+| Something feels off | `askai check` |
 
 ## Inside each coding app
 
@@ -114,11 +159,9 @@ Do not run `/graphify .` unless you also want docs and images in the graph. That
 | New task | `/clear` | `/new` | `/clear` | `/new` |
 | Keep a long chat | `/compact keep: goal, files, test` | `/compact` | new chat plus a handoff | `/summarize` |
 | Plan before editing | `/plan` | `/plan` | `/plan` | `/plan` |
-| AskAI terminal | `/askai-cli` | `$askai-cli` | `/askai-cli` | `/askai-cli` |
-| Plugins | `/askai-plugins` | `$askai-plugins` | `/askai-plugins` | `/askai-plugins` |
 
-Claude chat, ChatGPT, and Gemini show usage in their own settings. AskAI cannot move a reset.
+Exit the coding app with its own `/exit`. That returns you to the terminal. `exit` at the `askai>` prompt leaves the AskAI terminal.
 
-## Leave off unless you measured a gain
+Local files AskAI writes stay out of git through `.git/info/exclude` (`askai project hide-local`). AskAI does not edit a tracked `.gitignore`.
 
-RTK and Context Mode cost more in the measured runs. Headroom's proxy can move Claude Code onto per-token billing. Claude LSP does not run in Cursor. ccusage only reports Claude Code transcripts.
+Optional tools (RTK, Context Mode, Headroom, Graphify, Context7, Repomix) install only with `askai install --add ID`. RTK, Headroom, and Context Mode cost more in the measured studies. Do not add them to save tokens.

@@ -27,7 +27,7 @@ test('validate-install: a good install passes; a broken one names the file and t
     const ins = cp.spawnSync(process.execPath, [path.join(ROOT, 'askai.js'), 'install', '--yes', '--target', 'all', '--profile', 'minimal', '--skip', 'claude', '--no-path', '--project', repo], { env, encoding: 'utf8', timeout: 300000 });
     assert.strictEqual(ins.status, 0, ins.stdout + ins.stderr);
     const snapshot = () => {
-      const since = fs.statSync(path.join(H, '.claude', 'askai', 'manifest.json')).mtimeMs;
+      const since = fs.statSync(path.join(H, '.askai', 'manifest.json')).mtimeMs;
       const found = []; const walk = d => { for (const e of fs.readdirSync(d, { withFileTypes: true })) {
         const p = path.join(d, e.name); if (e.isDirectory()) walk(p); else if (fs.statSync(p).mtimeMs > since) found.push(p);
       } }; walk(H); return found.sort().join('\n');
@@ -62,7 +62,7 @@ test('validate-install: MCP servers the manifest expects must be in each tool co
   const { H, repo, env } = setup();
   try {
     cp.spawnSync(process.execPath, [path.join(ROOT, 'askai.js'), 'install', '--yes', '--target', 'all', '--profile', 'minimal', '--skip', 'claude', '--no-path', '--project', repo], { env, encoding: 'utf8', timeout: 300000 });
-    const mf = path.join(H, '.claude', 'askai', 'manifest.json'); const m = JSON.parse(fs.readFileSync(mf, 'utf8'));
+    const mf = path.join(H, '.askai', 'manifest.json'); const m = JSON.parse(fs.readFileSync(mf, 'utf8'));
     m.components.headroom = { hosts: ['claude', 'cursor', 'agy', 'codex'], command: 'headroom', args: ['mcp', 'serve'] }; fs.writeFileSync(mf, JSON.stringify(m));
     fs.writeFileSync(path.join(H, '.claude.json'), JSON.stringify({ mcpServers: { headroom: { command: 'headroom' } } }));
     fs.writeFileSync(path.join(H, '.cursor', 'mcp.json'), JSON.stringify({ mcpServers: { headroom: { command: 'headroom' } } }));

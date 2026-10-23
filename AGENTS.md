@@ -8,7 +8,7 @@
 
 <!-- askai:begin router (askai init --refresh updates this block; write your own notes outside it) -->
 ## Project
-AskAI configures project guidance and token-saving tools across Claude Code, Codex, Cursor, and Antigravity to extend subscription usage through focused context and verifiable workflows. Type: other. Languages: JavaScript 100%.
+Make AI coding subscriptions last longer by setting up token-saving tools, project guidance, handoffs, and a cheat sheet across Claude Code, Cursor, Codex, and Antigravity. Type: other. Languages: JavaScript 96%, Python 4%.
 
 ## Read only what the task needs
 | Need | File |
@@ -21,6 +21,7 @@ AskAI configures project guidance and token-saving tools across Claude Code, Cod
 | Official framework docs | docs/ai/REFERENCES.md |
 | Where the last session stopped | .ai-work/HANDOFF.md |
 | Model and effort per task | docs/ai/MODELS.md |
+| Code relationships (knowledge graph) | graphify-out/GRAPH_REPORT.md |
 
 ## Commands (narrowest first; quiet flags; long output: `cmd > .ai-work/last.log 2>&1; tail -n 40 .ai-work/last.log`)
 - test: `npm test`

@@ -9,8 +9,9 @@ const kb = require('../lib/kb');
 const ROOT = path.join(__dirname, '..');
 
 test('help: every command has detailed help, reachable as askai help <cmd> and askai <cmd> --help', () => {
-  for (const n of help.names()) assert.match(help.render(n), new RegExp(`^askai ${n}: .+\\n\\nUsage: askai ${n === 'help' ? 'help' : n}`), n);
-  const r = cli(['help', 'check']); assert.strictEqual(r.code, 0); assert.match(r.out, /Usage: askai check \[dir\]/);
+  for (const n of help.names()) assert.match(help.render(n), new RegExp(`^askai ${n}: .+\\n\\nUsage: askai ${n}`), n);
+  const r = cli(['help', 'check']); assert.strictEqual(r.code, 0); assert.match(r.out, /Usage: askai check/);
+  assert.match(cli(['help', 'check', '--advanced']).out, /Usage: askai check \[dir\]/);
   assert.match(cli(['resume', '--help']).out, /--copy/);
   assert.strictEqual(cli(['help', 'nope']).code, 1);
   for (const cmd of ['install', 'check', 'ask', 'break', 'resume', 'usage', 'session', 'scaffold', 'uninstall']) assert.ok(help.has(cmd), cmd);
@@ -33,7 +34,7 @@ test('standalone script: preview writes nothing; apply, re-apply and uninstall r
     assert.strictEqual(fs.readdirSync(path.join(h, '.claude')).length, 1, 'preview wrote nothing');
     assert.strictEqual(run('--apply').status, 0);
     const s = JSON.parse(fs.readFileSync(path.join(h, '.claude', 'settings.json'), 'utf8'));
-    assert.strictEqual(s.model, 'sonnet', 'existing model kept'); assert.strictEqual(s.effortLevel, 'high');
+    assert.strictEqual(s.model, 'sonnet', 'existing model kept'); assert.strictEqual(s.effortLevel, 'medium');
     assert.ok(!/\+ /.test(run('--apply').stdout), 're-apply changes nothing');
     assert.strictEqual(run('--uninstall').status, 0);
     assert.deepStrictEqual(JSON.parse(fs.readFileSync(path.join(h, '.claude', 'settings.json'), 'utf8')), { model: 'sonnet' });

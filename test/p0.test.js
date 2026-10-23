@@ -20,12 +20,13 @@ test('unknown command suggests a close name and does not print the banner', () =
 });
 
 test('the help banner keeps the host list in one sentence', () => {
-  const r = cli([]);
+  const r = cli(['help']);
   const text = r.out + r.err;
   const i = text.indexOf('Claude Code');
-  const j = text.indexOf('Google Antigravity');
+  const j = text.indexOf('Antigravity');
   assert.ok(i >= 0 && j > i);
   assert.ok(!text.slice(i, j).includes('\n'), text.slice(i, j));
+  assert.doesNotMatch(text, /--[a-z]/);
 });
 
 test('a failing plugin report is one line and the vendor text stays in the log', () => {
@@ -85,9 +86,11 @@ test('ask with no topic lists groups, and a topic prints one answer', () => {
   assert.match(one.out, /Related:/);
 });
 
-test('the short banner names the primary profiles and keeps max as an alias', () => {
-  assert.match(cli([]).out, /minimal \| code \| docs \| full \| experimental/);
-  assert.match(cli([]).out, /coding = code, max = experimental/);
+test('the short banner names the twelve home commands and no flags', () => {
+  const out = cli(['help']).out;
+  for (const name of ['next', 'go', 'prompt', 'run', 'check', 'break', 'resume', 'handoff', 'usage', 'project', 'install', 'help']) assert.match(out, new RegExp('^  ' + name + ' ', 'm'));
+  assert.doesNotMatch(out, /--[a-z]/);
+  assert.strictEqual(cli([]).code, 0);
 });
 
 test('a host that is not installed adds no warnings', () => {

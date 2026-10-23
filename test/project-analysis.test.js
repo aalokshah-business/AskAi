@@ -104,6 +104,7 @@ test('init upgrades blank pack files and keeps a written goal, handoff and ignor
   const home = tmpHome();
   try {
     const repo = path.join(home, 'site'); fs.mkdirSync(repo);
+    require('child_process').spawnSync('git', ['init'], { cwd: repo, encoding: 'utf8' });
     write(path.join(repo, 'package.json'), JSON.stringify({ name: 'site', scripts: { test: 'node --test' } }));
     write(path.join(repo, 'server.js'), "require('./lib/db');\n");
     write(path.join(repo, 'lib', 'db.js'), 'module.exports = {};\n');
@@ -120,7 +121,8 @@ test('init upgrades blank pack files and keeps a written goal, handoff and ignor
     assert.doesNotMatch(read('.ai-work/HANDOFF.md'), /<one sentence>/);
     assert.match(read('.cursorignore'), /photos\//);
     assert.match(read('.cursorignore'), /graphify-out\//);
-    assert.match(read('.gitignore'), /\/graphify-out\//);
+    assert.match(read('.git/info/exclude'), /\/graphify-out\//);
+    assert.ok(!fs.existsSync(path.join(repo, '.gitignore')));
     assert.match(read('.cursorignore'), /Terminal and MCP tools can still read ignored paths/);
     assert.match(read('docs/ai/PROJECT_MAP.md'), /`notes\/` \| 1 \| \.txt \| not stated in README or a known folder name/);
     assert.match(read('docs/ai/SOURCE_INDEX.md'), /## Folders/);

@@ -9,6 +9,7 @@ const { targetIncludes } = require('../lib/cursor');
 const args = process.argv.slice(2); const asJson = args.includes('--json'); const filesOnly = args.includes('--files'); const repoArg = args.find(a => !a.startsWith('--'));
 const HOME = os.homedir(); const tilde = s => String(s).split(HOME).join('~');
 const DIR = { claude: path.join(HOME, '.claude'), codex: process.env.CODEX_HOME || path.join(HOME, '.codex'), agy: path.join(HOME, '.gemini'), cursor: path.join(HOME, '.cursor') };
+const askaiDir = require('../lib/claude-config').claudePaths(DIR.claude, false).askaiDir;
 const repo = repoArg ? path.resolve(repoArg) : null;
 const want = { claude: [], codex: [], agy: [], cursor: [] }; // MCP servers each tool should have (filled from the manifest below)
 const rows = []; const add = (level, area, msg, fix) => rows.push({ level, area, msg, fix: fix || '' });
@@ -19,22 +20,22 @@ const exists = f => fs.existsSync(f);
 const which = b => cp.spawnSync(process.platform === 'win32' ? 'where' : 'which', [b], { encoding: 'utf8' }).status === 0;
 
 // ---- AskAI itself --------------------------------------------------------------------------------------------------------
-const appJs = path.join(DIR.claude, 'askai', 'app', 'askai.js');
+const appJs = path.join(askaiDir, 'app', 'askai.js');
 if (!exists(appJs)) {
   add('FAIL', 'askai', 'AskAI is not installed on this machine', 'run the one-line install from the README (it ends with your to-do list)');
   finish();
 }
 const run = a => { const r = cp.spawnSync(process.execPath, [appJs, ...a], { encoding: 'utf8', timeout: 180000, env: process.env }); return { code: r.status, out: `${r.stdout || ''}${r.stderr || ''}` }; };
-const manifest = readJ(path.join(DIR.claude, 'askai', 'manifest.json')) || {};
+const manifest = readJ(path.join(askaiDir, 'manifest.json')) || {};
 const comps = manifest.components || {};
 const selected = host => targetIncludes(manifest.target, host);
 if (filesOnly) add('PASS', 'askai', 'command checks skipped (--files); askai setup already ran them');
 else {
 const ver = run(['version']).out.trim();
 /^\d+\.\d+\.\d+$/.test(ver) ? add('PASS', 'askai', `version ${ver}`) : add('FAIL', 'askai', `askai version printed "${tilde(ver).slice(0, 80)}"`, 'run the one-line install again');
-const srcVer = (readJ(path.join(DIR.claude, 'askai', 'src', 'package.json')) || {}).version;
+const srcVer = (readJ(path.join(askaiDir, 'src', 'package.json')) || {}).version;
 if (srcVer && srcVer !== ver) add('WARN', 'askai', `installed ${ver} but the downloaded source is ${srcVer}`, 'askai upgrade');
-which(process.platform === 'win32' ? 'askai.cmd' : 'askai') ? add('PASS', 'askai', '`askai` is on PATH in this terminal') : add('WARN', 'askai', '`askai` is not on PATH in this terminal', 'open a NEW terminal (PATH changes need one); or run: node ~/.claude/askai/app/askai.js');
+which(process.platform === 'win32' ? 'askai.cmd' : 'askai') ? add('PASS', 'askai', '`askai` is on PATH in this terminal') : add('WARN', 'askai', '`askai` is not on PATH in this terminal', `open a NEW terminal (PATH changes need one); or run: node ${tilde(appJs)}`);
 Object.keys(comps).length ? add('PASS', 'askai', `manifest: profile ${manifest.profile || '?'}, target ${manifest.target || '?'}, ${Object.keys(comps).length} components recorded`) : add('FAIL', 'askai', 'manifest has no components: nothing was installed', 'askai install --yes --target all --profile max --project <repo>');
 const helpN = (run(['help', 'all']).out.match(/^askai /gm) || []).length;
 helpN >= 45 ? add('PASS', 'askai', `askai help all prints ${helpN} commands`) : add('FAIL', 'askai', `askai help all printed only ${helpN} commands`);
@@ -66,8 +67,8 @@ function mcp(h) {
   missing.length ? add('FAIL', NAME[h], `MCP servers missing from its config: ${missing.join(', ')}`, `askai install --only ${missing.map(n => n === 'codebase-memory-mcp' ? 'codebase-memory' : n === 'serena' ? (h === 'claude' ? 'serena' : `${h}-serena`) : n).join(',')} --force`) : add('PASS', NAME[h], `MCP servers in its config: ${want[h].join(', ')}`);
 }
 
-if (!selected('claude')) add('PASS', 'Claude Code', 'not part of this install. ~/.claude/askai is AskAI\'s own folder, not Claude Code');
-else if (!which('claude') && !exists(path.join(DIR.claude, 'settings.json')) && !comps.baseline && !comps.caveman) add('PASS', 'Claude Code', 'Claude Code is not installed here. ~/.claude/askai is AskAI\'s own folder, so Claude file checks are skipped');
+if (!selected('claude')) add('PASS', 'Claude Code', `not part of this install. ${tilde(askaiDir)} is AskAI's own folder, not Claude Code`);
+else if (!which('claude') && !exists(path.join(DIR.claude, 'settings.json')) && !comps.baseline && !comps.caveman) add('PASS', 'Claude Code', `Claude Code is not installed here. ${tilde(askaiDir)} is AskAI's own folder, so Claude file checks are skipped`);
 else if (exists(DIR.claude)) {
   const s = readJ(path.join(DIR.claude, 'settings.json'));
   if (!s) add('FAIL', 'Claude Code', '~/.claude/settings.json is missing or unreadable', 'askai install --only baseline');
@@ -130,7 +131,8 @@ if (repo) {
     const c = (read(f(`.codex/agents/${n}.toml`)) || '').match(/^model\s*=\s*"([^"]+)"/m);
     if (c && !['gpt-6-astra', 'gpt-6.1-sol', 'gpt-6-sol', 'gpt-6-luna', 'gpt-5.6-sol', 'gpt-5.6-luna', 'gpt-5.6-terra', 'gpt-5.5'].includes(c[1])) add('WARN', 'repo', `Codex agent ${n} uses ${c[1]}: confirm it is offered on your plan (/model inside Codex)`, 'askai models set codex.<tier> <id>:<effort>');
   }
-  has(f('.gitignore'), /\.ai-work/) ? add('PASS', 'repo', '.ai-work/ is git-ignored') : add('WARN', 'repo', '.ai-work/ is not in .gitignore: handoffs could be committed', 'askai init --refresh');
+  const excluded = [f('.gitignore'), f('.git/info/exclude')].some(p => has(p, /\.ai-work\/?/));
+  excluded ? add('PASS', 'repo', '.ai-work/ is excluded from Git') : add('WARN', 'repo', '.ai-work/ is not excluded from Git: handoffs could be committed', 'askai project hide-local');
 } else add('WARN', 'repo', 'no repository given, so project files were not checked', 'node scripts/validate-install.js <repo-folder>');
 finish();
 
@@ -147,6 +149,6 @@ function finish() {
   if (selected('agy') && exists(DIR.agy)) inTool.push('Antigravity: /mcp lists ' + (want.agy.join(', ') || 'no servers') + '; /skills shows askai-cli and askai-plugins; /model lists available models; app settings: AI Credit Overages = Never.');
   if (selected('cursor') && exists(DIR.cursor)) inTool.push('Cursor (quit and reopen first): open the project folder as the workspace root; Settings, Rules shows AskAI rules; Settings, MCP lists ' + (want.cursor.join(', ') || 'no servers') + '; type /askai-cli or /askai-plugins in Agent chat; choose an available model in Settings, Models.');
   if (inTool.length) console.log('\nStill to check by hand, inside each tool:\n' + inTool.map(l => `  - ${l}`).join('\n'));
-  console.log('\nThen the daily flow: askai go claude --tier build "small task"; ask the agent to write .ai-work/HANDOFF.md; askai clear (should say safe); askai resume.\nAfter a day of use: askai savings, askai usage 7, askai audit.\nChecks that change nothing: askai upgrade --dry-run, askai uninstall --dry-run.');
+  console.log('\nDaily flow: askai next; askai go <tool> "task"; askai run -- <command>; askai break; askai handoff "next step"; askai clear; askai resume.\nWeekly: askai usage --week; askai check.\nRead-only previews: askai update --dry-run; askai uninstall --dry-run.');
   process.exit(n('FAIL') ? 1 : 0);
 }

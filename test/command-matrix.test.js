@@ -36,7 +36,7 @@ for (const command of help.names()) {
     assert.ok(command === 'help' ? SOURCE.includes("cmd === 'help'") : SOURCE.includes(`case '${command}':`), `missing command handler: ${command}`);
     const r = run(command, '--help');
     assert.equal(r.code, 0, r.output);
-    assert.ok(r.output.includes(`Usage: ${help.H[command].usage}`), r.output);
+    assert.ok(r.output.includes(`Usage: askai ${command}`), r.output);
   }));
 }
 

@@ -25,6 +25,7 @@ test('ask: natural questions find the matching rules, and every entry renders wi
 
 test('check: flags billing traps, Opus default, Antigravity credits and repo gaps; --fix scaffolds the repo', () => withHome(home => {
   const ctx = makeCtx(home, { codexHome: path.join(home, 'codex'), agyHome: path.join(home, 'gemini'), cursorHome: path.join(home, 'cursor') });
+  ctx.which = name => name === 'claude' ? 'claude' : null;
   write(ctx.paths.settings, JSON.stringify({ model: 'opus', promptSuggestionEnabled: true }));
   write(ctx.agyPaths.cliSettings, JSON.stringify({ useG1Credits: true }));
   write(ctx.codexPaths.config, 'model_reasoning_effort = "high"\n');
@@ -36,13 +37,13 @@ test('check: flags billing traps, Opus default, Antigravity credits and repo gap
   assert.strictEqual(check.run(ctx, repo, { fix: true }, quiet), 1, 'a failing item gives exit 1');
   assert.ok(fs.existsSync(path.join(repo, 'AGENTS.md')) && fs.existsSync(path.join(repo, '.cursorignore')), '--fix scaffolds the repo');
   const left = check.repo(repo).filter(r => r.level === 'warn').map(r => r.msg).sort();
-  assert.deepStrictEqual(left, ['Cursor commands /askai-cli and /askai-plugins are missing in this project', 'HANDOFF.md is the empty template']);
+  assert.deepStrictEqual(left, ['.ai-work/ is not in .git/info/exclude', 'Cursor commands /askai-cli and /askai-plugins are missing in this project', 'HANDOFF.md is the empty template']);
 }));
 
 test('break and resume: checklist, ledger entry, time away and advice; the prompt is always printed', () => withHome(home => {
   const out = []; const p = m => out.push(m);
   assert.strictEqual(session.run('break', { repo: home, summary: 'menu done', next: 'check 320px' }, p), 0);
-  assert.ok(out.join('\n').includes('write .ai-work/HANDOFF.md') && fs.existsSync(path.join(home, '.ai-work', 'LAST_BREAK')));
+  assert.ok(out.join('\n').includes('next: askai handoff "next step"') && fs.existsSync(path.join(home, '.ai-work', 'LAST_BREAK')));
   fs.writeFileSync(path.join(home, '.ai-work', 'LAST_BREAK'), new Date(Date.now() - 3 * 3600000).toISOString());
   out.length = 0;
   session.run('resume', { repo: home }, p);

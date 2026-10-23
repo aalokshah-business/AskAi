@@ -1,9 +1,9 @@
 #!/usr/bin/env bash
-# askai for macOS, Linux and WSL. Makes sure Node.js is present (askai needs 18+, Context Mode 22.5+), then runs askai.js with the
+# askai for macOS, Linux and WSL. Makes sure Node.js is present (askai needs 20+, Context Mode 22.5+), then runs askai.js with the
 # same arguments. With no arguments it runs `askai install` (asks once before changing anything).
 #
 #   bash install.sh --dry-run                         # the plan, changes nothing
-#   bash install.sh                                   # coding profile, every host found on this machine
+#   bash install.sh                                   # lean profile, every host found on this machine
 #   bash install.sh --profile docs --target claude,codex
 #   bash install.sh suggest ~/code/myapp              # any askai command works: status, doctor, tips, session ...
 set -euo pipefail
@@ -18,13 +18,13 @@ DRY=0; has --dry-run && DRY=1
 ask() { [ "$YES" -eq 1 ] && return 0; local a; read -r -p "$1 [y/N] " a || true; [[ "$a" =~ ^[Yy] ]]; }
 
 if ! command -v node >/dev/null 2>&1; then
-  echo "Node.js is not installed. askai needs 18+ (Context Mode needs 22.5+)."
+  echo "Node.js is not installed. askai needs 20+ (Context Mode needs 22.5+)."
   if [ "$DRY" -eq 1 ]; then echo "[dry-run] would install Node.js (brew install node), then run askai.js"; exit 0; fi
   if command -v brew >/dev/null 2>&1 && ask "Install Node.js with Homebrew now?"; then brew install node
   else echo "Install Node.js 24 LTS from https://nodejs.org or with nvm (https://github.com/nvm-sh/nvm), then re-run."; exit 1; fi
 fi
 VER="$(node -p 'process.versions.node')"; MAJOR="${VER%%.*}"; REST="${VER#*.}"; MINOR="${REST%%.*}"
-if [ "$MAJOR" -lt 18 ]; then echo "Node.js $VER is too old for askai (needs 18+)."; exit 1; fi
+if [ "$MAJOR" -lt 20 ]; then echo "Node.js $VER is too old for askai (needs 20+)."; exit 1; fi
 if [ "$MAJOR" -lt 22 ] || { [ "$MAJOR" -eq 22 ] && [ "$MINOR" -lt 5 ]; }; then
   echo "Node.js $VER found; Context Mode needs 22.5+ (the context-mode component will say so). Upgrade with brew or nvm when you can."
 fi
@@ -34,8 +34,10 @@ node "$HERE/askai.js" "${ARGS[@]}"
 CODE=$?
 set -e
 
-# askai puts its shim in ~/.claude/askai/bin. On Windows it edits the user PATH itself; here we offer the shell-profile line once.
-BIN="${CLAUDE_CONFIG_DIR:-$HOME/.claude}/askai/bin"
+# AskAI uses ~/.askai on a fresh install and keeps an existing ~/.claude/askai in place.
+DATA="${ASKAI_HOME:-$HOME/.askai}"
+if [ -z "${ASKAI_HOME:-}" ] && [ ! -x "$DATA/bin/askai" ] && [ -x "$HOME/.claude/askai/bin/askai" ]; then DATA="$HOME/.claude/askai"; fi
+BIN="$DATA/bin"
 # A later component can fail (Serena's download, for example) after the shim exists. PATH is still added.
 if [ "${ARGS[0]}" = "install" ] && [ "$DRY" -eq 0 ] && ! has --no-path && ! has --claude-home && [ -x "$BIN/askai" ]; then
   case ":$PATH:" in *":$BIN:"*) ;; *)
@@ -49,7 +51,7 @@ fi
 if [ "$CODE" -eq 0 ] && [ "${ARGS[0]}" = install ] && [ "$SHELL_INTEGRATION" -eq 1 ] && [ "$DRY" -eq 0 ] && ! has --claude-home; then
   RC="$HOME/.bashrc"; SH_NAME=bash
   if [ -n "${ZSH_VERSION:-}" ] || [ "$(basename "${SHELL:-}")" = zsh ]; then RC="$HOME/.zshrc"; SH_NAME=zsh; fi
-  APP="${CLAUDE_CONFIG_DIR:-$HOME/.claude}/askai/app/askai.js"
+  APP="$DATA/app/askai.js"
   node "$APP" shell install "$SH_NAME" --path "$RC"
   echo "Open a new terminal to use askai set project NAME."
 fi

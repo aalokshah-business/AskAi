@@ -33,11 +33,14 @@ test('hosts: auto is Claude, plus Cursor when its directory exists, the cursor c
   try {
     const missing = path.join(home, 'no-cursor');
     const auto = (o, which = () => null, dir = missing) => cursor.hosts({ opts: { target: 'auto', ...o }, cursorPaths: cursor.cursorPaths(dir), which });
-    assert.deepStrictEqual(auto({}), { target: 'auto', claude: true, cursor: false, codex: false, agy: false }, 'no directory, no command: Claude only');
-    assert.strictEqual(auto({}, () => null, home).cursor, true, 'the directory exists');
+    assert.deepStrictEqual(auto({}), { target: 'auto', claude: false, cursor: false, codex: false, agy: false }, 'no CLI: no host');
+    assert.strictEqual(auto({}, () => null, home).cursor, false, 'a config directory is not a host');
     assert.strictEqual(auto({}, n => (n === 'cursor' ? '/bin/cursor' : null)).cursor, true, 'cursor is on PATH');
     assert.strictEqual(auto({ cursorHome: missing }).cursor, true, 'an explicit --cursor-home is a request for Cursor');
     assert.strictEqual(cursor.hosts({ opts: {}, cursorPaths: null, which: () => '/bin/cursor' }).cursor, false, 'a sandboxed run without --cursor-home never looks at the real Cursor');
+    const sandboxed = cursor.hosts({ opts: {}, cursorPaths: null, codexPaths: null, agyPaths: null, which: () => '/bin/tool' });
+    assert.strictEqual(sandboxed.codex, false, 'a sandboxed run cannot select the real Codex CLI');
+    assert.strictEqual(sandboxed.agy, false, 'a sandboxed run cannot select the real Antigravity CLI');
     assert.strictEqual(cursor.hosts({ opts: {}, cursorPaths: null, which: () => null }).target, 'auto', 'target defaults to auto');
   } finally { rm(home); }
 });

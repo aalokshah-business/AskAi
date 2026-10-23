@@ -71,7 +71,7 @@ test('convert scan --ignore-originals writes .cursorignore and a plain scan does
 test('bootstrap prints the optional askai home mount', () => {
   const home = tmpHome();
   try {
-    assert.match(daily.bootstrap(home, 'lean'), /target": "\/root\/.claude\/askai"/);
+    assert.match(daily.bootstrap(home, 'lean', { repo: true }), /target": "\/root\/.askai"/);
   } finally { rm(home); }
 });
 
@@ -80,6 +80,7 @@ test('model and effort findings carry an estimate and evidence', () => {
   try {
     write(path.join(home, 'settings.json'), JSON.stringify({ model: 'claude-opus-5-5', effortLevel: 'max' }));
     const ctx = makeCtx(home);
+    ctx.which = name => name === 'claude' ? 'claude' : null;
     ctx.paths.settings = path.join(home, 'settings.json');
     const rows = require('../lib/findings').collectFindings(ctx);
     const model = rows.find(r => r.id === 'model.default-expensive');

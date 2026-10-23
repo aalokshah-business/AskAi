@@ -179,8 +179,8 @@ async function main() {
       if (model !== 'keep') addKey(f, s, 'model', model);
       if (s.model === 'haiku') { s.model = 'claude-haiku-5-5'; plan(`${path.basename(f)}: model haiku -> claude-haiku-5-5`); }
       if (typeof s.model === 'string' && /opus/i.test(s.model)) log(`  note: your default model is ${s.model}; Opus spends usage fastest. Consider /model sonnet for routine work (left unchanged).`);
-      addKey(f, s, 'env.CLAUDE_CODE_SUBAGENT_MODEL', 'haiku'); addKey(f, s, 'effortLevel', 'high');
-      if (s.effortLevel === 'medium') { s.effortLevel = 'high'; plan(`${path.basename(f)}: effortLevel medium -> high`); }
+      addKey(f, s, 'env.CLAUDE_CODE_SUBAGENT_MODEL', 'haiku'); addKey(f, s, 'effortLevel', 'medium');
+      if ((s.model === 'haiku' || s.model === 'claude-haiku-5-5') && s.effortLevel === 'high') { s.effortLevel = 'medium'; plan(`${path.basename(f)}: effortLevel high -> medium for Haiku`); }
       if (s.autoCompactWindow === 150000) { delete s.autoCompactWindow; plan(`${path.basename(f)}: removed autoCompactWindow 150000`); }
       addKey(f, s, 'promptSuggestionEnabled', false); addKey(f, s, 'awaySummaryEnabled', false); addKey(f, s, 'crossSessionInbound', 'hold');
       addKey(f, s, 'env.CLAUDE_CODE_GOAL_CHECKIN_MINUTES', '0'); addKey(f, s, 'bashOutputMaxChars', 15000);
@@ -238,8 +238,8 @@ function project(dir) {
     if (fs.existsSync(f)) { log(`  keep ${rel} (exists)`); continue; }
     plan(`create ${rel}`); write(f, text);
   }
-  const gi = path.join(dir, '.gitignore'); const cur = read(gi) || '';
-  if (!cur.split(/\r?\n/).includes('.ai-work/')) { plan('add .ai-work/ to .gitignore'); write(gi, `${cur}${cur && !cur.endsWith('\n') ? '\n' : ''}.ai-work/\n`); }
+  const ex = path.join(dir, '.git', 'info', 'exclude'); const cur = read(ex) || '';
+  if (fs.existsSync(path.join(dir, '.git')) && !cur.split(/\r?\n/).includes('.ai-work/')) { plan('add .ai-work/ to .git/info/exclude'); write(ex, `${cur}${cur && !cur.endsWith('\n') ? '\n' : ''}.ai-work/\n`); }
 }
 
 function uninstall() {

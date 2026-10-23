@@ -4,6 +4,12 @@ AskAI follows semantic versioning from 1.0.0 (see [RELEASING.md](RELEASING.md)).
 
 ## Unreleased
 
+## 1.3.0 (24 October 2026): compact command surface and project setup
+
+- The generated Markdown and searchable PDF command sheets now show the framework, working loop, and every command in `askai help --list`. `askai docs check` catches sheet drift. The installer validator reads the active AskAI data directory and accepts `.git/info/exclude` for local handoffs.
+- Cycle 5: twelve home commands, four global flags, and at most four flags on a command's normal help. `askai` with no command is `askai next`. Old names stay as hidden aliases. `askai cheat` and `docs/CHEAT_SHEET.md` are the working loop (machine, project, task, break, week).
+- `askai run -- <command>` treats `--` as the end of options and returns the command's exit code. Prompts inside `askai cli` read one line from that prompt. Hosts are detected by the CLI on PATH. AskAI's data directory is `~/.askai` when that folder exists; an existing `~/.claude/askai` is still read. Local ignores go to `.git/info/exclude`, never a tracked `.gitignore`.
+- Install does not try to install the Claude Code CLI unless `--install-host claude`. A dry run exits 0. Required failures exit 1, or 3 when the message is `needs you`. A recorded max profile is not applied in a pipe unless `--add` names a tool. Routine effort for the Haiku default is medium. The tests that locked high effort, a Claude-by-default host, and writing `.gitignore` were updated.
 - The command sheet lists every current command once. Cursor's fresh-chat command on the sheet is `/new`.
 - `askai test` runs write commands on a throwaway fixture and can judge line budgets, width, repeated text, and time. `--real` is read-only. `--json` and `--compare` report regressions. `askai inventory` is the tools-and-repo report (`infra` is the same command). Status hides tools for a host that is not installed. Plugin savings reports run in parallel with a 3 second timeout on headroom and graphify. A map scan is cached under `.ai-work/cache`.
 - `askai help` is a column list. A handoff that still has `TODO(you)` is not safe to clear. Peak hours stay out of `askai check`. `say hi` routes to chore. The map skips ThirdParty, `_out`, and Build and tells you to use `graphify query`. The Node 20 line prints at most once per day. The status header is three short lines. The test that required the old profile sentence was updated.

@@ -1,15 +1,15 @@
 #!/usr/bin/env bash
 # Install AskAI straight from GitHub, then run install.sh with your options (macOS, Linux, WSL).
 #   curl -fsSL https://raw.githubusercontent.com/aalokshah-business/AskAi/main/get.sh | bash -s -- --target all --project ~/code/myapp --yes
-# The source stays in ~/.claude/askai/src (a git checkout when git is installed, else GitHub's archive), so `askai upgrade` can
+# The source stays in ~/.askai/src (a git checkout when git is installed, else GitHub's archive), so `askai update` can
 # refresh it. It always installs the latest AskAI (the repository's default branch, main). Environment: ASKAI_REPO (owner/name)
 # and ASKAI_REPO_URL (a full git URL or path) point at a fork or a test copy; ASKAI_DIR is where the source goes.
 set -euo pipefail
 REPO="${ASKAI_REPO:-aalokshah-business/AskAi}"
 URL="${ASKAI_REPO_URL:-https://github.com/$REPO.git}"
-DIR="${ASKAI_DIR:-$HOME/.claude/askai/src}"
+DIR="${ASKAI_DIR:-$HOME/.askai/src}"
 replace_source() {
-  case "$DIR" in /|"$HOME"|"$HOME/.claude"|"$HOME/.claude/askai") echo "Refusing to replace unsafe source folder: $DIR" >&2; exit 1;; esac
+  case "$DIR" in /|"$HOME"|"$HOME/.askai"|"$HOME/.claude"|"$HOME/.claude/askai") echo "Refusing to replace unsafe source folder: $DIR" >&2; exit 1;; esac
   if [ -e "$DIR" ]; then
     [ -f "$DIR/askai.js" ] && [ -f "$DIR/install.sh" ] && [ -f "$DIR/package.json" ] && grep -Eq '"name"[[:space:]]*:[[:space:]]*"askai"' "$DIR/package.json" || {
       echo "Source folder already exists and is not an AskAI checkout: $DIR. Choose another ASKAI_DIR." >&2; exit 1;

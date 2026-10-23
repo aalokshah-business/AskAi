@@ -45,10 +45,11 @@ test('hosts: comma lists, all, and auto detection of Codex and Antigravity; sand
   const h = (target, extra = {}) => cursor.hosts({ ...p, ...extra, opts: { target, ...(extra.opts || {}) } });
   assert.deepStrictEqual(h('claude,codex'), { target: 'claude,codex', claude: true, cursor: false, codex: true, agy: false });
   assert.throws(() => h('all'), /--cursor-home/, 'all needs every sandbox home');
-  assert.deepStrictEqual(h('auto'), { target: 'auto', claude: true, cursor: false, codex: false, agy: false }, 'nothing present yet');
+  assert.deepStrictEqual(h('auto'), { target: 'auto', claude: false, cursor: false, codex: false, agy: false }, 'nothing present yet');
   fs.mkdirSync(path.join(home, 'codex'), { recursive: true });
   fs.mkdirSync(path.join(home, 'gemini', 'antigravity-cli'), { recursive: true });
-  assert.ok(h('auto').codex && h('auto').agy, 'their config directories exist');
+  assert.ok(!h('auto').codex && !h('auto').agy, 'config directories are not hosts');
+  assert.ok(h('auto', { which: n => (n === 'codex' || n === 'agy' ? n : null) }).codex, 'the CLI is the host');
   assert.throws(() => cursor.hosts({ cursorPaths: null, codexPaths: null, agyPaths: null, which: () => null, opts: { target: 'codex' } }), /--codex-home/);
   assert.ok(cursor.targetValid('claude,agy') && !cursor.targetValid('auto,codex') && !cursor.targetValid('nope'));
 }));
@@ -220,7 +221,10 @@ test('session: init, ledger entries, measurements with commas, and the report', 
   const p = m => out.push(m);
   assert.strictEqual(session.run('init', { repo: home }, p), 0);
   for (const f of ['SESSION_LEDGER.md', 'HANDOFF.md', 'measurements.csv']) assert.ok(fs.existsSync(path.join(home, '.ai-work', f)), f);
-  assert.ok(read(path.join(home, '.gitignore')).includes('/.ai-work/'));
+  require('child_process').spawnSync('git', ['init'], { cwd: home, encoding: 'utf8' });
+  session.run('init', { repo: home }, p);
+  assert.ok(read(path.join(home, '.git', 'info', 'exclude')).includes('/.ai-work/'));
+  assert.ok(!fs.existsSync(path.join(home, '.gitignore')) || !read(path.join(home, '.gitignore')).includes('/.ai-work/'));
   session.run('start', { repo: home, tool: 'codex', task: 'Fix nav' }, p);
   session.run('pause', { repo: home, summary: 'menu closes', next: 'check 320px' }, p);
   const ledger = read(path.join(home, '.ai-work', 'SESSION_LEDGER.md'));
@@ -234,7 +238,7 @@ test('session: init, ledger entries, measurements with commas, and the report', 
   assert.ok(/codex\s+simple\s+2\s+1\s+50%\s+30\.0/.test(out.join('\n')), out.join('\n'));
   assert.strictEqual(session.run('bogus', { repo: home }, quiet), 1);
   session.run('init', { repo: home }, quiet);
-  assert.strictEqual((read(path.join(home, '.gitignore')).match(/\/\.ai-work\//g) || []).length, 1, 'init is idempotent');
+  assert.strictEqual((read(path.join(home, '.git', 'info', 'exclude')).match(/\/\.ai-work\//g) || []).length, 1, 'init is idempotent');
 }));
 
 test('scaffold: writes the repo files once, never overwrites, and hints at @AGENTS.md', () => withHome(home => {
@@ -258,7 +262,7 @@ test('tips and peak: every topic renders; the peak window follows US Eastern wee
 
 // ---- CLI -----------------------------------------------------------------------------------------------------------
 test('CLI: version, tips, peak and a four-host dry-run install that writes nothing', () => withHome(home => {
-  assert.strictEqual(cli(['version']).out.trim(), '1.2.5');
+  assert.strictEqual(cli(['version']).out.trim(), '1.3.0');
   assert.strictEqual(cli(['tips', 'agy']).code, 0);
   assert.strictEqual(cli(['tips', 'peak', '--json']).code, 0);
   const homes = ['--claude-home', path.join(home, 'claude'), '--cursor-home', path.join(home, 'cursor'), '--codex-home', path.join(home, 'codex'), '--agy-home', path.join(home, 'gemini')];

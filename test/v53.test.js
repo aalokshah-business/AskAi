@@ -20,11 +20,14 @@ test('every command has help, and askai help all prints all of them', () => {
   assert.match(cli([]).out + cli(['help']).out, /askai help all/);
 });
 
-test('every flag askai accepts is documented in the help', () => {
-  const text = JSON.stringify(help.H) + SRC.slice(SRC.indexOf('const HELP'), SRC.indexOf('`;', SRC.indexOf('const HELP')));
-  for (const n of ['BOOL', 'VAL']) {
-    const m = new RegExp(`const ${n} = \\{([^}]*)\\}`).exec(SRC);
-    for (const f of m[1].match(/'?([a-z0-9-]+)'?:/g).map(x => x.replace(/[':]/g, ''))) if (f.length > 1) assert.ok(text.includes(`--${f}`), `--${f} is documented`);
+test('public flags stay within the budget and advanced help keeps the full command form', () => {
+  const surface = require('../lib/surface');
+  assert.deepStrictEqual(surface.GLOBAL, ['--yes', '--dry-run', '--json', '--project']);
+  for (const [name, , , flags] of surface.TIER1) {
+    assert.ok(flags.length <= 4, name);
+    const standard = help.render(name);
+    for (const flag of flags) assert.ok(standard.includes(flag), `${name}: ${flag}`);
+    assert.ok(help.render(name, { advanced: true }).includes(help.H[name].usage), name);
   }
 });
 

@@ -18,4 +18,4 @@ yarn.lock
 pnpm-lock.yaml
 .env
 .env.*
-graphify-out/graph.json
+graphify-out/

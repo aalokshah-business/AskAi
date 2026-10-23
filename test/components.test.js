@@ -28,7 +28,7 @@ test('baseline: installs keys, keeps user values, removes legacy hooks, uninstal
   let s = settingsOf(home);
   assert.strictEqual(s.env.CLAUDE_CODE_SUBAGENT_MODEL, 'opus', 'user model choice not overridden');
   assert.strictEqual(s.model, 'claude-haiku-5-5');
-  assert.strictEqual(s.effortLevel, 'high');
+  assert.strictEqual(s.effortLevel, 'medium');
   assert.ok(!('autoCompactWindow' in s));
   assert.ok(!s.hooks, 'legacy hook removed');
   assert.strictEqual(c('baseline').detect(ctx).state, 'ok');
@@ -471,6 +471,8 @@ test('claude: present CLI is detected and never reinstalled; missing CLI needs w
   const ok = makeCtx(home, {}, { claude: '/fake/claude', probe: () => ({ ok: true, status: 0, stdout: '2.1.0 (Claude Code)', stderr: '', error: null }) });
   assert.strictEqual(c('claude').detect(ok).state, 'ok');
   const missing = makeCtx(home, {}, { claude: null });
+  assert.strictEqual(c('claude').detect(missing).state, 'other');
+  missing.opts.installHost = 'claude';
   assert.strictEqual(c('claude').detect(missing).state, 'missing');
   // Windows: winget. macOS/Linux: Homebrew or Claude's own installer script; the fake run succeeds but no CLI appears afterwards.
   if (process.platform === 'win32') assert.throws(() => c('claude').install(missing), /winget/);

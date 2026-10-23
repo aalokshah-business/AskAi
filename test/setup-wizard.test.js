@@ -35,7 +35,7 @@ test('setup is a short wizard and does not reprint the other commands', () => {
   }
 });
 
-test('setup with nothing to fix now points at the to-do list', () => {
+test('setup with nothing to fix now points at next', () => {
   const home = tmpHome();
   const prev = process.env.NO_COLOR;
   const saved = {};
@@ -46,7 +46,7 @@ test('setup with nothing to fix now points at the to-do list', () => {
     const repo = path.join(home, 'repo');
     fs.mkdirSync(repo);
     const result = setup.report(ctx, repo, { files: () => ({ code: 0, lines: [] }) });
-    assert.match(result.text, /Claude Code n-a · Codex n-a · Antigravity n-a/);
+    assert.match(result.text, /Cursor n-a · Claude Code ok · Codex n-a · Antigravity n-a/);
     assert.match(result.text, /4 Files\s+ok/);
     assert.match(result.text, /Next: askai next/);
     assert.strictEqual(result.code, 0);

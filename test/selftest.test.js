@@ -65,7 +65,7 @@ test('a clean run says every command finished fine', () => {
 });
 
 test('askai help test describes the capture', () => {
-  const r = cli(['help', 'test']);
+  const r = cli(['help', 'test', '--advanced']);
   assert.strictEqual(r.code, 0);
   assert.match(r.out, /Usage: askai test/);
   assert.match(r.out, /--out FILE/);

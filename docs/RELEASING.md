@@ -4,7 +4,7 @@ AskAI follows semantic versioning from 1.0.0: a fix raises the patch number (1.0
 
 1. Bump the version in `package.json`, in `askai.js` (`const VERSION`) and in the version test (`test/v3.test.js`).
 2. Add the changes to `docs/CHANGELOG.md`, newest first.
-3. Regenerate and check: `node scripts/gen-docs.js`, `node --test test/*.test.js`, `bash scripts/preview-matrix.sh --quiet`.
+3. Regenerate and check: `node scripts/gen-docs.js`, `python scripts/build-cheat-pdf.py`, `node scripts/gen-docs.js --check`, `node --test test/*.test.js`, `bash scripts/preview-matrix.sh --quiet`. PDF generation needs PyMuPDF (`python -m pip install pymupdf`) on the release machine; users only need the committed PDF.
 4. Refresh the checksums: `node scripts/sums.js`.
 5. Commit, tag and push: `git commit -am "askai X.Y.Z"`, `git tag vX.Y.Z`, `git push && git push --tags`.
 6. On GitHub, create a release from the tag (Releases, Draft a new release) and paste the changelog entry. Tags record what each version contained; installs always take the latest `main`.

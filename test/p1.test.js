@@ -19,6 +19,7 @@ function withoutBilling(fn) {
 
 test('check collects findings once and renders that list', () => withoutBilling(() => withHome(home => {
   const ctx = makeCtx(home, { agyHome: path.join(home, 'gemini'), cursorHome: path.join(home, 'cursor') });
+  ctx.which = name => name === 'claude' ? 'claude' : null;
   write(ctx.paths.settings, JSON.stringify({ model: 'opus', promptSuggestionEnabled: true }));
   write(ctx.agyPaths.cliSettings, JSON.stringify({ useG1Credits: true }));
   const repo = path.join(home, 'repo');

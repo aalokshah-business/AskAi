@@ -74,7 +74,7 @@ test('select: caveman-plugin only with --caveman-plugin or --only; unknown ids r
 test('version, help and usage exit codes', () => {
   assert.strictEqual(cli(['version']).out.trim(), VERSION);
   assert.strictEqual(cli(['help']).code, 0);
-  assert.strictEqual(cli([]).code, 2);
+  assert.strictEqual(cli([]).code, 0);
   assert.strictEqual(cli(['bogus']).code, 2);
   assert.strictEqual(cli(['install', '--bogus']).code, 2);
 });
@@ -86,7 +86,7 @@ test('install writes only into the given home, is idempotent, and records a mani
   assert.strictEqual(r1.code, 0, r1.out + r1.err);
   const s = readJson(`${home}/settings.json`);
   assert.strictEqual(s.model, 'opus');
-  assert.strictEqual(s.effortLevel, 'high');
+  assert.strictEqual(s.effortLevel, 'medium');
   assert.ok(!('autoCompactWindow' in s));
   assert.match(s.statusLine.command, /askai\.js" statusline/);
   assert.ok(fs.readFileSync(`${home}/CLAUDE.md`, 'utf8').includes('askai:begin'));
@@ -137,7 +137,7 @@ test('askai cli runs commands without prefixes and exits', () => {
   const cp = require('child_process');
   const r = cp.spawnSync(process.execPath, [path.join(__dirname, '..', 'askai.js'), 'cli'], { input: 'version\nhelp cli\nexit\n', encoding: 'utf8', timeout: 10000 });
   assert.strictEqual(r.status, 0, r.stdout + r.stderr);
-  assert.match(r.stdout, /AskAI CLI[\s\S]*askai> 1\.2\.5[\s\S]*askai cli: Prepare a project from the chat folder/);
+  assert.match(r.stdout, /AskAI CLI[\s\S]*askai> 1\.3\.0[\s\S]*askai cli: Prepare a project from the chat folder/);
 });
 
 test('install replaces owned generic askai entry without deleting edited copies', () => withHome(home => {

@@ -77,6 +77,7 @@ test('clangd-lsp with no clangd process is lsp.clangd-inactive, and --lsp auto a
   try {
     write(path.join(home, 'settings.json'), JSON.stringify({ model: 'claude-haiku-5-5', enabledPlugins: { 'clangd-lsp@claude-plugins-official': true } }));
     const ctx = makeCtx(home);
+    ctx.which = name => name === 'claude' ? 'claude' : null;
     ctx.paths.settings = path.join(home, 'settings.json');
     const rows = require('../lib/findings').collectFindings(ctx);
     assert.ok(rows.some(r => r.id === 'lsp.clangd-inactive'));
@@ -220,7 +221,7 @@ test('home flags stay accepted and stay out of rendered help', () => {
   assert.ok(!/--claude-home|--rtk/.test(banner));
   const install = cli(['help', 'install']).out;
   assert.ok(!/--claude-home|--rtk|--headroom/.test(install));
-  assert.match(install, /ASKAI_CLAUDE_HOME/);
+  assert.match(cli(['help', 'install', '--advanced']).out, /ASKAI_CLAUDE_HOME/);
   const help = require('../lib/help');
   assert.match(JSON.stringify(help.H), /--claude-home/);
   assert.match(JSON.stringify(help.H), /--rtk/);

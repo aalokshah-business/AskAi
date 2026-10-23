@@ -102,9 +102,11 @@ test('bootstrap writes the devcontainer script once', () => {
   const home = tmpHome();
   try {
     const file = path.join(home, '.devcontainer', 'askai-postcreate.sh');
-    assert.match(daily.bootstrap(home, 'coding'), /wrote/);
+    assert.match(daily.bootstrap(home, 'coding'), /Personal Dev Containers dotfiles/);
+    assert.ok(!fs.existsSync(file));
+    assert.match(daily.bootstrap(home, 'coding', { repo: true }), /wrote/);
     assert.match(fs.readFileSync(file, 'utf8'), /askai install --yes --profile coding/);
-    assert.match(daily.bootstrap(home, 'coding'), /already/);
+    assert.match(daily.bootstrap(home, 'coding', { repo: true }), /already/);
   } finally { rm(home); }
 });
 

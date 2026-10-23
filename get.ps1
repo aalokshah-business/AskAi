@@ -4,8 +4,8 @@
 .DESCRIPTION
   & ([scriptblock]::Create((irm https://raw.githubusercontent.com/aalokshah-business/AskAi/main/get.ps1))) -Target all -Project C:\code\myapp -Yes
 
-  The source stays in %USERPROFILE%\.claude\askai\src (a git checkout when git is installed, else GitHub's zip), so
-  `askai upgrade` can refresh it. Every option after the script goes to install.ps1 unchanged; -Project is resolved to a full
+  The source stays in %USERPROFILE%\.askai\src (a git checkout when git is installed, else GitHub's zip), so
+  `askai update` can refresh it. Every option after the script goes to install.ps1 unchanged; -Project is resolved to a full
   path first. It always installs the latest AskAI (the repository's default branch, main). Environment: ASKAI_REPO (owner/name)
   and ASKAI_REPO_URL (a full git URL or path) point at a fork or a test copy; ASKAI_DIR is where the source goes.
   This script never closes your PowerShell window.
@@ -13,12 +13,13 @@
 $ErrorActionPreference = 'Stop'
 $repo = if ($env:ASKAI_REPO) { $env:ASKAI_REPO } else { 'aalokshah-business/AskAi' }
 $url = if ($env:ASKAI_REPO_URL) { $env:ASKAI_REPO_URL } else { "https://github.com/$repo.git" }
-$dir = if ($env:ASKAI_DIR) { $env:ASKAI_DIR } else { Join-Path $env:USERPROFILE '.claude\askai\src' }
+$dir = if ($env:ASKAI_DIR) { $env:ASKAI_DIR } else { Join-Path $env:USERPROFILE '.askai\src' }
 function Assert-ReplaceableSource([string]$Target) {
   $full = [IO.Path]::GetFullPath($Target).TrimEnd('\', '/')
   $root = [IO.Path]::GetPathRoot($full).TrimEnd('\', '/')
   $userHomePath = [IO.Path]::GetFullPath($env:USERPROFILE).TrimEnd('\', '/')
-  if ($full -eq $root -or $full -eq $userHomePath) { throw "Refusing to replace unsafe source folder: $Target" }
+  $askaiHomePath = Join-Path $userHomePath '.askai'
+  if ($full -eq $root -or $full -eq $userHomePath -or $full -eq $askaiHomePath) { throw "Refusing to replace unsafe source folder: $Target" }
   $manifest = Join-Path $full 'package.json'
   if (-not (Test-Path -LiteralPath (Join-Path $full 'askai.js') -PathType Leaf) -or
       -not (Test-Path -LiteralPath (Join-Path $full 'install.ps1') -PathType Leaf) -or

@@ -4,7 +4,7 @@
 
 askai makes AI coding subscriptions last longer. It installs and wires up existing token-saving tools for **Claude Code, Cursor, OpenAI Codex and Google Antigravity** on **Windows, macOS, Linux and WSL**, chooses the set by the kind of work (coding, documents, both, or minimal), sets each tool's own cheap defaults, and shows the savings those tools measure. It keeps a session ledger so any of the four agents can pick a task up again after a break, and prints an offline cheat sheet. The only hooks it registers are a couple of in-session reminders (`prompt-hooks`); it does not run a proxy, router or background process.
 
-The full guide (why tokens run out, setup per tool, daily habits, session breaks, measurement, the research behind every choice) is [`docs/ASKAI_GUIDE.md`](docs/ASKAI_GUIDE.md); the two-page cheat sheet is [`docs/CHEAT_SHEET.md`](docs/CHEAT_SHEET.md).
+The full guide (why tokens run out, setup per tool, daily habits, session breaks, measurement, the research behind every choice) is [`docs/ASKAI_GUIDE.md`](docs/ASKAI_GUIDE.md). The [complete command sheet](docs/CHEAT_SHEET.md) and its [PDF](docs/CHEAT_SHEET.pdf) show the framework, working loop, and every supported command.
 
 Background: the earlier self-built askai hook system was measured net negative over 7 days (it cost 26.38M units against 248.6K computed savings, NET -26.14M, -2.60% of the 940.15M spent). Its files are kept in `legacy/` for reference only. This version installs tools other people maintain and registers them once, globally, so they work in every project without any per-prompt step.
 
@@ -14,12 +14,12 @@ Contents: [Quick start](#quick-start-one-command-per-project) | [Documentation](
 
 ## Quick start: one command per project
 
-AskAI installs straight from GitHub: nothing to download first. Run **one command per project**. It fetches AskAI into `~/.claude/askai/src` (so `askai upgrade` can refresh it later), installs or refreshes it for Claude Code, Codex, Antigravity and Cursor with the `coding` profile by default, writes the project's knowledge pack, and ends with the list of things only you can do. Running it again for another project keeps the recorded profile and skips what is already set up. Add `-Workflow max` (PowerShell) or `--profile max` (shell) when you want every optimiser.
+AskAI installs straight from GitHub: nothing to download first. Run **one command per project**. Fresh installs keep source, the application, and data under `~/.askai`; existing `~/.claude/askai` installs keep working. The default `lean` profile configures hosts found on this machine, then writes the project's knowledge pack. Running it again for another project keeps the recorded profile and skips healthy components. Use `askai update` to refresh AskAI and `askai install --add ID` to opt into a specific extra tool.
 
 **Windows office laptop, fetch with Git first.** Install Git and [Node.js LTS](https://nodejs.org/en/download) if missing, then open a new PowerShell window. Clone your own project first and replace the sample path below with its existing local folder. The `coding` profile is the token-conscious default; `max` adds tools that may increase usage.
 
 ```powershell
-$askaiSource = Join-Path $HOME '.claude\askai\src'
+$askaiSource = Join-Path $HOME '.askai\src'
 $projectPath = 'C:\code\myapp'  # existing local project folder
 New-Item -ItemType Directory -Force -Path (Split-Path $askaiSource) | Out-Null
 git clone https://github.com/aalokshah-business/AskAi.git $askaiSource
@@ -27,19 +27,19 @@ powershell -NoProfile -ExecutionPolicy Bypass -File "$askaiSource\install.ps1" -
 powershell -NoProfile -ExecutionPolicy Bypass -File "$askaiSource\install.ps1" -Target all -Workflow coding -Project $projectPath -Yes
 ```
 
-Open a new PowerShell window and run `askai setup --project $projectPath` (set `$projectPath` again in that window, or pass the path directly). If `askai` is not on PATH yet, run `& "$HOME\.claude\askai\bin\askai.cmd" setup --project 'C:\code\myapp'`. See [installation steps](docs/INSTALL.md) for prerequisites, project registration and checks.
+Open a new PowerShell window and run `askai setup --project $projectPath` (set `$projectPath` again in that window, or pass the path directly). If `askai` is not on PATH yet, run `& "$HOME\.askai\bin\askai.cmd" setup --project 'C:\code\myapp'`. See [installation steps](docs/INSTALL.md) for prerequisites, project registration and checks.
 
 **Linux, Cursor first.** Install Git and Node.js 24 LTS, and install [Cursor for Linux](https://cursor.com/download) and sign in. Clone your project first; change the local path below. The same installer supports all four hosts: use `--target cursor` for Cursor only, or `--target all` after installing the other hosts.
 
 ```bash
 project_path="$HOME/code/myapp" # existing local project folder
 ls -ld "$project_path" # stop and correct the path if this fails
-askai_source="$HOME/.claude/askai/src"
+askai_source="$HOME/.askai/src"
 mkdir -p "$(dirname "$askai_source")"
 git clone https://github.com/aalokshah-business/AskAi.git "$askai_source"
 bash "$askai_source/install.sh" --dry-run --target cursor --profile coding --project "$project_path"
 bash "$askai_source/install.sh" --target cursor --profile coding --project "$project_path" --yes
-"$HOME/.claude/askai/bin/askai" setup --project "$project_path"
+"$HOME/.askai/bin/askai" setup --project "$project_path"
 ```
 
 Restart Cursor, open that project, then run `/askai-cli` in its chat for AI review. `askai cli` opens the terminal interface; shell commands use no model tokens. For install and chat entry points for **Claude Code, Cursor, Antigravity and Codex on Linux and Windows**, see the [host checklist](docs/INSTALL.md#linux-and-windows-host-checklist).
@@ -47,13 +47,13 @@ Restart Cursor, open that project, then run `/askai-cli` in its chat for AI revi
 Windows (PowerShell):
 
 ```powershell
-& ([scriptblock]::Create((irm https://raw.githubusercontent.com/aalokshah-business/AskAi/main/get.ps1))) -Target all -Project C:\code\myapp -Yes
+& ([scriptblock]::Create((irm https://raw.githubusercontent.com/aalokshah-business/AskAi/v1.3.0/get.ps1))) -Target all -Project C:\code\myapp -Yes
 ```
 
 macOS, Linux or WSL:
 
 ```bash
-curl -fsSL https://raw.githubusercontent.com/aalokshah-business/AskAi/main/get.sh | bash -s -- --target all --project ~/code/myapp --yes
+curl -fsSL https://raw.githubusercontent.com/aalokshah-business/AskAi/v1.3.0/get.sh | bash -s -- --target all --project ~/code/myapp --yes
 ```
 
 Then open a new terminal and run `askai setup --project NAME`. That one command runs status, the guideline audit, infra, which plugins are waiting, the to-do list, and the file validator. Restart each tool. `/askai-cli` (Codex: `$askai-cli`) reviews the project pack. `/askai-plugins` finishes one-time plugin setup. The project passed during install is registered by folder name. Use `askai project list` to see it. [Project management](docs/PROJECT_MANAGEMENT.md) covers two or more repositories and shell integration. Add `-DryRun` / `--dry-run` to preview installation settings; the one-line bootstrap still downloads the AskAI source first.
@@ -62,16 +62,16 @@ Then open a new terminal and run `askai setup --project NAME`. That one command 
 
 ```text
 Set up AskAI for this repository. From the repository root, run the one command for this OS and wait for it to finish (it asks no questions):
-- macOS, Linux or WSL: curl -fsSL https://raw.githubusercontent.com/aalokshah-business/AskAi/main/get.sh | bash -s -- --target all --project . --yes
-- Windows: powershell -NoProfile -ExecutionPolicy Bypass -Command "& ([scriptblock]::Create((irm https://raw.githubusercontent.com/aalokshah-business/AskAi/main/get.ps1))) -Target all -Project . -Yes"
+- macOS, Linux or WSL: curl -fsSL https://raw.githubusercontent.com/aalokshah-business/AskAi/v1.3.0/get.sh | bash -s -- --target all --project . --yes
+- Windows: powershell -NoProfile -ExecutionPolicy Bypass -Command "& ([scriptblock]::Create((irm https://raw.githubusercontent.com/aalokshah-business/AskAi/v1.3.0/get.ps1))) -Target all -Project . -Yes"
 Then run, from the repository: askai setup .
-(if askai is not found yet, use its full path: ~/.claude/askai/bin/askai, or askai.cmd on Windows)
+(if askai is not found yet, use its full path: ~/.askai/bin/askai, or askai.cmd on Windows)
 Reply with what was installed, anything that failed, the plugin-ready report, and my to-do list. Change no other files. Remind me to restart this session, then run /askai-plugins once.
 ```
 
 **Other ways to get it.** Clone it (`git clone https://github.com/aalokshah-business/AskAi ~/tools/AskAI`) or download the ZIP from GitHub (Code, Download ZIP), then run the installer in that folder with the same options: `bash ~/tools/AskAI/install.sh --target all --project ~/code/myapp --yes`, or on Windows `powershell -ExecutionPolicy Bypass -File C:\tools\AskAI\install.ps1 -Target all -Project C:\code\myapp -Yes`. With Node.js and git installed, `npx github:aalokshah-business/AskAi install --target all --project . --yes` works too.
 
-**Keeping it current.** `askai upgrade` fetches the latest AskAI from GitHub and re-applies your profile; `askai update` upgrades the tools it installed. `askai upgrade --agents` then opens Claude Code, Cursor and Codex in sequence for reviews and verified improvements; it uses model tokens and needs all three CLIs on PATH. Before running a script from the internet you can read it first: [get.sh](get.sh), [get.ps1](get.ps1), and [SECURITY.md](SECURITY.md) for what the installer changes.
+**Keeping it current.** `askai update` fetches the latest AskAI from GitHub and re-applies your profile; `askai tools update` upgrades the tools it installed. `askai upgrade --agents` opens Claude Code, Cursor and Codex in sequence for reviews and verified improvements; it uses model tokens and needs all three CLIs on PATH. Before running a script from the internet you can read it first: [get.sh](get.sh), [get.ps1](get.ps1), and [SECURITY.md](SECURITY.md) for what the installer changes.
 
 ## Platforms
 
@@ -95,7 +95,7 @@ Troubleshooting: a `#!/bin/bash` script with a trailing CR fails in Linux (`*.sh
 | [docs/INSTALL.md](docs/INSTALL.md) | Step-by-step install for Windows, macOS, Linux and WSL, every option, every file AskAI creates, troubleshooting |
 | [docs/ASKAI_GUIDE.md](docs/ASKAI_GUIDE.md) | The guide: AskAI, working etiquette, and the research behind every choice (also as .pdf and .docx) |
 | [docs/ARCHITECTURE.md](docs/ARCHITECTURE.md) | Architecture, components, settings and the full command reference, generated from the code |
-| [docs/CHEAT_SHEET.md](docs/CHEAT_SHEET.md) | Command and purpose, for the coding apps and for Claude, ChatGPT, and Gemini chat |
+| [docs/CHEAT_SHEET.md](docs/CHEAT_SHEET.md), [PDF](docs/CHEAT_SHEET.pdf) | Framework, working loop, command choice, and the full command index |
 | [docs/CHANGELOG.md](docs/CHANGELOG.md) | What changed in each version |
 | [docs/PREVIEW_MATRIX.md](docs/PREVIEW_MATRIX.md) | Install previews on every OS for every tool |
 | [docs/research/TOOLS_CATALOG.md](docs/research/TOOLS_CATALOG.md) | Every token-saving tool: claimed versus measured, and what AskAI does with it |
@@ -110,7 +110,7 @@ In the terminal: `askai help all` (every command), `askai plugins info <id>` (ho
 
 ## What AskAI includes
 
-- **One command per project** from GitHub, for Claude Code, Codex, Antigravity and Cursor on Windows, macOS, Linux and WSL; `askai upgrade` keeps it on the latest version.
+- **One command per project** from GitHub, for Claude Code, Codex, Antigravity and Cursor on Windows, macOS, Linux and WSL; `askai update` keeps it current.
 - **Evidence-based defaults**: cheap default models and effort, idle drains off, output caps, short rules (terse replies, diff-only output, build-lean), reminder hooks that cost no tokens, a status line, handoff commands in every tool.
 - **Every optimiser on request** (`--profile max`): Serena, RTK, Context Mode, Headroom (MCP mode), Graphify, Context7, Repomix, the Caveman plugin, LSP plugins, MarkItDown, ccusage, ripgrep, jq, gh; codebase-memory-mcp and claude-mem one flag each.
 - **A project knowledge pack** (`askai init`): scans eligible first-party source files, README and manifests for an on-demand source index, static architecture and feature evidence. Fetches page titles from detected frameworks' official docs into a references file; `--offline` skips web access. No source text is uploaded. Writes a short AGENTS.md router, CLAUDE.md, GEMINI.md, work order, model tiers, agents for all four tools and four project skills. `/askai-cli` (Codex: `$askai-cli`) runs `askai cli --prepare` in that chat: it picks the project folder, runs init, then the host AI verifies the pack and asks only for facts the repository cannot establish. Source, README and build-manifest changes trigger a new review; the review uses model tokens. Refresh unedited generated docs with `askai init --project NAME --refresh --yes`. Each initialized folder gets a name in `~/.askai/projects.json`.
@@ -255,7 +255,7 @@ A rule file without askai's marker line is not askai's: it is skipped unless `--
 |---|---|---|---|
 | `token-kit` | Takeover of a previous standalone `token-setup.mjs` run | Only if `~/.token-kit/state.json` exists: runs `standalone/token-setup.mjs --uninstall` (removes its keys, rule blocks and handoff files, with backups) so askai's settings and rules are not applied twice | Once, during install |
 | `claude` | Claude Code CLI | winget `Anthropic.ClaudeCode` (Windows); Homebrew cask `claude-code` or `claude.ai/install.sh` (macOS, Linux), only if missing | - |
-| `baseline` | The zero-cost settings | `~/.claude/settings.json`: `model` `claude-haiku-5-5` when none is set (Claude Code starts on Opus otherwise; `--main-model`), `effortLevel` high, `env.CLAUDE_CODE_SUBAGENT_MODEL=haiku`, `skillOverrides` (rarely used bundled skills to `name-only`). Added only when absent. The retired AskAI defaults (haiku, effort medium, `autoCompactWindow` 150000) are updated. Also removes registrations of the retired askai hook | Every session |
+| `baseline` | The zero-cost settings | `~/.claude/settings.json`: `model` `claude-haiku-5-5` when none is set, `effortLevel` medium, `env.CLAUDE_CODE_SUBAGENT_MODEL=haiku`, `skillOverrides` (rarely used bundled skills to `name-only`). Added only when absent. Retired AskAI defaults are updated. Also removes registrations of the retired askai hook | Every session |
 | `rtk` | [RTK](https://github.com/rtk-ai/rtk), **opt-in** (`--rtk`) | winget `rtk-ai.rtk`, then `rtk init -g --auto-patch` (a PreToolUse hook on Bash calls) | Every Bash tool call, automatically |
 | `context-mode` | [Context Mode](https://github.com/mksglu/context-mode), **opt-in** (`--context-mode`) | `claude plugin marketplace add mksglu/context-mode`, `claude plugin install context-mode@context-mode` | Plugin hooks fire automatically; the model chooses when to call `ctx_*` tools |
 | `serena` | [Serena](https://github.com/oraios/serena) | `uv tool install -p 3.13 serena-agent`, `serena init`, uv's tool bin dir added to the user PATH, `claude mcp add --scope user serena ...` (dashboard off) | The model chooses to call its tools; the `CLAUDE.md` block and the coding rule nudge it |
@@ -348,7 +348,7 @@ From `/askai-cli` (Codex: `$askai-cli`), type `report [hours]` or `status` in th
 
 1. **Tools and measured savings**: the profile in effect and the state and wiring of each tool (same as `askai status`).
 2. **Health**: the `askai doctor` checks.
-3. **Cache and context per session**: from the snapshots the status line records in `~/.claude/askai/sessions` (kept 14 days): context use, prompt-cache hit, misses per request, re-cache tokens and the last miss cause, for each session in the window. Claude Code reports these figures; askai does not recompute them. A high re-cache figure means a long prefix was written to the cache again, after idle time or a changed prefix. Cache figures cover the main conversation only, not subagents. Claude Code v2.1.251 or later sends the `prompt_cache` field; on older versions the columns are empty.
+3. **Cache and context per session**: from the snapshots the status line records in `~/.askai/sessions` (kept 14 days): context use, prompt-cache hit, misses per request, re-cache tokens and the last miss cause, for each session in the window. Claude Code reports these figures; AskAI does not recompute them. Cache figures cover the main conversation only, not subagents.
 4. **Usage and cost by day** (only when ccusage is installed): ccusage's own output, its first lines only, not parsed.
 5. **Spend from transcripts**: a savings ledger, then where tokens went (main conversation against subagents, top sessions by cost). The ledger was written for the retired hook system: most rows read 0 with an evidence label of none, and the skill name-only overrides row is computed from config. Treat its NET line as a floor, not a total.
 
@@ -400,7 +400,7 @@ askai audit [dir] [--json]                       the seven-point token audit
 askai todo [dir] [--all] | todo done|undo <id>   everything only you can do, per tool and for the repository
 askai convert <file|url> [--out file.md]         PDF, Office file, web page or YouTube URL to Markdown, locally
 askai docs [install|architecture|projects|guide|cheatsheet|changelog|preview|check] [--print]
-askai update [--target T] | upgrade [--dry-run]  refresh what's installed, or fetch the latest AskAI from GitHub and reinstall
+askai update | tools update                fetch AskAI, or refresh the tools it installed
 askai report [hours] [--json] | status | doctor [--json]
 askai uninstall [--tools] [--force] [--yes] | restore [stamp] [--yes]
 askai statusline | version | help [command]
@@ -427,15 +427,15 @@ Components for `--only` and `--skip`: `token-kit, claude, baseline, rtk, context
 | `-CodexHome`, `-AgyHome` | Testing aids: use these folders instead of `~/.codex` and `~/.gemini` |
 | `-Topic` | With `-Action tips`: one host |
 
-`askai` is copied to `~/.claude/askai/app` and a shim is placed in `~/.claude/askai/bin` (added to the user PATH unless `--no-path`). To update askai itself, run `install.ps1` from a fresh checkout.
+`askai` is copied to `~/.askai/app` and a shim is placed in `~/.askai/bin` on a fresh install (added to the user PATH unless `--no-path`). Existing installations under `~/.claude/askai` remain supported. Use `askai update` to refresh AskAI itself.
 
 ## Safety
 
 - Idempotent: components that already look healthy are skipped; `--force` re-runs them.
 - Existing tools are detected and never reinstalled.
-- Before `settings.json`, `CLAUDE.md`, `~/.claude.json`, or Cursor's `mcp.json` and `hooks.json` are changed, the file is copied to `~/.claude/askai/backups/<timestamp>/`. `askai restore` lists and restores them.
+- Before `settings.json`, `CLAUDE.md`, `~/.claude.json`, or Cursor's `mcp.json` and `hooks.json` are changed, the file is copied to `~/.askai/backups/<timestamp>/` on a fresh install. `askai restore` lists and restores them.
 - An unparseable `settings.json` or `~/.claude.json` stops the run; askai never overwrites a file it could not read.
-- `askai uninstall` removes only what askai added, recorded in `~/.claude/askai/manifest.json`. A tool, hook, MCP entry or rule file you set up yourself is left in place and named; `--force` removes it too, `--tools` also uninstalls tools askai installed through winget, uv or npm. Backups are kept.
+- `askai uninstall` removes only what AskAI added, recorded in `~/.askai/manifest.json` on a fresh install. A tool, hook, MCP entry or rule file you set up yourself is left in place and named; `--force` removes it too, `--tools` also uninstalls tools AskAI installed through winget, uv or npm. Backups are kept.
 - Non-interactive runs refuse to change anything without `--yes`.
 - `--dry-run` writes nothing and installs nothing; it prints the plan.
 - `RTK_TELEMETRY_DISABLED=1` is set for the RTK commands askai runs.
