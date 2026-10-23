@@ -1,0 +1,15 @@
+{
+  "terminal.integrated.profiles.windows": {
+    "AskAI CLI": {
+      "path": "powershell.exe",
+      "args": [
+        "-NoExit",
+        "-ExecutionPolicy",
+        "Bypass",
+        "-Command",
+        "node askai.js cli"
+      ],
+      "icon": "terminal-powershell"
+    }
+  }
+}

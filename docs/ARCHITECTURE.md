@@ -209,7 +209,7 @@ In install order. Evidence labels: measured (a third-party saving), mixed, claim
 - **`agy-rules`** · Antigravity · in its profiles · evidence: unmeasured · mirrors `caveman`.
   Antigravity token rules + terse style (~/.gemini/GEMINI.md block). GEMINI.md: managed block with the token rules and the terse directive (level as --caveman); backup first
 - **`agy-rtk`** · Antigravity · in its profiles · evidence: reported · mirrors `rtk`.
-  RTK for Antigravity (plugin hook). install rtk if missing; `rtk init --agent antigravity --auto-patch` (RTK's own plugin in ~/.gemini/config/plugins/rtk)
+  RTK for Antigravity (plugin hook). install rtk if missing; `rtk init --agent antigravity --auto-patch` (RTK's own rules in ~/.gemini/config/rules or .agents/rules)
 - **`agy-serena`** · Antigravity · in its profiles · evidence: unmeasured · mirrors `serena`.
   Serena for Antigravity (MCP server). install Serena with uv if missing; add a "serena" entry to ~/.gemini/config/mcp_config.json (kept if one exists); backup first
 - **`agy-path-rules`** · Antigravity · in its profiles · evidence: unmeasured · mirrors `rules`.

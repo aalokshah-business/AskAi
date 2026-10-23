@@ -1103,10 +1103,14 @@ async function cmdUsage(o) {
       const r = ctx.probe('ccusage', ['daily', '--since', new Date(Date.now() - days * 86400000).toISOString().slice(0, 10).replace(/-/g, '')], { timeout: 90000 });
       if (r.ok) claudeText = String(r.stdout).trimEnd().split(/\r?\n/).slice(0, 40).join('\n');
       else claudeError = `ccusage failed: ${firstLineOf(r.stderr || r.stdout)}`;
-    } else if (claudeOnPath) {
+    }
+    if (claudeOnPath && !claudeText) {
       const script = path.join(SRC, 'hooks', 'askai-report.js');
       const r = require('child_process').spawnSync(process.execPath, [script, '--hours', String(days * 24)], { encoding: 'utf8', maxBuffer: 256 * 1024 * 1024, env: { ...process.env, ...(o.claudeHome ? { CLAUDE_CONFIG_DIR: ctx.paths.home } : {}) } });
-      if (r.status === 0) claudeText = String(r.stdout || '').trimEnd().split(/\r?\n/).slice(0, 30).join('\n');
+      if (r.status === 0 && (r.stdout || '').trim()) {
+        claudeText = String(r.stdout || '').trimEnd().split(/\r?\n/).slice(0, 30).join('\n');
+        claudeError = '';
+      }
     }
     const codex = ctx.codexPaths ? usage.codex(ctx.codexPaths.home, days) : { files: 0 };
     const claudeInstalled = claudeOnPath;
@@ -1335,9 +1339,25 @@ function launchCli() {
   });
   let r;
   if (plan === 'win32') {
-    const ps = `& '${process.execPath.replace(/'/g, "''")}' '${script.replace(/'/g, "''")}' cli`;
-    const encoded = Buffer.from(ps, 'utf16le').toString('base64');
-    r = cp.spawnSync('powershell.exe', ['-NoProfile', '-NonInteractive', '-Command', `Start-Process powershell.exe -ArgumentList '-NoExit','-NoProfile','-EncodedCommand','${encoded}'`], { encoding: 'utf8' });
+    const os = require('os');
+    const launcher = path.join(os.tmpdir(), `askai-launch-${Date.now()}.cmd`);
+    const content = `@echo off\r\ntitle AskAI CLI\r\ncd /d "${process.cwd()}"\r\n"${process.execPath}" "${script}" cli\r\n`;
+    try { fs.writeFileSync(launcher, content, 'utf8'); } catch (_) {}
+    const taskName = `AskAiCli_${Date.now()}`;
+    const tr = `cmd.exe /c "${launcher}"`;
+    const cr = cp.spawnSync('schtasks.exe', ['/create', '/tn', taskName, '/tr', tr, '/sc', 'once', '/st', '23:59', '/it', '/f'], { encoding: 'utf8' });
+    if (cr.status === 0) {
+      cp.spawnSync('schtasks.exe', ['/run', '/tn', taskName], { encoding: 'utf8' });
+      setTimeout(() => {
+        try { cp.spawnSync('schtasks.exe', ['/delete', '/tn', taskName, '/f'], { encoding: 'utf8' }); } catch (_) {}
+        try { fs.unlinkSync(launcher); } catch (_) {}
+      }, 3000).unref();
+      r = { status: 0 };
+    } else {
+      const ps = `& '${process.execPath.replace(/'/g, "''")}' '${script.replace(/'/g, "''")}' cli`;
+      const encoded = Buffer.from(ps, 'utf16le').toString('base64');
+      r = cp.spawnSync('powershell.exe', ['-NoProfile', '-NonInteractive', '-Command', `Start-Process powershell.exe -ArgumentList '-NoExit','-NoProfile','-ExecutionPolicy','Bypass','-EncodedCommand','${encoded}'`], { encoding: 'utf8' });
+    }
   } else if (plan === 'darwin') {
     const cmd = [process.execPath, script, 'cli'].map(x => `'${x.replace(/'/g, "'\\''")}'`).join(' ');
     r = cp.spawnSync('osascript', ['-e', `tell application "Terminal" to do script "${cmd.replace(/\\/g, '\\\\').replace(/"/g, '\\"')}"`], { encoding: 'utf8' });
@@ -1430,11 +1450,13 @@ async function cmdCli(o) {
     rl.pause();
     try {
       const args = cliArgs(line);
+      if (args[0] === 'askai') args.shift();
+      if (!args.length) { keys(); rl.resume(); rl.prompt(); continue; }
       if (args[0] === 'exit' || args[0] === 'quit') break;
-      if (args.length && args[0] !== 'cli') {
+      if (args[0] !== 'cli') {
         const previous = process.argv; process.argv = [previous[0], previous[1], ...args];
         try { await main(); } finally { process.argv = previous; }
-      } else if (args[0] === 'cli') console.log('Already in AskAI CLI.');
+      } else console.log('Already in AskAI CLI.');
     } catch (e) { console.error(`askai: ${e.message}`); }
     keys(); rl.resume(); rl.prompt();
   }
