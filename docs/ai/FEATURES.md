@@ -9,7 +9,7 @@ One line per feature. “documented” means README.md describes it; “detected
 | Evidence-based defaults for model, effort, idle drains and short rules | `README.md` | documented | README.md. Confirm behavior before calling it finished |
 | Every optimiser on request via `--profile max` | `lib/profiles.js` | documented | README.md names the profile. Confirm behavior before calling it finished |
 | Project knowledge pack (`askai init`) and `/askai-cli` review | `lib/project.js` | documented | README.md. Confirm behavior before calling it finished |
-| Terminal views: help, todo, infra, savings, plugins, guide, audit, usage | `askai.js` | documented | README.md. Confirm behavior before calling it finished |
+| Terminal views: help, todo, infra, savings, report, plugins, guide, audit | `askai.js` | documented | README.md. `savings` and `report` replace the retired `usage` command |
 | Optional three-host upgrade review | `askai.js` | detected | `cmdUpgrade` opens Claude Code, Cursor and Codex in sequence with `--agents`; requires each CLI and uses model tokens |
 | Compact command surface and complete command sheets | `lib/surface.js`, `lib/help.js`, `scripts/gen-docs.js` | tested | `test/cycle5.test.js` checks every public help name is represented in `docs/CHEAT_SHEET.md`; `scripts/gen-docs.js --check` checks the PDF source hash |
 | Command-by-command validation | `lib/selftest.js` | tested | `askai test` runs safe commands in a disposable fixture; `--real` is read-only |

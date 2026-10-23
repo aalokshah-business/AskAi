@@ -4,6 +4,8 @@ AskAI follows semantic versioning from 1.0.0 (see [RELEASING.md](RELEASING.md)).
 
 ## Unreleased
 
+- Command help takes priority over category aliases: `askai help check` and `askai help cli` show their command instructions.
+
 - Removed `askai usage` command support across the codebase in favor of `askai savings` (with `--full`, `--cache`, `--week`, `--import-cursor`) and `askai report`. Seven category-based help views (`askai help work|project|setup|health|cost|learn|system`) organize all 60 commands. Dynamic host and asset detection in `askai infra`: active caller session detection, desktop IDE and standalone CLI resolution for Codex, Antigravity, and Cursor, MCP server sub-table parsing fix, and dynamic reporting of Required, Recommended, and Optional token-saving assets. MarkItDown installation hardened against broken uv trampolines with automatic recovery.
 
 ## 1.3.0 (24 October 2026): compact command surface and project setup

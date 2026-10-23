@@ -18,9 +18,6 @@ Search for a path or symbol, then read that source range. Paste a row into a ses
 ## Files
 | File | Top-level declarations |
 | --- | --- |
-| `lib/surface.js` | rows, home, more, visible |
-| `scripts/build-cheat-pdf.py` | clean, wrap, new_page, space |
-| `test/cycle5.test.js` | — |
 | `askai.js` | parseArgs, projectDir, registerProject, registrationName |
 | `hooks/askai-report.js` | segments, findAskaiDir, cmpTurns, findSkillMd |
 | `lib/agents.js` | codexPaths, agyPaths, editText, record |
@@ -36,7 +33,7 @@ Search for a path or symbol, then read that source range. Paste a row into a ses
 | `lib/daily.js` | git, next, ticket, snapshotOnce |
 | `lib/findings.js` | slug, idFor, place, toFinding |
 | `lib/guide.js` | moment, render, advice, clearGate |
-| `lib/help.js` | render, groupOf, index, groupText |
+| `lib/help.js` | render, findCategory, categoryText, allCategoriesText |
 | `lib/hook.js` | prompt, session, run |
 | `lib/infra.js` | mcpCalls, cursorCalls, callsFor, opLabel |
 | `lib/kb.js` | topics, search, render |
@@ -67,6 +64,7 @@ Search for a path or symbol, then read that source range. Paste a row into a ses
 | `lib/setup.js` | marks, cli, present, placeNotes |
 | `lib/status.js` | fmt, rtkSavings, savingsText, profileInfo |
 | `lib/suggest.js` | scan, recommend, suggest |
+| `lib/surface.js` | rows, home, more, visible |
 | `lib/sys.js` | extraDirs, which, findClaude, run |
 | `lib/tips.js` | render, etParts, isPeak, localWindow |
 | `lib/todo.js` | present, collectItems, items, mark |
@@ -76,6 +74,7 @@ Search for a path or symbol, then read that source range. Paste a row into a ses
 | `lib/validate-files.js` | validateFiles |
 | `lib/winpath.js` | script, encoded, editUserPath |
 | `scripts/assert-skips.js` | — |
+| `scripts/build-cheat-pdf.py` | clean, wrap, new_page, space |
 | `scripts/build-commands-a3.py` | font_set, wrap, pieces, head_rest |
 | `scripts/build-commands-card.py` | load_sections, wrap, pieces, highlight |
 | `scripts/build-commands-pdf.py` | load_sections, font, wrap, pieces |
@@ -96,6 +95,7 @@ Search for a path or symbol, then read that source range. Paste a row into a ses
 | `test/cursor.test.js` | withDirs, capture |
 | `test/cycle2.test.js` | — |
 | `test/cycle4.test.js` | — |
+| `test/cycle5.test.js` | — |
 | `test/daily.test.js` | — |
 | `test/helpers.js` | tmpHome, makeCtx, cli |
 | `test/knowledge-all.test.js` | — |
