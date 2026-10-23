@@ -331,6 +331,7 @@ Where each command is implemented. Written from the `case` list in `askai.js` be
 | `askai diff` | `askai.js cmdDiff` |
 | `askai graph` | `askai.js cmdGraph` |
 | `askai hook` | `lib/hook.js` |
+| `askai why` | `askai.js cmdWhy; lib/findings.js` |
 | `askai check` | `askai.js cmdCheck; lib/check.js; lib/findings.js` |
 | `askai setup` | `askai.js cmdSetup; lib/setup.js` |
 | `askai ask` | `askai.js cmdAsk; lib/kb.js` |
@@ -503,6 +504,21 @@ Examples:
   askai check . --fix
 
 Exit: 1 when a finding is severity now (bills outside your plan), else 0
+```
+
+#### `askai why`
+
+```text
+askai why: The message and fix for one finding from askai check.
+
+Usage: askai why <finding-id>
+
+An unknown id is one line.
+
+Examples:
+  askai why repo.agents-missing
+
+Exit: 1 when the id is unknown, else 0
 ```
 
 #### `askai ask`

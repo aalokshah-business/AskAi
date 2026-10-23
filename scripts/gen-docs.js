@@ -94,6 +94,7 @@ const COMMAND_SOURCE = {
   graph: 'askai.js cmdGraph',
   hook: 'lib/hook.js',
   check: 'askai.js cmdCheck; lib/check.js; lib/findings.js',
+  why: 'askai.js cmdWhy; lib/findings.js',
   setup: 'askai.js cmdSetup; lib/setup.js',
   ask: 'askai.js cmdAsk; lib/kb.js',
   usage: 'askai.js cmdUsage; lib/usage.js; lib/savings.js',

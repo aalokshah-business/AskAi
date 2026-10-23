@@ -61,6 +61,7 @@ Setup
 Every day
   cli [--prepare]      from a host chat, --prepare finds the project and runs init; then the terminal (--launch opens it)
   check [dir]       audit this machine (and a repo) against the token guidelines; each gap with the command that fixes it (--fix: repo)
+  why <id>          message and fix for one finding from askai check
   ask <words>       offline answers on etiquette and the research: askai ask compact | askai ask coming back after a break
   start | break | resume   session shortcuts: ledger entry; before-break checklist; time away, advice and the resume prompt (--copy)
   usage [days]      what Claude Code and Codex spent, from their local data (Antigravity, Cursor: their own views)
@@ -1093,6 +1094,14 @@ function cmdSetup(o) {
   console.log(result.text);
   return result.code;
 }
+function cmdWhy(o) {
+  const id = o._[1];
+  if (!id) { console.log('Usage: askai why <finding-id>'); return 1; }
+  const findings = require('./lib/findings');
+  const text = findings.why(findings.collectFindings(buildCtx(o, true), projectDir(o)), id);
+  console.log(text);
+  return text === `No finding ${id}.` ? 1 : 0;
+}
 function cmdCheck(o) {
   const ctx = buildCtx(o, true);
   const dir = projectDir(o, o._[1], false);
@@ -1499,6 +1508,7 @@ async function main() {
       if (process.stdin.isTTY) { console.log('askai hook is retired. It used to read Claude Code hook JSON. Use askai break and askai resume.'); return 0; }
       let input = ''; try { input = fs.readFileSync(0, 'utf8'); } catch (_) { /* no stdin */ } const out = hookLib.run(buildCtx(o, true), o._[1], input); if (out) process.stdout.write(out + '\n'); return 0;
     }
+    case 'why': return cmdWhy(o);
     case 'check': return cmdCheck(o);
     case 'setup': return cmdSetup(o);
     case 'ask': return cmdAsk(o);
