@@ -205,6 +205,61 @@ test('the same sentence is not printed by both guide and tips', () => {
   assert.deepStrictEqual(dup, []);
 });
 
+test('doctor prints the same rows as check', () => {
+  const home = tmpHome();
+  try {
+    const a = cli(['doctor', '--claude-home', home, '--repo', home]);
+    const b = cli(['check', '--claude-home', home, '--repo', home]);
+    assert.strictEqual(a.out, b.out);
+    assert.strictEqual(a.code, b.code);
+  } finally { rm(home); }
+});
+
+test('home flags stay accepted and stay out of rendered help', () => {
+  const banner = cli([]).out;
+  assert.ok(!/--claude-home|--rtk/.test(banner));
+  const install = cli(['help', 'install']).out;
+  assert.ok(!/--claude-home|--rtk|--headroom/.test(install));
+  assert.match(install, /ASKAI_CLAUDE_HOME/);
+  const help = require('../lib/help');
+  assert.match(JSON.stringify(help.H), /--claude-home/);
+  assert.match(JSON.stringify(help.H), /--rtk/);
+  const home = tmpHome();
+  const sandbox = path.join(home, 'sandbox');
+  try {
+    fs.mkdirSync(sandbox, { recursive: true });
+    const r = cli(['status'], { env: { HOME: home, USERPROFILE: home, ASKAI_CLAUDE_HOME: sandbox } });
+    assert.match(r.out, new RegExp(sandbox.replace(/[\\]/g, '\\\\')));
+  } finally { rm(home); }
+});
+
+test('opus waits for two sonnet failures and a chore stays on haiku', () => {
+  const models = require('../lib/models');
+  assert.strictEqual(models.afterFailures('build', 1).model, 'claude-sonnet-5-5');
+  assert.strictEqual(models.afterFailures('build', 2).model, 'claude-opus-5-5');
+  assert.strictEqual(models.afterFailures('chore', 2).model, 'claude-haiku-5-5');
+  const counted = tmpHome();
+  try {
+    assert.strictEqual(models.recordOutcome(counted, 'sonnet', 1), 1);
+    assert.strictEqual(models.recordOutcome(counted, 'sonnet', 1), 2);
+    assert.strictEqual(models.afterFailures('build', models.failureCount(counted)).model, 'claude-opus-5-5');
+    assert.strictEqual(models.recordOutcome(counted, 'claude-opus-5-5', 1), 2);
+    assert.strictEqual(models.recordOutcome(counted, 'sonnet', 0), 0);
+  } finally { rm(counted); }
+  const home = tmpHome();
+  const repo = path.join(home, 'repo');
+  try {
+    fs.mkdirSync(path.join(repo, '.ai-work'), { recursive: true });
+    write(path.join(repo, '.ai-work', 'sonnet-failures'), '2\n');
+    const go = cli(['go', 'claude', '--dry-run', '--repo', repo, '--tier', 'build', '--claude-home', home]);
+    assert.match(go.out, /claude-opus-5-5/);
+    const chore = cli(['route', 'rename the helper', '--repo', repo, '--claude-home', home]);
+    assert.match(chore.out, /claude-haiku-5-5/);
+    const early = cli(['route', 'add a setting', '--repo', home, '--claude-home', home]);
+    assert.match(early.out, /claude-sonnet-5-5/);
+  } finally { rm(home); }
+});
+
 test('assert-skips prints a skip reason and rejects a silent skip', () => {
   const dir = tmpHome();
   try {

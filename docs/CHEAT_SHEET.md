@@ -9,12 +9,15 @@ Look up the command, then the purpose. Full detail: `askai help <command>`. Guid
 | Purpose | Command |
 |---|---|
 | One check after install | `askai setup <repo>` |
+| Same rows as check | `askai doctor` |
 | What is installed, per app | `askai infra <repo>` |
 | What you still have to do | `askai todo <repo>` |
 | Mark a to-do done | `askai todo done <id>` |
 | Which plugins are waiting | `askai plugins ready <repo>` |
 | What one plugin does, and how to turn it off | `askai plugins info <id>` |
-| Billing and health | `askai doctor` |
+| Audit this machine | `askai check <repo>` · `askai check --env` |
+| Why one finding | `askai why <id>` |
+| The next few actions | `askai next` |
 | Seven-point token audit | `askai audit <repo>` |
 | Every command | `askai help` |
 | One command | `askai help <command>` |
@@ -24,11 +27,12 @@ Look up the command, then the purpose. Full detail: `askai help <command>`. Guid
 | Purpose | Command |
 |---|---|
 | Preview, change nothing | `askai install --dry-run` |
-| Default install (coding profile) | `askai install --yes --project <repo>` |
-| Every optimiser, one host | `askai install --yes --profile max --target cursor --project <repo>` |
+| Default install (lean profile) | `askai install --yes --project <repo>` |
+| Every optimiser, one host | `askai install --yes --profile experimental --target cursor --project <repo>` |
 | Add another host later | `askai install --yes --target claude` (or `codex`, `agy`, `all`) |
-| Fetch the latest AskAI and re-apply the recorded profile | `askai upgrade --yes` |
-| Upgrade the tools AskAI installed | `askai update` |
+| Fetch the latest AskAI and re-apply the recorded profile | `askai update` (same as `askai upgrade`) |
+| Upgrade the tools AskAI installed | `askai tools update` |
+| Run each safe command and write one capture | `askai test` |
 | Cursor slash command missing | Reload the window. Open the project folder itself. Type `/` and choose `askai-cli` |
 | Devcontainer, no window | `askai cli` in the Cursor terminal. `tmux attach -t askai` only resumes a session that `--launch` already started |
 
@@ -88,8 +92,8 @@ The account instruction is sent on every chat, so it stays short. The book gets 
 
 | App | Where to look |
 |---|---|
-| Claude Code and Codex | `askai usage 7` |
-| Cursor | Cursor's usage page. AskAI does not see it |
+| Claude Code and Codex | `askai usage 7` · `askai usage --cache` · `askai report` |
+| Cursor | Export the usage CSV, then `askai usage --import-cursor FILE.csv`. In-plan rows are 0 USD, so this counts tokens. |
 | Claude chat | claude.ai, Settings, Usage |
 | ChatGPT | ChatGPT settings |
 | Antigravity | `/usage` |

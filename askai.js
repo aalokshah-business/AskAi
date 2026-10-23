@@ -51,10 +51,9 @@ Reference: status, doctor, report, savings, infra, guide, tips, docs, session, c
 
 Flags: --yes --dry-run --profile (default ${profiles.DEFAULT}) --add --list --host --brief --quiet --no-color
        --target --only --skip --main-model (default claude-haiku-5-5) --subagent-model --codex-model --effort --json --seed-only --ignore-originals
-       --no-statusline --no-path --tools --force --print --remove --hours --claude-home --cursor-home --codex-home --agy-home --repo --project
+       --no-statusline --no-path --tools --force --print --remove --hours --repo --project
        --minutes --input-tokens --output-tokens --cached-tokens --success --rework-minutes --usage-source --notes --summary --next --result
-       --tool --model --caveman --lsp --lean-git --markitdown --ccusage --rtk --context-mode --base-tools --headroom --graphify --context7
-       --repomix --codebase-memory --claude-mem --caveman-plugin --output --kind --about --type --tier --files --done --mode --used --window
+       --tool --model --caveman --lsp --lean-git --base-tools --codebase-memory --claude-mem --output --kind --about --type --tier --files --done --mode --used --window
        --output-safe --out --name --path --build --test --threshold --for --include-untracked --personal --shared --undo --review --week --fill
        --cache --plugins --full --agents --demo --launch --prepare --clear --offline --copy --fix --refresh --resume --import-cursor --env --save
 Profiles: minimal | code | docs | full | experimental. Aliases: coding = code, max = experimental.
@@ -522,23 +521,8 @@ function cmdStatus(o) {
   return 0;
 }
 
-function doctorLines(res) {
-  const mark = { ok: 'ok  ', warn: 'warn', fail: 'FAIL' };
-  const n = l => res.filter(r => r.level === l).length;
-  return [
-    ...res.map(r => `${mark[r.level]}  ${pad(r.id, 14)} ${r.msg}`),
-    '',
-    `${n('ok')} ok, ${n('warn')} warning(s), ${n('fail')} failure(s)`,
-  ];
-}
-
 function cmdDoctor(o) {
-  const ctx = buildCtx(o, true);
-  ctx.refreshPath();
-  const res = status.doctor(ctx);
-  if (o.json) console.log(JSON.stringify(res, null, 2));
-  else console.log(doctorLines(res).join('\n'));
-  return res.some(r => r.level === 'fail') ? 1 : 0;
+  return cmdCheck(o);
 }
 
 // The profiles and what each installs; the one in effect is marked.
@@ -1410,6 +1394,10 @@ async function main() {
   const [cmd, ...rest] = process.argv.slice(2);
   let o;
   try { o = parseArgs(rest); } catch (e) { console.error(`askai: ${e.message}`); return 2; }
+  if (!o.claudeHome && process.env.ASKAI_CLAUDE_HOME) o.claudeHome = process.env.ASKAI_CLAUDE_HOME;
+  if (!o.cursorHome && process.env.ASKAI_CURSOR_HOME) o.cursorHome = process.env.ASKAI_CURSOR_HOME;
+  if (!o.codexHome && process.env.ASKAI_CODEX_HOME) o.codexHome = process.env.ASKAI_CODEX_HOME;
+  if (!o.agyHome && process.env.ASKAI_AGY_HOME) o.agyHome = process.env.ASKAI_AGY_HOME;
   if (o.noColor) process.env.NO_COLOR = '1';
   if (o.quiet) process.env.ASKAI_QUIET = '1';
   o._.unshift(cmd);
@@ -1494,7 +1482,7 @@ async function main() {
     case 'why': return cmdWhy(o);
     case 'next': { console.log(require('./lib/daily').next(buildCtx(o, true), projectDir(o))); return 0; }
     case 'handoff': { const r = require('./lib/daily').writeHandoff(projectDir(o), o); console.log(r.file); if (r.extra) console.log(r.extra); return 0; }
-    case 'route': { const ask = o._.slice(1).join(' '); if (!ask) { console.log('Usage: askai route "task"'); return 1; } const tier = require('./lib/models').guessTier(ask); console.log(`tier: ${tier}\nCheaper first: chore, then build, then lead. Escalate after two failed attempts.`); return 0; }
+    case 'route': { const ask = o._.slice(1).join(' '); if (!ask) { console.log('Usage: askai route "task"'); return 1; } const models = require('./lib/models'); const tier = models.guessTier(ask); const n = models.failureCount(projectDir(o)); const choice = models.afterFailures(tier, n); console.log(`tier: ${tier}\nmodel: ${choice.model}\nSonnet failures: ${n}. Opus only after two.`); return 0; }
     case 'weigh': { if (!o._[1]) { console.log('Usage: askai weigh <path>'); return 1; } const r = require('./lib/daily').weigh(o._[1], Number(o.threshold) || 8000); console.log(r.text); return r.ok ? 0 : 1; }
     case 'run': { const cmd = o._.slice(1).join(' '); if (!cmd) { console.log('Usage: askai run -- <command>'); return 1; } const r = require('./lib/daily').runCmd(projectDir(o), cmd, o); console.log(r.text); return r.code ? 1 : 0; }
     case 'errors': { console.log(require('./lib/daily').errors(o._[1] || require('path').join(projectDir(o), '.ai-work', 'last.log'))); return 0; }

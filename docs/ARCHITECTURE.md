@@ -386,6 +386,7 @@ askai install: Install and wire the token-saving setup for Claude Code, Codex, A
 Usage: askai install [--profile P] [--target T] [--dry-run] [--yes] [options]
 
 Detects each component, shows the plan, asks once, installs what is missing or partial, and records what it added in a manifest.
+Sandbox homes: ASKAI_CLAUDE_HOME, ASKAI_CURSOR_HOME, ASKAI_CODEX_HOME, ASKAI_AGY_HOME. Extra tools: askai install --add ID.
 Adds settings only when you have not set them; backs up every file before its first change; never prompts for a password. On a headless Linux machine, install, update and setup install tmux when the user is root or sudo -n works, so askai cli --launch can open a session. If astral.sh is blocked, uv is installed with python3 -m pip install --user uv.
 If the standalone token-setup script was run on this machine, AskAI first runs its --uninstall (component token-kit) and then applies the same settings itself, so the rules load once.
 Step-by-step instructions for each OS, the environment setup and every file it creates: docs/INSTALL.md.
@@ -407,12 +408,8 @@ Options:
   --caveman off|lite|full|ultra            terse-reply level (default full)
   --lsp ts,py,kotlin,ruby,swift            Claude Code's official code-intelligence plugins
   --lean-git                               also drop Claude's git instructions from every turn
-  --rtk / --context-mode                   opt in to tools the benchmarks did not support
   --base-tools                             also install ripgrep, jq and gh where missing
-  --headroom / --graphify / --context7 / --repomix Headroom (MCP mode), Graphify skill, Context7 docs server, Repomix CLI, in every tool in play
   --codebase-memory / --claude-mem         one flag each, not in max: another code-navigation server; a memory plugin that summarises sessions with your plan
-  --markitdown / --ccusage / --caveman-plugin add a document converter, the usage reporter, the Caveman plugin
-  --claude-home --codex-home --agy-home --cursor-home DIR sandbox folders for testing
   --force                                  re-run components already healthy
 
 Writes: settings.json, CLAUDE.md, rules, commands, skills, config.toml, AGENTS.md, GEMINI.md, Cursor rules, MCP configs; the manifest and backups under ~/.claude/askai/
@@ -474,14 +471,14 @@ Exit: 0
 #### `askai doctor`
 
 ```text
-askai doctor: Health and billing checks: broken JSON, API keys that bypass your plan, proxies, oversized instruction files, too many MCP servers.
+askai doctor: Alias of askai check. Same rows, same exit code.
 
 Usage: askai doctor
 
 Examples:
   askai doctor
 
-Exit: 0 healthy, 1 when a problem is found
+Exit: 1 when a finding is severity now, else 0
 ```
 
 #### `askai setup`
