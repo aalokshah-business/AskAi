@@ -60,7 +60,7 @@ const COMMAND_SOURCE = {
   install: 'askai.js cmdInstall; lib/components.js; lib/profiles.js; lib/agents.js',
   update: 'askai.js cmdUpgrade',
   tools: 'askai.js cmdUpdate; lib/components.js',
-  status: 'askai.js cmdStatus; lib/status.js',
+  status: 'askai.js cmdStatus; lib/status.js; lib/findings.js',
   doctor: 'askai.js cmdDoctor; lib/status.js; lib/findings.js',
   report: 'askai.js cmdReport; lib/usage.js',
   profiles: 'askai.js cmdProfiles; lib/profiles.js',

@@ -298,7 +298,7 @@ Where each command is implemented. Written from the `case` list in `askai.js` be
 | `askai install` | `askai.js cmdInstall; lib/components.js; lib/profiles.js; lib/agents.js` |
 | `askai update` | `askai.js cmdUpgrade` |
 | `askai tools` | `askai.js cmdUpdate; lib/components.js` |
-| `askai status` | `askai.js cmdStatus; lib/status.js` |
+| `askai status` | `askai.js cmdStatus; lib/status.js; lib/findings.js` |
 | `askai doctor` | `askai.js cmdDoctor; lib/status.js; lib/findings.js` |
 | `askai report` | `askai.js cmdReport; lib/usage.js` |
 | `askai profiles` | `askai.js cmdProfiles; lib/profiles.js` |

@@ -16,6 +16,7 @@ AskAI follows semantic versioning from 1.0.0 (see [RELEASING.md](RELEASING.md)).
 - `askai project refresh` creates only missing init files, then rewrites the project map and prints the review state. The summary is at most 8 lines.
 - `askai why <finding-id>` prints that finding's message and fix. An unknown id is one line.
 - `askai ask` reads every topic from `knowledge/*.yaml`. Printed answers are unchanged.
+- `askai status` reuses the component scan already stored for that context. A later status or doctor in the same run does not detect each tool again. The printed rows stay the same.
 - `askai update` updates AskAI itself. `askai tools update` upgrades installed tools. `askai upgrade` still works and says so at most once a day.
 - `askai project` with no arguments shows the current project. `askai project rules` copies Cursor rules. Init prints created and changed files only. A review stays current when the only change is a small number of deletions.
 - Check skips a host that is not installed. Status hides retired handoff, token-kit and prompt-hook rows and shows how much of the requested profile is actually in effect. Sign-in and model confirmations are habits, not open to-dos.
