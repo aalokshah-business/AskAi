@@ -364,6 +364,8 @@ ${claudeSettings()}
 
 ## 9. Files and data AskAI keeps
 
+Install and update refresh both the active runtime and an existing managed legacy ${code('~/.claude/askai/app')} runtime. Old PATH entries and shell aliases therefore use current code. A registry-only ${code('~/.askai')} directory does not override an existing legacy installation's state. Runtime synchronization leaves manifests, credentials and to-do completion records outside the app untouched.
+
 | Where | What |
 | --- | --- |
 | ${code('~/.askai/manifest.json')} | every key, file and registration AskAI added (drives uninstall) |

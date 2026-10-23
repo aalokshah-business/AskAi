@@ -273,8 +273,7 @@ const sha = t => crypto.createHash('sha1').update(t).digest('hex');
 const askaiCmd = ctx => `node "${path.join(ctx.paths.app, 'askai.js').replace(/\\/g, '/')}"`;
 
 // ---- self install: app copy, shim, slash commands, PATH ---------------------------------------------------------------
-function copyApp(ctx) {
-  const dest = ctx.paths.app;
+function copyApp(ctx, dest = ctx.paths.app) {
   if (path.resolve(SRC) === path.resolve(dest)) return 'running from the installed copy';
   if (ctx.dry) { ctx.log.plan(`copy askai to ${dest}`); return 'planned'; }
   fs.mkdirSync(dest, { recursive: true });
@@ -305,6 +304,17 @@ function copyApp(ctx) {
     for (const n of fs.readdirSync(path.join(SRC, 'docs'))) if (/\.(md|png)$/i.test(n)) fs.copyFileSync(path.join(SRC, 'docs', n), path.join(dest, 'docs', n));
   }
   return `copied to ${dest}`;
+}
+
+function syncLegacyApp(ctx) {
+  if (ctx.sandbox) return;
+  const legacy = path.join(ctx.paths.home, 'askai', 'app');
+  if (path.resolve(legacy) === path.resolve(ctx.paths.app)) return;
+  let pkg;
+  try { pkg = JSON.parse(fs.readFileSync(path.join(legacy, 'package.json'), 'utf8')); }
+  catch (_) { return; }
+  if (pkg.name !== 'askai' || !fs.existsSync(path.join(legacy, 'askai.js'))) return;
+  ctx.log.info(`legacy PATH compatibility: ${copyApp(ctx, legacy)}`);
 }
 
 function writeShim(ctx) {
@@ -456,6 +466,7 @@ async function cmdInstall(o) {
   console.log('\n[askai] app, shim, commands');
   try {
     console.log(`  app: ${copyApp(ctx)}`);
+    syncLegacyApp(ctx);
     writeShim(ctx);
     console.log(`  command entry points: ${installCommands(ctx, hosts)} written`);
     console.log(`  user PATH: ${pathStep(ctx, true)}`);
@@ -1638,4 +1649,4 @@ async function main() {
 if (require.main === module) {
   main().then(code => { process.exitCode = code || 0; }, e => { console.error(`askai: ${e.message}`); process.exitCode = 1; });
 }
-module.exports = { parseArgs, buildCtx, select, main, launchPlan, sessionTerminalPlan, cliInstallPlan, diagramOpenable, suggestCommand, VERSION };
+module.exports = { parseArgs, buildCtx, select, main, launchPlan, sessionTerminalPlan, cliInstallPlan, diagramOpenable, suggestCommand, syncLegacyApp, VERSION };

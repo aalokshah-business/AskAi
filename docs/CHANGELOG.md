@@ -4,6 +4,7 @@ AskAI follows semantic versioning from 1.0.0 (see [RELEASING.md](RELEASING.md)).
 
 ## Unreleased
 
+- Installs and upgrades also refresh an existing managed legacy `~/.claude/askai/app`, so an old PATH entry cannot run stale help or to-do checks. A registry-only `~/.askai` folder no longer switches installation state away from an existing legacy install. Configuration and completion records are preserved.
 - `help` lists seven categories with command counts. `help work` lists short command descriptions; `help check` shows full command instructions. `help category NAME` and `help command NAME` resolve shared names and category aliases explicitly.
 - Command help takes priority over category aliases: `askai help check` and `askai help cli` show their command instructions.
 

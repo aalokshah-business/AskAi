@@ -99,6 +99,8 @@ With **all four** installed, use `--target all` on Linux or `-Target all` on Win
 
 **Keeping it current.** `askai update` fetches the latest AskAI from GitHub and re-applies your profile; `askai tools update` upgrades installed tools. `askai upgrade --agents` opens Claude Code, Cursor and Codex in sequence for source-backed reviews; this spends model tokens and needs all three CLIs on PATH. Before running a script from the internet you can read it first: [get.sh](../get.sh), [get.ps1](../get.ps1), and [SECURITY.md](../SECURITY.md) for what the installer changes.
 
+If both `~/.askai/app` and an older managed `~/.claude/askai/app` exist, install and update refresh the legacy runtime too. An old PATH entry or shell alias then runs the same code. A `~/.askai` folder containing only the project registry does not replace an existing legacy installation's settings or completion records. Restart an already running AskAI CLI after updating so it reloads its code.
+
 The rest of this guide explains each step, every option and every file.
 
 ## 1. What you get
