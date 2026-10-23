@@ -1197,7 +1197,7 @@ Exit: 0
 #### `askai help`
 
 ```text
-askai help: Show the twelve daily commands, more commands, or full help.
+askai help: List categories, show commands with one-line descriptions, or show detailed command help.
 
 Usage: askai help [command]
 

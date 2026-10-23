@@ -1504,8 +1504,18 @@ async function main() {
   if (cmd === 'help' && o._[1] === 'all') { console.log(`askai ${VERSION}: every command in full\n\n` + help.names().map(n => help.render(n, { advanced: true })).join(`\n\n${'-'.repeat(72)}\n\n`)); return 0; }
   if (cmd === 'help' && o._[1] === 'more') { console.log(require('./lib/surface').more()); return 0; }
   if (cmd === 'help' && !o._[1]) { console.log(help.index(process.stdout.columns)); return 0; }
+  if (cmd === 'help' && o._[1] === 'category') {
+    const found = help.findCategory(o._[2]);
+    console.log(found ? help.groupText(found[0]) : `No help category for "${o._[2] || ''}".`);
+    return found ? 0 : 1;
+  }
+  if (cmd === 'help' && o._[1] === 'command') {
+    const text = help.render(o._[2], { advanced: true });
+    console.log(text || `No help for "${o._[2] || ''}".`);
+    return text ? 0 : 1;
+  }
   if (cmd === 'help' && !o.advanced && help.groupText(o._[1])) { console.log(help.groupText(o._[1])); return 0; }
-  if (cmd === 'help' && o._[1]) { const t = help.render(o._[1], { advanced: !!o.advanced }); console.log(t || `No help for "${o._[1]}". Commands: ${help.names().slice().sort().join(', ')}`); return t ? 0 : 1; }
+  if (cmd === 'help' && o._[1]) { const t = help.render(o._[1], { advanced: true }); console.log(t || `No help for "${o._[1]}". Commands: ${help.names().slice().sort().join(', ')}`); return t ? 0 : 1; }
   if (o.help && cmd && help.has(cmd)) { console.log(help.render(cmd, { advanced: !!o.advanced })); return 0; }
   if (!cmd) { console.log(require('./lib/daily').next(buildCtx(o, true), projectDir(o))); return 0; }
   switch (cmd) {
@@ -1618,7 +1628,8 @@ async function main() {
         return main();
       }
       const guess = suggestCommand(cmd);
-      console.error(guess ? `Unknown command "${cmd}". Did you mean: ${guess}?` : `Unknown command "${cmd}".`);
+      const hint = 'Type "askai help" (or "help") to see available commands.';
+      console.error(guess ? `Unknown command "${cmd}". Did you mean: ${guess}?\n${hint}` : `Unknown command "${cmd}".\n${hint}`);
       return 2;
     }
   }

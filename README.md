@@ -106,7 +106,7 @@ Troubleshooting: a `#!/bin/bash` script with a trailing CR fails in Linux (`*.sh
 
 AskAI is MIT-licensed. Only the maintainer pushes to this repository; changes from others arrive as pull requests from forks and are reviewed before they are merged ([CONTRIBUTING.md](CONTRIBUTING.md)).
 
-In the terminal: `askai help all` (every command), `askai plugins info <id>` (how to use each plugin), `askai docs <name> --print` (any document above).
+In the terminal: `askai help` lists seven categories, `askai help work` lists short command descriptions, and `askai help check` gives detailed command instructions. For shared names, use `askai help category setup` or `askai help command setup`. `askai help all` shows every command in detail. Use `askai plugins info <id>` for a plugin and `askai docs <name> --print` for a document above.
 
 ## What AskAI includes
 
