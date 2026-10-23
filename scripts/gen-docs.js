@@ -89,7 +89,7 @@ const COMMAND_SOURCE = {
   convert: 'askai.js cmdConvert',
   clear: 'lib/guide.js',
   context: 'lib/guide.js',
-  todo: 'lib/todo.js',
+  todo: 'lib/todo.js; lib/findings.js',
   diff: 'askai.js cmdDiff',
   graph: 'askai.js cmdGraph',
   hook: 'lib/hook.js',

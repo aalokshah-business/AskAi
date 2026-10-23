@@ -327,7 +327,7 @@ Where each command is implemented. Written from the `case` list in `askai.js` be
 | `askai convert` | `askai.js cmdConvert` |
 | `askai clear` | `lib/guide.js` |
 | `askai context` | `lib/guide.js` |
-| `askai todo` | `lib/todo.js` |
+| `askai todo` | `lib/todo.js; lib/findings.js` |
 | `askai diff` | `askai.js cmdDiff` |
 | `askai graph` | `askai.js cmdGraph` |
 | `askai hook` | `lib/hook.js` |
