@@ -1,0 +1,16 @@
+id: compact
+title: Compacting is not free
+tags:
+  - compact
+  - summarize
+  - compress
+  - 60%
+  - context full
+rule: Compact only a chat you must keep, at a natural boundary, with instructions; prefer a handoff plus a fresh chat.
+why: /compact reads the whole conversation to write its summary: a large request itself (Anthropic cost guide).
+how:
+  claude: /compact keep: goal, files, failing test
+  codex: /compact
+  agy: fresh chat + handoff
+  cursor: /summarize
+auto: askai break, then a fresh chat

@@ -334,7 +334,7 @@ Where each command is implemented. Written from the `case` list in `askai.js` be
 | `askai why` | `askai.js cmdWhy; lib/findings.js` |
 | `askai check` | `askai.js cmdCheck; lib/check.js; lib/findings.js` |
 | `askai setup` | `askai.js cmdSetup; lib/setup.js` |
-| `askai ask` | `askai.js cmdAsk; lib/kb.js` |
+| `askai ask` | `askai.js cmdAsk; lib/kb.js; lib/knowledge.js` |
 | `askai usage` | `askai.js cmdUsage; lib/usage.js; lib/savings.js` |
 | `askai start` | `lib/session.js` |
 | `askai break` | `lib/session.js` |

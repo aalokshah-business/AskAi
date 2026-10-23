@@ -336,6 +336,10 @@ function copyApp(ctx) {
     if (fs.existsSync(path.join(SRC, f))) fs.copyFileSync(path.join(SRC, f), path.join(dest, f));
   }
   // Templates for `askai scaffold` and `askai session` (missing in a stripped checkout: those commands then say so).
+  if (fs.existsSync(path.join(SRC, 'knowledge'))) {
+    fs.rmSync(path.join(dest, 'knowledge'), { recursive: true, force: true });
+    fs.cpSync(path.join(SRC, 'knowledge'), path.join(dest, 'knowledge'), { recursive: true });
+  }
   if (fs.existsSync(path.join(SRC, 'templates'))) {
     fs.rmSync(path.join(dest, 'templates'), { recursive: true, force: true });
     fs.cpSync(path.join(SRC, 'templates'), path.join(dest, 'templates'), { recursive: true });
