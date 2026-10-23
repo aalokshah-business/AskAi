@@ -138,9 +138,9 @@ The installed `askai-cli` entry point in each host runs `askai cli --prepare`. P
 
 | Tier | Agent | Use for | Claude Code | Codex | Cursor (Grok / Sonnet) | Antigravity |
 | --- | --- | --- | --- | --- | --- | --- |
-| lead | `architect` | Architecture and design, ambiguous debugging, security, cross-module integration | sonnet, max | gpt-6.1-sol, high | grok-4.7, xhigh / claude-sonnet-5, max | flash, high (model: flash in the file; /effort per session) |
+| lead | `architect` | Architecture and design, ambiguous debugging, security, cross-module integration | sonnet, high | gpt-6.1-sol, high | grok-4.7, xhigh / claude-sonnet-5, max | flash, high (model: flash in the file; /effort per session) |
 | build | `builder` | Features, enhancements and bug fixes within the existing design | sonnet, high | gpt-6.1-sol, medium | grok-4.7, high / claude-sonnet-5, high | flash, high (model: flash in the file; /effort per session) |
-| chore | `runner` | Cleanup, running scripts and tests, git, search, small docs edits | haiku, high | gpt-6-luna, high | grok-4.7, medium / claude-sonnet-5, medium | flash, high (model: flash in the file; /effort per session) |
+| chore | `runner` | Cleanup, running scripts and tests, git, search, small docs edits | haiku, medium | gpt-6-luna, medium | grok-4.7, medium / claude-sonnet-5, medium | flash, high (model: flash in the file; /effort per session) |
 
 Change one with `askai models set <tool>.<tier> <model>[:<effort>]`; `askai init --refresh` rewrites the agent files. Antigravity agent files accept only a tier (`flash`, `pro`, `flash_lite`, `inherit`); any other value makes Antigravity skip the file silently.
 
@@ -340,6 +340,7 @@ Where each command is implemented. Written from the `case` list in `askai.js` be
 | `askai errors` | `lib/daily.js` |
 | `askai snapshot` | `lib/daily.js` |
 | `askai stop` | `lib/daily.js` |
+| `askai bootstrap` | `lib/daily.js` |
 | `askai check` | `askai.js cmdCheck; lib/check.js; lib/findings.js` |
 | `askai test` | `askai.js cmdTest; lib/selftest.js` |
 | `askai setup` | `askai.js cmdSetup; lib/setup.js` |
@@ -638,6 +639,19 @@ Usage: askai stop [--yes]
 
 Examples:
   askai stop
+
+Exit: 0
+```
+
+#### `askai bootstrap`
+
+```text
+askai bootstrap: Write .devcontainer/askai-postcreate.sh so a rebuild runs askai install and project refresh.
+
+Usage: askai bootstrap [dir] [--profile P]
+
+Examples:
+  askai bootstrap
 
 Exit: 0
 ```
@@ -1009,8 +1023,8 @@ askai models: Model and effort per task tier (lead, build, chore) for each tool;
 
 Usage: askai models [set <tool>.<tier> <model>[:<effort>] | verify [tool]]
 
-Defaults: Claude Code sonnet/max, sonnet/high, haiku/high; Codex gpt-6.1-sol/high, gpt-6.1-sol/medium, gpt-6-luna/high (there is no gpt-6.1-luna); Cursor grok-4.7 xhigh/high/medium (Sonnet tiers with cursor.useSonnet true); Antigravity flash, effort high.
-Antigravity agent files accept only a tier (flash, pro, flash_lite, inherit). verify lists the IDs your Cursor and Antigravity accounts offer.
+Defaults: Claude Code sonnet/high, sonnet/high, haiku/medium; Codex gpt-6.1-sol/high, gpt-6.1-sol/medium, gpt-6-luna/medium (there is no gpt-6.1-luna); Cursor grok-4.7 xhigh/high/medium (Sonnet tiers with cursor.useSonnet true); Antigravity flash, effort high.
+Antigravity agent files accept only a tier (flash, pro, flash_lite, inherit). verify lists the IDs your Cursor and Antigravity accounts offer. Lead effort max is opt-in: askai go --effort is not a flag; set the tier with askai models set.
 
 Examples:
   askai models
@@ -1026,14 +1040,16 @@ Exit: 0
 ```text
 askai go: Start a session with the tier's model and effort fixed for the whole session, a structured first prompt, and a ledger entry.
 
-Usage: askai go <claude|codex|cursor|agy> [--tier lead|build|chore] ["task"] [--files a,b] [--done "..."] [--resume] [--dry-run]
+Usage: askai go <claude|codex|cursor|agy|task> [--tier lead|build|chore] ["task"] [--files a,b] [--done "..."] [--resume] [--dry-run]
 
+A task with no host name uses Claude Code and a tier chosen from the words. Cheaper first: chore, then build, then lead.
 Claude Code: --model and CLAUDE_CODE_EFFORT_LEVEL; Codex: -m and model_reasoning_effort; Cursor: --model (effort is part of the ID); Antigravity: prints /model and /effort to type first.
 Shows peak hours and active MCP servers first: switch MCP servers before a session, not during it.
-A container, CI job, or piped command has no keyboard. askai go then prints the command and returns, instead of waiting on the agent. Run it in the Cursor terminal.
+When the agent exits, AskAI writes a snapshot and a handoff draft. A container, CI job, or piped command has no keyboard. askai go then prints the command and returns, instead of waiting on the agent. Run it in the Cursor terminal.
 
 Examples:
   askai go claude --tier build "fix the cart total rounding in src/cart.ts"
+  askai go "rename the helper"
   askai go codex --tier chore "clean up unused imports"
   askai go agy --resume
 
@@ -1164,10 +1180,13 @@ Exit: 0
 ```text
 askai convert: Convert a PDF, Office file, web page or YouTube URL to Markdown with Microsoft MarkItDown, locally; never overwrites.
 
-Usage: askai convert <file|url> [--out file.md]
+Usage: askai convert <file|url> [--out file.md] | askai convert scan [dir]
+
+scan lists PDF and Office files and an offline token estimate. It does not call MarkItDown.
 
 Examples:
   askai convert spec.pdf
+  askai convert scan
   askai convert https://www.youtube.com/watch?v=ID
 
 Exit: 0, or 1 when MarkItDown is missing

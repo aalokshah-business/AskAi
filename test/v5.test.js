@@ -24,7 +24,7 @@ const ctxFor = h => makeCtx(h, { codexHome: path.join(h, 'codex'), agyHome: path
 
 test('models: the user tiers by default, overridable, Antigravity limited to tiers, tier guessing ignores file names', () => withHome(h => {
   const ctx = ctxFor(h); const p = models.load(ctx);
-  assert.deepStrictEqual(models.pick(p, 'claude', 'lead'), { tier: 'lead', agent: 'architect', model: 'sonnet', effort: 'max' });
+  assert.deepStrictEqual(models.pick(p, 'claude', 'lead'), { tier: 'lead', agent: 'architect', model: 'sonnet', effort: 'high' });
   assert.strictEqual(models.pick(p, 'codex', 'chore').model, 'gpt-6-luna');
   assert.match(models.set(ctx, 'codex.lead', 'gpt-6.1-luna:high').warning, /not a known Codex model ID/);
   assert.strictEqual(models.set(ctx, 'codex.lead', 'gpt-6.1-sol:high').warning, undefined);
@@ -54,7 +54,7 @@ test('go starts the selected agent in the selected project folder', () => withHo
   const inTty = process.stdin.isTTY, outTty = process.stdout.isTTY;
   let launched;
   process.stdin.isTTY = true; process.stdout.isTTY = true;
-  childProcess.spawnSync = (cmd, args, options) => { launched = { cmd, options }; return { status: 0 }; };
+  childProcess.spawnSync = (cmd, args, options) => { if (cmd !== 'git') launched = { cmd, options }; return { status: 0 }; };
   session.run = () => 0;
   try { assert.strictEqual(launch.run(ctx, 'codex', { repo, copy: false }, quiet), 0); }
   finally { process.stdin.isTTY = inTty; process.stdout.isTTY = outTty; childProcess.spawnSync = oldSpawn; session.run = oldSession; }
@@ -90,7 +90,7 @@ test('init: router under 333 lines, adapters, docs/ai, subagents in each tool fo
   assert.ok(read(f('CLAUDE.md')).startsWith('@AGENTS.md'));
   assert.match(read(f('GEMINI.md')), /AGENTS\.md/);
   for (const d of ['PROJECT_MAP', 'ARCHITECTURE', 'FEATURES', 'WORK_ORDER', 'MODELS']) assert.ok(fs.existsSync(f(`docs/ai/${d}.md`)), d);
-  assert.match(read(f('.claude/agents/architect.md')), /model: sonnet\neffort: max/);
+    assert.match(read(f('.claude/agents/architect.md')), /model: sonnet\neffort: high/);
   const toml = read(f('.codex/agents/runner.toml'));
   for (const k of ['name = "runner"', 'description =', 'developer_instructions = """', 'model = "gpt-6-luna"']) assert.ok(toml.includes(k), k);
   assert.match(read(f('.cursor/agents/builder.md')), /model: grok-4\.7/);
@@ -178,9 +178,9 @@ test('guide, clear gate and context advice', () => withHome(h => {
 test('go: the tier model and effort per tool, fixed for the session', () => withHome(h => {
   const ctx = ctxFor(h);
   const c = launch.plan(ctx, 'claude', { tier: 'lead', ask: 'design the sync engine' });
-  assert.deepStrictEqual(c.args.slice(0, 2), ['--model', 'sonnet']); assert.strictEqual(c.env.CLAUDE_CODE_EFFORT_LEVEL, 'max');
+  assert.deepStrictEqual(c.args.slice(0, 2), ['--model', 'sonnet']); assert.strictEqual(c.env.CLAUDE_CODE_EFFORT_LEVEL, 'high');
   const x = launch.plan(ctx, 'codex', { ask: 'clean up unused imports' });
-  assert.strictEqual(x.tier, 'chore'); assert.deepStrictEqual(x.args.slice(0, 4), ['-m', 'gpt-6-luna', '-c', 'model_reasoning_effort="high"']);
+  assert.strictEqual(x.tier, 'chore'); assert.deepStrictEqual(x.args.slice(0, 4), ['-m', 'gpt-6-luna', '-c', 'model_reasoning_effort="medium"']);
   assert.deepStrictEqual(launch.plan(ctx, 'cursor', {}).args, ['--model', 'grok-4.7']);
   const g = launch.plan(ctx, 'antigravity', { ask: 'fix the parser' }); assert.strictEqual(g.cmd, 'agy'); assert.ok(g.notes.some(n => /\/effort high/.test(n)));
   assert.throws(() => launch.plan(ctx, 'vim', {}), /which tool/);

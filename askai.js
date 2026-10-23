@@ -476,6 +476,10 @@ async function cmdInstall(o) {
   console.log(`askai install${o.dry ? ' (dry-run: nothing is written or installed)' : ''}${o.seedOnly ? ' (seed-only: settings for a host that may not be installed yet)' : ''}   for ${hostLine(ctx, hosts)}`);
   console.log(list(o.only).length ? `components chosen with --only; the ${prof.name} profile is not applied\n` : `profile: ${prof.name}: ${prof.summary}\n`);
   if (!rows.length) { console.log('Nothing selected.'); return 0; }
+  const installing = rows.filter(r => !r.skip);
+  const skipping = rows.filter(r => r.skip);
+  const skipWhy = r => r.c.id === 'context-mode' && !comps.nodeOk(ctx.nodeVersion) ? 'Node < 22.5' : r.d.detail;
+  console.log(`will install ${installing.length} · will skip ${skipping.length}${skipping.length ? ` (${skipping.slice(0, 6).map(r => `${r.c.id}: ${skipWhy(r)}`).join('; ')})` : ''}`);
   const w = Math.max(...rows.map(r => r.c.id.length));
   for (const r of rows) {
     console.log(`  ${pad(r.c.id, w)}  ${pad(r.d.state, 7)}  ${r.skip ? `skip: ${r.d.detail}` : `will install/wire: ${planText(ctx, r.c.plan)}`}`);
@@ -1090,7 +1094,9 @@ function cmdDocs(o) {
   console.log(o.print ? fs.readFileSync(f, 'utf8') : f); return 0;
 }
 function cmdConvert(o) {
-  const ctx = buildCtx(o, true); const src = o._[1];
+  const ctx = buildCtx(o, true);
+  if (o._[1] === 'scan') { console.log(require('./lib/daily').scanOffice(projectDir(o))); return 0; }
+  const src = o._[1];
   if (!src) { console.log('askai convert <file|url> [--out file.md]: PDF, Word, PowerPoint, Excel, HTML, YouTube URL -> Markdown (Microsoft MarkItDown, local)'); return 1; }
   if (!ctx.which('markitdown')) { console.log('MarkItDown is not installed: askai install --only markitdown (or --profile docs). Videos other than YouTube need a transcriber first (graphifyy[video] or Whisper).'); return 1; }
   const isUrl = /^https?:\/\//.test(src);
@@ -1512,7 +1518,16 @@ async function main() {
     case 'restore': return cmdRestore(o);
     case 'statusline': return cmdStatusline(o);
     case 'session': return cmdSession(o);
-    case 'init': { const dir = projectDir(o, o.path || o._[1]); const name = registrationName(o, dir); const ctx = buildCtx(o, true); const oo = await project.ask(dir, o); const references = await project.research(dir, { offline: o.offline, dry: o.dry }); project.init(dir, { ...oo, dry: o.dry, references }, ctx); registerProject({ ...o, name }, dir); return 0; }
+    case 'init': {
+      const dir = projectDir(o, o.path || o._[1]); const name = registrationName(o, dir); const ctx = buildCtx(o, true); const oo = await project.ask(dir, o); const references = await project.research(dir, { offline: o.offline, dry: o.dry });
+      project.init(dir, { ...oo, dry: o.dry, references }, ctx);
+      if (!o.dry) {
+        let chosen = o.profile;
+        if (!chosen) { try { chosen = suggestLib.suggest(dir).profile; } catch (_) { chosen = null; } }
+        status.rememberProjectProfile(dir, chosen);
+      }
+      registerProject({ ...o, name }, dir); return 0;
+    }
     case 'review': { const action = o._[1] || 'status'; if (!['status', 'done'].includes(action)) throw new Error('askai review accepts status or done'); const dir = projectDir(o, o.path || o._[2]); const result = action === 'done' ? projectReview.done(dir) : projectReview.status(dir, { all: !!o.all }); console.log(o.json ? JSON.stringify(result, null, 2) : `AI review ${result.state}: ${result.scanned}/${result.eligible} source files scanned${result.skipped ? `, ${result.skipped} skipped` : ''}${action === 'status' ? `; ${result.changedCount} changed, ${result.removedCount} removed${result.pathsTruncated ? '; path list capped at 40 (use --all --json)' : ''}` : ''}`); return 0; }
     case 'map': project.map(projectDir(o, o._[1]), { dry: o.dry }); return 0;
     case 'models': return cmdModels(o);
@@ -1567,6 +1582,7 @@ async function main() {
     case 'errors': { console.log(require('./lib/daily').errors(o._[1] || require('path').join(projectDir(o), '.ai-work', 'last.log'))); return 0; }
     case 'snapshot': { console.log(require('./lib/daily').snapshot(projectDir(o), o)); return 0; }
     case 'stop': { const r = require('./lib/daily').stop(o); console.log(r.text); return r.code; }
+    case 'bootstrap': { console.log(require('./lib/daily').bootstrap(projectDir(o), o.profile)); return 0; }
     case 'check': return cmdCheck(o);
     case 'test': return cmdTest(o);
     case 'setup': return cmdSetup(o);

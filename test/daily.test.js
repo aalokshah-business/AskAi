@@ -84,6 +84,47 @@ test('prompt --kind commit names the log style', () => {
   assert.match(r.out, /git log subject style/);
 });
 
+test('status names a recorded project profile', () => {
+  const home = tmpHome();
+  const dir = path.join(home, 'app');
+  fs.mkdirSync(dir);
+  try {
+    const status = require('../lib/status');
+    const ctx = makeCtx(home);
+    assert.match(status.renderStatus(ctx, dir).lines[1], /project unset/);
+    status.rememberProjectProfile(dir, 'docs');
+    assert.match(status.renderStatus(ctx, dir).lines[1], /project docs/);
+  } finally { rm(home); }
+});
+
+test('bootstrap writes the devcontainer script once', () => {
+  const home = tmpHome();
+  try {
+    const file = path.join(home, '.devcontainer', 'askai-postcreate.sh');
+    assert.match(daily.bootstrap(home, 'coding'), /wrote/);
+    assert.match(fs.readFileSync(file, 'utf8'), /askai install --yes --profile coding/);
+    assert.match(daily.bootstrap(home, 'coding'), /already/);
+  } finally { rm(home); }
+});
+
+test('convert scan lists an office file', () => {
+  const home = tmpHome();
+  write(path.join(home, 'spec.docx'), 'not a real document');
+  try {
+    assert.match(daily.scanOffice(home), /spec\.docx/);
+    assert.match(daily.scanOffice(home), /estimate:/);
+  } finally { rm(home); }
+});
+
+test('go without a host uses Claude Code and the chore tier for a rename', () => {
+  const home = tmpHome();
+  try {
+    const pl = require('../lib/launch').plan(makeCtx(home), 'rename the helper', {});
+    assert.strictEqual(pl.tool, 'claude');
+    assert.strictEqual(pl.tier, 'chore');
+  } finally { rm(home); }
+});
+
 test('askai next and askai weigh run from the CLI', () => {
   const home = tmpHome();
   const file = path.join(home, 'note.txt');

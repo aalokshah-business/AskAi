@@ -103,6 +103,7 @@ const COMMAND_SOURCE = {
   errors: 'lib/daily.js',
   snapshot: 'lib/daily.js',
   stop: 'lib/daily.js',
+  bootstrap: 'lib/daily.js',
   test: 'askai.js cmdTest; lib/selftest.js',
   setup: 'askai.js cmdSetup; lib/setup.js',
   ask: 'askai.js cmdAsk; lib/kb.js; lib/knowledge.js',

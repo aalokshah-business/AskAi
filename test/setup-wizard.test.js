@@ -19,9 +19,10 @@ test('setup is a short wizard and does not reprint the other commands', () => {
     const result = setup.report(ctx, repo, { files: () => ({ code: 1, lines: ['FAIL  askai  AskAI is not installed on this machine'] }) });
     assert.ok(!/## Status|## Infra|## Plugins|## To do/.test(result.text));
     assert.match(result.text, /1 Detect\s+Cursor ok · Claude Code ok · Codex ok · Antigravity ok/);
-    assert.match(result.text, /2 Check\s+ok \d+ ok · FIX \d+ now · warn \d+ later/);
+    assert.match(result.text, /2 Preflight/);
+    assert.match(result.text, /3 Check\s+ok \d+ ok · FIX \d+ now · warn \d+ later/);
     assert.match(result.text, /FIX billing\.g1-credits/);
-    assert.match(result.text, /3 Files\s+FIX/);
+    assert.match(result.text, /4 Files\s+FIX/);
     assert.match(result.text, /AskAI is not installed/);
     assert.match(result.text, /Next: askai check/);
     assert.ok(result.text.split(/\n/).length <= 40);
@@ -45,7 +46,7 @@ test('setup with nothing to fix now points at the to-do list', () => {
     fs.mkdirSync(repo);
     const result = setup.report(ctx, repo, { files: () => ({ code: 0, lines: [] }) });
     assert.match(result.text, /Claude Code n-a · Codex n-a · Antigravity n-a/);
-    assert.match(result.text, /3 Files\s+ok/);
+    assert.match(result.text, /4 Files\s+ok/);
     assert.match(result.text, /Next: askai todo/);
     assert.strictEqual(result.code, 0);
   } finally {
