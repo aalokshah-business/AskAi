@@ -103,7 +103,7 @@ The rest of this guide explains each step, every option and every file.
 
 ## 1. What you get
 
-- The `askai` command in every new terminal (`askai check`, `askai ask`, `askai break`, `askai resume`, `askai usage` and the rest; `askai help <command>`).
+- The `askai` command in every new terminal (`askai check`, `askai ask`, `askai break`, `askai resume`, `askai savings` and the rest; `askai help <command>`).
 - Token-saving settings and short rules in each tool you use: Claude Code, Codex, Antigravity and Cursor.
 - Two entry points inside each tool: `/askai-cli` sets up the project and opens the terminal (Codex: `$askai-cli`). `/askai-plugins` finishes one-time plugin setup and says when each connected tool is called. Write a session handoff by asking your agent to update `.ai-work/HANDOFF.md`.
 - For each repository you choose: shared instruction files, an ignore list for Cursor, and a local `.ai-work/` folder for handoffs and measurements.
@@ -288,12 +288,12 @@ Use `/askai-cli` in Claude Code, Cursor or Antigravity (`$askai-cli` in Codex) f
 | Every command in full | `askai help all`; one command: `askai help <command>` |
 | Use the connected plugins | `/askai-plugins` (Codex: `$askai-plugins`). Terminal: `askai plugins ready` |
 | How to use one plugin | `askai plugins info <id>`: commands in a terminal and inside the agent, how to check it, its savings, how to switch it off |
-| What each plugin saved | `askai usage --plugins` |
+| What each plugin saved | `askai savings` |
 | Check etiquette | `askai guide work`, `askai guide all`, `askai guide <moment>`, `askai ask <words>` |
 | Review before handing off | `askai diff`; architecture at a glance: `askai graph` |
 | Before /clear or a break | `askai break`, then `askai handoff "next step"`, then `askai clear` when it says safe |
 | Coming back | `askai resume --copy` |
-| See waste | `askai audit`; usage: `askai usage 7` |
+| See waste | `askai audit`; spend: `askai savings 7` |
 | Switch MCP servers | `askai mcp off <name>` before the next session |
 
 ## 9. Optional extras

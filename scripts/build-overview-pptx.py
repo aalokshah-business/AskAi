@@ -77,7 +77,7 @@ SLIDES = [
             ("Shorter context", "The pack and the handoff replace a long chat. Clear between tasks. Compact stays a tip, not an automatic cut."),
             ("Less wasted reading", "Search, then read a range. Serena for symbols. Ignore rules for trees that are not the product."),
             ("Fewer idle spends", "Lean settings in every profile. askai break lists work that is still running."),
-            ("A number you can check", "askai usage and askai setup. A plugin’s own “tokens saved” counter is not the bill."),
+            ("A number you can check", "askai savings and askai setup. A plugin’s own “tokens saved” counter is not the bill."),
         ],
     },
     {

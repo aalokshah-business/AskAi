@@ -21,7 +21,7 @@ test('askai test writes one capture and a short status', () => {
       doctor: { code: 1, stdout: 'FAIL  settings   broken json\n\n0 ok, 0 warning(s), 1 failure(s)\n' },
       check: { code: 0, stdout: '\n2 ok, 3 to improve, 0 failing.\n' },
       context: { code: 1, stdout: 'Give the level: askai context 62\n' },
-      usage: { timedOut: true, stdout: '' },
+      savings: { timedOut: true, stdout: '' },
     };
     const result = selftest.run({
       cwd: dir,
@@ -40,7 +40,7 @@ test('askai test writes one capture and a short status', () => {
     assert.match(text, /mode: sandbox/);
     assert.match(text, /safe\.directory/);
     assert.match(result.summary, /did not finish/);
-    assert.match(result.summary, /usage 7\s+timed out/);
+    assert.match(result.summary, /savings 7\s+timed out/);
     assert.match(result.summary, /need a look/);
     assert.match(result.summary, /3 to improve/);
     assert.match(result.summary, /1 failure/);

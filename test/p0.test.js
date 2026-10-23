@@ -77,6 +77,7 @@ test('ledger events are whole records and a template handoff is one line', () =>
 test('ask with no topic lists groups, and a topic prints one answer', () => {
   const none = cli(['ask']);
   assert.strictEqual(none.code, 0);
+  assert.match(none.out, /^topic listing\n/);
   assert.match(none.out, /Usage: askai ask/);
   assert.match(none.out, /Session:/);
   assert.doesNotMatch(none.out, /No rule matches/);
@@ -88,7 +89,7 @@ test('ask with no topic lists groups, and a topic prints one answer', () => {
 
 test('the short banner names the twelve home commands and no flags', () => {
   const out = cli(['help']).out;
-  for (const name of ['next', 'go', 'prompt', 'run', 'check', 'break', 'resume', 'handoff', 'usage', 'project', 'install', 'help']) assert.match(out, new RegExp('^  ' + name + ' ', 'm'));
+  for (const name of ['next', 'go', 'prompt', 'run', 'check', 'break', 'resume', 'handoff', 'savings', 'project', 'install', 'help']) assert.match(out, new RegExp('^  ' + name + ' ', 'm'));
   assert.doesNotMatch(out, /--[a-z]/);
   assert.strictEqual(cli([]).code, 0);
 });

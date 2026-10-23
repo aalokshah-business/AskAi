@@ -36,7 +36,7 @@ flowchart LR
 | Each task | `askai next`, `askai prompt`, `askai go <tool> "task"`, `askai run -- <command>`, `askai errors`, then `askai diff` |
 | Taking a break | `askai break`, complete the draft with `askai handoff "next step"`, then `askai clear` when it says safe |
 | Coming back | `askai resume --copy` then `askai next` |
-| Weekly | `askai usage --week`, `askai check`, `askai mcp`, then `askai plugins` |
+| Weekly | `askai savings --week`, `askai check`, `askai mcp`, then `askai plugins` |
 
 ## I want to… run…
 
@@ -50,7 +50,7 @@ flowchart LR
 | Leave the session | `askai break` |
 | Finish the note | `askai handoff "next step"` |
 | Come back | `askai resume --copy` |
-| See spend | `askai usage` |
+| See spend | `askai savings` |
 | See whether a tool is worth it | `askai plugins` |
 | Turn MCP servers off | `askai mcp off <name>` |
 | Fix what AskAI can fix | `askai check --fix` |
@@ -67,7 +67,7 @@ flowchart LR
 | `askai break` | you are stepping away | `askai break` |
 | `askai resume` | you are back from a break | `askai resume` |
 | `askai handoff` | finish the note for the next session | `askai handoff ["next step"]` |
-| `askai usage` | cost feels high | `askai usage` |
+| `askai savings` | cost feels high | `askai savings` |
 | `askai project` | this folder needs its pack | `askai project <sub>` |
 | `askai install` | set up or finish this machine | `askai install` |
 | `askai help` | you need the exact command | `askai help [command]` |
@@ -106,7 +106,7 @@ The commands below are also implemented. This table plus the twelve and the addi
 | `askai bootstrap` | Show a personal devcontainer setup; --repo writes a post-create script into this project. | `askai bootstrap [dir] [--profile P] [--repo]` |
 | `askai ask` | Offline answers on etiquette and the research: the rule, why, the command in each tool, and what AskAI automates. | `askai ask <words>` |
 | `askai start` | Start a task: ledger entry with tool, task, branch and last commit. | `askai start --tool T --task "..." [--repo DIR]` |
-| `askai report` | Alias of askai usage --full plus one line from askai check --brief. | `askai report [days]` |
+| `askai report` | Full spend report plus one line from askai check --brief. | `askai report [days]` |
 | `askai session` | The per-repo ledger in .ai-work/: entries, handoff, measurements, report. askai start, askai break and askai resume are the daily names for those three actions. | `askai session init\|pause\|status\|finish\|measure\|report [--repo DIR] [...]` |
 | `askai scaffold` | Write the files every agent reads: AGENTS.md, CLAUDE.md, docs/ai/PROJECT_PROFILE.md, .cursorignore, .ai-work/. Never overwrites. | `askai scaffold [dir] [--dry-run]` |
 | `askai suggest` | Recommend a profile from the files in a folder. | `askai suggest [dir]` |
@@ -129,7 +129,6 @@ The commands below are also implemented. This table plus the twelve and the addi
 | `askai docs` | Find AskAI documents or check generated command documentation for drift. | `askai docs [install\|architecture\|projects\|guide\|cheatsheet\|changelog\|preview\|check] [--print]` |
 | `askai context` | What to do at this context level: continue, hand off, clear. 60% is a warning, not an order to compact. | `askai context <percent> \| --used N --window M` |
 | `askai upgrade` | Older spelling of askai update: fetch AskAI and re-apply the recorded profile. | `askai upgrade [--dry-run] [--agents] [install options]` |
-| `askai savings` | Alias of askai usage --plugins. | `askai savings` |
 | `askai todo` | Remaining setup and project-review steps: sign-ins, restarts, app settings, model IDs, one-time plugin steps, and repository facts that need confirmation. Checkable items clear themselves. | `askai todo [dir] [--all] \| askai todo done <id> \| askai todo undo <id>` |
 | `askai graph` | Print the Mermaid architecture diagram from docs/ai/ARCHITECTURE.md and open it in the browser when the terminal is interactive. | `askai graph [dir]` |
 | `askai chat` | Where to paste a short standing instruction in Claude chat, ChatGPT, and Gemini, and how the four coding apps are set up instead. | `askai chat [claude\|chatgpt\|gemini\|code] [--copy]` |
@@ -147,7 +146,7 @@ Legacy spellings `continue`, `etiquette`, `checkpoint`, `work`, `peak`, and `pro
 | Over 60% context | `askai handoff "next step"` then `askai clear` |
 | Stepping away | `askai break` |
 | Back | `askai resume` |
-| Looking at cost | `askai usage` |
+| Looking at cost | `askai savings` |
 | Something feels off | `askai check` |
 
 ## Inside each coding app

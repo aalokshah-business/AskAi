@@ -10,7 +10,7 @@ Of the 50-odd tools found, only a handful have an independent measurement showin
 | Built in | `/usage`, `/context`, `/doctor`, plan mode, `/clear`, effort, skills, MCP tool deferral | — | Official guidance; `/doctor` flags large CLAUDE.md files, agent descriptions over 15K tokens and MCP tools over 25K | Use daily; `/doctor` weekly |
 | Built in | Claude Code advisor (`/advisor opus`) | Opus judgment at Sonnet cost | About a third cheaper than Opus throughout (independent analyses) | Use instead of switching to Opus |
 | Measurement | [ccusage](https://github.com/ryoppippi/ccusage); Claude-Code-Usage-Monitor; Cursor dashboard | Usage views | Reports only | ccusage in the `full` profile |
-| Status lines and monitors | ccstatusline, CCometixLine, claude-powerline, claude-hud; Token Monitor (26+ tools incl. Codex, Cursor, Antigravity); a Claude/Codex quota bar for VS Code and Cursor; Antigravity Cockpit | Show context, quota and spend | Reports only | AskAI's own status line; `askai usage` |
+| Status lines and monitors | ccstatusline, CCometixLine, claude-powerline, claude-hud; Token Monitor (26+ tools incl. Codex, Cursor, Antigravity); a Claude/Codex quota bar for VS Code and Cursor; Antigravity Cockpit | Show context, quota and spend | Reports only | AskAI's own status line; `askai savings` |
 | Budget guard | tokenlens | Warn or block against the weekly cap | Reports only; saves nothing per task | Optional |
 | Behaviour rules | [Ponytail](https://github.com/DietrichGebert/ponytail) | −20% cost | **−10.3%** (JetBrains, p=0.004); −3.5% (THOL); −8.9% (Tura); +20% then −2% (Stet.sh) | Use; AskAI writes its rule |
 | Behaviour rules | [Caveman](https://github.com/JuliusBrussee/caveman) | 65% fewer tokens | **Median −8%** over six studies, quality unchanged | Use; AskAI writes a terse block; its proxy is not installed |
@@ -45,7 +45,7 @@ The three ChatGPT answers you shared recommend a phased stack. Each claim is che
 | RTK | Very high priority; automatic after `rtk init` | Median +7% task cost over six studies | Opt-in (`--rtk`), to measure only |
 | Headroom | Very high; proxy or MCP mode | Median +32%; the proxy can move Claude Code to API billing | Not installed; `askai plugins info headroom` |
 | Serena | Very high | No independent measurement | `coding` profile, all four tools |
-| ccusage | Very high, measure first | Reports only; measuring first is right | `full` profile; `askai usage` |
+| ccusage | Very high, measure first | Reports only; measuring first is right | `full` profile; `askai savings` |
 | Context Mode | High | +33% to +72% in the one paired study | Opt-in (`--context-mode`) |
 | Repomix | High, for context transfer | Snapshots are large; useful for handovers only | `askai plugins install repomix` |
 | Context7 | High, for current docs | No saving measured; avoids guessing at APIs | `askai plugins install context7` |

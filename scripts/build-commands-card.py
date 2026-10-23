@@ -29,7 +29,7 @@ MUTED = (210, 227, 234)
 FOOT = (81, 100, 117)
 
 NOTES = [
-    "askai usage reads Claude Code and Codex only. Cursor, Claude chat, and ChatGPT show usage in their own settings.",
+    "askai savings reads Claude Code and Codex only. Cursor, Claude chat, and ChatGPT show usage in their own settings.",
     "~/.claude/askai is AskAI's folder on every install, including Cursor-only.",
 ]
 LEGEND = "[ ] optional     < > required     a|b pick one     Full detail: askai help <command>"

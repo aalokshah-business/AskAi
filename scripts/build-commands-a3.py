@@ -81,9 +81,9 @@ SECTIONS = [
         ("askai audit [dir] [--json]",
          "Memory, tools, model, hooks, subagents, scheduled work, cache."),
         ("askai report [days]",
-         "askai usage --full, plus one line from askai check --brief."),
-        ("askai savings",
-         "Same as askai usage --plugins. One line per installed plugin."),
+         "askai savings --full, plus one line from askai check --brief."),
+        ("askai savings [days] [--cache] [--full] [--week]",
+         "Token savings reported by installed plugins and cache hits; spend with days."),
         ("askai todo [dir] [--all] | done <id> | undo <id>",
          "Steps only you can do. done marks one after you did it."),
         ("askai plugins [list | ready [dir] | info <id> | install <id> | decisions]",
@@ -164,8 +164,6 @@ SECTIONS = [
          "The short cheat sheet for one app. peak is Claude's peak hours now."),
         ("askai help [command|all]",
          "Command names, one command in detail, or every command."),
-        ("askai usage [days] [--cache] [--plugins] [--full] [--import-cursor FILE.csv]",
-         "Claude Code and Codex spend. --import-cursor reads tokens, not dollars."),
         ("askai convert <file|url> | askai convert scan [dir] [--yes] [--ignore-originals]",
          "PDF, Office, a web page, or a YouTube URL to Markdown. scan lists them."),
         ("askai test [--out FILE] [--json] [--real] [--notty] [--compare FILE]",
@@ -378,7 +376,7 @@ def main():
     fy = page_h - spec["footer_h"]
     d.rectangle((0, fy, page_w, page_h), fill=NAVY)
     d.text((spec["margin"], fy + 16),
-           "askai usage reads Claude Code and Codex only. Cursor, Claude chat, and ChatGPT show usage in their own settings.     ~/.claude/askai is AskAI's folder on every install, including Cursor-only.",
+           "askai savings reads Claude Code and Codex only. Cursor, Claude chat, and ChatGPT show usage in their own settings.     ~/.claude/askai is AskAI's folder on every install, including Cursor-only.",
            font=f["sub"], fill=WHITE)
     img.save(OUT, dpi=(DPI, DPI), optimize=True)
     pt = round(size / DPI * 72, 1)

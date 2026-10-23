@@ -100,18 +100,18 @@ test('guide with no topic is one moment and at most 8 lines', () => {
   assert.match(r.out, /^(start|work|resume)\n/);
 });
 
-test('usage --import-cursor sums tokens and rejects an unknown layout', () => {
+test('savings --import-cursor sums tokens and rejects an unknown layout', () => {
   const home = tmpHome();
   try {
     const csv = path.join(home, 'usage.csv');
     write(csv, 'Date,Model,Input Tokens,Output Tokens,Cost\n2026-10-01,grok,100,20,0\n');
-    const ok = cli(['usage', '--import-cursor', csv]);
+    const ok = cli(['savings', '--import-cursor', csv]);
     assert.strictEqual(ok.code, 0, ok.err);
     assert.match(ok.out, /input 100, output 20/);
     assert.match(ok.out, /0 USD/);
     const bad = path.join(home, 'bad.csv');
     write(bad, 'Name,City\nA,B\n');
-    const fail = cli(['usage', '--import-cursor', bad]);
+    const fail = cli(['savings', '--import-cursor', bad]);
     assert.strictEqual(fail.code, 1);
     assert.match(fail.err, /Unrecognized Cursor usage CSV/);
   } finally { rm(home); }

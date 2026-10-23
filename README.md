@@ -114,7 +114,7 @@ In the terminal: `askai help all` (every command), `askai plugins info <id>` (ho
 - **Evidence-based defaults**: cheap default models and effort, idle drains off, output caps, short rules (terse replies, diff-only output, build-lean), reminder hooks that cost no tokens, a status line, handoff commands in every tool.
 - **Every optimiser on request** (`--profile max`): Serena, RTK, Context Mode, Headroom (MCP mode), Graphify, Context7, Repomix, the Caveman plugin, LSP plugins, MarkItDown, ccusage, ripgrep, jq, gh; codebase-memory-mcp and claude-mem one flag each.
 - **A project knowledge pack** (`askai init`): scans eligible first-party source files, README and manifests for an on-demand source index, static architecture and feature evidence. Fetches page titles from detected frameworks' official docs into a references file; `--offline` skips web access. No source text is uploaded. Writes a short AGENTS.md router, CLAUDE.md, GEMINI.md, work order, model tiers, agents for all four tools and four project skills. `/askai-cli` (Codex: `$askai-cli`) runs `askai cli --prepare` in that chat: it picks the project folder, runs init, then the host AI verifies the pack and asks only for facts the repository cannot establish. Source, README and build-manifest changes trigger a new review; the review uses model tokens. Refresh unedited generated docs with `askai init --project NAME --refresh --yes`. Each initialized folder gets a name in `~/.askai/projects.json`.
-- **Everything visible in the terminal**: `askai help all`, `askai todo` (what only you can do), `askai infra` (installed, configured, used), `askai plugins ready` (when each connected tool is called), `askai savings`, `askai plugins info <id>`, `askai guide <moment>`, `askai audit`, `askai usage`. A new machine is checked with `askai setup <repo>`.
+- **Everything visible in the terminal**: `askai help all`, `askai todo` (what only you can do), `askai infra` (installed, configured, used), `askai plugins ready` (when each connected tool is called), `askai savings`, `askai plugins info <id>`, `askai guide <moment>`, `askai audit`. A new machine is checked with `askai setup <repo>`.
 
 What changed in each version: [docs/CHANGELOG.md](docs/CHANGELOG.md).
 
@@ -381,8 +381,7 @@ askai go <claude|codex|cursor|agy> [--tier lead|build|chore] ["task"] [--resume]
 askai prompt "ask" [--tier T] [--kind bug|feature|design|risky] [--mode ...] [--copy] | --output-safe "cmd" | --resume
                                                   turn a rough or dictated ask into a structured prompt
 askai models [set <tool>.<tier> <model>[:effort] | verify [tool]]  model and effort per tier, per tool
-askai usage [days]                               Claude Code and Codex usage from local data
-askai savings [days] [--repo DIR]                each installed plugin's own savings report (rtk gain, ccusage, ...)
+askai savings [days] [--cache] [--full] [--week] [--repo DIR]      plugin savings, cache hits, and spend from local data
 askai session init|pause|status|finish|measure|report [--repo DIR] [...]
 askai session pause --summary "..." --next "..." ledger entry at a task boundary, without the break checklist
 askai tips [claude|codex|agy|cursor|session|habits|peak]

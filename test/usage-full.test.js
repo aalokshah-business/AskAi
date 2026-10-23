@@ -27,12 +27,12 @@ test('usage --full stacks the short lines and skips zero tables', () => {
   assert.ok(!/TOKEN SAVINGS|0 responses|session\s+last seen|Usage:|total\s+0/.test(text));
 });
 
-test('askai usage --full includes the cache and plugin lines', () => {
+test('askai savings --full includes the cache and plugin lines', () => {
   const home = tmpHome();
   try {
     const sys = process.env.SystemRoot || 'C:\\Windows';
     const PATH = process.platform === 'win32' ? [path.join(sys, 'System32'), home].join(';') : home;
-    const r = cli(['usage', '1', '--full', '--claude-home', home, '--repo', home], {
+    const r = cli(['savings', '1', '--full', '--claude-home', home, '--repo', home], {
       env: { PATH, USERPROFILE: home, HOME: home, LOCALAPPDATA: home, PATHEXT: '.CMD;.EXE;.BAT;.COM' },
     });
     assert.strictEqual(r.code, 0, r.err);

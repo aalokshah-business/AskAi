@@ -229,7 +229,7 @@
   },
   {
     "id": "savings",
-    "render": "Seeing what each plugin saves\n  Rule: askai savings runs each installed plugin's own report (rtk gain, ccusage daily, headroom perf, codebase-memory projects, Graphify graph status); askai plugins info <id> shows the in-agent commands.\n  Why:  Tools report their own estimates; RTK's counter showed 96M saved during runs that cost more. Compare with askai usage and askai audit.\n  askai:       askai savings 7; askai usage 7"
+    "render": "Seeing what each plugin saves\n  Rule: askai savings runs each installed plugin's own report (rtk gain, ccusage daily, headroom perf, codebase-memory projects, Graphify graph status); askai plugins info <id> shows the in-agent commands.\n  Why:  Tools report their own estimates; RTK's counter showed 96M saved during runs that cost more. Compare with askai savings and askai audit.\n  askai:       askai savings 7"
   },
   {
     "id": "output-size",

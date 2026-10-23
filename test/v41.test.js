@@ -14,7 +14,7 @@ test('help: every command has detailed help, reachable as askai help <cmd> and a
   assert.match(cli(['help', 'check', '--advanced']).out, /Usage: askai check \[dir\]/);
   assert.match(cli(['resume', '--help']).out, /--copy/);
   assert.strictEqual(cli(['help', 'nope']).code, 1);
-  for (const cmd of ['install', 'check', 'ask', 'break', 'resume', 'usage', 'session', 'scaffold', 'uninstall']) assert.ok(help.has(cmd), cmd);
+  for (const cmd of ['install', 'check', 'ask', 'break', 'resume', 'savings', 'session', 'scaffold', 'uninstall']) assert.ok(help.has(cmd), cmd);
 });
 
 test('docs/ARCHITECTURE.md is generated from the code and up to date', () => {

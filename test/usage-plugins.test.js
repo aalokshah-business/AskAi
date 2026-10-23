@@ -44,8 +44,8 @@ test('a failing plugin does not print its usage text', () => withHome(h => {
   assert.ok(!/Usage:/.test(text));
 }));
 
-test('askai usage --plugins is one line when no plugin is on PATH', () => withHome(h => {
-  const r = cli(['usage', '--plugins', '--claude-home', h, '--repo', h], { env: isolated(h) });
+test('askai savings is one line when no plugin is on PATH', () => withHome(h => {
+  const r = cli(['savings', '--claude-home', h, '--repo', h], { env: isolated(h) });
   assert.strictEqual(r.code, 0, r.err);
   assert.match(r.out, /No plugin savings reports installed\./);
   assert.strictEqual(r.out.trim().split(/\r?\n/).length, 1);

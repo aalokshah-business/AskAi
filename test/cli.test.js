@@ -71,11 +71,12 @@ test('select: caveman-plugin only with --caveman-plugin or --only; unknown ids r
   assert.strictEqual(un[un.length - 2], 'claude');
 });
 
-test('version, help and usage exit codes', () => {
+test('version, help and savings exit codes', () => {
   assert.strictEqual(cli(['version']).out.trim(), VERSION);
   assert.strictEqual(cli(['help']).code, 0);
   assert.strictEqual(cli([]).code, 0);
   assert.strictEqual(cli(['bogus']).code, 2);
+  assert.strictEqual(cli(['usage']).code, 2);
   assert.strictEqual(cli(['install', '--bogus']).code, 2);
 });
 

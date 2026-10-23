@@ -45,9 +45,9 @@ const HELP = `askai ${VERSION}: token-saving setup for Claude Code, Cursor, Code
 askai help <command> for one command. askai help all for every command. --help on a command does the same. askai plugins info <id> for one plugin.
 
 Setup: install, update, tools update, uninstall, restore, profiles, suggest, scaffold, project, set
-Every day: check, why, test, ask, next, handoff, weigh, run, errors, stop, break, resume, usage, go, prompt
+Every day: check, why, test, ask, next, handoff, weigh, run, errors, stop, break, resume, savings, go, prompt
 Project: init, review, map, refresh, models, mcp, audit, setup, todo, convert, clear, diff, graph, context, snapshot
-Reference: status, doctor, report, savings, infra, guide, tips, docs, session, chat, statusline, bootstrap, route
+Reference: status, doctor, report, infra, guide, tips, docs, session, chat, statusline, bootstrap, route
 
 Flags: --yes --dry-run --profile (default ${profiles.DEFAULT}) --add --list --host --brief --quiet --no-color
        --target --only --skip --main-model (default claude-haiku-5-5) --subagent-model --codex-model --effort --json --seed-only --ignore-originals
@@ -436,7 +436,7 @@ async function cmdInstall(o) {
 
   console.log(`askai install${o.dry ? ' (dry-run: nothing is written or installed)' : ''}${o.seedOnly ? ' (seed-only: settings for a host that may not be installed yet)' : ''}   for ${hostLine(ctx, hosts)}`);
   console.log(list(o.only).length ? `components chosen with --only; the ${prof.name} profile is not applied\n` : `profile: ${prof.name}: ${prof.summary}\n`);
-  if ((o.profile || recordedProfile(ctx)) === 'max') console.log('note: max is the previous name of experimental. This run keeps max. Measure each extra tool with askai usage before adding it.');
+  if ((o.profile || recordedProfile(ctx)) === 'max') console.log('note: max is the previous name of experimental. This run keeps max. Measure each extra tool with askai savings before adding it.');
   if (!rows.length) { console.log('Nothing selected.'); return 0; }
   const installing = rows.filter(r => !r.skip);
   const skipping = rows.filter(r => r.skip);
@@ -739,9 +739,9 @@ function cmdProject(o) {
   return res.skipped.length && !res.written.length && !res.unchanged.length ? 1 : 0;
 }
 
-// report is usage --full plus one check --brief line. It has no sections of its own.
-function cmdReport(o) {
-  const code = cmdUsage({ ...o, full: true });
+// report is savings --full plus one check --brief line. It has no sections of its own.
+async function cmdReport(o) {
+  const code = await cmdSavings({ ...o, full: true });
   const lines = [];
   check.run(buildCtx(o, true), projectDir(o, null, false), { brief: true }, line => lines.push(line));
   if (lines.length) console.log(lines.join('\n'));
@@ -1016,10 +1016,16 @@ function cmdConvert(o) {
   if (!src) { console.log('askai convert <file|url> [--out file.md]: PDF, Word, PowerPoint, Excel, HTML, YouTube URL -> Markdown (Microsoft MarkItDown, local)'); return 1; }
   if (!ctx.which('markitdown')) { console.log('MarkItDown is not installed: askai install --only markitdown (or --profile docs). Videos other than YouTube need a transcriber first (graphifyy[video] or Whisper).'); return 1; }
   const isUrl = /^https?:\/\//.test(src);
-  const out = o.out || path.join(projectDir(o), 'docs', 'ai', 'inputs', `${(isUrl ? src.replace(/^https?:\/\//, '').replace(/[^\w.-]+/g, '_') : path.basename(src, path.extname(src))).slice(0, 80)}.md`);
+  let resolvedSrc = src;
+  if (!isUrl && !fs.existsSync(resolvedSrc)) {
+    for (const ext of ['.pdf', '.docx', '.pptx', '.xlsx', '.xls', '.html', '.txt']) {
+      if (fs.existsSync(resolvedSrc + ext)) { resolvedSrc = resolvedSrc + ext; break; }
+    }
+  }
+  const out = o.out || path.join(projectDir(o), 'docs', 'ai', 'inputs', `${(isUrl ? resolvedSrc.replace(/^https?:\/\//, '').replace(/[^\w.-]+/g, '_') : path.basename(resolvedSrc, path.extname(resolvedSrc))).slice(0, 80)}.md`);
   if (fs.existsSync(out)) { console.log(`${out} exists; choose another --out`); return 1; }
   fs.mkdirSync(path.dirname(out), { recursive: true });
-  const r = require('child_process').spawnSync('markitdown', [src, '-o', out], { stdio: 'inherit', shell: process.platform === 'win32' });
+  const r = require('child_process').spawnSync('markitdown', [resolvedSrc, '-o', out], { stdio: 'inherit', shell: process.platform === 'win32' });
   if (r.status === 0) { const n = fs.readFileSync(out, 'utf8').length; console.log(`wrote ${out} (~${Math.ceil(n / 4).toLocaleString('en-US')} tokens). Point the agent at the section it needs, not the whole file.`); }
   return r.status || 0;
 }
@@ -1080,14 +1086,14 @@ function cmdCheck(o) {
 }
 function cmdAsk(o) {
   const q = o._.slice(1).join(' ').trim();
-  if (!q) { console.log(`Usage: askai ask <topic>\n\n${kb.topics()}`); return 0; }
+  if (!q) { console.log(`topic listing\nUsage: askai ask <topic>\n\n${kb.topics()}`); return 0; }
   const hits = kb.search(q, 3);
   if (!hits.length) { console.log(`No rule matches "${q}".\n\n${kb.topics()}`); return 1; }
   console.log(kb.render(hits[0]));
   if (hits.length > 1) console.log(`\nRelated: ${hits.slice(1).map(h => h.id).join(', ')}`);
   return 0;
 }
-async function cmdUsage(o) {
+async function cmdSavings(o) {
   if (o.importCursor) {
     try { console.log(usage.importCursorCsv(o.importCursor)); return 0; }
     catch (e) { console.error(e.message); return 1; }
@@ -1129,7 +1135,7 @@ async function cmdUsage(o) {
     console.log(usage.cacheText(status.renderCache(ctx, days * 24), days));
     return 0;
   }
-  if (o.plugins) {
+  if (o.plugins || (!o.week && !o._[1])) {
     console.log(await require('./lib/savings').pluginLinesParallel(ctx, projectDir(o)));
     return 0;
   }
@@ -1324,6 +1330,8 @@ function launchInMultiplexer(cp, script, kind) {
 }
 function launchCli() {
   const cp = require('child_process');
+  const caller = require('./lib/infra').detectCaller();
+  if (caller) process.env.ASKAI_HOST = caller;
   const script = path.join(SRC, 'askai.js');
   const unix = process.platform !== 'win32' && process.platform !== 'darwin';
   const displayed = !!(process.env.DISPLAY || process.env.WAYLAND_DISPLAY);
@@ -1341,7 +1349,8 @@ function launchCli() {
   if (plan === 'win32') {
     const os = require('os');
     const launcher = path.join(os.tmpdir(), `askai-launch-${Date.now()}.cmd`);
-    const content = `@echo off\r\ntitle AskAI CLI\r\ncd /d "${process.cwd()}"\r\n"${process.execPath}" "${script}" cli\r\n`;
+    const envSet = caller ? `set "ASKAI_HOST=${caller}"\r\n` : '';
+    const content = `@echo off\r\ntitle AskAI CLI\r\ncd /d "${process.cwd()}"\r\n${envSet}"${process.execPath}" "${script}" cli\r\n`;
     try { fs.writeFileSync(launcher, content, 'utf8'); } catch (_) {}
     const taskName = `AskAiCli_${Date.now()}`;
     const tr = `cmd.exe /c "${launcher}"`;
@@ -1354,15 +1363,15 @@ function launchCli() {
       }, 3000).unref();
       r = { status: 0 };
     } else {
-      const ps = `& '${process.execPath.replace(/'/g, "''")}' '${script.replace(/'/g, "''")}' cli`;
+      const ps = `${caller ? `$env:ASKAI_HOST='${caller}'; ` : ''}& '${process.execPath.replace(/'/g, "''")}' '${script.replace(/'/g, "''")}' cli`;
       const encoded = Buffer.from(ps, 'utf16le').toString('base64');
       r = cp.spawnSync('powershell.exe', ['-NoProfile', '-NonInteractive', '-Command', `Start-Process powershell.exe -ArgumentList '-NoExit','-NoProfile','-ExecutionPolicy','Bypass','-EncodedCommand','${encoded}'`], { encoding: 'utf8' });
     }
   } else if (plan === 'darwin') {
     const cmd = [process.execPath, script, 'cli'].map(x => `'${x.replace(/'/g, "'\\''")}'`).join(' ');
-    r = cp.spawnSync('osascript', ['-e', `tell application "Terminal" to do script "${cmd.replace(/\\/g, '\\\\').replace(/"/g, '\\"')}"`], { encoding: 'utf8' });
+    r = cp.spawnSync('osascript', ['-e', `tell application "Terminal" to do script "${cmd.replace(/\\/g, '\\\\').replace(/"/g, '\\"')}"`], { encoding: 'utf8', env: { ...process.env, ...(caller ? { ASKAI_HOST: caller } : {}) } });
   } else if (plan === 'x-terminal-emulator') {
-    r = cp.spawnSync('x-terminal-emulator', ['-e', process.execPath, script, 'cli'], { encoding: 'utf8' });
+    r = cp.spawnSync('x-terminal-emulator', ['-e', process.execPath, script, 'cli'], { encoding: 'utf8', env: { ...process.env, ...(caller ? { ASKAI_HOST: caller } : {}) } });
   } else if (plan === 'tmux' || plan === 'screen') {
     return launchInMultiplexer(cp, script, plan);
   } else if (plan === 'tty') {
@@ -1495,7 +1504,7 @@ async function main() {
   if (cmd === 'help' && o._[1] === 'all') { console.log(`askai ${VERSION}: every command in full\n\n` + help.names().map(n => help.render(n, { advanced: true })).join(`\n\n${'-'.repeat(72)}\n\n`)); return 0; }
   if (cmd === 'help' && o._[1] === 'more') { console.log(require('./lib/surface').more()); return 0; }
   if (cmd === 'help' && !o._[1]) { console.log(help.index(process.stdout.columns)); return 0; }
-  if (cmd === 'help' && help.groupText(o._[1])) { console.log(help.groupText(o._[1])); return 0; }
+  if (cmd === 'help' && !o.advanced && help.groupText(o._[1])) { console.log(help.groupText(o._[1])); return 0; }
   if (cmd === 'help' && o._[1]) { const t = help.render(o._[1], { advanced: !!o.advanced }); console.log(t || `No help for "${o._[1]}". Commands: ${help.names().slice().sort().join(', ')}`); return t ? 0 : 1; }
   if (o.help && cmd && help.has(cmd)) { console.log(help.render(cmd, { advanced: !!o.advanced })); return 0; }
   if (!cmd) { console.log(require('./lib/daily').next(buildCtx(o, true), projectDir(o))); return 0; }
@@ -1541,7 +1550,7 @@ async function main() {
       if (a === 'info' || a === 'use') { if (!o._[2]) { console.log(`which one? askai plugins info <id>   ids: ${require('./lib/plugins').P.map(p => p.id).join(', ')}`); return 1; } const r = plugins.info(o._[2]); console.log(`\nHow to use it\n${require('./lib/usage-guide').render(o._[2])}`); return r; }
       return a === 'install' ? plugins.install(ctx, o._[2], o) : plugins.list(ctx); }
     case 'upgrade': { const ctx = buildCtx(o, true); hintOnce(ctx, 'upgrade-alias', 'askai upgrade is now askai update'); return cmdUpgrade(o, rest); }
-    case 'savings': return cmdUsage({ ...o, plugins: true });
+    case 'savings': return cmdSavings(o);
     case 'convert': return cmdConvert(o);
     case 'clear': {
       const dir = projectDir(o);
@@ -1595,7 +1604,6 @@ async function main() {
     case 'test': return cmdTest(o);
     case 'setup': return cmdSetup(o);
     case 'ask': return cmdAsk(o);
-    case 'usage': return cmdUsage(o);
     case 'start': case 'break': case 'resume': return session.run(o._[0], { ...o, repo: projectDir(o) });
     case 'scaffold': return cmdScaffold(o);
     case 'chat': return cmdChat(o);

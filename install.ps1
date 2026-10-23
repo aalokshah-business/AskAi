@@ -56,7 +56,7 @@
 .PARAMETER BaseTools      Also install the command-line tools agents search with: ripgrep, jq and gh (only those missing).
 .PARAMETER Project        After installing, write the project knowledge pack into this repository (askai init): AGENTS.md, CLAUDE.md, GEMINI.md, docs\ai\*, subagents for all four tools.
 .PARAMETER ShellIntegration Add the AskAI project-selection function to this PowerShell profile. Run with -Yes for unattended setup.
-.PARAMETER Action         install (default) | update | status | doctor | check | usage | report | profiles | suggest | project | scaffold | tips | peak | restore | uninstall | init | infra | audit | guide | models | mcp | plugins.
+.PARAMETER Action         install (default) | update | status | doctor | check | savings | report | profiles | suggest | project | scaffold | tips | peak | restore | uninstall | init | infra | audit | guide | models | mcp | plugins.
   Every other command (ask, start, break, resume, session, help) runs through the askai command after install.
 #>
 [CmdletBinding()]
@@ -100,7 +100,7 @@ param(
   [switch]$Repomix,
   [switch]$CodebaseMemory,
   [switch]$ClaudeMem,
-  [ValidateSet('install', 'update', 'status', 'doctor', 'check', 'setup', 'usage', 'report', 'profiles', 'suggest', 'project', 'scaffold', 'tips', 'peak', 'restore', 'uninstall', 'init', 'infra', 'audit', 'guide', 'models', 'mcp', 'plugins')][string]$Action = 'install'
+  [ValidateSet('install', 'update', 'status', 'doctor', 'check', 'setup', 'savings', 'report', 'profiles', 'suggest', 'project', 'scaffold', 'tips', 'peak', 'restore', 'uninstall', 'init', 'infra', 'audit', 'guide', 'models', 'mcp', 'plugins')][string]$Action = 'install'
 )
 
 $ErrorActionPreference = 'Stop'

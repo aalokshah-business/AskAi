@@ -14,12 +14,12 @@ flowchart LR
   subgraph A["AskAI control layer"]
     IN["Input: prompt refiner, tier router (model + effort), context pack (AGENTS.md -> docs/ai -> HANDOFF)"]
     POL["Settings it owns: rules blocks, subagents, skills, MCP on/off, plugins, billing and cache guards"]
-    OUT["Observers: reminder hooks, status line, usage, audit, ledger"]
+    OUT["Observers: reminder hooks, status line, savings, audit, ledger"]
   end
   IN --> CC["Claude Code"] & CX["Codex"] & CU["Cursor"] & AG["Antigravity"]
   POL -. configures .-> CC & CX & CU & AG
   CC & CX & CU & AG -->|session logs, status JSON, hook events| OUT
-  OUT -->|reminders; askai infra, audit, usage| U
+  OUT -->|reminders; askai infra, audit, savings| U
 ```
 
 | When | What passes through AskAI | How |
@@ -27,7 +27,7 @@ flowchart LR
 | Before a session | The task, the tier (lead, build, chore), the model and effort, the active MCP servers, peak hours, the project context | `askai go`, `askai prompt`, `askai mcp`, `askai models`, `askai init` |
 | During a session | The rules, subagents and skills AskAI wrote (the agent loads them); reminders at 60% and 80% context, long sessions, peak hours, stale handoff, cache misses | Files in each tool; Claude Code `SessionStart` and `UserPromptSubmit` hooks answering with `systemMessage` only (zero tokens) |
 | At a break or a /clear | The handoff, the ledger, the check that the handoff is fresh | Ask the agent to write .ai-work/HANDOFF.md; `askai break`, `askai clear`, `askai resume` |
-| After work | Usage, cache reuse, model switches, the models subagents really ran, what is installed versus used | `askai usage`, `askai audit`, `askai infra`, `askai session report` |
+| After work | Usage, cache reuse, model switches, the models subagents really ran, what is installed versus used | `askai savings`, `askai audit`, `askai infra`, `askai session report` |
 
 AskAI does not sit inside a running agent and rewrite each message: none of the four tools allows that without proxying their traffic, which can switch billing and breaks caching. It mediates at the boundaries (session start, breaks, clears) and inside the session through the files and hooks each tool already reads. That also matches the cache rule: the model, effort and tools are chosen once per session.
 
@@ -53,7 +53,7 @@ AskAI does not sit inside a running agent and rewrite each message: none of the 
 | `askai check` | Catches drift: Opus default, high effort, API keys, oversized files, MCP sprawl | Each check maps to a rule above |
 | `askai break` / `askai resume` | Nothing left running; fresh chat after the cache expires | Cache lifetime 1 h on a subscription, 5 min on usage credits |
 | LSP plugins (`--lsp`) | Symbol navigation instead of whole-file reads | -13% cost (Marmelab) |
-| `askai usage`, `askai report`, status line, ledger | You can see and compare what each tool and habit costs | Measure accepted work per token, not tool counters |
+| `askai savings`, `askai report`, status line, ledger | You can see and compare what each tool and habit costs | Measure accepted work per token, not tool counters |
 
 ## 3. From installation to daily use
 
@@ -65,7 +65,7 @@ AskAI does not sit inside a running agent and rewrite each message: none of the 
 | While working | Search then read ranges, smallest change, Esc early, few cheap subagents | Rules installed in every host; `askai ask <topic>` |
 | Before a break | Verified step, commit, handoff, stop background work | Ask the agent to write .ai-work/HANDOFF.md; `askai break` |
 | Coming back | Continue within the cache lifetime; otherwise fresh chat from the handoff | `askai resume --copy` |
-| Weekly | Compare tools and habits on accepted work per token | `askai usage 7`, `askai session report`, `/doctor` |
+| Weekly | Compare tools and habits on accepted work per token | `askai savings 7`, `askai session report`, `/doctor` |
 | Upgrades | Re-check after each tool update | `askai update`, `askai check` |
 
 ## 4. Module map
@@ -284,7 +284,7 @@ In install order. Evidence labels: measured (a third-party saving), mixed, claim
 | --- | --- |
 | `~/.askai/manifest.json` | every key, file and registration AskAI added (drives uninstall) |
 | `~/.askai/backups/` | a copy of each file before its first change (askai restore) |
-| `~/.askai/sessions/` | status-line snapshots of context and cache per session (askai usage) |
+| `~/.askai/sessions/` | status-line snapshots of context and cache per session (askai savings) |
 | `~/.askai/cache/` | cached tool checks for askai status |
 | `<repo>/.ai-work/HANDOFF.md` | the current handoff, overwritten each time |
 | `<repo>/.ai-work/SESSION_LEDGER.md` | append-only ledger of starts, breaks and finishes |
@@ -327,7 +327,7 @@ Where each command is implemented. Written from the `case` list in `askai.js` be
 | `askai docs` | `askai.js cmdDocs` |
 | `askai plugins` | `lib/plugins.js; lib/plugins-ready.js; lib/usage-guide.js` |
 | `askai upgrade` | `askai.js cmdUpgrade` |
-| `askai savings` | `lib/savings.js` |
+| `askai savings` | `askai.js cmdSavings; lib/usage.js; lib/savings.js` |
 | `askai convert` | `askai.js cmdConvert` |
 | `askai clear` | `lib/guide.js` |
 | `askai context` | `lib/guide.js` |
@@ -349,7 +349,6 @@ Where each command is implemented. Written from the `case` list in `askai.js` be
 | `askai test` | `askai.js cmdTest; lib/selftest.js` |
 | `askai setup` | `askai.js cmdSetup; lib/setup.js` |
 | `askai ask` | `askai.js cmdAsk; lib/kb.js; lib/knowledge.js` |
-| `askai usage` | `askai.js cmdUsage; lib/usage.js; lib/savings.js` |
 | `askai start` | `lib/session.js` |
 | `askai break` | `lib/session.js` |
 | `askai resume` | `lib/session.js` |
@@ -664,32 +663,14 @@ Options:
 Exit: 0
 ```
 
-#### `askai usage`
-
-```text
-askai usage: What Claude Code and Codex spent, from their local data; where to look for Antigravity and Cursor.
-
-Usage: askai usage
-
-Use when: cost feels high
-
-Options:
-  --week
-  --plugins
-  --cache
-  --import-cursor FILE
-
-Exit: 0
-```
-
 #### `askai report`
 
 ```text
-askai report: Alias of askai usage --full plus one line from askai check --brief.
+askai report: Full spend report plus one line from askai check --brief.
 
 Usage: askai report
 
-Use when: Alias of askai usage --full plus one line from askai check --brief.
+Use when: Full spend report plus one line from askai check --brief.
 
 Exit: 0
 ```
@@ -1132,11 +1113,17 @@ Exit: 0, or 1 when install or the agent workflow fails
 #### `askai savings`
 
 ```text
-askai savings: Alias of askai usage --plugins.
+askai savings: Token savings reported by installed plugins, cache hits, and spend.
 
 Usage: askai savings
 
-Use when: Alias of askai usage --plugins.
+Use when: cost feels high
+
+Options:
+  --week
+  --full
+  --cache
+  --import-cursor FILE
 
 Exit: 0
 ```
@@ -1384,8 +1371,8 @@ Exit: 0
   Why: Cursor help, Available models (2026).
   AskAI: askai models set cursor.useSonnet true
 - **Seeing what each plugin saves** (`askai ask savings`): askai savings runs each installed plugin's own report (rtk gain, ccusage daily, headroom perf, codebase-memory projects, Graphify graph status); askai plugins info <id> shows the in-agent commands.
-  Why: Tools report their own estimates; RTK's counter showed 96M saved during runs that cost more. Compare with askai usage and askai audit.
-  AskAI: askai savings 7; askai usage 7
+  Why: Tools report their own estimates; RTK's counter showed 96M saved during runs that cost more. Compare with askai savings and askai audit.
+  AskAI: askai savings 7
 - **Shorter replies** (`askai ask output-size`): On by default: the terse rule (Caveman-style), the diff-only rule, Codex verbosity low, and the output line in askai prompt. For one task: askai prompt --output diff.
   Why: Output tokens cost about five times input on Claude; Caveman-style replies measured about 8% cheaper (median of six studies).
   AskAI: askai prompt --output diff; --caveman ultra for the shortest replies
@@ -1422,9 +1409,9 @@ Every tool below was researched (official docs, third-party benchmarks, communit
 | Code navigation | CodeGraph, code-review-graph, Graphify, Claude Context, Token Savior and others | Small or no measured effect | Not installed |
 | Audit | claude-config-doctor (LLM skill), claude-doctor (offline transcript analysis) | Useful reviews; the LLM one spends tokens per run | askai check is deterministic and free |
 | Plugin bundles | context_guard, token-saver, TokenRoll scout | No third-party measurement; scout moves reads to subagents (still billed) | Their sound parts are askai settings and rules |
-| Budget guard | tokenlens | Warns or blocks against your weekly cap; saves nothing per task | askai usage and the status line show spend |
+| Budget guard | tokenlens | Warns or blocks against your weekly cap; saves nothing per task | askai savings and the status line show spend |
 | Measurement | ccusage, Claude-Code-Usage-Monitor, ccstatusline, CCometixLine, claude-powerline, claude-hud | Show where tokens go | ccusage in the full profile; askai status line |
-| Measurement | Token Monitor (26+ tools), Claude/Codex quota bar for VS Code and Cursor, Antigravity Cockpit, Cursor dashboard | Cross-tool views | Named by askai usage |
+| Measurement | Token Monitor (26+ tools), Claude/Codex quota bar for VS Code and Cursor, Antigravity Cockpit, Cursor dashboard | Cross-tool views | Named by askai savings |
 | Routers | 9Router, OmniRoute, claude-code-router, routatic-proxy, Weave Router | Billing, terms and data risk on a subscription | Not installed |
 | Memory | claude-mem, ICM, Greplica, Magic Compact, Dynamic Context Pruning | No independent measurement | Not installed; the handoff file replaces them |
 | MCP trimming | mcp2cli, Token Optimizer MCP | Only matters with many MCP servers | askai check counts servers |
@@ -1451,7 +1438,7 @@ Every tool below was researched (official docs, third-party benchmarks, communit
 
 ## 15. Testing and previews
 
-- `node --test test/*.test.js`: every component installs, detects and uninstalls in throwaway folders; settings are never overridden; the CLI, checks, knowledge base, break and resume, usage and this document are tested.
+- `node --test test/*.test.js`: every component installs, detects and uninstalls in throwaway folders; settings are never overridden; the CLI, checks, knowledge base, break and resume, savings and this document are tested.
 - `bash scripts/preview-matrix.sh`: `askai install --dry-run` on simulated Linux, macOS and Windows for each tool and all four, plus the standalone script; results in `docs/PREVIEW_MATRIX.md`.
 - `node scripts/gen-docs.js --check`: this file matches the code.
 

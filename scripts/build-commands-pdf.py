@@ -201,7 +201,7 @@ class Doc:
         self.y += 8
 
     def finish(self):
-        note = "askai usage reads Claude Code and Codex only. Cursor, Claude chat, and ChatGPT show usage in their own settings."
+        note = "askai savings reads Claude Code and Codex only. Cursor, Claude chat, and ChatGPT show usage in their own settings."
         self.need(28)
         self.y += 6
         for line in wrap(note, FONTS["ui"], 10, self.width):

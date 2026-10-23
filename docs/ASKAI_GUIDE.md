@@ -51,7 +51,7 @@ AskAI automates every part of the research that a program can do: the one-time s
 | Before a break, before `/clear`, coming back | `askai break`, `askai clear`, `askai resume --copy` | All four |
 | Write the handoff from inside the agent | Ask it to update `.ai-work/HANDOFF.md` | All four |
 | Convert documents to Markdown | `askai convert <file or url>` | All four |
-| See what was spent; Claude peak hours | `askai usage`, `askai report`, `askai tips peak` | Claude Code, Codex |
+| See what was spent; Claude peak hours | `askai savings`, `askai report`, `askai tips peak` | Claude Code, Codex |
 
 What AskAI deliberately does not install: RTK, Context Mode, Headroom, proxies and routers. Independent benchmarks found they cost the same or more (Part 3). RTK and Context Mode stay available with `--rtk` and `--context-mode` for anyone who wants to measure them on their own work.
 
@@ -179,7 +179,7 @@ Each optimiser can also be added on its own: `--rtk`, `--context-mode`, `--headr
 
 - **Headroom:** installed and registered as a tool server: the agent calls `headroom_compress` on large outputs and `headroom_stats` shows what it saved. Its proxy mode (`headroom wrap claude`, or `headroom proxy` with `ANTHROPIC_BASE_URL`) is never set up automatically, because it can move Claude Code to API billing, as your screenshot showed.
 - **Graphify:** installed and its skill registered for each tool. A project's graph is built once with `graphify update .`. That reads source only and spends no tokens. `/graphify .` also reads docs and images, spends tokens, and needs the Graphify skill in that session. `askai init` adds `graphify-out/` to `.gitignore` and turns off Graphify's always-on Cursor rule. After the build, AskAI's project map points the agent at `graphify-out/GRAPH_REPORT.md`.
-- **Measure it:** independent tests found RTK, Context Mode and Headroom can raise cost, and with `max` several compressors overlap. After a week, compare `askai audit` and `askai usage 7` against a week on the default, and switch off what does not pay with `askai uninstall --only <id>`.
+- **Measure it:** independent tests found RTK, Context Mode and Headroom can raise cost, and with `max` several compressors overlap. After a week, compare `askai audit` and `askai savings 7` against a week on the default, and switch off what does not pay with `askai uninstall --only <id>`.
 - **Skills:** AskAI writes the handoff skill or command for every tool, four project skills for each repository (architecture-map, prompt-refiner, investigate-bug, verify-and-review), and trims Claude Code's rarely used built-in skills to their names. Graphify and the Caveman plugin add their own skills.
 
 **Remaining steps: `askai todo`.** Sign-ins, restarts and app settings need you. Repository facts that source files do not establish need review. `askai todo` lists each step and how to complete it. Items AskAI can check, such as a missing project purpose or graph, disappear once done; mark the others with `askai todo done <id>`. `askai infra`, `askai guide work`, the end of every install and the Claude Code session reminder show how many are open.
@@ -190,7 +190,7 @@ Each optimiser can also be added on its own: `--rtk`, `--context-mode`, `--headr
 
 | Plugin | In a terminal | Inside the agent | Check it works | Its savings |
 | --- | --- | --- | --- | --- |
-| Serena | `serena project index` (askai init runs it) | `activate_project`, then `find_symbol`, `get_symbols_overview`, `find_referencing_symbols` | `/mcp` lists serena | Not reported; compare `askai usage 7` |
+| Serena | `serena project index` (askai init runs it) | `activate_project`, then `find_symbol`, `get_symbols_overview`, `find_referencing_symbols` | `/mcp` lists serena | Not reported; compare `askai savings 7` |
 | ccusage | `ccusage daily`, `monthly`, `session`, `blocks --live` |  | `ccusage --version` | Is the report itself |
 | RTK | `rtk gain`, `rtk init -g --show` | Automatic: shell output is shortened | `rtk gain` counts commands | `rtk gain` (overstates) |
 | Context Mode |  | `/context-mode:ctx-stats`; the agent uses `ctx_execute` | `/plugin` lists it | `/context-mode:ctx-stats` |
@@ -236,7 +236,7 @@ All 27 runs exited cleanly and wrote no files. The plans used the right route fo
 |  | `askai guide work` · `askai guide all` · `askai guide <moment>` · `askai ask <words>` | Working etiquette with your open to-dos · all of it · one moment · one rule with its evidence |
 |  | `askai check [repo] [--fix]` · `askai tips peak` · `askai tips` | Guideline audit with fixes · Claude peak hours · offline cheat sheet |
 | Breaks | `askai session pause` · `askai break` · `askai clear [compact]` · `askai resume` · `askai context <pct>` | Ledger entry · before-break checklist · is it safe to clear · coming back · what to do at this context level |
-| Observe | `askai infra [repo]` · `askai savings [days]` · `askai audit` · `askai usage [days]` | Everything set up and used, per tool · each plugin's own savings report · seven-point token audit · what Claude Code and Codex spent |
+| Observe | `askai infra [repo]` · `askai savings [days]` · `askai audit` · `askai report` | Everything set up and used, per tool · each plugin's own savings report · seven-point token audit · what Claude Code and Codex spent |
 |  | `askai diff` · `askai graph` · `askai report` · `askai status` · `askai doctor` · `askai session report` | Review before handing off · the architecture diagram · Claude Code spend · per-tool state · health and billing · compare tools |
 | Tools | `askai plugins [info <id> \| install <id> \| decisions]` · `askai mcp [off\|on <name>]` · `askai convert <file>` · `askai docs [name] [--print]` | Each plugin's commands, checks, savings and off switch · the MCP switch for all four tools · documents to Markdown · the guides in the terminal |
 | Maintain | `askai update` · `askai uninstall [--only <id>]` · `askai restore` | Upgrade · remove everything or one component · put a backup back |
@@ -286,7 +286,7 @@ Every key is added only when you have not set it, so your own choices stay. Each
 5. **Task done, or context past 60%:** ask the agent to write `.ai-work/HANDOFF.md`, then run `askai clear` to check the handoff is real. Then `/clear` in the same terminal and paste `askai prompt --resume`: the new session reads the handoff and project files, not the old chat.
 6. **Before a break:** ask the agent to write `.ai-work/HANDOFF.md`, then run `askai break`; it lists uncommitted work and agents still running.
 7. **Coming back:** `askai resume --copy` says whether to continue or start fresh; `askai mcp` confirms which servers are on.
-8. **Weekly:** `askai audit` (cache reuse, model switches, memory size), `askai usage 7`, `askai infra` (installed versus used), `askai session report`.
+8. **Weekly:** `askai audit` (cache reuse, model switches, memory size), `askai savings 7`, `askai infra` (installed versus used), `askai session report`.
 
 The ledger, handoff and measurements live in the repo's `.ai-work/` folder, which AskAI gitignores. Nothing runs between your commands: AskAI adds no hooks, because its own earlier hooks were measured to cost more than they saved.
 
@@ -405,7 +405,7 @@ Of the 50-odd tools found, only a handful have an independent measurement showin
 | Built in | `/usage`, `/context`, `/doctor`, plan mode, `/clear`, effort, skills, MCP tool deferral | — | Official guidance; `/doctor` flags large CLAUDE.md files, agent descriptions over 15K tokens and MCP tools over 25K | Use daily; `/doctor` weekly |
 | Built in | Claude Code advisor (`/advisor opus`) | Opus judgment at Sonnet cost | About a third cheaper than Opus throughout (independent analyses) | Use instead of switching to Opus |
 | Measurement | [ccusage](https://github.com/ryoppippi/ccusage); Claude-Code-Usage-Monitor; Cursor dashboard | Usage views | Reports only | ccusage in the `full` profile |
-| Status lines and monitors | ccstatusline, CCometixLine, claude-powerline, claude-hud; Token Monitor (26+ tools incl. Codex, Cursor, Antigravity); a Claude/Codex quota bar for VS Code and Cursor; Antigravity Cockpit | Show context, quota and spend | Reports only | AskAI's own status line; `askai usage` |
+| Status lines and monitors | ccstatusline, CCometixLine, claude-powerline, claude-hud; Token Monitor (26+ tools incl. Codex, Cursor, Antigravity); a Claude/Codex quota bar for VS Code and Cursor; Antigravity Cockpit | Show context, quota and spend | Reports only | AskAI's own status line; `askai savings` |
 | Budget guard | tokenlens | Warn or block against the weekly cap | Reports only; saves nothing per task | Optional |
 | Behaviour rules | [Ponytail](https://github.com/DietrichGebert/ponytail) | −20% cost | **−10.3%** (JetBrains, p=0.004); −3.5% (THOL); −8.9% (Tura); +20% then −2% (Stet.sh) | Use; AskAI writes its rule |
 | Behaviour rules | [Caveman](https://github.com/JuliusBrussee/caveman) | 65% fewer tokens | **Median −8%** over six studies, quality unchanged | Use; AskAI writes a terse block; its proxy is not installed |
@@ -439,7 +439,7 @@ The three ChatGPT answers you shared recommend a phased stack. Each claim is che
 | RTK | Very high priority; automatic after `rtk init` | Median +7% task cost over six studies | Opt-in (`--rtk`), to measure only |
 | Headroom | Very high; proxy or MCP mode | Median +32%; the proxy can move Claude Code to API billing | Not installed; `askai plugins info headroom` |
 | Serena | Very high | No independent measurement | `coding` profile, all four tools |
-| ccusage | Very high, measure first | Reports only; measuring first is right | `full` profile; `askai usage` |
+| ccusage | Very high, measure first | Reports only; measuring first is right | `full` profile; `askai savings` |
 | Context Mode | High | +33% to +72% in the one paired study | Opt-in (`--context-mode`) |
 | Repomix | High, for context transfer | Snapshots are large; useful for handovers only | `askai plugins install repomix` |
 | Context7 | High, for current docs | No saving measured; avoids guessing at APIs | `askai plugins install context7` |

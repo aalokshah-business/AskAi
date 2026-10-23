@@ -87,7 +87,7 @@ const COMMAND_SOURCE = {
   docs: 'askai.js cmdDocs',
   plugins: 'lib/plugins.js; lib/plugins-ready.js; lib/usage-guide.js',
   upgrade: 'askai.js cmdUpgrade',
-  savings: 'lib/savings.js',
+  savings: 'askai.js cmdSavings; lib/usage.js; lib/savings.js',
   convert: 'askai.js cmdConvert',
   clear: 'lib/guide.js',
   context: 'lib/guide.js',
@@ -109,7 +109,6 @@ const COMMAND_SOURCE = {
   test: 'askai.js cmdTest; lib/selftest.js',
   setup: 'askai.js cmdSetup; lib/setup.js',
   ask: 'askai.js cmdAsk; lib/kb.js; lib/knowledge.js',
-  usage: 'askai.js cmdUsage; lib/usage.js; lib/savings.js',
   start: 'lib/session.js',
   break: 'lib/session.js',
   resume: 'lib/session.js',
@@ -157,9 +156,9 @@ const ECOSYSTEM = [
   ['Code navigation', 'CodeGraph, code-review-graph, Graphify, Claude Context, Token Savior and others', 'Small or no measured effect', 'Not installed'],
   ['Audit', 'claude-config-doctor (LLM skill), claude-doctor (offline transcript analysis)', 'Useful reviews; the LLM one spends tokens per run', 'askai check is deterministic and free'],
   ['Plugin bundles', 'context_guard, token-saver, TokenRoll scout', 'No third-party measurement; scout moves reads to subagents (still billed)', 'Their sound parts are askai settings and rules'],
-  ['Budget guard', 'tokenlens', 'Warns or blocks against your weekly cap; saves nothing per task', 'askai usage and the status line show spend'],
+  ['Budget guard', 'tokenlens', 'Warns or blocks against your weekly cap; saves nothing per task', 'askai savings and the status line show spend'],
   ['Measurement', 'ccusage, Claude-Code-Usage-Monitor, ccstatusline, CCometixLine, claude-powerline, claude-hud', 'Show where tokens go', 'ccusage in the full profile; askai status line'],
-  ['Measurement', 'Token Monitor (26+ tools), Claude/Codex quota bar for VS Code and Cursor, Antigravity Cockpit, Cursor dashboard', 'Cross-tool views', 'Named by askai usage'],
+  ['Measurement', 'Token Monitor (26+ tools), Claude/Codex quota bar for VS Code and Cursor, Antigravity Cockpit, Cursor dashboard', 'Cross-tool views', 'Named by askai savings'],
   ['Routers', '9Router, OmniRoute, claude-code-router, routatic-proxy, Weave Router', 'Billing, terms and data risk on a subscription', 'Not installed'],
   ['Memory', 'claude-mem, ICM, Greplica, Magic Compact, Dynamic Context Pruning', 'No independent measurement', 'Not installed; the handoff file replaces them'],
   ['MCP trimming', 'mcp2cli, Token Optimizer MCP', 'Only matters with many MCP servers', 'askai check counts servers'],
@@ -195,12 +194,12 @@ flowchart LR
   subgraph A["AskAI control layer"]
     IN["Input: prompt refiner, tier router (model + effort), context pack (AGENTS.md -> docs/ai -> HANDOFF)"]
     POL["Settings it owns: rules blocks, subagents, skills, MCP on/off, plugins, billing and cache guards"]
-    OUT["Observers: reminder hooks, status line, usage, audit, ledger"]
+    OUT["Observers: reminder hooks, status line, savings, audit, ledger"]
   end
   IN --> CC["Claude Code"] & CX["Codex"] & CU["Cursor"] & AG["Antigravity"]
   POL -. configures .-> CC & CX & CU & AG
   CC & CX & CU & AG -->|session logs, status JSON, hook events| OUT
-  OUT -->|reminders; askai infra, audit, usage| U
+  OUT -->|reminders; askai infra, audit, savings| U
 \`\`\`
 
 | When | What passes through AskAI | How |
@@ -208,7 +207,7 @@ flowchart LR
 | Before a session | The task, the tier (lead, build, chore), the model and effort, the active MCP servers, peak hours, the project context | ${code('askai go')}, ${code('askai prompt')}, ${code('askai mcp')}, ${code('askai models')}, ${code('askai init')} |
 | During a session | The rules, subagents and skills AskAI wrote (the agent loads them); reminders at 60% and 80% context, long sessions, peak hours, stale handoff, cache misses | Files in each tool; Claude Code ${code('SessionStart')} and ${code('UserPromptSubmit')} hooks answering with ${code('systemMessage')} only (zero tokens) |
 | At a break or a /clear | The handoff, the ledger, the check that the handoff is fresh | Ask the agent to write .ai-work/HANDOFF.md; ${code('askai break')}, ${code('askai clear')}, ${code('askai resume')} |
-| After work | Usage, cache reuse, model switches, the models subagents really ran, what is installed versus used | ${code('askai usage')}, ${code('askai audit')}, ${code('askai infra')}, ${code('askai session report')} |
+| After work | Usage, cache reuse, model switches, the models subagents really ran, what is installed versus used | ${code('askai savings')}, ${code('askai audit')}, ${code('askai infra')}, ${code('askai session report')} |
 
 AskAI does not sit inside a running agent and rewrite each message: none of the four tools allows that without proxying their traffic, which can switch billing and breaks caching. It mediates at the boundaries (session start, breaks, clears) and inside the session through the files and hooks each tool already reads. That also matches the cache rule: the model, effort and tools are chosen once per session.
 
@@ -234,7 +233,7 @@ AskAI does not sit inside a running agent and rewrite each message: none of the 
 | ${code('askai check')} | Catches drift: Opus default, high effort, API keys, oversized files, MCP sprawl | Each check maps to a rule above |
 | ${code('askai break')} / ${code('askai resume')} | Nothing left running; fresh chat after the cache expires | Cache lifetime 1 h on a subscription, 5 min on usage credits |
 | LSP plugins (${code('--lsp')}) | Symbol navigation instead of whole-file reads | -13% cost (Marmelab) |
-| ${code('askai usage')}, ${code('askai report')}, status line, ledger | You can see and compare what each tool and habit costs | Measure accepted work per token, not tool counters |
+| ${code('askai savings')}, ${code('askai report')}, status line, ledger | You can see and compare what each tool and habit costs | Measure accepted work per token, not tool counters |
 
 ## 3. From installation to daily use
 
@@ -246,7 +245,7 @@ AskAI does not sit inside a running agent and rewrite each message: none of the 
 | While working | Search then read ranges, smallest change, Esc early, few cheap subagents | Rules installed in every host; ${code('askai ask <topic>')} |
 | Before a break | Verified step, commit, handoff, stop background work | Ask the agent to write .ai-work/HANDOFF.md; ${code('askai break')} |
 | Coming back | Continue within the cache lifetime; otherwise fresh chat from the handoff | ${code('askai resume --copy')} |
-| Weekly | Compare tools and habits on accepted work per token | ${code('askai usage 7')}, ${code('askai session report')}, ${code('/doctor')} |
+| Weekly | Compare tools and habits on accepted work per token | ${code('askai savings 7')}, ${code('askai session report')}, ${code('/doctor')} |
 | Upgrades | Re-check after each tool update | ${code('askai update')}, ${code('askai check')} |
 
 ## 4. Module map
@@ -369,7 +368,7 @@ ${claudeSettings()}
 | --- | --- |
 | ${code('~/.askai/manifest.json')} | every key, file and registration AskAI added (drives uninstall) |
 | ${code('~/.askai/backups/')} | a copy of each file before its first change (askai restore) |
-| ${code('~/.askai/sessions/')} | status-line snapshots of context and cache per session (askai usage) |
+| ${code('~/.askai/sessions/')} | status-line snapshots of context and cache per session (askai savings) |
 | ${code('~/.askai/cache/')} | cached tool checks for askai status |
 | ${code('<repo>/.ai-work/HANDOFF.md')} | the current handoff, overwritten each time |
 | ${code('<repo>/.ai-work/SESSION_LEDGER.md')} | append-only ledger of starts, breaks and finishes |
@@ -416,7 +415,7 @@ ${table(['Category', 'Tool', 'Finding', 'In AskAI'], ECOSYSTEM)}
 
 ## 15. Testing and previews
 
-- ${code('node --test test/*.test.js')}: every component installs, detects and uninstalls in throwaway folders; settings are never overridden; the CLI, checks, knowledge base, break and resume, usage and this document are tested.
+- ${code('node --test test/*.test.js')}: every component installs, detects and uninstalls in throwaway folders; settings are never overridden; the CLI, checks, knowledge base, break and resume, savings and this document are tested.
 - ${code('bash scripts/preview-matrix.sh')}: ${code('askai install --dry-run')} on simulated Linux, macOS and Windows for each tool and all four, plus the standalone script; results in ${code('docs/PREVIEW_MATRIX.md')}.
 - ${code('node scripts/gen-docs.js --check')}: this file matches the code.
 

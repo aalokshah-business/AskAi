@@ -149,6 +149,6 @@ function finish() {
   if (selected('agy') && exists(DIR.agy)) inTool.push('Antigravity: /mcp lists ' + (want.agy.join(', ') || 'no servers') + '; /skills shows askai-cli and askai-plugins; /model lists available models; app settings: AI Credit Overages = Never.');
   if (selected('cursor') && exists(DIR.cursor)) inTool.push('Cursor (quit and reopen first): open the project folder as the workspace root; Settings, Rules shows AskAI rules; Settings, MCP lists ' + (want.cursor.join(', ') || 'no servers') + '; type /askai-cli or /askai-plugins in Agent chat; choose an available model in Settings, Models.');
   if (inTool.length) console.log('\nStill to check by hand, inside each tool:\n' + inTool.map(l => `  - ${l}`).join('\n'));
-  console.log('\nDaily flow: askai next; askai go <tool> "task"; askai run -- <command>; askai break; askai handoff "next step"; askai clear; askai resume.\nWeekly: askai usage --week; askai check.\nRead-only previews: askai update --dry-run; askai uninstall --dry-run.');
+  console.log('\nDaily flow: askai next; askai go <tool> "task"; askai run -- <command>; askai break; askai handoff "next step"; askai clear; askai resume.\nWeekly: askai savings --week; askai check.\nRead-only previews: askai update --dry-run; askai uninstall --dry-run.');
   process.exit(n('FAIL') ? 1 : 0);
 }
