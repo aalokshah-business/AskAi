@@ -81,6 +81,7 @@ const COMMAND_SOURCE = {
   mcp: 'askai.js cmdMcp; lib/mcp.js',
   audit: 'lib/audit.js; lib/findings.js',
   infra: 'lib/infra.js',
+  inventory: 'lib/infra.js',
   guide: 'lib/guide.js',
   docs: 'askai.js cmdDocs',
   plugins: 'lib/plugins.js; lib/plugins-ready.js; lib/usage-guide.js',

@@ -51,5 +51,5 @@ test('infra lists every plugin and third-party tool with its state, plus project
   const r = infra.collect(ctx, path.join(h, 'repo'));
   for (const id of ['serena', 'rtk', 'headroom', 'graphify', 'context7', 'claude-mem', 'karpathy', 'base-tools']) assert.ok(r.plugins.some(p => p.id === id), id);
   assert.deepStrictEqual(r.repo.mcp['claude (.mcp.json)'], ['playwright']); assert.deepStrictEqual(r.repo.hooks, ['PreToolUse']);
-  const text = infra.render(r); assert.match(text, /\[Plugins and third-party tools\]/); assert.match(text, /Headroom/); assert.match(text, /project MCP servers/);
+  const text = infra.render(r); assert.doesNotMatch(text, /\[Plugins and third-party tools\]/); assert.match(text, /project MCP servers/); assert.ok(r.plugins.some(p => p.id === 'headroom'));
 }));

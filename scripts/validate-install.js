@@ -42,7 +42,7 @@ for (const [v, lvl, why] of [['ANTHROPIC_API_KEY', 'FAIL', 'Claude Code bills th
 const ready = run(['plugins', 'ready', '--json', ...(repo ? ['--path', repo] : [])]);
 ready.code === 0 && /"tools"/.test(ready.out) ? add('PASS', 'askai', 'askai plugins ready reports which tools wait and which one-time step is left') : add('FAIL', 'askai', 'askai plugins ready failed', tilde(ready.out.split('\n').slice(0, 3).join(' | ')));
 const infra = run(['infra', ...(repo ? [repo] : [])]);
-infra.code === 0 && /\[Plugins and third-party tools\]/.test(infra.out) ? add('PASS', 'askai', 'askai infra runs and lists every plugin') : add('FAIL', 'askai', 'askai infra failed', tilde(infra.out.split('\n').slice(0, 3).join(' | ')));
+infra.code === 0 && /\[Repository\]|CLI /.test(infra.out) ? add('PASS', 'askai', 'askai infra runs') : add('FAIL', 'askai', 'askai infra failed', tilde(infra.out.split('\n').slice(0, 3).join(' | ')));
 const todo = run(['todo', ...(repo ? [repo] : [])]);
 todo.code === 0 ? add('PASS', 'askai', `askai todo: ${(todo.out.match(/(\d+) open/) || [0, 'no'])[1]} item(s) for you (sign-ins, restarts, settings)`) : add('FAIL', 'askai', 'askai todo failed', tilde(todo.out.slice(0, 160)));
 const chk = run(['check', ...(repo ? [repo] : [])]); const failing = Number((chk.out.match(/(\d+) failing/) || [0, 0])[1]); const toImprove = Number((chk.out.match(/(\d+) to improve/) || [0, 0])[1]);

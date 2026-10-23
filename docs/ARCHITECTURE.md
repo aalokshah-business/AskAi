@@ -322,6 +322,7 @@ Where each command is implemented. Written from the `case` list in `askai.js` be
 | `askai mcp` | `askai.js cmdMcp; lib/mcp.js` |
 | `askai audit` | `lib/audit.js; lib/findings.js` |
 | `askai infra` | `lib/infra.js` |
+| `askai inventory` | `lib/infra.js` |
 | `askai guide` | `lib/guide.js` |
 | `askai docs` | `askai.js cmdDocs` |
 | `askai plugins` | `lib/plugins.js; lib/plugins-ready.js; lib/usage-guide.js` |
@@ -897,18 +898,24 @@ Exit: 0
 ```text
 askai test: Run the safe commands one by one, print a short status, and write one capture file.
 
-Usage: askai test [--out FILE]
+Usage: askai test [--out FILE] [--json] [--real] [--notty] [--compare FILE]
 
-For a person using AskAI: the status says whether each command finished, then lists action items already in that output.
-For someone improving AskAI: the capture file has the full output of every command that ran.
-Skips install, uninstall, update, setup, and anything that launches an agent or writes project files.
+Default: sandbox homes and a throwaway fixture repo. The status says which commands finished and which are over their line budget.
+askai test --real runs read-only commands against the real homes and this repo. It does not write.
+--json writes one object per command: cmd, exit, ms, lines, maxWidth, flags.
 
 Options:
   --out FILE                               capture path (default .ai-work/askai-test.txt in the current folder)
+  --json                                   write {cmd, exit, ms, lines, maxWidth, flags} per command
+  --real                                   read-only commands against the real homes; no writes
+  --notty                                  rerun a short subset with stdin closed
+  --compare FILE                           print line and time regressions against a previous --json file
 
 Examples:
   askai test
   askai test --out askai-test.txt
+  askai test --real
+  askai test --json --compare previous.json
 
 Exit: 0 when every command finished, 1 when one did not run
 ```
@@ -1017,10 +1024,11 @@ Exit: 0
 ```text
 askai map: Regenerate docs/ai/PROJECT_MAP.md from README folder descriptions and conventional names; preserve purposes you edited.
 
-Usage: askai map [dir] [--dry-run]
+Usage: askai map [dir] [--dry-run] [--diff]
 
 Examples:
   askai map
+  askai map --dry-run --diff
 
 Exit: 0
 ```
@@ -1122,13 +1130,26 @@ Exit: 1 when a high-severity finding exists
 #### `askai infra`
 
 ```text
-askai infra: Everything AskAI set up, plus project documentation coverage. For an MCP server, working means a transcript call in the last 7 days; configured means the switch is on and the agent has not called it.
+askai infra: Tools and repository files. Alias of askai inventory.
 
 Usage: askai infra [dir] [--json]
 
 Examples:
   askai infra
   askai infra ~/code/shop --json
+
+Exit: 0
+```
+
+#### `askai inventory`
+
+```text
+askai inventory: Tools and repository files. Alias of askai infra.
+
+Usage: askai inventory [dir] [--json]
+
+Examples:
+  askai inventory
 
 Exit: 0
 ```
@@ -1306,7 +1327,7 @@ Exit: 0, or 1 when there is none yet
 ```text
 askai chat: Where to paste a short standing instruction in Claude chat, ChatGPT, and Gemini, and how the four coding apps are set up instead.
 
-Usage: askai chat [claude|chatgpt|gemini|code]
+Usage: askai chat [claude|chatgpt|gemini|code] [--copy]
 
 Claude chat (claude.ai and the Claude desktop app), ChatGPT web and desktop, and Gemini Apps have no settings file AskAI can write. The instruction is sent again on every turn, so it stays short.
 claude.ai and the Claude desktop app share Instructions for Claude. ChatGPT web and desktop share Custom instructions. Gemini Apps uses Instructions for Gemini. A project instruction replaces or adds to that only inside the project.

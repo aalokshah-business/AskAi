@@ -36,7 +36,9 @@ test('askai test writes one capture and a short status', () => {
     assert.ok(text.includes('## askai status'));
     assert.ok(text.includes('## askai doctor'));
     assert.ok(text.includes('FAIL  settings'));
-    assert.ok(text.includes('skipped: install'));
+    assert.ok(text.includes('skipped:'));
+    assert.match(text, /mode: sandbox/);
+    assert.match(text, /safe\.directory/);
     assert.match(result.summary, /did not finish/);
     assert.match(result.summary, /usage 7\s+timed out/);
     assert.match(result.summary, /need a look/);

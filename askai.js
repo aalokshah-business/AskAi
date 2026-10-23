@@ -61,12 +61,12 @@ Old names stay: askai upgrade = update, askai tools update = components.
 `;
 
 // ---- args --------------------------------------------------------------------------------------------------------
-const BOOL = { yes: 'yes', y: 'yes', 'dry-run': 'dry', offline: 'offline', json: 'json', launch: 'launch', prepare: 'prepare', clear: 'clear', 'no-statusline': 'noStatusline', 'no-path': 'noPath', 'caveman-plugin': 'cavemanPlugin', markitdown: 'markitdown', ccusage: 'ccusage', tools: 'tools', force: 'force', print: 'print', remove: 'remove', lean: 'lean', rtk: 'rtk', 'context-mode': 'contextMode', 'lean-git': 'leanGit', copy: 'copy', fix: 'fix', refresh: 'refresh', resume: 'resume', 'base-tools': 'baseTools', headroom: 'headroom', graphify: 'graphify', context7: 'context7', repomix: 'repomix', 'codebase-memory': 'codebaseMemory', 'claude-mem': 'claudeMem', all: 'all', help: 'help', h: 'help', agents: 'agents', demo: 'demo', cache: 'cache', plugins: 'plugins', full: 'full', undo: 'undo', review: 'review', week: 'week', shared: 'shared', personal: 'personal', 'include-untracked': 'includeUntracked', 'seed-only': 'seedOnly', fill: 'fill', brief: 'brief', quiet: 'quiet', 'no-color': 'noColor', list: 'list', 'ignore-originals': 'ignoreOriginals', env: 'env' };
+const BOOL = { yes: 'yes', y: 'yes', 'dry-run': 'dry', offline: 'offline', json: 'json', launch: 'launch', prepare: 'prepare', clear: 'clear', 'no-statusline': 'noStatusline', 'no-path': 'noPath', 'caveman-plugin': 'cavemanPlugin', markitdown: 'markitdown', ccusage: 'ccusage', tools: 'tools', force: 'force', print: 'print', remove: 'remove', lean: 'lean', rtk: 'rtk', 'context-mode': 'contextMode', 'lean-git': 'leanGit', copy: 'copy', fix: 'fix', refresh: 'refresh', resume: 'resume', 'base-tools': 'baseTools', headroom: 'headroom', graphify: 'graphify', context7: 'context7', repomix: 'repomix', 'codebase-memory': 'codebaseMemory', 'claude-mem': 'claudeMem', all: 'all', help: 'help', h: 'help', agents: 'agents', demo: 'demo', cache: 'cache', plugins: 'plugins', full: 'full', undo: 'undo', review: 'review', week: 'week', shared: 'shared', personal: 'personal', 'include-untracked': 'includeUntracked', 'seed-only': 'seedOnly', fill: 'fill', brief: 'brief', quiet: 'quiet', 'no-color': 'noColor', list: 'list', 'ignore-originals': 'ignoreOriginals', env: 'env', real: 'real', notty: 'notty', diff: 'diff' };
 const VAL = { output: 'output', kind: 'kind', about: 'about', type: 'type', tier: 'tier', files: 'files', done: 'done', mode: 'mode', used: 'used', window: 'window', 'output-safe': 'outputSafe', out: 'out', project: 'project', p: 'project', name: 'name', path: 'path', build: 'build', test: 'test', only: 'only', skip: 'skip', caveman: 'caveman', profile: 'profile', target: 'target', 'claude-home': 'claudeHome', 'cursor-home': 'cursorHome', hours: 'hours', 'import-cursor': 'importCursor', save: 'save',
   'codex-home': 'codexHome', 'agy-home': 'agyHome', 'main-model': 'mainModel', 'subagent-model': 'subagentModel', 'codex-model': 'codexModel',
   repo: 'repo', tool: 'tool', model: 'model', effort: 'effort', task: 'task', difficulty: 'difficulty', summary: 'summary', next: 'next',
   result: 'result', minutes: 'minutes', 'input-tokens': 'inputTokens', 'output-tokens': 'outputTokens', 'cached-tokens': 'cachedTokens',
-  success: 'success', 'rework-minutes': 'reworkMinutes', 'usage-source': 'usageSource', notes: 'notes', lsp: 'lsp', threshold: 'threshold', for: 'for', host: 'host', add: 'add' };
+  success: 'success', 'rework-minutes': 'reworkMinutes', 'usage-source': 'usageSource', notes: 'notes', lsp: 'lsp', threshold: 'threshold', for: 'for', host: 'host', add: 'add', compare: 'compare' };
 const has = (o, k) => Object.prototype.hasOwnProperty.call(o, k);
 
 function parseArgs(argv) {
@@ -548,10 +548,11 @@ function cmdProfiles(o) {
   }
   const primary = ['lean', 'code', 'docs', 'full'];
   console.log(`profile in effect: ${cur.name} (${cur.source})`);
-  for (const name of primary) {
+  const body = primary.map(name => {
     const p = profiles.get(name);
-    console.log(`${p.name === cur.name ? '*' : ' '} ${pad(p.name, 12)} ${p.summary}`);
-  }
+    return `${p.name === cur.name ? '*' : ' '} ${pad(p.name, 12)} ${p.summary}`;
+  });
+  console.log(require('./lib/columns').lines(body, process.stdout.columns || 80).join('\n'));
   console.log('aliases: coding = code, max = experimental. also: minimal, experimental.');
   console.log('askai profiles show NAME prints that install list.');
   return 0;
@@ -655,6 +656,16 @@ function cmdProject(o) {
     if (!isDir) { console.error(`askai: ${dir} is not a directory`); return 1; }
     const result = require('./lib/project-refresh').run(dir, { dry: !!o.dry, ctx: buildCtx(o, true) });
     console.log(result.text);
+    if (o.agents && !o.dry) {
+      const ctx = buildCtx(o, true);
+      const files = require('./lib/project').agentFiles(require('./lib/models').load(ctx));
+      for (const [rel, text] of Object.entries(files)) {
+        const f = path.join(dir, rel);
+        fs.mkdirSync(path.dirname(f), { recursive: true });
+        fs.writeFileSync(f, text);
+      }
+      console.log(`rewrote ${Object.keys(files).length} agent files from the current tiers`);
+    }
     return 0;
   }
   if (o._[1] === 'hide-local') {
@@ -889,10 +900,8 @@ function cmdDiff(o) {
   const st = g(['diff', '--stat']); if (st.status !== 0) { console.log(`not a git repository: ${repo}`); return 1; }
   const staged = g(['diff', '--cached', '--stat']).stdout.trim(); const check = g(['diff', '--check']);
   console.log(st.stdout.trim() || '(no unstaged changes)'); if (staged) console.log(`\nstaged:\n${staged}`);
-  const short = g(['status', '--short', '--untracked-files=all']);
-  const extra = String(short.stdout || '').split(/\n/).filter(l => l.startsWith('??'));
-  const ai = extra.filter(l => /^\?\? (\.agents\/|\.claude\/|\.codex\/|\.cursor\/|\.ai-work\/|\.cursorignore|AGENTS\.md|CLAUDE\.md|GEMINI\.md|docs\/ai\/)/.test(l));
-  if (extra.length) console.log(`+${extra.length} entries (${extra.length} files) not in this diff`);
+  const counted = require('./lib/session').countUntracked(repo);
+  if (counted.entries || counted.files) console.log(`+${counted.label} not in this diff`);
   console.log(`\nwhitespace check: ${check.status === 0 ? 'ok' : `problems\n${String(check.stdout).split(/\n/).slice(0, 40).join('\n')}`}`);
   console.log('Review the full diff yourself; give the agent only the files it needs, not the whole diff.');
   if (o.review) {
@@ -965,7 +974,13 @@ function cmdDocs(o) {
     const r = require('child_process').spawnSync(process.execPath, [script, '--check'], { stdio: 'inherit' });
     return r.status === 0 ? 0 : 1;
   }
-  if (!name || !DOCS[name]) { for (const [k, v] of Object.entries(DOCS)) console.log(`  askai docs ${k.padEnd(13)} ${path.join(SRC, 'docs', v)}`); console.log('  askai docs check      validate generated command documentation'); console.log('  (add --print to show one in the terminal)'); return name ? 1 : 0; }
+  if (!name || !DOCS[name]) {
+    const rows = Object.keys(DOCS).map(k => `askai docs ${k.padEnd(13)} ${path.join(SRC, 'docs', DOCS[k])}`);
+    rows.push('askai docs check      validate generated command documentation');
+    console.log(require('./lib/columns').lines(rows, process.stdout.columns || 80).join('\n'));
+    console.log('  (add --print to show one in the terminal)');
+    return name ? 1 : 0;
+  }
   const f = path.join(SRC, 'docs', DOCS[name]);
   if (!fs.existsSync(f)) { console.log(`${f} is not in this copy of AskAI (docs live in the downloaded folder)`); return 1; }
   console.log(o.print ? fs.readFileSync(f, 'utf8') : f); return 0;
@@ -1026,9 +1041,9 @@ function cmdWhy(o) {
 }
 function cmdTest(o) {
   const selftest = require('./lib/selftest');
-  const cwd = projectDir(o);
-  const result = selftest.run({ cwd, out: o.out, version: VERSION, json: !!o.json });
-  if (o.json) console.log(JSON.stringify({ file: result.file, failedToRun: !!result.failedToRun, header: result.header, commands: result.results.length }, null, 2));
+  const cwd = o.real ? projectDir(o) : selftest.makeFixture();
+  const result = selftest.run({ cwd, out: o.out, version: VERSION, json: !!o.json, real: !!o.real, notty: !!o.notty, compare: o.compare, mode: o.real ? 'real' : 'sandbox' });
+  if (o.json) console.log(JSON.stringify(result.rows, null, 2));
   else console.log(result.summary);
   return result.failedToRun ? 1 : 0;
 }
@@ -1050,7 +1065,7 @@ function cmdAsk(o) {
   if (hits.length > 1) console.log(`\nRelated: ${hits.slice(1).map(h => h.id).join(', ')}`);
   return 0;
 }
-function cmdUsage(o) {
+async function cmdUsage(o) {
   if (o.importCursor) {
     try { console.log(usage.importCursorCsv(o.importCursor)); return 0; }
     catch (e) { console.error(e.message); return 1; }
@@ -1087,7 +1102,7 @@ function cmdUsage(o) {
     return 0;
   }
   if (o.plugins) {
-    console.log(require('./lib/savings').pluginLines(ctx, projectDir(o)));
+    console.log(await require('./lib/savings').pluginLinesParallel(ctx, projectDir(o)));
     return 0;
   }
   const text = summary();
@@ -1106,7 +1121,15 @@ function cmdScaffold(o) {
   try { return scaffold.run(projectDir(o, o._[1]), o); } catch (e) { console.error(`askai scaffold: ${e.message}`); return 1; }
 }
 function cmdChat(o) {
-  try { console.log(require('./lib/chat').render(o._[1])); return 0; }
+  try {
+    const text = require('./lib/chat').render(o._[1]);
+    console.log(text);
+    if (o.copy) {
+      const via = require('./lib/session').copyText(text);
+      if (via) console.log(`(copied with ${via})`);
+    }
+    return 0;
+  }
   catch (e) { console.error(e.message); return 1; }
 }
 function cmdTips(o) {
@@ -1462,7 +1485,8 @@ async function main() {
     case 'prompt': return cmdPrompt(o);
     case 'mcp': return cmdMcp(o);
     case 'audit': return audit.run(buildCtx(o, true), projectDir(o, o._[1]), o);
-    case 'infra': { const ctx = buildCtx(o, true); const r = infra.collect(ctx, projectDir(o, o._[1])); console.log(o.json ? JSON.stringify(r, null, 2) : infra.render(r)); return 0; }
+    case 'infra':
+    case 'inventory': { const ctx = buildCtx(o, true); const r = infra.collect(ctx, projectDir(o, o._[1])); console.log(o.json ? JSON.stringify(r, null, 2) : infra.render(r)); return 0; }
     case 'guide': { const t = guide.render(o._[1], projectDir(o)); if (!t) { console.log(`No guide for "${o._[1]}". Topics: ${guide.ORDER.join(', ')}`); return 1; } console.log(t); if (o._[1] === 'work') { try { const ctx = buildCtx(o, true); const open = todo.open(todo.items(ctx, projectDir(o))); if (open.length) console.log(`\nYour open to-dos (${open.length}): ${open.slice(0, 3).map(i => i.text).join('; ')}${open.length > 3 ? '; ...' : ''}\nAll of them: askai todo`); } catch (_) { /* no context */ } } return 0; }
     case 'docs': return cmdDocs(o);
     case 'plugins': { const ctx = buildCtx(o, true); const a = o._[1] || 'list'; if (a === 'ready') { const ready = require('./lib/plugins-ready'); const report = ready.ready(ctx, projectDir(o, o.path || o._[2])); console.log(o.json ? JSON.stringify(report, null, 2) : ready.render(report)); return 0; } if (a === 'decisions') { console.log(plugins.decisions()); return 0; }

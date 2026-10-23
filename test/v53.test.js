@@ -55,7 +55,10 @@ test('askai savings runs the reports that exist and says how to add the others',
 
 test('infra points every installed plugin at its usage guide', () => withHome(h => {
   const ctx = makeCtx(h, {}, { tools: { markitdown: '/x/markitdown' } });
-  assert.match(infra.render(infra.collect(ctx, null)), /MarkItDown\s+on PATH\s+use: askai plugins info markitdown/);
+  assert.doesNotMatch(infra.render(infra.collect(ctx, null)), /\[Plugins/);
+  const lines = [];
+  plugins.list(ctx, s => lines.push(s));
+  assert.match(lines.join('\n'), /markitdown/);
 }));
 
 test('weekly MCP calls and Codex models count event timestamps, with mtime fallback only for undated lines', () => withHome(h => {

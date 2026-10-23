@@ -133,3 +133,74 @@ test('profiles lists four primary names and the shell is never unknown', () => {
   } finally { rm(home); }
   assert.notStrictEqual(require('../lib/platform').shellName({}), 'unknown');
 });
+
+test('untracked counts name entries and files, and session compact keeps structured events', () => {
+  const dir = tmpHome();
+  try {
+    const cp = require('child_process');
+    cp.execSync('git init', { cwd: dir, stdio: 'ignore' });
+    fs.mkdirSync(path.join(dir, 'notes'));
+    write(path.join(dir, 'notes', 'a.md'), 'a\n');
+    write(path.join(dir, 'notes', 'b.md'), 'b\n');
+    const counted = require('../lib/session').countUntracked(dir);
+    assert.match(counted.label, /^\d+ entries \(\d+ files\)$/);
+    assert.ok(counted.files >= counted.entries);
+    write(path.join(dir, '.ai-work', 'session.jsonl'), `${JSON.stringify({ ts: '2026-10-22', event: 'note', note: '?? raw status ?' })}\n`);
+    const compact = require('../lib/session').compactLedger(dir);
+    const again = fs.readFileSync(compact.file, 'utf8');
+    assert.match(again, /"event":"note"/);
+    assert.doesNotMatch(again, /\?\? raw status/);
+  } finally { rm(dir); }
+});
+
+test('a stale agent file is agents.drift and plugins use the short columns', () => {
+  const dir = tmpHome();
+  try {
+    write(path.join(dir, '.claude', 'agents', 'architect.md'), '---\nname: architect\nmodel: claude-opus-5-5\neffort: max\n---\n');
+    const { makeCtx } = require('./helpers');
+    const ctx = makeCtx(dir);
+    const text = [];
+    require('../lib/check').run(ctx, dir, {}, s => text.push(String(s)));
+    assert.match(text.join('\n'), /agents\.drift/);
+    assert.match(text.join('\n'), /askai project refresh --agents/);
+    const lines = [];
+    require('../lib/plugins').list(ctx, s => lines.push(s));
+    assert.match(lines[0], /id  hosts  state  verdict  recommendation/);
+    assert.doesNotMatch(lines.join('\n'), /measured: none independent\. For C\/C\+\+/);
+  } finally { rm(dir); }
+});
+
+test('the scan cache is reused and headroom is limited to 3 seconds', () => {
+  const dir = tmpHome();
+  try {
+    write(path.join(dir, 'src.js'), 'module.exports = 1;\n');
+    const project = require('../lib/project');
+    const a = project.detect(dir);
+    assert.ok(fs.existsSync(path.join(dir, '.ai-work', 'cache', 'detect.json')));
+    assert.strictEqual(project.detect(dir), a);
+    assert.strictEqual(require('../lib/scan').toolTimeout('headroom'), 3000);
+    assert.strictEqual(require('../lib/scan').toolTimeout('graphify'), 3000);
+    const scan = require('../lib/scan');
+    assert.strictEqual(scan.handoffState(dir).state, 'missing');
+    assert.match(scan.countUntracked(dir).label, /entries/);
+  } finally { rm(dir); }
+});
+
+test('askai test builds a fixture and flags a repeated block', () => {
+  const selftest = require('../lib/selftest');
+  const dir = selftest.makeFixture();
+  try {
+    assert.ok(fs.existsSync(path.join(dir, 'ThirdParty', 'lib.js')));
+    assert.ok(fs.readFileSync(path.join(dir, 'docs', 'ai', 'SOURCE_INDEX.md'), 'utf8').split('\n').length > 7000);
+    assert.match(fs.readFileSync(path.join(dir, '.ai-work', 'HANDOFF.md'), 'utf8'), /TODO\(you\)/);
+    const names = selftest.fullPlan().map(s => s.args.join(' '));
+    assert.ok(names.some(n => n.startsWith('setup --dry-run')));
+    assert.ok(!selftest.fullPlan().some(s => s.args[0] === 'hook'));
+    const block = 'x'.repeat(80);
+    const flags = selftest.judge({ args: ['chat'], stdout: `${block}\n${block}\n`, stderr: '', code: 0, ms: 10 });
+    assert.ok(flags.includes('repeated block'));
+    const rows = [{ cmd: 'help', lines: 10, ms: 100 }];
+    write(path.join(dir, 'prev.json'), JSON.stringify([{ cmd: 'help', lines: 4, ms: 100 }]));
+    assert.match(selftest.compareJson(path.join(dir, 'prev.json'), rows).join('\n'), /lines 4 -> 10/);
+  } finally { rm(dir); }
+});
