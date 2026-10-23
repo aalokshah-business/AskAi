@@ -1,0 +1,9 @@
+id: context-mode
+title: Context Mode
+tags:
+  - context mode
+  - sandbox
+  - ctx
+rule: Not recommended by default.
+why: The one paired study measured +33% to +72% cost.
+auto: askai install --context-mode (opt-in)

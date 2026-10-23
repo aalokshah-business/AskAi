@@ -1,0 +1,15 @@
+id: edit-regenerate
+title: Edit instead of correcting
+tags:
+  - edit
+  - regenerate
+  - wrong
+  - correction
+  - mistake
+rule: If an answer is slightly wrong, edit your message and regenerate rather than sending a correction.
+why: Follow-ups stay in history and are re-sent every turn (your screenshot page 1).
+how:
+  claude: Esc Esc to edit the previous message
+  codex: Esc Esc (edit and fork)
+  agy: /rewind
+  cursor: /rewind

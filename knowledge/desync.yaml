@@ -1,0 +1,10 @@
+id: desync
+title: Usage jumps while idle
+tags:
+  - bug
+  - idle
+  - desync
+  - jump
+  - stats
+rule: Compare /stats in the CLI with claude.ai's usage bar; report a mismatch.
+why: Reported counter-desync bug (GitHub issues #38335, #39507).

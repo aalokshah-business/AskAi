@@ -1,0 +1,11 @@
+id: files
+title: Point at files
+tags:
+  - @
+  - file
+  - path
+  - specific
+  - vague
+  - scan
+rule: Name the file and function with @path; avoid "improve the codebase".
+why: Vague prompts trigger broad scanning (Anthropic); @ targeting minimises token overhead (Antigravity docs).

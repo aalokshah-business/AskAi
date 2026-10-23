@@ -1,0 +1,13 @@
+id: codex-agents
+title: Codex subagent models
+tags:
+  - codex subagent
+  - spawn
+  - inherit
+  - sol ultra
+  - luna
+rule: Ask for custom agents by name and check the model they really ran.
+why: Codex never spawns custom agents by itself; a reported bug lets in-app workers inherit the parent model (GitHub openai/codex #32587).
+how:
+  codex: Spawn runner for <task>
+auto: askai infra shows models used

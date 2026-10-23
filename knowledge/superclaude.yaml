@@ -1,0 +1,11 @@
+id: superclaude
+title: SuperClaude
+tags:
+  - superclaude
+  - framework
+  - --uc
+  - ultracompressed
+  - sc
+rule: Optional: its --uc mode is a terse-output rule like Caveman; the framework itself loads several thousand tokens of instructions every session.
+why: Claims 30-50% fewer tokens with --uc; no third-party measurement found; one analysis lists ~1.6K tokens of commands and ~2.3K of flags loaded by its CLAUDE.md imports.
+auto: askai installs a short terse block instead

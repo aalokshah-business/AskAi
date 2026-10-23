@@ -1,0 +1,10 @@
+id: plugin-bundles
+title: All-in-one token plugins
+tags:
+  - context_guard
+  - token-saver
+  - plugin
+  - bundle
+  - sessionstart
+rule: Prefer settings and short rules; bundles that inject rules through SessionStart hooks add text to every session.
+why: context_guard (14 skills, hooks) and token-saver (rules, cheap subagents, audit) publish no third-party measurement; their sound parts match what askai already sets.

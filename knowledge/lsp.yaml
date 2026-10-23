@@ -1,0 +1,13 @@
+id: lsp
+title: Code navigation plugins
+tags:
+  - lsp
+  - serena
+  - definition
+  - symbols
+  - navigation
+rule: Install the official code-intelligence plugin for typed languages.
+why: LSP navigation measured -13% cost (Marmelab); Anthropic recommends it.
+how:
+  claude: /plugin install typescript-lsp@claude-plugins-official
+auto: askai install --lsp ts,py

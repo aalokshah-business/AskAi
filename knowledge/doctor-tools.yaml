@@ -1,0 +1,13 @@
+id: doctor-tools
+title: Doctor and audit tools
+tags:
+  - doctor
+  - audit
+  - config-doctor
+  - claude-doctor
+  - health
+rule: Run the built-in /doctor weekly; askai check covers tokens and billing for all four tools; LLM-based config audits cost tokens each run.
+why: Built-in /doctor flags large CLAUDE.md files, agent descriptions over 15K tokens and MCP tools over 25K. claude-config-doctor is an LLM skill (costs tokens); claude-doctor analyses transcripts offline and writes rules.
+how:
+  claude: /doctor (press f to fix)
+auto: askai check, askai doctor

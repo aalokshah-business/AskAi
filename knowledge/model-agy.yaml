@@ -1,0 +1,13 @@
+id: model-agy
+title: Antigravity models
+tags:
+  - model
+  - flash
+  - pro
+  - gemini
+  - antigravity
+  - quota
+rule: Flash for routine work; Pro or Claude for hard tasks; quota is per model, so switch when one runs out.
+why: Antigravity plans page; Flash has its own pool that refreshes more often.
+how:
+  agy: /model, /usage (/quota)

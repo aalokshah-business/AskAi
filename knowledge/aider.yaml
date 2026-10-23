@@ -1,0 +1,7 @@
+id: aider
+title: Aider
+tags:
+  - aider
+  - architect mode
+rule: A separate coding agent, not a plugin: run it in its own session and never on the same files as another agent.
+why: Its /architect mode separates planning from editing, like AskAI's lead and build tiers.

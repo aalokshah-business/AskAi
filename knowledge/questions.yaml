@@ -1,0 +1,10 @@
+id: questions
+title: One round of questions
+tags:
+  - confidence
+  - 95%
+  - questions
+  - clarify
+  - ambiguous
+rule: Ask for one round of clarifying questions, then proceed.
+why: Open-ended question loops add turns; your screenshot page 2 rule kept to one round.

@@ -1,0 +1,9 @@
+id: nested-agents
+title: Nest AGENTS.md by folder
+tags:
+  - agents.md
+  - nested
+  - monorepo
+  - folder
+rule: Put a service's rules in its own folder's AGENTS.md so they load only there.
+why: Codex reads AGENTS.md from the repo root down to the current folder (OpenAI).

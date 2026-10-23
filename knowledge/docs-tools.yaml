@@ -1,0 +1,11 @@
+id: docs-tools
+title: Context7 and Repomix
+tags:
+  - context7
+  - repomix
+  - documentation
+  - snapshot
+  - library docs
+rule: Context7 for current library docs when needed; Repomix only for handovers between tools, narrowed to the folders that matter.
+why: A full repository snapshot is large; symbol search reads less.
+auto: askai plugins install context7 | repomix

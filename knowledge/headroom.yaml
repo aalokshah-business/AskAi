@@ -1,0 +1,11 @@
+id: headroom
+title: Headroom
+tags:
+  - headroom
+  - compress
+  - headroom_compress
+rule: Installed with --headroom or the max profile in MCP mode: the agent calls headroom_compress on large outputs. Proxy mode (headroom wrap, ANTHROPIC_BASE_URL) is not set up by AskAI.
+why: Vendor reports 47-92% on large tool outputs; four independent studies found a median +32% cost; proxy mode moved Claude Code to API billing in your screenshot.
+how:
+  claude: headroom_stats inside the session
+auto: askai install --headroom; askai infra shows where it is registered

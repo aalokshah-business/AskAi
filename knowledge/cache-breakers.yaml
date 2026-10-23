@@ -1,0 +1,13 @@
+id: cache-breakers
+title: What breaks the prompt cache
+tags:
+  - cache
+  - cache key
+  - switch model
+  - full price
+  - rebuild
+rule: Choose the model and MCP servers before the session and keep them; compact rarely.
+why: A model switch, connecting or disconnecting an MCP server, a plugin that adds MCP tools, compaction and fast mode rebuild the cache; an effort change keeps it (Anthropic).
+how:
+  claude: askai go claude --tier build
+auto: askai go, askai audit (shows switches and cache share)

@@ -1,0 +1,13 @@
+id: model-codex
+title: Codex models
+tags:
+  - model
+  - luna
+  - sol
+  - codex
+  - 272k
+rule: A Luna-class model for routine work, Sol for hard tasks; start fresh before 272K input tokens.
+why: Published Plus estimates: Luna 350-3,000 messages per 5 h, Sol 15-160; inputs past 272K bill input at 2x.
+how:
+  codex: /model
+auto: askai install --codex-model NAME

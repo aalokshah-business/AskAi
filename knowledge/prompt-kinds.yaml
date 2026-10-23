@@ -1,0 +1,12 @@
+id: prompt-kinds
+title: Prompt patterns by task
+tags:
+  - bug
+  - feature
+  - design
+  - risky
+  - pattern
+  - kind
+rule: Bug: reproduce, root cause, minimal fix, regression test. Feature: acceptance criteria, small verified steps. Design: options first, no code. Risky: approval before destructive steps.
+why: A pattern that fits the task avoids the most expensive turns: rework and wrong paths.
+auto: askai prompt --kind bug|feature|design|risky

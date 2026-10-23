@@ -1,0 +1,9 @@
+id: codex-local
+title: Codex: local before cloud
+tags:
+  - cloud
+  - local
+  - codex
+  - attempts
+rule: Run small jobs locally; ask for several cloud attempts only when you will compare them.
+why: OpenAI says cloud tasks can use more of the allowance; each attempt is its own run.

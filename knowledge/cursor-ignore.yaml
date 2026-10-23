@@ -1,0 +1,10 @@
+id: cursor-ignore
+title: Keep junk out of Cursor
+tags:
+  - cursorignore
+  - index
+  - node_modules
+  - lockfile
+rule: Add .cursorignore for node_modules, build output, lockfiles, .env and large data.
+why: Cursor indexes and reads what it can see; ignored files cost nothing.
+auto: askai scaffold writes it; askai check looks for it

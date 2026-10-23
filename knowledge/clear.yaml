@@ -1,0 +1,16 @@
+id: clear
+title: Fresh chat for each task
+tags:
+  - clear
+  - new
+  - task
+  - context
+  - reset
+  - chat
+rule: One task per chat; clear between unrelated tasks. Clearing is free.
+why: Every turn re-sends the whole conversation; calls over 150K context were 75% of one heavy week (dotclaude).
+how:
+  claude: /clear (then /rename and /resume to come back)
+  codex: /new
+  agy: /clear (/new)
+  cursor: /clear (/new)

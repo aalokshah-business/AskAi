@@ -1,0 +1,14 @@
+id: model-claude
+title: Claude Code models
+tags:
+  - model
+  - haiku
+  - sonnet
+  - opus
+  - claude
+  - routing
+rule: Haiku for search and small edits, Sonnet for everyday work, Opus (or Sonnet + /advisor opus) only for the hard step.
+why: A model switch is the only repeated large saving in the benchmarks; Claude Code defaults to Opus since 22 Sep 2026.
+how:
+  claude: /model haiku|sonnet|opus
+auto: askai install sets a cheap default when none is set

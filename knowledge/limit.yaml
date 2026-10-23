@@ -1,0 +1,11 @@
+id: limit
+title: When you hit a limit
+tags:
+  - limit
+  - rate
+  - quota
+  - reset
+  - credits
+  - locked out
+rule: Wait for the reset, switch model family after a model-specific limit, or switch to a model with its own pool.
+why: Claude: /model sonnet after an Opus limit; Codex: /usage shows resets; Antigravity: Flash pool; Cursor: Auto.

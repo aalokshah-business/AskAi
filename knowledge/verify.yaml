@@ -1,0 +1,10 @@
+id: verify
+title: Give a verification target
+tags:
+  - test
+  - verify
+  - check
+  - done
+  - acceptance
+rule: Give a test, command or expected output that proves the task is done.
+why: Agents that can check their own work need fewer correction rounds (Anthropic, Antigravity best practices).

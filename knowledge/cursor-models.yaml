@@ -1,0 +1,13 @@
+id: cursor-models
+title: Cursor models and plans
+tags:
+  - cursor model
+  - grok
+  - composer
+  - premium
+  - plus
+rule: Free and Plus: Grok 4.7 and Composer only; Sonnet needs Premium or above (billed at API price).
+why: Cursor help, Available models (2026).
+how:
+  cursor: agent models
+auto: askai models set cursor.useSonnet true

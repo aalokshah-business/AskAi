@@ -1,0 +1,13 @@
+id: instruction-files
+title: Short instruction files
+tags:
+  - claude.md
+  - agents.md
+  - gemini.md
+  - rules
+  - instructions
+  - memory
+  - 200 lines
+rule: Keep CLAUDE.md / AGENTS.md / GEMINI.md under 200 lines, as an index; move workflows into skills.
+why: They load every session and every subagent (Anthropic); Codex caps at 32 KiB; Antigravity always-on rules share 20K tokens.
+auto: askai check measures them

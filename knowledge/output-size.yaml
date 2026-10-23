@@ -1,0 +1,14 @@
+id: output-size
+title: Shorter replies
+tags:
+  - output
+  - reply
+  - diff
+  - verbose
+  - length
+  - shorter
+  - caveman
+  - terse
+rule: On by default: the terse rule (Caveman-style), the diff-only rule, Codex verbosity low, and the output line in askai prompt. For one task: askai prompt --output diff.
+why: Output tokens cost about five times input on Claude; Caveman-style replies measured about 8% cheaper (median of six studies).
+auto: askai prompt --output diff; --caveman ultra for the shortest replies

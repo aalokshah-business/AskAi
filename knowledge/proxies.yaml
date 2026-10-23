@@ -1,0 +1,11 @@
+id: proxies
+title: Proxies and routers
+tags:
+  - proxy
+  - router
+  - 9router
+  - omniroute
+  - claudeslim
+  - wrap
+rule: Avoid on a subscription.
+why: Proxies can switch billing, break the prompt cache and send code to third parties.

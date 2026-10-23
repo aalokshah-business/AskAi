@@ -1,0 +1,10 @@
+id: memory-tools
+title: Memory plugins
+tags:
+  - claude-mem
+  - supermemory
+  - memory
+  - remember
+rule: Use at most one memory tool; the handoff file and project files are usually enough.
+why: No independent measurement for claude-mem or Supermemory; both add context to sessions.
+auto: askai plugins info claude-mem

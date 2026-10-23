@@ -1,0 +1,16 @@
+id: stop-early
+title: Stop wrong turns early
+tags:
+  - esc
+  - stop
+  - interrupt
+  - rewind
+  - undo
+  - wrong path
+rule: Press Esc as soon as the agent drifts, then rewind instead of arguing.
+why: All four vendors document it; every extra wrong step is re-read later.
+how:
+  claude: Esc, /rewind
+  codex: Esc, Esc Esc
+  agy: Esc, /rewind (/undo)
+  cursor: Esc, /rewind

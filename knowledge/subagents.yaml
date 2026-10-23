@@ -1,0 +1,16 @@
+id: subagents
+title: Few, cheap subagents
+tags:
+  - subagent
+  - agent
+  - team
+  - parallel
+  - fan-out
+  - haiku
+rule: Use subagents only for broad searches or logs, on a cheap model; no agent teams for routine work.
+why: Teams use about 7x tokens (Anthropic); each fresh subagent writes ~14K tokens before its first call (dotclaude).
+how:
+  claude: CLAUDE_CODE_SUBAGENT_MODEL=haiku
+  codex: [agents] default_subagent_reasoning_effort = "medium"
+  agy: Flash for background subagents
+auto: askai install sets the subagent model

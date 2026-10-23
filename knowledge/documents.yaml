@@ -1,0 +1,12 @@
+id: documents
+title: Convert documents first
+tags:
+  - pdf
+  - docx
+  - html
+  - markdown
+  - markitdown
+  - document
+rule: Convert PDFs, Office files and HTML to Markdown before attaching.
+why: Binary documents cost far more tokens than their text.
+auto: askai install --profile docs installs markitdown

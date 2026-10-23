@@ -1,0 +1,10 @@
+id: paste
+title: Paste only what matters
+tags:
+  - paste
+  - log
+  - error
+  - output
+  - stack trace
+rule: Paste the failing function or the last 10-40 log lines, not the whole log.
+why: Your screenshot page 5; Anthropic filters test output to failures in its hook example.

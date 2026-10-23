@@ -1,0 +1,14 @@
+id: todo
+title: Things only you can do
+tags:
+  - todo
+  - to-do
+  - manual
+  - action
+  - pending
+  - setting
+  - restart
+  - sign in
+rule: askai todo lists every manual step per tool and repository; checkable ones clear themselves.
+why: A plugin that is installed but never set up costs tokens without saving any.
+auto: askai todo; askai todo done <id>

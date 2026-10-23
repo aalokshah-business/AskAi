@@ -1,0 +1,10 @@
+id: budget
+title: Budget guards
+tags:
+  - budget
+  - tokenlens
+  - cap
+  - warn
+  - weekly limit
+rule: A budget guard can warn before the weekly cap; it does not reduce tokens per task.
+why: tokenlens reads Claude Code session logs (exact usage) and can allow, warn, ask or deny tool calls against your weekly cap.

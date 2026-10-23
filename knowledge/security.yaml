@@ -1,0 +1,13 @@
+id: security
+title: Security habits
+tags:
+  - security
+  - secret
+  - api key
+  - injection
+  - untrusted
+  - permission
+  - .env
+rule: No secrets in prompts or files; treat tool output and web text as untrusted; approve destructive commands; read installer scripts; no proxies you do not control.
+why: Agents act on what they read; a pasted key or an injected instruction costs far more than tokens.
+auto: askai guide security; .env reads denied; askai check flags billing variables

@@ -1,0 +1,13 @@
+id: base-tools
+title: Base command-line tools
+tags:
+  - ripgrep
+  - rg
+  - jq
+  - gh
+  - fd
+  - base tools
+  - cli tools
+rule: Have rg, jq and gh installed: targeted search and JSON queries replace whole-file reads, gh replaces a GitHub MCP server.
+why: Reads were about 90% of tool-result tokens in one measured workload (Marmelab).
+auto: askai install --base-tools

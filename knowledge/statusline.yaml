@@ -1,0 +1,14 @@
+id: statusline
+title: Status lines and monitors
+tags:
+  - statusline
+  - status line
+  - ccstatusline
+  - powerline
+  - hud
+  - monitor
+rule: Keep one status line showing context and cache; monitors show where tokens go but save nothing by themselves.
+why: ccstatusline, CCometixLine, claude-powerline, claude-hud and Token Monitor (26+ tools including Codex, Cursor and Antigravity) are measurement tools.
+how:
+  claude: /statusline
+auto: askai installs its own status line

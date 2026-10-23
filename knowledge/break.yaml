@@ -1,0 +1,12 @@
+id: break
+title: Before a break
+tags:
+  - break
+  - pause
+  - stop
+  - lunch
+  - away
+  - handoff
+rule: Finish the verified step, commit or stash, ask the agent to write .ai-work/HANDOFF.md, stop loops, goals and background agents.
+why: Background work keeps spending; the cache expires after 1 h (5 min on usage credits).
+auto: askai break

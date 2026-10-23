@@ -1,0 +1,254 @@
+[
+  {
+    "id": "clear",
+    "render": "Fresh chat for each task\n  Rule: One task per chat; clear between unrelated tasks. Clearing is free.\n  Why:  Every turn re-sends the whole conversation; calls over 150K context were 75% of one heavy week (dotclaude).\n  Claude Code  /clear (then /rename and /resume to come back)\n  Codex        /new\n  Antigravity  /clear (/new)\n  Cursor       /clear (/new)"
+  },
+  {
+    "id": "compact",
+    "render": "Compacting is not free\n  Rule: Compact only a chat you must keep, at a natural boundary, with instructions; prefer a handoff plus a fresh chat.\n  Why:  /compact reads the whole conversation to write its summary: a large request itself (Anthropic cost guide).\n  Claude Code  /compact keep: goal, files, failing test\n  Codex        /compact\n  Antigravity  fresh chat + handoff\n  Cursor       /summarize\n  askai:       askai break, then a fresh chat"
+  },
+  {
+    "id": "one-prompt",
+    "render": "One complete prompt\n  Rule: Send one prompt with the goal, the files and how to verify; do not drip-feed follow-ups.\n  Why:  Each extra message is another full re-read of the context (dotclaude; AI LABS; your screenshot page 1)."
+  },
+  {
+    "id": "edit-regenerate",
+    "render": "Edit instead of correcting\n  Rule: If an answer is slightly wrong, edit your message and regenerate rather than sending a correction.\n  Why:  Follow-ups stay in history and are re-sent every turn (your screenshot page 1).\n  Claude Code  Esc Esc to edit the previous message\n  Codex        Esc Esc (edit and fork)\n  Antigravity  /rewind\n  Cursor       /rewind"
+  },
+  {
+    "id": "files",
+    "render": "Point at files\n  Rule: Name the file and function with @path; avoid \"improve the codebase\".\n  Why:  Vague prompts trigger broad scanning (Anthropic); @ targeting minimises token overhead (Antigravity docs)."
+  },
+  {
+    "id": "plan",
+    "render": "Plan before multi-file edits\n  Rule: Use plan mode for anything touching more than two files and approve before edits.\n  Why:  A wrong path costs the work twice (Anthropic, Antigravity, Cursor docs; screenshot page 2).\n  Claude Code  Shift+Tab or /plan\n  Codex        /plan\n  Antigravity  /plan, /planning\n  Cursor       /plan, /ask"
+  },
+  {
+    "id": "verify",
+    "render": "Give a verification target\n  Rule: Give a test, command or expected output that proves the task is done.\n  Why:  Agents that can check their own work need fewer correction rounds (Anthropic, Antigravity best practices)."
+  },
+  {
+    "id": "questions",
+    "render": "One round of questions\n  Rule: Ask for one round of clarifying questions, then proceed.\n  Why:  Open-ended question loops add turns; your screenshot page 2 rule kept to one round."
+  },
+  {
+    "id": "stop-early",
+    "render": "Stop wrong turns early\n  Rule: Press Esc as soon as the agent drifts, then rewind instead of arguing.\n  Why:  All four vendors document it; every extra wrong step is re-read later.\n  Claude Code  Esc, /rewind\n  Codex        Esc, Esc Esc\n  Antigravity  Esc, /rewind (/undo)\n  Cursor       Esc, /rewind"
+  },
+  {
+    "id": "paste",
+    "render": "Paste only what matters\n  Rule: Paste the failing function or the last 10-40 log lines, not the whole log.\n  Why:  Your screenshot page 5; Anthropic filters test output to failures in its hook example."
+  },
+  {
+    "id": "reads",
+    "render": "Search, then read ranges\n  Rule: Search first, then read only the needed line ranges; batch independent reads in one message.\n  Why:  Reads were 90.6% of tool-result tokens in one workload (Marmelab); parallel calls cost one turn (dotclaude).\n  askai:       askai install writes this rule for every host"
+  },
+  {
+    "id": "smallest",
+    "render": "Smallest change that works\n  Rule: Ask for the smallest change that solves the task; no speculative features or unrequested refactors.\n  Why:  Ponytail measured -10.3% cost, quality unchanged (JetBrains, p=0.004).\n  askai:       askai install writes the build-lean rule for every host"
+  },
+  {
+    "id": "terse",
+    "render": "Terse replies\n  Rule: Ask for terse answers: no preamble or narration; exact code and errors.\n  Why:  Caveman-style rules: median -8% cost over six studies, quality unchanged.\n  askai:       askai install writes the terse block (--caveman lite|full|ultra|off)"
+  },
+  {
+    "id": "subagents",
+    "render": "Few, cheap subagents\n  Rule: Use subagents only for broad searches or logs, on a cheap model; no agent teams for routine work.\n  Why:  Teams use about 7x tokens (Anthropic); each fresh subagent writes ~14K tokens before its first call (dotclaude).\n  Claude Code  CLAUDE_CODE_SUBAGENT_MODEL=haiku\n  Codex        [agents] default_subagent_reasoning_effort = \"medium\"\n  Antigravity  Flash for background subagents\n  askai:       askai install sets the subagent model"
+  },
+  {
+    "id": "instruction-files",
+    "render": "Short instruction files\n  Rule: Keep CLAUDE.md / AGENTS.md / GEMINI.md under 200 lines, as an index; move workflows into skills.\n  Why:  They load every session and every subagent (Anthropic); Codex caps at 32 KiB; Antigravity always-on rules share 20K tokens.\n  askai:       askai check measures them"
+  },
+  {
+    "id": "mcp",
+    "render": "Unused MCP servers off\n  Rule: Disable MCP servers you do not use today; prefer CLIs like gh, rg and jq.\n  Why:  Each server adds tool names and instructions to every session (Anthropic cost guide).\n  Claude Code  /mcp\n  Codex        /mcp\n  Antigravity  /mcp or \"disabled\": true in mcp_config.json\n  Cursor       Settings, MCP\n  askai:       askai check counts servers"
+  },
+  {
+    "id": "documents",
+    "render": "Convert documents first\n  Rule: Convert PDFs, Office files and HTML to Markdown before attaching.\n  Why:  Binary documents cost far more tokens than their text.\n  askai:       askai install --profile docs installs markitdown"
+  },
+  {
+    "id": "model-claude",
+    "render": "Claude Code models\n  Rule: Haiku for search and small edits, Sonnet for everyday work, Opus (or Sonnet + /advisor opus) only for the hard step.\n  Why:  A model switch is the only repeated large saving in the benchmarks; Claude Code defaults to Opus since 22 Sep 2026.\n  Claude Code  /model haiku|sonnet|opus\n  askai:       askai install sets a cheap default when none is set"
+  },
+  {
+    "id": "model-codex",
+    "render": "Codex models\n  Rule: A Luna-class model for routine work, Sol for hard tasks; start fresh before 272K input tokens.\n  Why:  Published Plus estimates: Luna 350-3,000 messages per 5 h, Sol 15-160; inputs past 272K bill input at 2x.\n  Codex        /model\n  askai:       askai install --codex-model NAME"
+  },
+  {
+    "id": "model-agy",
+    "render": "Antigravity models\n  Rule: Flash for routine work; Pro or Claude for hard tasks; quota is per model, so switch when one runs out.\n  Why:  Antigravity plans page; Flash has its own pool that refreshes more often.\n  Antigravity  /model, /usage (/quota)"
+  },
+  {
+    "id": "model-cursor",
+    "render": "Cursor models and Auto\n  Rule: Auto for routine work; a frontier model only for the hard task; Max Mode off.\n  Why:  Cursor pricing: Auto bills $1.25/M input, $6/M output, $0.25/M cache reads, cheaper than frontier models but not free.\n  Cursor       model picker; Dashboard, Usage"
+  },
+  {
+    "id": "effort",
+    "render": "High effort for Claude, medium elsewhere\n  Rule: Claude Code defaults to high effort. Use max only for the hard step. Codex and Antigravity stay on medium.\n  Why:  Thinking is billed as output (Anthropic); one creator measured max effort at 3.5-4x tokens.\n  Claude Code  /effort high\n  Codex        Alt+, / Alt+.\n  Antigravity  /effort low|medium\n  askai:       askai install sets high effort for Claude Code and medium for Codex"
+  },
+  {
+    "id": "advisor",
+    "render": "Advisor instead of Opus\n  Rule: For a hard task, keep a Sonnet session and run /advisor opus instead of switching to Opus.\n  Why:  The advisor is consulted at decision points; analyses put it about a third cheaper than Opus throughout.\n  Claude Code  /advisor opus"
+  },
+  {
+    "id": "speed-modes",
+    "render": "No speed or big-context modes\n  Rule: Leave Claude fast mode, Codex Fast/Ultrafast, Cursor Max Mode and Antigravity /boost off unless speed matters more.\n  Why:  They spend allowance faster: fast mode bills credits at 2x; Codex Fast 2.5x, Ultrafast 8x."
+  },
+  {
+    "id": "peak",
+    "render": "Avoid Claude peak hours for big jobs\n  Rule: Run big refactors and long agent runs outside weekdays 08:00-14:00 US Eastern.\n  Why:  Anthropic, March 2026: the 5-hour window drains faster at peak (your screenshot page 9).\n  askai:       askai tips peak"
+  },
+  {
+    "id": "break",
+    "render": "Before a break\n  Rule: Finish the verified step, commit or stash, ask the agent to write .ai-work/HANDOFF.md, stop loops, goals and background agents.\n  Why:  Background work keeps spending; the cache expires after 1 h (5 min on usage credits).\n  askai:       askai break"
+  },
+  {
+    "id": "resume",
+    "render": "Coming back\n  Rule: Within the cache lifetime and with a small context, continue; otherwise start fresh from the handoff.\n  Why:  The first message after the cache expires re-processes the whole conversation (Anthropic).\n  Claude Code  claude -c or a fresh chat\n  Codex        codex resume --last\n  Antigravity  /resume\n  Cursor       agent --continue\n  askai:       askai resume (prints the prompt; --copy copies it)"
+  },
+  {
+    "id": "limit",
+    "render": "When you hit a limit\n  Rule: Wait for the reset, switch model family after a model-specific limit, or switch to a model with its own pool.\n  Why:  Claude: /model sonnet after an Opus limit; Codex: /usage shows resets; Antigravity: Flash pool; Cursor: Auto."
+  },
+  {
+    "id": "billing",
+    "render": "Billing traps\n  Rule: Unset ANTHROPIC_API_KEY, ANTHROPIC_BASE_URL and OPENAI_API_KEY unless you mean to pay per token; keep Antigravity credits off.\n  Why:  An API key overrides your plan; Headroom-style proxies showed \"API Usage Billing\" (your screenshot page 18).\n  askai:       askai check and askai doctor flag them"
+  },
+  {
+    "id": "rtk",
+    "render": "RTK\n  Rule: Not recommended by default: measure on your own work if you try it.\n  Why:  Median +7% task cost over six third-party studies; its counter logged 96M tokens saved in runs that cost 7.6% more.\n  askai:       askai install --rtk (opt-in)"
+  },
+  {
+    "id": "context-mode",
+    "render": "Context Mode\n  Rule: Not recommended by default.\n  Why:  The one paired study measured +33% to +72% cost.\n  askai:       askai install --context-mode (opt-in)"
+  },
+  {
+    "id": "headroom",
+    "render": "Headroom\n  Rule: Installed with --headroom or the max profile in MCP mode: the agent calls headroom_compress on large outputs. Proxy mode (headroom wrap, ANTHROPIC_BASE_URL) is not set up by AskAI.\n  Why:  Vendor reports 47-92% on large tool outputs; four independent studies found a median +32% cost; proxy mode moved Claude Code to API billing in your screenshot.\n  Claude Code  headroom_stats inside the session\n  askai:       askai install --headroom; askai infra shows where it is registered"
+  },
+  {
+    "id": "proxies",
+    "render": "Proxies and routers\n  Rule: Avoid on a subscription.\n  Why:  Proxies can switch billing, break the prompt cache and send code to third parties."
+  },
+  {
+    "id": "lsp",
+    "render": "Code navigation plugins\n  Rule: Install the official code-intelligence plugin for typed languages.\n  Why:  LSP navigation measured -13% cost (Marmelab); Anthropic recommends it.\n  Claude Code  /plugin install typescript-lsp@claude-plugins-official\n  askai:       askai install --lsp ts,py"
+  },
+  {
+    "id": "desync",
+    "render": "Usage jumps while idle\n  Rule: Compare /stats in the CLI with claude.ai's usage bar; report a mismatch.\n  Why:  Reported counter-desync bug (GitHub issues #38335, #39507)."
+  },
+  {
+    "id": "cursor-ignore",
+    "render": "Keep junk out of Cursor\n  Rule: Add .cursorignore for node_modules, build output, lockfiles, .env and large data.\n  Why:  Cursor indexes and reads what it can see; ignored files cost nothing.\n  askai:       askai scaffold writes it; askai check looks for it"
+  },
+  {
+    "id": "codex-local",
+    "render": "Codex: local before cloud\n  Rule: Run small jobs locally; ask for several cloud attempts only when you will compare them.\n  Why:  OpenAI says cloud tasks can use more of the allowance; each attempt is its own run."
+  },
+  {
+    "id": "nested-agents",
+    "render": "Nest AGENTS.md by folder\n  Rule: Put a service's rules in its own folder's AGENTS.md so they load only there.\n  Why:  Codex reads AGENTS.md from the repo root down to the current folder (OpenAI)."
+  },
+  {
+    "id": "superclaude",
+    "render": "SuperClaude\n  Rule: Optional: its --uc mode is a terse-output rule like Caveman; the framework itself loads several thousand tokens of instructions every session.\n  Why:  Claims 30-50% fewer tokens with --uc; no third-party measurement found; one analysis lists ~1.6K tokens of commands and ~2.3K of flags loaded by its CLAUDE.md imports.\n  askai:       askai installs a short terse block instead"
+  },
+  {
+    "id": "doctor-tools",
+    "render": "Doctor and audit tools\n  Rule: Run the built-in /doctor weekly; askai check covers tokens and billing for all four tools; LLM-based config audits cost tokens each run.\n  Why:  Built-in /doctor flags large CLAUDE.md files, agent descriptions over 15K tokens and MCP tools over 25K. claude-config-doctor is an LLM skill (costs tokens); claude-doctor analyses transcripts offline and writes rules.\n  Claude Code  /doctor (press f to fix)\n  askai:       askai check, askai doctor"
+  },
+  {
+    "id": "statusline",
+    "render": "Status lines and monitors\n  Rule: Keep one status line showing context and cache; monitors show where tokens go but save nothing by themselves.\n  Why:  ccstatusline, CCometixLine, claude-powerline, claude-hud and Token Monitor (26+ tools including Codex, Cursor and Antigravity) are measurement tools.\n  Claude Code  /statusline\n  askai:       askai installs its own status line"
+  },
+  {
+    "id": "budget",
+    "render": "Budget guards\n  Rule: A budget guard can warn before the weekly cap; it does not reduce tokens per task.\n  Why:  tokenlens reads Claude Code session logs (exact usage) and can allow, warn, ask or deny tool calls against your weekly cap."
+  },
+  {
+    "id": "offload",
+    "render": "Offloading reads to subagents\n  Rule: Moving reads into a subagent shrinks the main context, not the bill: the subagent's tokens are still spent.\n  Why:  TokenRoll's scout claims 83% less main context; each fresh subagent writes ~14K tokens before its first call (dotclaude). Worth it only for very large reads."
+  },
+  {
+    "id": "plugin-bundles",
+    "render": "All-in-one token plugins\n  Rule: Prefer settings and short rules; bundles that inject rules through SessionStart hooks add text to every session.\n  Why:  context_guard (14 skills, hooks) and token-saver (rules, cheap subagents, audit) publish no third-party measurement; their sound parts match what askai already sets."
+  },
+  {
+    "id": "long-chat",
+    "render": "Long chats are the biggest cost\n  Rule: Keep sessions to one task; let project files carry the context so /clear costs nothing.\n  Why:  Every turn re-sends the whole conversation; turns over 150K tokens were 75% of one measured heavy week (dotclaude).\n  askai:       askai init writes the project files; askai clear checks the handoff first"
+  },
+  {
+    "id": "project-files",
+    "render": "Project files instead of chat history\n  Rule: Keep a small router (AGENTS.md) pointing to PROJECT_MAP, ARCHITECTURE, FEATURES, WORK_ORDER and the handoff; after /clear the agent reads only what the task needs.\n  Why:  A cleared session that reads a 40-line handoff and two files costs far less than a long chat re-sent every turn.\n  askai:       askai init, askai map"
+  },
+  {
+    "id": "cache-breakers",
+    "render": "What breaks the prompt cache\n  Rule: Choose the model and MCP servers before the session and keep them; compact rarely.\n  Why:  A model switch, connecting or disconnecting an MCP server, a plugin that adds MCP tools, compaction and fast mode rebuild the cache; an effort change keeps it (Anthropic).\n  Claude Code  askai go claude --tier build\n  askai:       askai go, askai audit (shows switches and cache share)"
+  },
+  {
+    "id": "tool-output",
+    "render": "Limit tool output\n  Rule: Cap, grep or summarise output before it reaches the chat: quiet flags, tail -n 40, only failing lines.\n  Why:  Bash output above the cap is never read; AskAI sets bashOutputMaxChars to 15,000. Hooks that rewrite commands measured no net saving (RTK).\n  askai:       askai prompt --output-safe \"cmd\""
+  },
+  {
+    "id": "modes",
+    "render": "Prompt modifiers\n  Rule: Add one modifier line instead of a long instruction: BLUNT, BRUTAL, ASSUME, COUNTER, CONTRAST.\n  Why:  One line replaces several turns of back-and-forth when you want a direct critique.\n  askai:       askai prompt --mode brutal"
+  },
+  {
+    "id": "graphify",
+    "render": "Graphify\n  Rule: Optional for very large repos: build the graph once and point the agent at GRAPH_REPORT.md.\n  Why:  Claims 71.5x fewer tokens per query; an independent test saw ~0% when the agent ignored the graph; building it costs tokens; its Claude hook fires on every search.\n  askai:       askai plugins install graphify; askai map links the report"
+  },
+  {
+    "id": "graftcode",
+    "render": "Graftcode rules\n  Rule: In a project that uses Graftcode, add its rules so agents call methods through generated packages instead of writing REST code.\n  Why:  Graftcode publishes a small CLAUDE.md router plus per-language rules read on demand (grft-dev/graftcode-demos).\n  askai:       askai plugins info graftcode"
+  },
+  {
+    "id": "memory-tools",
+    "render": "Memory plugins\n  Rule: Use at most one memory tool; the handoff file and project files are usually enough.\n  Why:  No independent measurement for claude-mem or Supermemory; both add context to sessions.\n  askai:       askai plugins info claude-mem"
+  },
+  {
+    "id": "docs-tools",
+    "render": "Context7 and Repomix\n  Rule: Context7 for current library docs when needed; Repomix only for handovers between tools, narrowed to the folders that matter.\n  Why:  A full repository snapshot is large; symbol search reads less.\n  askai:       askai plugins install context7 | repomix"
+  },
+  {
+    "id": "aider",
+    "render": "Aider\n  Rule: A separate coding agent, not a plugin: run it in its own session and never on the same files as another agent.\n  Why:  Its /architect mode separates planning from editing, like AskAI's lead and build tiers."
+  },
+  {
+    "id": "codex-agents",
+    "render": "Codex subagent models\n  Rule: Ask for custom agents by name and check the model they really ran.\n  Why:  Codex never spawns custom agents by itself; a reported bug lets in-app workers inherit the parent model (GitHub openai/codex #32587).\n  Codex        Spawn runner for <task>\n  askai:       askai infra shows models used"
+  },
+  {
+    "id": "agy-agents",
+    "render": "Antigravity agent models\n  Rule: Agent files take only a tier: flash, pro, flash_lite or inherit; set effort per session.\n  Why:  Any other model value makes Antigravity skip the agent file silently (google-antigravity/antigravity-cli #1270).\n  Antigravity  /effort high\n  askai:       askai init writes model: flash"
+  },
+  {
+    "id": "cursor-models",
+    "render": "Cursor models and plans\n  Rule: Free and Plus: Grok 4.7 and Composer only; Sonnet needs Premium or above (billed at API price).\n  Why:  Cursor help, Available models (2026).\n  Cursor       agent models\n  askai:       askai models set cursor.useSonnet true"
+  },
+  {
+    "id": "savings",
+    "render": "Seeing what each plugin saves\n  Rule: askai savings runs each installed plugin's own report (rtk gain, ccusage daily, headroom perf, codebase-memory projects, Graphify graph status); askai plugins info <id> shows the in-agent commands.\n  Why:  Tools report their own estimates; RTK's counter showed 96M saved during runs that cost more. Compare with askai usage and askai audit.\n  askai:       askai savings 7; askai usage 7"
+  },
+  {
+    "id": "output-size",
+    "render": "Shorter replies\n  Rule: On by default: the terse rule (Caveman-style), the diff-only rule, Codex verbosity low, and the output line in askai prompt. For one task: askai prompt --output diff.\n  Why:  Output tokens cost about five times input on Claude; Caveman-style replies measured about 8% cheaper (median of six studies).\n  askai:       askai prompt --output diff; --caveman ultra for the shortest replies"
+  },
+  {
+    "id": "todo",
+    "render": "Things only you can do\n  Rule: askai todo lists every manual step per tool and repository; checkable ones clear themselves.\n  Why:  A plugin that is installed but never set up costs tokens without saving any.\n  askai:       askai todo; askai todo done <id>"
+  },
+  {
+    "id": "security",
+    "render": "Security habits\n  Rule: No secrets in prompts or files; treat tool output and web text as untrusted; approve destructive commands; read installer scripts; no proxies you do not control.\n  Why:  Agents act on what they read; a pasted key or an injected instruction costs far more than tokens.\n  askai:       askai guide security; .env reads denied; askai check flags billing variables"
+  },
+  {
+    "id": "base-tools",
+    "render": "Base command-line tools\n  Rule: Have rg, jq and gh installed: targeted search and JSON queries replace whole-file reads, gh replaces a GitHub MCP server.\n  Why:  Reads were about 90% of tool-result tokens in one measured workload (Marmelab).\n  askai:       askai install --base-tools"
+  },
+  {
+    "id": "prompt-kinds",
+    "render": "Prompt patterns by task\n  Rule: Bug: reproduce, root cause, minimal fix, regression test. Feature: acceptance criteria, small verified steps. Design: options first, no code. Risky: approval before destructive steps.\n  Why:  A pattern that fits the task avoids the most expensive turns: rework and wrong paths.\n  askai:       askai prompt --kind bug|feature|design|risky"
+  }
+]

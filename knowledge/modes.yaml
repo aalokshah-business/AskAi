@@ -1,0 +1,12 @@
+id: modes
+title: Prompt modifiers
+tags:
+  - blunt
+  - brutal
+  - assume
+  - counter
+  - contrast
+  - modifier
+rule: Add one modifier line instead of a long instruction: BLUNT, BRUTAL, ASSUME, COUNTER, CONTRAST.
+why: One line replaces several turns of back-and-forth when you want a direct critique.
+auto: askai prompt --mode brutal

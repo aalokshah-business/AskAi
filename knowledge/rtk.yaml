@@ -1,0 +1,10 @@
+id: rtk
+title: RTK
+tags:
+  - rtk
+  - shell
+  - filter
+  - compress output
+rule: Not recommended by default: measure on your own work if you try it.
+why: Median +7% task cost over six third-party studies; its counter logged 96M tokens saved in runs that cost 7.6% more.
+auto: askai install --rtk (opt-in)

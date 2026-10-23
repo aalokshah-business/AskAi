@@ -1,0 +1,13 @@
+id: project-files
+title: Project files instead of chat history
+tags:
+  - project file
+  - pointer
+  - router
+  - agents.md
+  - map
+  - features
+  - clear freely
+rule: Keep a small router (AGENTS.md) pointing to PROJECT_MAP, ARCHITECTURE, FEATURES, WORK_ORDER and the handoff; after /clear the agent reads only what the task needs.
+why: A cleared session that reads a 40-line handoff and two files costs far less than a long chat re-sent every turn.
+auto: askai init, askai map

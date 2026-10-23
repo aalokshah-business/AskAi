@@ -1,0 +1,14 @@
+id: savings
+title: Seeing what each plugin saves
+tags:
+  - savings
+  - saved
+  - stats
+  - gain
+  - how much
+  - report
+  - headroom_stats
+  - rtk gain
+rule: askai savings runs each installed plugin's own report (rtk gain, ccusage daily, headroom perf, codebase-memory projects, Graphify graph status); askai plugins info <id> shows the in-agent commands.
+why: Tools report their own estimates; RTK's counter showed 96M saved during runs that cost more. Compare with askai usage and askai audit.
+auto: askai savings 7; askai usage 7

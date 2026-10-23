@@ -1,0 +1,12 @@
+id: long-chat
+title: Long chats are the biggest cost
+tags:
+  - long
+  - conversation
+  - session
+  - history
+  - chat
+  - biggest
+rule: Keep sessions to one task; let project files carry the context so /clear costs nothing.
+why: Every turn re-sends the whole conversation; turns over 150K tokens were 75% of one measured heavy week (dotclaude).
+auto: askai init writes the project files; askai clear checks the handoff first

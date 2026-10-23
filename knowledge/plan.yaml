@@ -1,0 +1,15 @@
+id: plan
+title: Plan before multi-file edits
+tags:
+  - plan
+  - mode
+  - approve
+  - architecture
+  - multi-file
+rule: Use plan mode for anything touching more than two files and approve before edits.
+why: A wrong path costs the work twice (Anthropic, Antigravity, Cursor docs; screenshot page 2).
+how:
+  claude: Shift+Tab or /plan
+  codex: /plan
+  agy: /plan, /planning
+  cursor: /plan, /ask

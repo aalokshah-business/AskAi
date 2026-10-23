@@ -1,0 +1,10 @@
+id: one-prompt
+title: One complete prompt
+tags:
+  - prompt
+  - batch
+  - follow-up
+  - messages
+  - turns
+rule: Send one prompt with the goal, the files and how to verify; do not drip-feed follow-ups.
+why: Each extra message is another full re-read of the context (dotclaude; AI LABS; your screenshot page 1).

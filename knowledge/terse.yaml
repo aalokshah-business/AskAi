@@ -1,0 +1,11 @@
+id: terse
+title: Terse replies
+tags:
+  - caveman
+  - terse
+  - verbose
+  - output
+  - short
+rule: Ask for terse answers: no preamble or narration; exact code and errors.
+why: Caveman-style rules: median -8% cost over six studies, quality unchanged.
+auto: askai install writes the terse block (--caveman lite|full|ultra|off)

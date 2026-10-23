@@ -1,0 +1,17 @@
+id: mcp
+title: Unused MCP servers off
+tags:
+  - mcp
+  - server
+  - tools
+  - cli
+  - gh
+  - jq
+rule: Disable MCP servers you do not use today; prefer CLIs like gh, rg and jq.
+why: Each server adds tool names and instructions to every session (Anthropic cost guide).
+how:
+  claude: /mcp
+  codex: /mcp
+  agy: /mcp or "disabled": true in mcp_config.json
+  cursor: Settings, MCP
+auto: askai check counts servers

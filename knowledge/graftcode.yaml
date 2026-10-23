@@ -1,0 +1,10 @@
+id: graftcode
+title: Graftcode rules
+tags:
+  - graftcode
+  - graft
+  - no apis
+  - rest boilerplate
+rule: In a project that uses Graftcode, add its rules so agents call methods through generated packages instead of writing REST code.
+why: Graftcode publishes a small CLAUDE.md router plus per-language rules read on demand (grft-dev/graftcode-demos).
+auto: askai plugins info graftcode

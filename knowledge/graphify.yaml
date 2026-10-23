@@ -1,0 +1,10 @@
+id: graphify
+title: Graphify
+tags:
+  - graphify
+  - knowledge graph
+  - graph report
+  - local rag
+rule: Optional for very large repos: build the graph once and point the agent at GRAPH_REPORT.md.
+why: Claims 71.5x fewer tokens per query; an independent test saw ~0% when the agent ignored the graph; building it costs tokens; its Claude hook fires on every search.
+auto: askai plugins install graphify; askai map links the report

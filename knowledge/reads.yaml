@@ -1,0 +1,12 @@
+id: reads
+title: Search, then read ranges
+tags:
+  - read
+  - grep
+  - search
+  - file
+  - range
+  - lines
+rule: Search first, then read only the needed line ranges; batch independent reads in one message.
+why: Reads were 90.6% of tool-result tokens in one workload (Marmelab); parallel calls cost one turn (dotclaude).
+auto: askai install writes this rule for every host

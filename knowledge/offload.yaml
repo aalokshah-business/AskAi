@@ -1,0 +1,10 @@
+id: offload
+title: Offloading reads to subagents
+tags:
+  - scout
+  - offload
+  - subagent
+  - context explosion
+  - 83%
+rule: Moving reads into a subagent shrinks the main context, not the bill: the subagent's tokens are still spent.
+why: TokenRoll's scout claims 83% less main context; each fresh subagent writes ~14K tokens before its first call (dotclaude). Worth it only for very large reads.

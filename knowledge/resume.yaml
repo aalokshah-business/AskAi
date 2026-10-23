@@ -1,0 +1,17 @@
+id: resume
+title: Coming back
+tags:
+  - resume
+  - back
+  - return
+  - continue
+  - cache
+  - after break
+rule: Within the cache lifetime and with a small context, continue; otherwise start fresh from the handoff.
+why: The first message after the cache expires re-processes the whole conversation (Anthropic).
+how:
+  claude: claude -c or a fresh chat
+  codex: codex resume --last
+  agy: /resume
+  cursor: agent --continue
+auto: askai resume (prints the prompt; --copy copies it)

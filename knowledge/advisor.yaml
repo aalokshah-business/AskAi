@@ -1,0 +1,11 @@
+id: advisor
+title: Advisor instead of Opus
+tags:
+  - advisor
+  - opus
+  - fable
+  - expensive
+rule: For a hard task, keep a Sonnet session and run /advisor opus instead of switching to Opus.
+why: The advisor is consulted at decision points; analyses put it about a third cheaper than Opus throughout.
+how:
+  claude: /advisor opus

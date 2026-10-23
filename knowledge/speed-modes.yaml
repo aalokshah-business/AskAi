@@ -1,0 +1,10 @@
+id: speed-modes
+title: No speed or big-context modes
+tags:
+  - fast
+  - ultrafast
+  - max mode
+  - speed
+  - boost
+rule: Leave Claude fast mode, Codex Fast/Ultrafast, Cursor Max Mode and Antigravity /boost off unless speed matters more.
+why: They spend allowance faster: fast mode bills credits at 2x; Codex Fast 2.5x, Ultrafast 8x.

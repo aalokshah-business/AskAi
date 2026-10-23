@@ -1,0 +1,14 @@
+id: effort
+title: High effort for Claude, medium elsewhere
+tags:
+  - effort
+  - thinking
+  - reasoning
+  - think
+rule: Claude Code defaults to high effort. Use max only for the hard step. Codex and Antigravity stay on medium.
+why: Thinking is billed as output (Anthropic); one creator measured max effort at 3.5-4x tokens.
+how:
+  claude: /effort high
+  codex: Alt+, / Alt+.
+  agy: /effort low|medium
+auto: askai install sets high effort for Claude Code and medium for Codex

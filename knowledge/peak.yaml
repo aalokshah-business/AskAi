@@ -1,0 +1,11 @@
+id: peak
+title: Avoid Claude peak hours for big jobs
+tags:
+  - peak
+  - hours
+  - time
+  - ist
+  - schedule
+rule: Run big refactors and long agent runs outside weekdays 08:00-14:00 US Eastern.
+why: Anthropic, March 2026: the 5-hour window drains faster at peak (your screenshot page 9).
+auto: askai tips peak

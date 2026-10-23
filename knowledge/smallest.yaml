@@ -1,0 +1,12 @@
+id: smallest
+title: Smallest change that works
+tags:
+  - ponytail
+  - karpathy
+  - minimal
+  - refactor
+  - yagni
+  - simple
+rule: Ask for the smallest change that solves the task; no speculative features or unrequested refactors.
+why: Ponytail measured -10.3% cost, quality unchanged (JetBrains, p=0.004).
+auto: askai install writes the build-lean rule for every host

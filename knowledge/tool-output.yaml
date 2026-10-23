@@ -1,0 +1,14 @@
+id: tool-output
+title: Limit tool output
+tags:
+  - output
+  - noisy
+  - log
+  - build output
+  - progress bar
+  - cap
+  - grep
+  - summarize
+rule: Cap, grep or summarise output before it reaches the chat: quiet flags, tail -n 40, only failing lines.
+why: Bash output above the cap is never read; AskAI sets bashOutputMaxChars to 15,000. Hooks that rewrite commands measured no net saving (RTK).
+auto: askai prompt --output-safe "cmd"

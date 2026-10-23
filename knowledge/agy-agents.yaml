@@ -1,0 +1,12 @@
+id: agy-agents
+title: Antigravity agent models
+tags:
+  - antigravity agent
+  - flash
+  - model tier
+  - skipped
+rule: Agent files take only a tier: flash, pro, flash_lite or inherit; set effort per session.
+why: Any other model value makes Antigravity skip the agent file silently (google-antigravity/antigravity-cli #1270).
+how:
+  agy: /effort high
+auto: askai init writes model: flash

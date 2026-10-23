@@ -1,0 +1,12 @@
+id: model-cursor
+title: Cursor models and Auto
+tags:
+  - auto
+  - cursor
+  - max mode
+  - frontier
+  - model
+rule: Auto for routine work; a frontier model only for the hard task; Max Mode off.
+why: Cursor pricing: Auto bills $1.25/M input, $6/M output, $0.25/M cache reads, cheaper than frontier models but not free.
+how:
+  cursor: model picker; Dashboard, Usage
