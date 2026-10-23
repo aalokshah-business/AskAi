@@ -570,17 +570,19 @@ Exit: 0
 ```text
 askai usage: What Claude Code and Codex spent, from their local data; where to look for Antigravity and Cursor.
 
-Usage: askai usage [days] [--cache] [--plugins]
+Usage: askai usage [days] [--cache] [--plugins] [--full]
 
 Claude Code: ccusage when installed, else the transcript spend report. Codex: ~/.codex/sessions, read best effort.
 When neither has sessions, one reason is printed. No zero tables.
 --cache prints cache hit per session from status-line snapshots for that window. One line when there are none.
 --plugins prints one savings line for each installed plugin. One line when none are installed. A missing plugin is omitted.
+--full prints the session summary, then the cache section, then the plugin lines.
 
 Examples:
   askai usage 7
   askai usage --cache
   askai usage --plugins
+  askai usage --full
 
 Exit: 0
 ```

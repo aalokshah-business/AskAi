@@ -123,7 +123,7 @@ Session options
 `;
 
 // ---- args --------------------------------------------------------------------------------------------------------
-const BOOL = { yes: 'yes', y: 'yes', 'dry-run': 'dry', offline: 'offline', json: 'json', launch: 'launch', prepare: 'prepare', clear: 'clear', 'no-statusline': 'noStatusline', 'no-path': 'noPath', 'caveman-plugin': 'cavemanPlugin', markitdown: 'markitdown', ccusage: 'ccusage', tools: 'tools', force: 'force', print: 'print', remove: 'remove', lean: 'lean', rtk: 'rtk', 'context-mode': 'contextMode', 'lean-git': 'leanGit', copy: 'copy', fix: 'fix', refresh: 'refresh', resume: 'resume', 'base-tools': 'baseTools', headroom: 'headroom', graphify: 'graphify', context7: 'context7', repomix: 'repomix', 'codebase-memory': 'codebaseMemory', 'claude-mem': 'claudeMem', all: 'all', help: 'help', h: 'help', agents: 'agents', demo: 'demo', cache: 'cache', plugins: 'plugins' };
+const BOOL = { yes: 'yes', y: 'yes', 'dry-run': 'dry', offline: 'offline', json: 'json', launch: 'launch', prepare: 'prepare', clear: 'clear', 'no-statusline': 'noStatusline', 'no-path': 'noPath', 'caveman-plugin': 'cavemanPlugin', markitdown: 'markitdown', ccusage: 'ccusage', tools: 'tools', force: 'force', print: 'print', remove: 'remove', lean: 'lean', rtk: 'rtk', 'context-mode': 'contextMode', 'lean-git': 'leanGit', copy: 'copy', fix: 'fix', refresh: 'refresh', resume: 'resume', 'base-tools': 'baseTools', headroom: 'headroom', graphify: 'graphify', context7: 'context7', repomix: 'repomix', 'codebase-memory': 'codebaseMemory', 'claude-mem': 'claudeMem', all: 'all', help: 'help', h: 'help', agents: 'agents', demo: 'demo', cache: 'cache', plugins: 'plugins', full: 'full' };
 const VAL = { output: 'output', kind: 'kind', about: 'about', type: 'type', tier: 'tier', files: 'files', done: 'done', mode: 'mode', used: 'used', window: 'window', 'output-safe': 'outputSafe', out: 'out', project: 'project', p: 'project', name: 'name', path: 'path', build: 'build', test: 'test', only: 'only', skip: 'skip', caveman: 'caveman', profile: 'profile', target: 'target', 'claude-home': 'claudeHome', 'cursor-home': 'cursorHome', hours: 'hours',
   'codex-home': 'codexHome', 'agy-home': 'agyHome', 'main-model': 'mainModel', 'subagent-model': 'subagentModel', 'codex-model': 'codexModel',
   repo: 'repo', tool: 'tool', model: 'model', effort: 'effort', task: 'task', difficulty: 'difficulty', summary: 'summary', next: 'next',
@@ -1101,6 +1101,31 @@ function cmdAsk(o) {
 function cmdUsage(o) {
   const days = Number(o._[1] || o.hours || 7) || 7;
   const ctx = buildCtx(o, true);
+  const summary = () => {
+    let claudeText = '';
+    let claudeError = '';
+    if (ctx.which('ccusage')) {
+      const r = ctx.probe('ccusage', ['daily', '--since', new Date(Date.now() - days * 86400000).toISOString().slice(0, 10).replace(/-/g, '')], { timeout: 90000 });
+      if (r.ok) claudeText = String(r.stdout).trimEnd().split(/\r?\n/).slice(0, 40).join('\n');
+      else claudeError = `ccusage failed: ${firstLineOf(r.stderr || r.stdout)}`;
+    } else {
+      const script = path.join(SRC, 'hooks', 'askai-report.js');
+      const r = require('child_process').spawnSync(process.execPath, [script, '--hours', String(days * 24)], { encoding: 'utf8', maxBuffer: 256 * 1024 * 1024, env: { ...process.env, ...(o.claudeHome ? { CLAUDE_CONFIG_DIR: ctx.paths.home } : {}) } });
+      if (r.status === 0) claudeText = String(r.stdout || '').trimEnd().split(/\r?\n/).slice(0, 30).join('\n');
+    }
+    const codex = ctx.codexPaths ? usage.codex(ctx.codexPaths.home, days) : { files: 0 };
+    const claudeInstalled = !!(ctx.which && ctx.which('claude')) || fs.existsSync(ctx.paths.settings);
+    const codexInstalled = !!(ctx.which && ctx.which('codex')) || !!(ctx.codexPaths && fs.existsSync(ctx.codexPaths.home));
+    return usage.summarizeUsage({ days, claudeText, claudeError, codex, claudeInstalled, codexInstalled });
+  };
+  if (o.full) {
+    console.log(usage.fullText({
+      summary: summary(),
+      cache: usage.cacheText(status.renderCache(ctx, days * 24), days),
+      plugins: require('./lib/savings').pluginLines(ctx, projectDir(o)),
+    }));
+    return 0;
+  }
   if (o.cache) {
     console.log(usage.cacheText(status.renderCache(ctx, days * 24), days));
     return 0;
@@ -1109,21 +1134,7 @@ function cmdUsage(o) {
     console.log(require('./lib/savings').pluginLines(ctx, projectDir(o)));
     return 0;
   }
-  let claudeText = '';
-  let claudeError = '';
-  if (ctx.which('ccusage')) {
-    const r = ctx.probe('ccusage', ['daily', '--since', new Date(Date.now() - days * 86400000).toISOString().slice(0, 10).replace(/-/g, '')], { timeout: 90000 });
-    if (r.ok) claudeText = String(r.stdout).trimEnd().split(/\r?\n/).slice(0, 40).join('\n');
-    else claudeError = `ccusage failed: ${firstLineOf(r.stderr || r.stdout)}`;
-  } else {
-    const script = path.join(SRC, 'hooks', 'askai-report.js');
-    const r = require('child_process').spawnSync(process.execPath, [script, '--hours', String(days * 24)], { encoding: 'utf8', maxBuffer: 256 * 1024 * 1024, env: { ...process.env, ...(o.claudeHome ? { CLAUDE_CONFIG_DIR: ctx.paths.home } : {}) } });
-    if (r.status === 0) claudeText = String(r.stdout || '').trimEnd().split(/\r?\n/).slice(0, 30).join('\n');
-  }
-  const codex = ctx.codexPaths ? usage.codex(ctx.codexPaths.home, days) : { files: 0 };
-  const claudeInstalled = !!(ctx.which && ctx.which('claude')) || fs.existsSync(ctx.paths.settings);
-  const codexInstalled = !!(ctx.which && ctx.which('codex')) || !!(ctx.codexPaths && fs.existsSync(ctx.codexPaths.home));
-  console.log(usage.summarizeUsage({ days, claudeText, claudeError, codex, claudeInstalled, codexInstalled }));
+  console.log(summary());
   return 0;
 }
 function cmdSession(o) {
