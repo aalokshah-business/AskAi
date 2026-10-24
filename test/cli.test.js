@@ -335,7 +335,7 @@ test('the installed copy is self-contained and runs from the app folder', () => 
   assert.ok(!fs.existsSync(`${home}/commands/askai-cli.md`));
 }));
 
-test('shim is written for Windows', { skip: !WIN }, () => withHome(home => {
+test('shim is written for Windows', { skip: !WIN ? 'Windows shim only' : false }, () => withHome(home => {
   assert.strictEqual(run(home, 'install', ...SAFE).code, 0);
   const shim = fs.readFileSync(`${home}/askai/bin/askai.cmd`, 'utf8');
   assert.match(shim, /node "%~dp0\.\.\\app\\askai\.js" %\*/);

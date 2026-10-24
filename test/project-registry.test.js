@@ -99,7 +99,7 @@ test('AskAI CLI keeps active project for later commands in the same terminal', (
   assert.equal(run(['project', 'show']).code, 1, 'selection does not leak into another process');
 }));
 
-test('PowerShell integration keeps separate active projects in separate terminals', { skip: process.platform !== 'win32' }, () => fixture(({ a, b, env, outside, run }) => {
+test('PowerShell integration keeps separate active projects in separate terminals', { skip: process.platform !== 'win32' ? 'Windows PowerShell integration only' : false }, () => fixture(({ a, b, env, outside, run }) => {
   assert.equal(run(['init', a, '--name', 'alpha', '--yes']).code, 0);
   assert.equal(run(['init', b, '--name', 'beta', '--yes']).code, 0);
   const powershell = path.join(process.env.SystemRoot || 'C:\\Windows', 'System32', 'WindowsPowerShell', 'v1.0', 'powershell.exe');
