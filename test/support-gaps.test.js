@@ -54,6 +54,11 @@ test('build discovery never guesses a target or configures files; selection reco
     assert.deepEqual(selected.argv,['cmake','--preset','debug','-DCMAKE_EXPORT_COMPILE_COMMANDS=ON']);
     assert.ok(fs.existsSync(path.join(home,'.ai-work','build-selection.json')));
     assert.ok(!fs.existsSync(path.join(home,'build')));
+    write(path.join(home,'mk.sh'),'#!/bin/bash\necho do-not-execute > built.txt\n');
+    const script=build.select(home,'./mk.sh');
+    assert.deepEqual(script.argv,['./mk.sh']);
+    assert.equal(script.verified,false);
+    assert.ok(!fs.existsSync(path.join(home,'built.txt')));
   } finally { rm(home); }
 });
 

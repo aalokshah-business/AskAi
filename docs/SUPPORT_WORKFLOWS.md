@@ -59,6 +59,8 @@ askai project build select PRESET_NAME
 
 Discovery reads project-local CMake preset files and their simple includes, PlatformIO environments, and compile databases at standard locations. It excludes hidden presets and does not read includes outside the project. Metadata and include scans are bounded. Conditional presets, inheritance and toolchain compatibility are left for the build system to evaluate.
 
+For projects whose supported build entry point is `./mk.sh`, discovery lists that existing script too. Use `askai project build select ./mk.sh` to record the exact command without guessing arguments, board names or a replacement CMake invocation. AskAI does not execute or infer the behavior of the wrapper. Inspect the script and its configuration to determine how it selects the board/toolchain and emits a compile database.
+
 Selection requires one unique discovered name. It records `.ai-work/build-selection.json` and prints command argv for review. It does not run a build, alter CMake/PlatformIO files, configure editor extensions or mark the selection verified. CMake compile-database export requires Ninja or Makefiles.
 
 For Zephyr without an existing preset, provide your successful `west build` command, board/configuration and toolchain. AskAI cannot infer a safe board from an arbitrary firmware directory. Existing `compile_commands.json`, `build/compile_commands.json` and `_out/compile_commands.json` satisfy the compile-database presence check; live editor use still requires verification.

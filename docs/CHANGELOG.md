@@ -4,6 +4,8 @@ AskAI follows semantic versioning from 1.0.0 (see [RELEASING.md](RELEASING.md)).
 
 ## Unreleased
 
+- Discover an existing mk.sh firmware wrapper and preserve ./mk.sh as the explicitly selected build argv, without executing it or guessing target arguments.
+
 - Add explicit MCP stdio verification across four host configurations, with project overrides, bounded protocol checks, redacted logs and subprocess cleanup. Distinguish server responsiveness from editor attachment.
 - Add manual session quota observations and matched-workload observational comparisons, with reset detection and no quota-to-token conversion.
 - Add project build discovery and explicit preset selection; never guess firmware boards or execute builds.
