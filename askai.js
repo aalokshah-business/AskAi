@@ -1125,6 +1125,7 @@ async function cmdConvert(o) {
       if (fs.existsSync(resolvedSrc + ext)) { resolvedSrc = resolvedSrc + ext; break; }
     }
   }
+  if (!isUrl && !fs.existsSync(resolvedSrc)) { console.log(`${resolvedSrc} not found.`); return 1; }
   const out = o.out || path.join(projectDir(o), 'docs', 'ai', 'inputs', `${(isUrl ? resolvedSrc.replace(/^https?:\/\//, '').replace(/[^\w.-]+/g, '_') : path.basename(resolvedSrc, path.extname(resolvedSrc))).slice(0, 80)}.md`);
   if (fs.existsSync(out)) { console.log(`${out} exists; choose another --out`); return 1; }
   fs.mkdirSync(path.dirname(out), { recursive: true });
@@ -1181,7 +1182,8 @@ async function cmdConvert(o) {
         console.log(`wrote ${out} (~${Math.ceil(n / 4).toLocaleString('en-US')} tokens). Point the agent at the section it needs, not the whole file.`);
         resolve(0);
       } else {
-        const err = (stderrBuf || stdoutBuf).trim();
+        const raw = (stderrBuf || stdoutBuf).trim();
+        const err = raw.split(/\r?\n/).filter(Boolean).pop() || raw;
         console.error(`markitdown failed (exit ${code || 1})${err ? ': ' + err : ''}`);
         if (isYoutube && /transcript|caption|subtitles/i.test(err)) {
           console.error('Note: this video may not have public captions or transcripts enabled.');

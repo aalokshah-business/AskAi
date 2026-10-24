@@ -68,6 +68,16 @@ test('convert scan --ignore-originals writes .cursorignore and a plain scan does
   } finally { rm(home); }
 });
 
+test('convert on a missing file is one clean line, not a MarkItDown traceback', () => {
+  const home = tmpHome();
+  try {
+    const missing = path.join(home, 'nope.pdf');
+    const r = cli(['convert', missing]);
+    assert.strictEqual(r.code, 1);
+    assert.strictEqual((r.out + r.err).trim(), `${missing} not found.`);
+  } finally { rm(home); }
+});
+
 test('bootstrap prints the optional askai home mount', () => {
   const home = tmpHome();
   try {

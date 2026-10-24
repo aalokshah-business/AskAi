@@ -4,6 +4,8 @@ AskAI follows semantic versioning from 1.0.0 (see [RELEASING.md](RELEASING.md)).
 
 ## Unreleased
 
+- Fail `convert` with one clean "not found" line for a missing local file instead of spawning MarkItDown; truncate any MarkItDown failure to its last line instead of the full traceback. Fix flaky `check`/`project`/`infra` tests on a machine with `ANTHROPIC_BASE_URL` set. Stop the desktop Help tab's command picker from stretching across unused width.
+
 - Generate integrity hashes from clean-checkout line endings declared by Git attributes, preserving binary bytes and avoiding false Windows checksum failures.
 
 - Keep Node 20 upgrade notices read-only during diagnostics and dry runs, and avoid creating a legacy data directory before first install.
