@@ -95,7 +95,7 @@ jobs:
         if: matrix.image == 'node:20-bookworm'
         run: node -e "const n=require('./lib/platform').nodeNotice(process.version); if(!n) process.exit(1); console.log(n)"
       - name: Unit and CLI tests
-        run: node --test --test-reporter tap test/*.test.js > tap.txt
+        run: node scripts/ci-test.js
       - name: Print skips and fail if a bash test was skipped
         run: node scripts/assert-skips.js tap.txt
   container-nonroot:

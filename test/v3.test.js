@@ -173,7 +173,7 @@ test('lean: three keys added only when absent and removed only while unchanged',
 }));
 
 // ---- cross-platform installs -------------------------------------------------------------------------------------------
-test('pkg: off Windows it prefers Homebrew, then the vendor script, then cargo, and says what to run when none exists', { skip: process.platform === 'win32' }, () => withHome(home => {
+test('pkg: off Windows it prefers Homebrew, then the vendor script, then cargo, and says what to run when none exists', { skip: process.platform === 'win32' ? 'Unix package-manager routing only' : false }, () => withHome(home => {
   const mk = tools => { const ctx = makeCtx(home); ctx.which = n => tools[n] || null; return ctx; };
   const brew = mk({ brew: '/b/brew' });
   pkg.install(brew, 'rtk-ai.rtk', () => true);
