@@ -12,3 +12,7 @@ test('Node upgrade notice persists only in an existing installation on a write c
   const home=tmpHome(),saved=platform.nodeNotice,print=console.error;
   try{platform.nodeNotice=()=> 'Node upgrade fixture';console.error=()=>{};const paths=cfg.claudePaths(home,true);write(paths.manifest,'{}');app.emitNodeNotice({claudeHome:home},'install');assert.match(fs.readFileSync(path.join(paths.askaiDir,'node-eol.txt'),'utf8'),/^\d{4}-\d{2}-\d{2}/);}finally{platform.nodeNotice=saved;console.error=print;rm(home);}
 });
+test('plain version stays silent while explicit version details retain the notice',()=>{
+  const saved=platform.nodeNotice,print=console.error,lines=[];
+  try{platform.nodeNotice=()=> 'Node upgrade fixture';console.error=line=>lines.push(line);app.emitNodeNotice({},'version');assert.deepEqual(lines,[]);app.emitNodeNotice({all:true},'version');assert.deepEqual(lines,['Node upgrade fixture']);}finally{platform.nodeNotice=saved;console.error=print;}
+});

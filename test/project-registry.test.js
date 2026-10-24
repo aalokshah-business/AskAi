@@ -20,7 +20,7 @@ function fixture(fn) {
   const run = (args, options = {}) => {
     const r = cp.spawnSync(process.execPath, [ASKAI, ...args, '--claude-home', path.join(home, '.claude')],
       { encoding: 'utf8', env: { ...env, ...(options.env || {}) }, cwd: options.cwd || outside, input: options.input || '', timeout: 30000 });
-    assert.ifError(r.error); return { code: r.status, output: r.stdout + r.stderr };
+    assert.ifError(r.error); return { code: r.status, output: r.stdout + r.stderr, stdout:r.stdout, stderr:r.stderr };
   };
   const cleanup = () => fs.rmSync(root, { recursive: true, force: true });
   try {
@@ -54,7 +54,7 @@ test('registered names resolve for flags, active selection, cwd discovery and de
   assert.equal(infra([], { cwd: b }), b, 'current project wins over default');
   assert.equal(run(['todo', '--project', 'beta']).code, 0);
   assert.equal(run(['check', '-p', 'beta']).code, 0);
-  assert.equal(run(['project', 'show', '--project', 'beta']).output.trim(), `beta -> ${b}`);
+  assert.equal(run(['project', 'show', '--project', 'beta']).stdout.trim(), `beta -> ${b}`);
   assert.equal(registry.read(config).default, 'alpha');
 }));
 

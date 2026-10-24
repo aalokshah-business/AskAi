@@ -25,14 +25,14 @@ if (!exists(appJs)) {
   add('FAIL', 'askai', 'AskAI is not installed on this machine', 'run the one-line install from the README (it ends with your to-do list)');
   finish();
 }
-const run = a => { const r = cp.spawnSync(process.execPath, [appJs, ...a], { encoding: 'utf8', timeout: 180000, env: process.env }); return { code: r.status, out: `${r.stdout || ''}${r.stderr || ''}` }; };
+const run = a => { const r = cp.spawnSync(process.execPath, [appJs, ...a], { encoding: 'utf8', timeout: 180000, env: process.env }); return { code: r.status, stdout:r.stdout || '', out: `${r.stdout || ''}${r.stderr || ''}` }; };
 const manifest = readJ(path.join(askaiDir, 'manifest.json')) || {};
 const comps = manifest.components || {};
 const selected = host => targetIncludes(manifest.target, host);
 if (filesOnly) add('PASS', 'askai', 'command checks skipped (--files); askai setup already ran them');
 else {
-const ver = run(['version']).out.trim();
-/^\d+\.\d+\.\d+$/.test(ver) ? add('PASS', 'askai', `version ${ver}`) : add('FAIL', 'askai', `askai version printed "${tilde(ver).slice(0, 80)}"`, 'run the one-line install again');
+const versionResult = run(['version']), ver = versionResult.stdout.trim();
+versionResult.code === 0 && /^\d+\.\d+\.\d+$/.test(ver) ? add('PASS', 'askai', `version ${ver}`) : add('FAIL', 'askai', `askai version printed "${tilde(versionResult.out).slice(0, 80)}"`, 'run the one-line install again');
 const srcVer = (readJ(path.join(askaiDir, 'src', 'package.json')) || {}).version;
 if (srcVer && srcVer !== ver) add('WARN', 'askai', `installed ${ver} but the downloaded source is ${srcVer}`, 'askai update');
 which(process.platform === 'win32' ? 'askai.cmd' : 'askai') ? add('PASS', 'askai', '`askai` is on PATH in this terminal') : add('WARN', 'askai', '`askai` is not on PATH in this terminal', `open a NEW terminal (PATH changes need one); or run: node ${tilde(appJs)}`);

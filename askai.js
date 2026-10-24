@@ -1672,7 +1672,7 @@ function emitNodeNotice(o, cmd) {
   const platform = require('./lib/platform');
   const line = platform.nodeNotice();
   const always = (cmd === 'check' && o.env) || (cmd === 'version' && o.all) || cmd === 'setup';
-  if (!line || o.json || o.quiet || process.env.ASKAI_QUIET) return;
+  if (!line || o.json || o.quiet || process.env.ASKAI_QUIET || (cmd === 'version' && !o.all)) return;
   if (!always) {
     const home = path.resolve(o.claudeHome || require('./lib/claude-config').defaultClaudeHome());
     const paths = cfg.claudePaths(home, !!(o.claudeHome || process.env.CLAUDE_CONFIG_DIR));
