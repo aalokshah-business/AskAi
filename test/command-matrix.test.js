@@ -21,6 +21,7 @@ function fixture(fn) {
   const env = { ...process.env, HOME: home, USERPROFILE: home,
     APPDATA: path.join(home, 'AppData', 'Roaming'), LOCALAPPDATA: path.join(home, 'AppData', 'Local'),
     PATH: path.dirname(process.execPath) };
+  delete env.ANTHROPIC_API_KEY; delete env.ANTHROPIC_BASE_URL; delete env.OPENAI_API_KEY; delete env.CODEX_HOME;
   const homes = ['--claude-home', path.join(home, '.claude'), '--codex-home', path.join(home, '.codex'),
     '--agy-home', path.join(home, '.gemini'), '--cursor-home', path.join(home, '.cursor')];
   const run = (...args) => {

@@ -45,7 +45,12 @@ function makeCtx(home, opts = {}, fakes = {}) {
 }
 
 function cli(args, o = {}) {
-  const r = cp.spawnSync(process.execPath, [o.script || ASKAI, ...args], { encoding: 'utf8', env: { ...process.env, ...(o.env || {}) }, input: '' });
+  const env = { ...process.env, ...(o.env || {}) };
+  if (!o.env || !('ANTHROPIC_API_KEY' in o.env)) delete env.ANTHROPIC_API_KEY;
+  if (!o.env || !('ANTHROPIC_BASE_URL' in o.env)) delete env.ANTHROPIC_BASE_URL;
+  if (!o.env || !('OPENAI_API_KEY' in o.env)) delete env.OPENAI_API_KEY;
+  if (!o.env || !('CODEX_HOME' in o.env)) delete env.CODEX_HOME;
+  const r = cp.spawnSync(process.execPath, [o.script || ASKAI, ...args], { encoding: 'utf8', env, input: '' });
   return { code: r.status, out: r.stdout, err: r.stderr };
 }
 

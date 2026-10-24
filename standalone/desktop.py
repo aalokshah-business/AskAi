@@ -268,14 +268,14 @@ def main():
         help_tab.columnconfigure(1, weight=1)
         ttk.Label(help_tab, text='Command').grid(row=0, column=0, sticky='w', padx=(0, 12))
         help_picker = ttk.Combobox(help_tab, textvariable=help_command, values=sorted(catalog), state='readonly')
-        help_picker.grid(row=0, column=1, sticky='ew')
+        help_picker.grid(row=0, column=1, sticky='ew', padx=(0, 12))
 
         def show_help(event=None):
             start({'kind': 'command', 'command': 'help', 'args': 'command ' + help_command.get() + ' --advanced'})
 
         help_picker.bind('<<ComboboxSelected>>', show_help)
-        ttk.Button(help_tab, text='Show Detailed Help', command=show_help).grid(row=1, column=1, sticky='w', pady=12)
-        ttk.Label(help_tab, text='Select A Command To Read Its Complete CLI Help In The Output Panel.').grid(row=2, column=0, columnspan=2, sticky='w')
+        ttk.Button(help_tab, text='Show Detailed Help', command=show_help).grid(row=0, column=2, sticky='w')
+        ttk.Label(help_tab, text='Select A Command To Read Its Complete CLI Help In The Output Panel.').grid(row=1, column=0, columnspan=3, sticky='w', pady=(12, 0))
         ttk.Label(root, text='Output').grid(row=2, column=0, sticky='w', padx=20, pady=(14, 5))
         frame = ttk.Frame(root)
         frame.grid(row=3, column=0, sticky='nsew', padx=20)

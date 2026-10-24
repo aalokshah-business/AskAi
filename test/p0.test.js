@@ -96,13 +96,15 @@ test('the short banner names seven categories and no flags', () => {
 
 test('a host that is not installed adds no warnings', () => {
   const h = tmpHome();
+  const saved = { ANTHROPIC_API_KEY: process.env.ANTHROPIC_API_KEY, ANTHROPIC_BASE_URL: process.env.ANTHROPIC_BASE_URL, OPENAI_API_KEY: process.env.OPENAI_API_KEY };
+  delete process.env.ANTHROPIC_API_KEY; delete process.env.ANTHROPIC_BASE_URL; delete process.env.OPENAI_API_KEY;
   try {
     const ctx = makeCtx(h, {}, { tools: {} });
     const rows = require('../lib/check').machine(ctx);
     const hints = rows.filter(r => /Claude Code/.test(r.msg));
     assert.deepStrictEqual(hints.map(r => r.msg), ['Claude Code not installed: askai install --target claude --seed-only']);
     assert.ok(!rows.some(r => /default model|starts on Opus/.test(r.msg)));
-  } finally { rm(h); }
+  } finally { rm(h); for (const [k, v] of Object.entries(saved)) { if (v === undefined) delete process.env[k]; else process.env[k] = v; } }
 });
 
 test('deletion-only review stays current, a content change is stale', () => {

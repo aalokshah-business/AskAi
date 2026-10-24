@@ -17,6 +17,7 @@ function fixture(fn) {
   for (const dir of [a, b, outside]) fs.mkdirSync(dir);
   const env = { ...process.env, ASKAI_HOME: config, HOME: home, USERPROFILE: home, APPDATA: path.join(home, 'AppData'),
     LOCALAPPDATA: path.join(home, 'LocalAppData') };
+  delete env.ANTHROPIC_API_KEY; delete env.ANTHROPIC_BASE_URL; delete env.OPENAI_API_KEY; delete env.CODEX_HOME;
   const run = (args, options = {}) => {
     const r = cp.spawnSync(process.execPath, [ASKAI, ...args, '--claude-home', path.join(home, '.claude')],
       { encoding: 'utf8', env: { ...env, ...(options.env || {}) }, cwd: options.cwd || outside, input: options.input || '', timeout: 30000 });
