@@ -134,8 +134,8 @@ test('audit: memory with @imports, and cache, switches, compactions and subagent
   write(path.join(dir, 's1', 'subagents', 'agent-1.jsonl'), JSON.stringify({ type: 'assistant', effort: 'high', message: { model: 'claude-haiku-5-5' } }));
   const r = audit.parseClaude(path.join(dir, 's1.jsonl'));
   assert.deepStrictEqual([r.turns, r.switches, r.compactions, r.cacheRead], [2, 1, 1, 900]); assert.deepStrictEqual(r.subagents, { 'claude-haiku-5-5 @ high': 1 });
-  const rows = []; const code = audit.run(ctx, repo, {}, m => rows.push(m));
-  assert.strictEqual(code, 1); assert.ok(rows.some(l => /Model switches in that session \| HIGH/.test(l)) && rows.some(l => /Large memory file AGENTS\.md \| HIGH/.test(l)));
+  const rows = []; const code = audit.run(ctx, repo, {json:true}, m => rows.push(m));
+  assert.strictEqual(code, 1); const found = JSON.parse(rows.join('')); assert.ok(found.some(r => r.finding === 'Model switches in that session' && r.severity === 'high') && found.some(r => r.finding === 'Large memory file AGENTS.md' && r.severity === 'high'));
 }));
 
 test('hooks: systemMessage only, thresholds once each, every 20 prompts, silent on bad input', () => withHome(h => {

@@ -142,9 +142,9 @@ test('audit cost rows are the cost findings, collected once', () => withHome(hom
       assert.strictEqual(bill.area, 'cost');
       assert.ok(cost.every(f => f.area === 'cost'));
       const lines = [];
-      audit.run(ctx, repo, {}, m => lines.push(m));
+      audit.run(ctx, repo, {json:true}, m => lines.push(m));
       assert.strictEqual(calls, 1);
-      assert.ok(lines.some(l => l.includes(bill.message) && /HIGH/.test(l)));
+      assert.ok(JSON.parse(lines.join('')).some(r => r.finding === bill.message && r.severity === 'high'));
     } finally {
       check.machine = machine;
       findings.forget(ctx);

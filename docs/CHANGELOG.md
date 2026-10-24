@@ -4,6 +4,10 @@ AskAI follows semantic versioning from 1.0.0 (see [RELEASING.md](RELEASING.md)).
 
 ## Unreleased
 
+- Linux-container command review: shared wrapping tables for audit/help/docs, responsive status columns, scoped infra requirements and honest MCP/desktop evidence labels. List missing base tools and remote editor checks; clarify plugin interface types and restore timestamps.
+- Reject blank/invalid session measurements; make check --fix --dry-run non-mutating. Fix self-test weigh input, shell-expression quoting and expected validation exits; distinguish presentation flags from failed checks. Add tmux scroll/copy guidance and askai docs container with remaining support limits.
+
+- Added real-time progress indicator, elapsed timer, and heartbeat status to `askai convert` for YouTube URLs and long document conversions.
 - Added comprehensive Summary sections to all 56 commands in `askai help <command>` and `askai help all`, explaining command purpose, when to use it, and how it delivers token savings.
 - Updated command reference poster and PDF (AskAI-commands-A3.png and AskAI-commands.pdf) to organize commands across 8 sections matching the 7 help categories plus Start here.
 - Removed duplicate `askai inventory` (use `askai infra`).

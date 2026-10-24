@@ -109,7 +109,7 @@ test('infra finds Claude outside PATH, lists askai-cli.md and combines plugin wi
   const r = infra.collect(ctx, null);
   assert.strictEqual(r.tools.claude.cli, 'claude 2.0');
   assert.ok(r.tools.claude.commands.includes('askai-cli.md'));
-  assert.strictEqual(r.plugins.find(p => p.id === 'context-mode').state, 'claude configured, never called');
+  assert.strictEqual(r.plugins.find(p => p.id === 'context-mode').state, 'claude configured, no call observed in available 7-day logs');
 }));
 
 test('plugins ready tells which tools wait and which one-time step is left', () => withHome(h => {
@@ -148,7 +148,7 @@ test('infra marks an MCP server working only after a transcript call', () => wit
   ].join('\n'));
   const r = infra.collect(ctx, null);
   assert.strictEqual(r.plugins.find(p => p.id === 'serena').state, 'cursor working, 1 call/7d');
-  assert.strictEqual(r.plugins.find(p => p.id === 'context7').state, 'cursor configured, never called');
+  assert.strictEqual(r.plugins.find(p => p.id === 'context7').state, 'cursor configured, no call observed in available 7-day logs');
   assert.match(infra.render(r), /working means a transcript call/);
 }));
 

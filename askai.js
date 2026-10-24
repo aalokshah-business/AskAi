@@ -618,7 +618,7 @@ function cmdSuggest(o) {
   if (o.json) { console.log(JSON.stringify(r, null, 2)); return 0; }
   console.log(`${dir}\n  ${r.counts.code} code, ${r.counts.textDocs} text documents, ${r.counts.binaryDocs} PDF/Office files${r.counts.truncated ? ' (scan stopped at the entry limit)' : ''}`);
   console.log(`  suggested profile: ${r.profile}: ${r.reason}`);
-  console.log(`\nClaude Code: askai install --profile ${r.profile}\nCursor:      askai install --profile ${r.profile} writes ~/.cursor/rules for every project. \`askai project\` copies the same files into one repo.`);
+  console.log(`\nMachine configuration (choose the host you use):\n  Claude Code: askai install --target claude --profile ${r.profile}\n  Cursor:      askai install --target cursor --profile ${r.profile}\nProject guidance: askai init --path "${dir}"\nGlobal Cursor rules apply across projects; askai project lists registered projects.`);
   return 0;
 }
 
@@ -1013,7 +1013,7 @@ function cmdMcp(o) {
   console.log('askai mcp [list | on <name> | off <name>] [--tool claude|codex|cursor|agy]'); return 1;
 }
 function cmdDocs(o) {
-  const DOCS = { install: 'INSTALL.md', architecture: 'ARCHITECTURE.md', projects: 'PROJECT_MANAGEMENT.md', guide: 'ASKAI_GUIDE.md', cheatsheet: 'CHEAT_SHEET.md', changelog: 'CHANGELOG.md', preview: 'PREVIEW_MATRIX.md' };
+  const DOCS = { install: 'INSTALL.md', architecture: 'ARCHITECTURE.md', projects: 'PROJECT_MANAGEMENT.md', guide: 'ASKAI_GUIDE.md', cheatsheet: 'CHEAT_SHEET.md', changelog: 'CHANGELOG.md', preview: 'PREVIEW_MATRIX.md', container: 'CONTAINER_REVIEW.md' };
   const name = o._[1];
   if (name === 'check') {
     const script = path.join(SRC, 'scripts', 'gen-docs.js');
@@ -1022,9 +1022,9 @@ function cmdDocs(o) {
     return r.status === 0 ? 0 : 1;
   }
   if (!name || !DOCS[name]) {
-    const rows = Object.keys(DOCS).map(k => `askai docs ${k.padEnd(13)} ${path.join(SRC, 'docs', DOCS[k])}`);
-    rows.push('askai docs check      validate generated command documentation');
-    console.log(require('./lib/columns').lines(rows, process.stdout.columns || 80).join('\n'));
+    const rows = Object.keys(DOCS).map(k => [`askai docs ${k}`, path.join(SRC, 'docs', DOCS[k])]);
+    rows.push(['askai docs check', 'validate generated command documentation']);
+    console.log(require('./lib/columns').table(['Command', 'Document / action'], rows).join('\n'));
     console.log('  (add --print to show one in the terminal)');
     return name ? 1 : 0;
   }
@@ -1032,13 +1032,14 @@ function cmdDocs(o) {
   if (!fs.existsSync(f)) { console.log(`${f} is not in this copy of AskAI (docs live in the downloaded folder)`); return 1; }
   console.log(o.print ? fs.readFileSync(f, 'utf8') : f); return 0;
 }
-function cmdConvert(o) {
+async function cmdConvert(o) {
   const ctx = buildCtx(o, true);
   if (o._[1] === 'scan') { console.log(require('./lib/daily').scanOffice(projectDir(o), o)); return 0; }
   const src = o._[1];
   if (!src) { console.log('askai convert <file|url> [--out file.md]: PDF, Word, PowerPoint, Excel, HTML, YouTube URL -> Markdown (Microsoft MarkItDown, local)'); return 1; }
   if (!ctx.which('markitdown')) { console.log('MarkItDown is not installed: askai install --only markitdown (or --profile docs). Videos other than YouTube need a transcriber first (graphifyy[video] or Whisper).'); return 1; }
   const isUrl = /^https?:\/\//.test(src);
+  const isYoutube = isUrl && /(?:youtube\.com|youtu\.be)/i.test(src);
   let resolvedSrc = src;
   if (!isUrl && !fs.existsSync(resolvedSrc)) {
     for (const ext of ['.pdf', '.docx', '.pptx', '.xlsx', '.xls', '.html', '.txt']) {
@@ -1048,9 +1049,76 @@ function cmdConvert(o) {
   const out = o.out || path.join(projectDir(o), 'docs', 'ai', 'inputs', `${(isUrl ? resolvedSrc.replace(/^https?:\/\//, '').replace(/[^\w.-]+/g, '_') : path.basename(resolvedSrc, path.extname(resolvedSrc))).slice(0, 80)}.md`);
   if (fs.existsSync(out)) { console.log(`${out} exists; choose another --out`); return 1; }
   fs.mkdirSync(path.dirname(out), { recursive: true });
-  const r = require('child_process').spawnSync('markitdown', [resolvedSrc, '-o', out], { stdio: 'inherit', shell: process.platform === 'win32' });
-  if (r.status === 0) { const n = fs.readFileSync(out, 'utf8').length; console.log(`wrote ${out} (~${Math.ceil(n / 4).toLocaleString('en-US')} tokens). Point the agent at the section it needs, not the whole file.`); }
-  return r.status || 0;
+
+  const bin = ctx.which('markitdown') || 'markitdown';
+  if (isYoutube) {
+    console.log(`Converting YouTube video: ${resolvedSrc}`);
+    console.log('Fetching transcript and metadata with MarkItDown...');
+  } else if (isUrl) {
+    console.log(`Converting URL with MarkItDown: ${resolvedSrc}`);
+  } else {
+    console.log(`Converting with MarkItDown: ${resolvedSrc}`);
+  }
+
+  const start = Date.now();
+  const frames = ['|', '/', '-', '\\'];
+  let tick = 0;
+  const isTty = process.stderr.isTTY;
+
+  const child = require('child_process').spawn(bin, [resolvedSrc, '-o', out], {
+    stdio: ['ignore', 'pipe', 'pipe'],
+    shell: false
+  });
+
+  let stderrBuf = '';
+  let stdoutBuf = '';
+  if (child.stdout) child.stdout.on('data', d => { stdoutBuf += d.toString(); });
+  if (child.stderr) child.stderr.on('data', d => { stderrBuf += d.toString(); });
+
+  const timer = setInterval(() => {
+    const elapsed = Math.floor((Date.now() - start) / 1000);
+    const spin = frames[tick++ % frames.length];
+    const statusMsg = elapsed >= 30
+      ? 'waiting on response (still active, Ctrl+C to cancel)'
+      : isYoutube
+        ? 'downloading YouTube transcript and metadata (still active)'
+        : 'converting with MarkItDown (still active)';
+
+    if (isTty) {
+      process.stderr.write(`\r  [${spin}] ${elapsed}s elapsed - ${statusMsg}... `);
+    } else if (elapsed > 0 && elapsed % 5 === 0) {
+      console.error(`  [${elapsed}s] ${statusMsg}...`);
+    }
+  }, 500);
+
+  return new Promise(resolve => {
+    child.on('close', code => {
+      clearInterval(timer);
+      if (isTty) process.stderr.write('\r' + ' '.repeat(80) + '\r');
+      if (code === 0 && fs.existsSync(out)) {
+        const n = fs.readFileSync(out, 'utf8').length;
+        console.log(`wrote ${out} (~${Math.ceil(n / 4).toLocaleString('en-US')} tokens). Point the agent at the section it needs, not the whole file.`);
+        resolve(0);
+      } else {
+        const err = (stderrBuf || stdoutBuf).trim();
+        console.error(`markitdown failed (exit ${code || 1})${err ? ': ' + err : ''}`);
+        if (isYoutube && /transcript|caption|subtitles/i.test(err)) {
+          console.error('Note: this video may not have public captions or transcripts enabled.');
+        }
+        if (fs.existsSync(out) && fs.statSync(out).size === 0) {
+          try { fs.unlinkSync(out); } catch (_) {}
+        }
+        resolve(code || 1);
+      }
+    });
+
+    child.on('error', err => {
+      clearInterval(timer);
+      if (isTty) process.stderr.write('\r' + ' '.repeat(80) + '\r');
+      console.error(`Failed to start markitdown: ${err.message}`);
+      resolve(1);
+    });
+  });
 }
 async function cmdInit(o) {
   const dir = projectDir(o, o.path || o._[1]);
@@ -1348,6 +1416,8 @@ function launchInMultiplexer(cp, script, kind) {
       }
     }
     console.log('AskAI CLI is running in tmux session "askai". In the Cursor terminal: tmux attach -t askai');
+    console.log('Scroll: Ctrl+B then [; Page Up; q to leave copy mode. Hold Shift while selecting to use terminal copy.');
+    console.log('For normal terminal scrollback instead, run askai cli directly in the Cursor terminal.');
     if (tty && !process.env.TMUX) {
       const attached = cp.spawnSync('tmux', ['attach', '-t', session], { stdio: 'inherit' });
       if (attached.status === 0) return 0;

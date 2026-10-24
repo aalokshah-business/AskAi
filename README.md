@@ -507,3 +507,7 @@ Interactive AskAI terminals restore key editing when an AI host exports TERM=dum
 Use askai check as the single health command. It lists coverage for all four tools; passing details are hidden unless --all. doctor is retired and prints a migration hint only.
 
 Status: askai status shows Codex, Antigravity, Cursor and Claude Code in four columns, with shared local tools below. Use askai status codex or askai status --host antigravity to select one environment; --json uses the same filter. Widen the terminal for the four-column view.
+
+## Linux containers and terminal output
+
+AskAI wraps audit evidence and help options without truncation, keeps table columns aligned, and adapts status to terminal width. Infra reports missing base tools, configuration-versus-desktop limits and remote MCP checks. See [the container command review](docs/CONTAINER_REVIEW.md), or run askai docs container --print.

@@ -114,7 +114,7 @@ The commands below are also implemented. This table plus the twelve and the addi
 | `askai tips` | The cheat sheet, offline, per tool. peak says whether Claude is in peak hours now. | `askai tips [claude\|codex\|agy\|cursor\|session\|habits\|peak]` |
 | `askai test` | Run the safe commands one by one, print a short status, and write one capture file. | `askai test [--out FILE] [--json] [--real] [--notty] [--compare FILE]` |
 | `askai statusline` | Claude Code's status line command (reads the session JSON on stdin): model, context, cache; records snapshots for askai savings. | `askai statusline [--demo]` |
-| `askai restore` | List backups, or put a backed-up file back. | `askai restore [file]` |
+| `askai restore` | List backup timestamps, or restore supported configuration files from one backup. | `askai restore [stamp] [--dry-run] [--yes]` |
 | `askai uninstall` | Remove only what AskAI added: keys still holding AskAI's value, its marked blocks, its own files and registrations. | `askai uninstall [--only ID,ID] [--dry-run]` |
 | `askai version` | Print the AskAI version. | `askai version` |
 | `askai init` | Scan eligible first-party source files, consult detected frameworks' official docs, write a compact project knowledge pack and register its path. | `askai init [dir] [--name NAME] [--path DIR] [--about "..."] [--type T] [--yes] [--refresh] [--offline] [--dry-run] [--build "cmd"] [--test "cmd"]` |
@@ -123,7 +123,7 @@ The commands below are also implemented. This table plus the twelve and the addi
 | `askai audit` | The seven-point token audit: memory files, tools and proxies, model and effort, hooks, subagents, scheduled work, cache reuse. | `askai audit [dir] [--tool claude\|codex\|cursor\|agy] [--project name\|dir] [--json]` |
 | `askai infra` | Tools and repository files. | `askai infra [dir] [--json]` |
 | `askai guide` | The etiquette for each moment of work, offline. | `askai guide [install\|start\|work\|break\|resume\|clear\|compact\|cache\|models\|subagents\|mcp\|output\|prompts\|docs\|plugins\|peak\|all]` |
-| `askai docs` | Find AskAI documents or check generated command documentation for drift. | `askai docs [install\|architecture\|projects\|guide\|cheatsheet\|changelog\|preview\|check] [--print]` |
+| `askai docs` | Find AskAI documents or check generated command documentation for drift. | `askai docs [install\|architecture\|projects\|guide\|cheatsheet\|changelog\|preview\|container\|check] [--print]` |
 | `askai context` | What to do at this context level: continue, hand off, clear. 60% is a warning, not an order to compact. | `askai context <percent> \| --used N --window M` |
 | `askai todo` | Remaining setup and project-review steps: sign-ins, restarts, app settings, model IDs, one-time plugin steps, and repository facts that need confirmation. Checkable items clear themselves. | `askai todo [dir] [--all] \| askai todo done <id> \| askai todo undo <id>` |
 | `askai graph` | Print the Mermaid architecture diagram from docs/ai/ARCHITECTURE.md and open it in the browser when the terminal is interactive. | `askai graph [dir]` |

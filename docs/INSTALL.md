@@ -666,3 +666,9 @@ Interactive AskAI terminals restore key editing when an AI host exports TERM=dum
 Use askai check as the single health command. It lists coverage for all four tools; passing details are hidden unless --all. doctor is retired and prints a migration hint only.
 
 Status: askai status shows Codex, Antigravity, Cursor and Claude Code in four columns, with shared local tools below. Use askai status codex or askai status --host antigravity to select one environment; --json uses the same filter. Widen the terminal for the four-column view.
+
+## Verify a Cursor devcontainer after installation
+
+Use askai cli directly in the Cursor terminal for normal scrollback. With tmux, Ctrl+B then [ opens copy mode; Page Up scrolls and q exits it. Run askai infra, askai check --all, askai status cursor and askai todo. Configuration files alone do not prove a connected MCP server. Inspect the remote workspace MCP Logs.
+
+The installer bundles these display and diagnostic improvements with the CLI; no separate formatter, plugin or AI review is required. C/C++ build flags, live editor readiness and desktop clipboard access still need environment-specific verification. See [the container review and remediation steps](CONTAINER_REVIEW.md), also available with askai docs container --print.

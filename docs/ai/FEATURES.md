@@ -17,3 +17,5 @@ One line per feature. “documented” means README.md describes it; “detected
 | Plugin readiness | `lib/plugins-ready.js` | tested | `askai plugins ready` reports connected tools and recommends source-only Graphify indexing when no graph exists |
 | Transparent usage and cheaper CLI preparation | `lib/usage.js`, `askai.js` | tested | `test/usage-clarity.test.js` checks uncached input, cache share, and skipped repeat installation; raw tokens are not quota or measured savings |
 | Legacy installation compatibility | `askai.js`, `lib/claude-config.js` | tested | `test/install-location.test.js` checks old PATH runtime refresh and preservation of installation state |
+
+- Container output review: wrapped audit/help/docs tables, responsive status, environment-scoped infra evidence, validated measurements and non-mutating dry-run checks.

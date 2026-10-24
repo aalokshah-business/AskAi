@@ -367,15 +367,17 @@ askai cli: Prepare a project from the chat folder, then open an AskAI-only termi
 Usage: askai cli  --prepare --launch --review --path
 
 Summary:
-  Opens the dedicated interactive AskAI shell with project auto-detection and persistent terminal state. Use it when running multiple AskAI commands without repeatedly typing the askai prefix. It saves tokens by keeping all project analysis, diagnostics, and session workflows entirely offline and local without making unnecessary model calls.
+  Opens the dedicated interactive AskAI shell with project auto-detection and persistent terminal state. Use it when running multiple AskAI commands without repeatedly typing the askai prefix. It saves tokens by keeping routine diagnostics and session commands local; explicit AI reviews and launched AI agents still use model tokens.
 
 Use when: Prepare a project from the chat folder, then open an AskAI-only terminal. AI review is opt-in.
 
 Options:
-  --prepare                                see askai help cli --advanced
-  --launch                                 see askai help cli --advanced
-  --review                                 see askai help cli --advanced
-  --path                                   see askai help cli --advanced
+Option    | Meaning
+----------+------------------------------
+--prepare | see askai help cli --advanced
+--launch  | see askai help cli --advanced
+--review  | see askai help cli --advanced
+--path    | see askai help cli --advanced
 
 Exit: 0, or 2 when the project (or description during explicit review) must be supplied
 ```
@@ -393,10 +395,12 @@ Summary:
 Use when: set up or finish this machine
 
 Options:
-  --profile
-  --add ID
-  --target
-  --retry
+Option    | Meaning
+----------+--------
+--profile |
+--add ID  |
+--target  |
+--retry   |
 
 Exit: 0 when required items work; 1 on required failure; 3 when a required item needs you
 ```
@@ -444,8 +448,10 @@ Summary:
 Use when: Status in four environment columns, or one selected environment.
 
 Options:
-  --host                                   see askai help status --advanced
-  --json                                   see askai help status --advanced
+Option | Meaning
+-------+---------------------------------
+--host | see askai help status --advanced
+--json | see askai help status --advanced
 
 Exit: 0; invalid environments fail
 ```
@@ -463,7 +469,9 @@ Summary:
 Use when: Short check after install: which hosts are present, check counts, and whether the file validator passed.
 
 Options:
-  --yes                                    see askai help setup --advanced
+Option | Meaning
+-------+--------------------------------
+--yes  | see askai help setup --advanced
 
 Exit: 1 when a finding needs a fix now or the file validator fails, else 0
 ```
@@ -481,9 +489,11 @@ Summary:
 Use when: just installed, or something feels off
 
 Options:
-  --fix
-  --all
-  --json
+Option | Meaning
+-------+--------
+--fix  |
+--all  |
+--json |
 
 Exit: 1 when a finding is severity now (bills outside your plan), else 0
 ```
@@ -531,8 +541,10 @@ Summary:
 Use when: finish the note for the next session
 
 Options:
-  --for cursor|claude|codex|agy
-  --goal TEXT
+Option                        | Meaning
+------------------------------+--------
+--for cursor|claude|codex|agy |
+--goal TEXT                   |
 
 Exit: 0
 ```
@@ -565,8 +577,10 @@ Summary:
 Use when: a build or test prints too much
 
 Options:
-  --save NAME
-  --yes
+Option      | Meaning
+------------+--------
+--save NAME |
+--yes       |
 
 Exit: the command exit code, or 1 when a risky command has no --yes
 ```
@@ -644,8 +658,10 @@ Summary:
 Use when: Show a personal devcontainer setup; --repo writes a post-create script into this project.
 
 Options:
-  --profile                                see askai help bootstrap --advanced
-  --repo                                   see askai help bootstrap --advanced
+Option    | Meaning
+----------+------------------------------------
+--profile | see askai help bootstrap --advanced
+--repo    | see askai help bootstrap --advanced
 
 Exit: 0
 ```
@@ -678,9 +694,11 @@ Summary:
 Use when: Start a task: ledger entry with tool, task, branch and last commit.
 
 Options:
-  --tool                                   see askai help start --advanced
-  --task                                   see askai help start --advanced
-  --repo                                   see askai help start --advanced
+Option | Meaning
+-------+--------------------------------
+--tool | see askai help start --advanced
+--task | see askai help start --advanced
+--repo | see askai help start --advanced
 
 Exit: 0
 ```
@@ -713,7 +731,9 @@ Summary:
 Use when: you are back from a break
 
 Options:
-  --copy
+Option | Meaning
+-------+--------
+--copy |
 
 Exit: 0
 ```
@@ -731,7 +751,9 @@ Summary:
 Use when: The per-repo ledger in .ai-work/: entries, handoff, measurements, report. askai start, askai break and askai resume are the daily names for those three actions.
 
 Options:
-  --repo                                   see askai help session --advanced
+Option | Meaning
+-------+----------------------------------
+--repo | see askai help session --advanced
 
 Exit: 0
 ```
@@ -749,7 +771,9 @@ Summary:
 Use when: Write the files every agent reads: AGENTS.md, CLAUDE.md, docs/ai/PROJECT_PROFILE.md, .cursorignore, .ai-work/. Never overwrites.
 
 Options:
-  --dry-run                                see askai help scaffold --advanced
+Option    | Meaning
+----------+-----------------------------------
+--dry-run | see askai help scaffold --advanced
 
 Exit: 0
 ```
@@ -797,10 +821,12 @@ Summary:
 Use when: this folder needs its pack
 
 Options:
-  --name
-  --path
-  --undo
-  --shared
+Option   | Meaning
+---------+--------
+--name   |
+--path   |
+--undo   |
+--shared |
 
 Exit: 0
 ```
@@ -818,8 +844,10 @@ Summary:
 Use when: Select a project for this terminal or set a persistent fallback.
 
 Options:
-  --clear                                  see askai help set --advanced
-  --clear                                  see askai help set --advanced
+Option  | Meaning
+--------+------------------------------
+--clear | see askai help set --advanced
+--clear | see askai help set --advanced
 
 Exit: 0, or 1 for an unknown project
 ```
@@ -837,7 +865,9 @@ Summary:
 Use when: Enable terminal-scoped project selection in a shell.
 
 Options:
-  --path                                   see askai help shell --advanced
+Option | Meaning
+-------+--------------------------------
+--path | see askai help shell --advanced
 
 Exit: 0
 ```
@@ -870,10 +900,12 @@ Summary:
 Use when: Run the safe commands one by one, print a short status, and write one capture file.
 
 Options:
-  --out                                    see askai help test --advanced
-  --json                                   see askai help test --advanced
-  --real                                   see askai help test --advanced
-  --notty                                  see askai help test --advanced
+Option  | Meaning
+--------+-------------------------------
+--out   | see askai help test --advanced
+--json  | see askai help test --advanced
+--real  | see askai help test --advanced
+--notty | see askai help test --advanced
 
 Exit: 0 when every command finished, 1 when one did not run
 ```
@@ -891,7 +923,9 @@ Summary:
 Use when: Claude Code's status line command (reads the session JSON on stdin): model, context, cache; records snapshots for askai savings.
 
 Options:
-  --demo                                   see askai help statusline --advanced
+Option | Meaning
+-------+-------------------------------------
+--demo | see askai help statusline --advanced
 
 Exit: 0
 ```
@@ -899,14 +933,20 @@ Exit: 0
 #### `askai restore`
 
 ```text
-askai restore: List backups, or put a backed-up file back.
+askai restore: List backup timestamps, or restore supported configuration files from one backup.
 
-Usage: askai restore
+Usage: askai restore  --dry-run --yes
 
 Summary:
-  Lists automatic configuration backups and restores selected files to their pre-AskAI state. Use it when rolling back configurations or troubleshooting settings. It saves tokens by providing a reliable offline recovery path that avoids conversational debugging turns with an AI model.
+  Lists automatic configuration backups and restores supported configuration files from a selected timestamp. Current files are backed up before restoration. This is a local recovery operation and does not call AI.
 
-Use when: List backups, or put a backed-up file back.
+Use when: List backup timestamps, or restore supported configuration files from one backup.
+
+Options:
+Option    | Meaning
+----------+----------------------------------
+--dry-run | see askai help restore --advanced
+--yes     | see askai help restore --advanced
 
 Exit: 0 or 1
 ```
@@ -924,8 +964,10 @@ Summary:
 Use when: Remove only what AskAI added: keys still holding AskAI's value, its marked blocks, its own files and registrations.
 
 Options:
-  --only                                   see askai help uninstall --advanced
-  --dry-run                                see askai help uninstall --advanced
+Option    | Meaning
+----------+------------------------------------
+--only    | see askai help uninstall --advanced
+--dry-run | see askai help uninstall --advanced
 
 Exit: 0 or 1
 ```
@@ -958,10 +1000,12 @@ Summary:
 Use when: Scan eligible first-party source files, consult detected frameworks' official docs, write a compact project knowledge pack and register its path.
 
 Options:
-  --name                                   see askai help init --advanced
-  --path                                   see askai help init --advanced
-  --about                                  see askai help init --advanced
-  --type                                   see askai help init --advanced
+Option  | Meaning
+--------+-------------------------------
+--name  | see askai help init --advanced
+--path  | see askai help init --advanced
+--about | see askai help init --advanced
+--type  | see askai help init --advanced
 
 Exit: 0
 ```
@@ -979,9 +1023,11 @@ Summary:
 Use when: Show which project inputs changed since host AI review; record completion after review.
 
 Options:
-  --project                                see askai help review --advanced
-  --json                                   see askai help review --advanced
-  --all                                    see askai help review --advanced
+Option    | Meaning
+----------+---------------------------------
+--project | see askai help review --advanced
+--json    | see askai help review --advanced
+--all     | see askai help review --advanced
 
 Exit: 0
 ```
@@ -999,8 +1045,10 @@ Summary:
 Use when: Regenerate docs/ai/PROJECT_MAP.md from README folder descriptions and conventional names; preserve purposes you edited.
 
 Options:
-  --dry-run                                see askai help map --advanced
-  --diff                                   see askai help map --advanced
+Option    | Meaning
+----------+------------------------------
+--dry-run | see askai help map --advanced
+--diff    | see askai help map --advanced
 
 Exit: 0
 ```
@@ -1033,8 +1081,10 @@ Summary:
 Use when: start the coding app on a task
 
 Options:
-  --tier chore|build|lead
-  --dry-run
+Option                  | Meaning
+------------------------+--------
+--tier chore|build|lead |
+--dry-run               |
 
 Exit: the agent's exit code, or 0 when there is no terminal to hand over
 ```
@@ -1052,8 +1102,10 @@ Summary:
 Use when: turn a rough idea into a task
 
 Options:
-  --kind bug|feature|firmware
-  --copy
+Option                      | Meaning
+----------------------------+--------
+--kind bug|feature|firmware |
+--copy                      |
 
 Exit: 0
 ```
@@ -1086,9 +1138,11 @@ Summary:
 Use when: The seven-point token audit: memory files, tools and proxies, model and effort, hooks, subagents, scheduled work, cache reuse.
 
 Options:
-  --tool                                   see askai help audit --advanced
-  --project                                see askai help audit --advanced
-  --json                                   see askai help audit --advanced
+Option    | Meaning
+----------+--------------------------------
+--tool    | see askai help audit --advanced
+--project | see askai help audit --advanced
+--json    | see askai help audit --advanced
 
 Exit: 1 when a high-severity finding exists
 ```
@@ -1106,7 +1160,9 @@ Summary:
 Use when: Tools and repository files.
 
 Options:
-  --json                                   see askai help infra --advanced
+Option | Meaning
+-------+--------------------------------
+--json | see askai help infra --advanced
 
 Exit: 0
 ```
@@ -1139,7 +1195,9 @@ Summary:
 Use when: Find AskAI documents or check generated command documentation for drift.
 
 Options:
-  --print                                  see askai help docs --advanced
+Option  | Meaning
+--------+-------------------------------
+--print | see askai help docs --advanced
 
 Exit: 0 when current; 1 when generated docs differ
 ```
@@ -1202,8 +1260,10 @@ Summary:
 Use when: What to do at this context level: continue, hand off, clear. 60% is a warning, not an order to compact.
 
 Options:
-  --used                                   see askai help context --advanced
-  --window                                 see askai help context --advanced
+Option   | Meaning
+---------+----------------------------------
+--used   | see askai help context --advanced
+--window | see askai help context --advanced
 
 Exit: 0
 ```
@@ -1221,10 +1281,12 @@ Summary:
 Use when: cost feels high
 
 Options:
-  --week
-  --full
-  --cache
-  --import-cursor FILE
+Option               | Meaning
+---------------------+--------
+--week               |
+--full               |
+--cache              |
+--import-cursor FILE |
 
 Exit: 0
 ```
@@ -1242,7 +1304,9 @@ Summary:
 Use when: Remaining setup and project-review steps: sign-ins, restarts, app settings, model IDs, one-time plugin steps, and repository facts that need confirmation. Checkable items clear themselves.
 
 Options:
-  --all                                    see askai help todo --advanced
+Option | Meaning
+-------+-------------------------------
+--all  | see askai help todo --advanced
 
 Exit: 0
 ```
@@ -1290,7 +1354,9 @@ Summary:
 Use when: Where to paste a short standing instruction in Claude chat, ChatGPT, and Gemini, and how the four coding apps are set up instead.
 
 Options:
-  --copy                                   see askai help chat --advanced
+Option | Meaning
+-------+-------------------------------
+--copy | see askai help chat --advanced
 
 Exit: 0, or 1 for an unknown name
 ```
