@@ -13,7 +13,7 @@ const WIN = process.platform === 'win32';
 function tmpHome() {
   const dir = fs.mkdtempSync(path.join(os.tmpdir(), 'askai-test-'));
   if (!dir.startsWith(os.tmpdir())) throw new Error('refusing to use a non-temp dir');
-  return dir;
+  return fs.realpathSync.native(dir);
 }
 const rm = dir => fs.rmSync(dir, { recursive: true, force: true });
 const readJson = f => JSON.parse(fs.readFileSync(f, 'utf8'));

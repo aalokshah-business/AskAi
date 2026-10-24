@@ -140,7 +140,7 @@ test('W10 homeDirs uses os paths and a temp dir when HOME is unwritable', () => 
     const bad = platform.homeDirs({ HOME: path.join(dir, 'missing'), TEMP: dir }, () => { throw new Error('no'); });
     assert.strictEqual(bad.source, 'temp');
     assert.match(bad.note, /not writable/);
-    assert.ok(!bad.home.includes('~'));
+    assert.ok(!bad.home.split(/[\\/]/).includes('~'), 'HOME must not contain an unexpanded tilde component; Windows 8.3 names are valid');
   } finally { rm(dir); }
 });
 

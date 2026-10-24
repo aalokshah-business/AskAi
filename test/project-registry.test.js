@@ -10,7 +10,7 @@ const shell = require('../lib/project-shell');
 const ASKAI = path.join(__dirname, '..', 'askai.js');
 
 function fixture(fn) {
-  const root = fs.mkdtempSync(path.join(process.env.ASKAI_TEST_TMP || os.tmpdir(), 'askai-projects-'));
+  const root = fs.realpathSync.native(fs.mkdtempSync(path.join(process.env.ASKAI_TEST_TMP || os.tmpdir(), 'askai-projects-')));
   const home = path.join(root, 'home'), config = path.join(home, '.askai');
   fs.mkdirSync(home);
   const a = path.join(root, 'alpha'), b = path.join(root, 'beta'), outside = path.join(root, 'outside');

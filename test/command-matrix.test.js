@@ -16,7 +16,7 @@ const FILES = ['AGENTS.md', 'CLAUDE.md', 'GEMINI.md', '.cursorignore',
 
 function fixture(fn) {
   const base = process.env.ASKAI_TEST_TMP || os.tmpdir();
-  const root = fs.mkdtempSync(path.join(base, 'askai-matrix-'));
+  const root = fs.realpathSync.native(fs.mkdtempSync(path.join(base, 'askai-matrix-')));
   const home = path.join(root, 'home');
   const env = { ...process.env, HOME: home, USERPROFILE: home,
     APPDATA: path.join(home, 'AppData', 'Roaming'), LOCALAPPDATA: path.join(home, 'AppData', 'Local'),
