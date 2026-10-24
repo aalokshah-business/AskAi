@@ -25,6 +25,31 @@ test('MCP timeout and protocol errors do not leak environment or raw server mess
   assert.equal(denied.state,'failed'); assert.ok(!JSON.stringify(denied).includes('secret-auth-value'));
 });
 
+test('MCP reports early server exit without a false cleanup failure', async () => {
+  const row = await mcp.probeServer({tool:'codex',name:'exited',def:{command:process.execPath,args:['-e','process.exit(2)']}},{timeout:3000});
+  assert.equal(row.state,'failed');
+  assert.doesNotMatch(row.detail,/cleanup/);
+  if (process.platform === 'win32') {
+    const shell = await mcp.probeServer({tool:'codex',name:'npm-shim',def:{command:'npx',args:[]}});
+    if (/\.(cmd|bat)$/i.test(require('../lib/sys').which('npx') || '')) assert.equal(shell.state,'not-verified');
+  }
+});
+
+test('plugin reports request the durable Headroom ledger rather than proxy performance', () => {
+  const home = tmpHome();
+  try {
+    const win = process.platform === 'win32';
+    const file = path.join(home,win ? 'headroom.cmd' : 'headroom');
+    write(file,win ? '@echo off\r\necho requested: %*\r\n' : '#!/bin/sh\nprintf "requested: %s\\n" "$*"\n');
+    if (!win) fs.chmodSync(file,0o755);
+    const ctx = makeCtx(home,{}, {tools:{headroom:file}});
+    const report = require('../lib/savings').report(ctx,7,home);
+    assert.match(report,/requested: savings --days 7/);
+    assert.doesNotMatch(report,/requested: perf/);
+    assert.match(report,/not plan quota/);
+  } finally { rm(home); }
+});
+
 test('MCP resolves all four clients and project overrides without printing configuration secrets', () => {
   const home=tmpHome();
   try {

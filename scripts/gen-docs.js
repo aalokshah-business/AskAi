@@ -287,6 +287,8 @@ The diagram source renders on GitHub and in Mermaid-aware editors. A dry run sto
 
 ## 5a. Project knowledge pack (askai init)
 
+Live audits distinguish installation/configuration, server protocol responsiveness, client attachment, observed calls and measured effect. ${code('plugins ready')} does not prove a connection. ${code('mcp verify')} preserves early-exit failures and leaves Windows npm shell launchers to native clients. Cross-client status examines registrations beyond the last install target. See ${code('docs/SUPPORT_WORKFLOWS.md')} for runtime drift and missing telemetry; Headroom reports use its durable savings command, not proxy performance data.
+
 Project workflows accept any folder and language. Shared extension/manifest definitions in ${code('lib/project-source.js')} drive inventory, review scans, profile suggestions and terminal root discovery. Detection is advisory; unknown stacks use ${code('other')}. Explicit ${code('--type')}, ${code('--about')}, ${code('--build')} and ${code('--test')} choices persist locally in ${code('.ai-work/askai-init.json')} across map and refresh. Init never executes these commands. Symbol/import heuristics and optional navigation plugins do not support every language semantically. Normal CLI launch performs no source analysis.
 
 Long conversations are the biggest token cost: every turn re-sends the whole chat. ${code('askai init')} puts the context into small files, so ${code('/clear')} costs nothing and a new session reads only what the task needs.

@@ -4,6 +4,10 @@ AskAI follows semantic versioning from 1.0.0 (see [RELEASING.md](RELEASING.md)).
 
 ## Unreleased
 
+- Correct live-audit diagnostics: preserve early MCP exit failures instead of false cleanup failures, resolve Windows npm launchers before probing, and label plugin readiness as configuration rather than connection.
+- Show cross-client registrations independently of the last installation target. Wrap detailed help prose and avoid mistaking indentation/table separators for Git output or duplicated evidence.
+- Use Headroom's durable savings report instead of proxy performance output; document runtime drift, orphaned uv launchers, missing telemetry and the limits of quota comparisons.
+
 - Make project inventory, review scans and profile suggestions share broader language coverage. Broaden terminal root discovery and review manifest tracking without adding launch-time source analysis.
 - Stop classifying generic CMake/mk.sh projects as firmware or Swift packages as iOS. Keep unknown stacks usable, label inference limits, and preserve explicit init type/description/build/test choices across map and refresh.
 

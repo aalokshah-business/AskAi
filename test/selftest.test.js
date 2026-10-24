@@ -70,3 +70,17 @@ test('askai help test describes the capture', () => {
   assert.match(r.out, /Usage: askai test/);
   assert.match(r.out, /--out FILE/);
 });
+
+test('presentation checks distinguish indentation and table headers from git status and duplicated evidence', () => {
+  const row = {args:['audit'],stdout:'  ordinary indented advice\n'+('---+---'.repeat(20))+'\n'+('---+---'.repeat(20))+'\n',stderr:'',code:0,ms:10};
+  assert.ok(!selftest.judge(row).includes('raw git status'));
+  assert.ok(!selftest.judge(row).includes('repeated block'));
+  row.stdout = ' M changed.js\n';
+  assert.ok(selftest.judge(row).includes('raw git status'));
+});
+
+test('detailed help wraps prose while preserving copyable commands', () => {
+  const text = require('../lib/help').render('mcp',{advanced:true,width:80});
+  assert.ok(text.split('\n').filter(line=>!/^\s*askai |^Usage:/.test(line)).every(line=>line.length<=80));
+  assert.match(text,/askai mcp off playwright/);
+});

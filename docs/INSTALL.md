@@ -4,6 +4,8 @@ This guide takes you from a Git checkout or downloaded zip to a working setup on
 
 ## Custom projects and toolchains
 
+After installation or update, audit the actual terminal copy with `askai test --real`. Use `askai mcp verify --tool codex` or `--tool agy` for separate bounded server probes. See [missing reports and launcher recovery](SUPPORT_WORKFLOWS.md#audit-the-installed-runtime-and-missing-reports); file presence alone is not proof that a tool starts or the client connected.
+
 Installation configures supported AI clients globally; project initialization is separate and accepts any existing folder, regardless of language. Run from the project root or pass its path. A registered name selects the same project for later project-aware commands.
 
 ```sh

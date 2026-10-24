@@ -40,7 +40,7 @@ test('every plugin AskAI can install has a usage guide: commands, check, savings
   }
   for (const id of ['caveman', 'lsp', 'ponytail', 'karpathy']) assert.ok(ug.get(id), id);
   const hr = cli(['plugins', 'info', 'headroom']).out;
-  for (const w of ['headroom perf', 'headroom_compress', 'headroom_stats', 'Check it works', 'Switch it off', 'Careful']) assert.ok(hr.includes(w), w);
+  for (const w of ['headroom savings', 'headroom_compress', 'headroom_stats', 'Check it works', 'Switch it off', 'Careful']) assert.ok(hr.includes(w), w);
   assert.match(cli(['plugins', 'info', 'litellm']).out, /Not installed by AskAI/);
   assert.strictEqual(cli(['plugins', 'info']).code, 1);
 });
@@ -119,12 +119,12 @@ test('plugins ready tells which tools wait and which one-time step is left', () 
   write(ctx.paths.settings, JSON.stringify({ enabledPlugins: { 'context-mode@context-mode': true } }));
   const report = require('../lib/plugins-ready').ready(ctx, dir);
   const row = id => report.tools.find(t => t.id === id);
-  assert.strictEqual(row('serena').state, 'connected, waits for a matching task');
-  assert.strictEqual(row('context7').state, 'connected, waits for a matching task');
+  assert.strictEqual(row('serena').state, 'configured; live connection not verified');
+  assert.strictEqual(row('context7').state, 'configured; live connection not verified');
   assert.strictEqual(row('headroom').state, 'not installed');
   assert.strictEqual(row('lsp').state, 'not installed');
   assert.strictEqual(row('markitdown').state, 'not installed');
-  assert.strictEqual(row('context-mode').state, 'connected, waits for a matching task');
+  assert.strictEqual(row('context-mode').state, 'configured; live connection not verified');
   assert.strictEqual(row('graphify').state, 'installed, graph not built');
   assert.strictEqual(row('rtk').state, 'installed, hook not registered');
   assert.deepStrictEqual(report.actions.map(a => a.run), ['graphify update .', 'askai install --only rtk,cursor-rtk --yes']);

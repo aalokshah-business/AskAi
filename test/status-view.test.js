@@ -4,6 +4,19 @@ const assert = require('node:assert');
 const status = require('../lib/status');
 const { tmpHome, rm, makeCtx } = require('./helpers');
 
+test('status includes configured MCP hosts beyond the recorded install target', () => {
+  const {write,path} = require('./helpers');
+  const home = tmpHome();
+  try {
+    const ctx = makeCtx(home,{agyHome:path.join(home,'gemini'),codexHome:path.join(home,'codex')});
+    ctx.hostSel = {codex:true};
+    ctx.manifest.components.headroom = {};
+    write(ctx.agyPaths.mcp,JSON.stringify({mcpServers:{headroom:{command:'headroom',args:['mcp','serve']}}}));
+    const row = status.collect(ctx).find(r=>r.id === 'headroom');
+    assert.strictEqual(row.hosts.agy,'ok');
+  } finally { rm(home); }
+});
+
 test('status renders four columns in requested environment order', () => {
   const home = tmpHome();
   try {

@@ -2,6 +2,29 @@
 
 These workflows are local and explicit. They do not start AI agents, switch models, change billing or silently configure firmware targets. MCP verification starts the server commands you already configured; those commands can invoke package managers or contact their own services.
 
+## Audit the installed runtime and missing reports
+
+Run `askai test --real --out audit-real.txt` for read-only checks against the real machine, and `askai test --out audit-fixture.txt` for safe command variants in disposable fixtures. Setup, uninstall and agent launch variants use fixtures or dry runs; these checks do not prove sign-in, native UI behavior, or every external integration. Formatting flags are review hints, not runtime failures. Long copyable commands can intentionally exceed the line budget.
+
+Check the installed app as well as the development checkout. A shared version number does not prove equal source revisions. On an installed machine, `askai update` fetches the current source and refreshes the app and legacy launcher copy. Reopen the AskAI terminal afterwards. Old source directories may remain on disk; the launcher normally executes `app/askai.js`.
+
+`plugins ready` reports configuration, not live attachment. Use `askai mcp verify --tool codex` or `--tool agy`, then the native client's MCP view. A successful standalone handshake still does not prove the current chat loaded that server. Windows npm shell launchers need native-client verification; AskAI does not execute arbitrary shell strings to probe them. Client status includes existing registrations beyond the last selected installation target.
+
+If `serena --help` or `headroom --version` prints `uv trampoline failed to canonicalize script path`, compare `uv tool list` with the executable files. An executable can remain after its tool environment disappeared. For the optional tools you choose to retain, reinstall using the upstream package, for example `uv tool install --force --python 3.13 serena-agent` or `uv tool install --force --python 3.13 "headroom-ai[mcp]"`. Recheck the launch and server connection; restarting alone cannot restore a missing environment.
+
+| Report | What missing data means |
+| --- | --- |
+| RTK `gain` | Read from the real user environment. Sandbox redirection or denied database access can produce a different view. Its byte-derived token estimate is output trimmed across commands, not net model or subscription savings. |
+| Headroom `savings` | Newer versions provide a durable compression ledger; AskAI requests this rather than proxy performance data. Requires a working installation and actual compression events. Unsupported old versions or launch failures remain unavailable. |
+| Headroom `headroom_stats` | In-session MCP statistics; the server must be connected and used. Estimated avoided cost is not the user's subscription quota. |
+| Context7, Serena, Graphify | Successful lookup/navigation establishes usefulness, not a universal saved-token counter. An existing graph does not prove a query works. |
+| Claude status-line cache snapshots | Claude-only telemetry. Absence in a Codex session is expected and says nothing about Codex caching. |
+| ccusage | Reads supported Claude logs. Unknown model pricing makes dollar totals incomplete; it does not measure Codex or Antigravity subscription quota. |
+| Codex raw session counters | Best-effort local parsing, across the discovered sessions. Cache share is not an AskAI attribution or plan quota percentage. |
+| Quota comparisons | Require observations from the same window and comparable tasks, model and effort. An empty history or blank legacy measurement is not a baseline. |
+
+Sources: [Codex MCP](https://developers.openai.com/codex/mcp), [Codex usage](https://developers.openai.com/codex/pricing), [Antigravity MCP](https://antigravity.google/docs/mcp), [Serena installation](https://oraios.github.io/serena/02-usage/010_installation.html), [Headroom durable savings](https://github.com/headroomlabs-ai/headroom/blob/main/docs/content/docs/savings.mdx), [RTK analytics](https://github.com/rtk-ai/rtk/blob/develop/docs/guide/analytics/gain.md).
+
 ## 1. Verify MCP servers across four environments
 
 ```text

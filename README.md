@@ -358,6 +358,8 @@ It exits 1 only when the spend part could not be produced; use `askai check` whe
 
 ## Any project or programming language
 
+For a live-machine audit, missing MCP reports, broken Python launchers, or differences between the installed app and a checkout, see [audit and reporting guidance](docs/SUPPORT_WORKFLOWS.md#audit-the-installed-runtime-and-missing-reports). Configured tools are not necessarily connected; compression estimates do not establish subscription savings.
+
 Core project selection, handoffs, bounded command output, checks and usage reporting do not require a particular programming language. Initialize any existing folder; unknown stacks use `other`. Automatic language/framework detection and optional navigation plugins have narrower coverage and do not validate every toolchain.
 
 ```sh

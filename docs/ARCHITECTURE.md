@@ -109,6 +109,8 @@ The diagram source renders on GitHub and in Mermaid-aware editors. A dry run sto
 
 ## 5a. Project knowledge pack (askai init)
 
+Live audits distinguish installation/configuration, server protocol responsiveness, client attachment, observed calls and measured effect. `plugins ready` does not prove a connection. `mcp verify` preserves early-exit failures and leaves Windows npm shell launchers to native clients. Cross-client status examines registrations beyond the last install target. See `docs/SUPPORT_WORKFLOWS.md` for runtime drift and missing telemetry; Headroom reports use its durable savings command, not proxy performance data.
+
 Project workflows accept any folder and language. Shared extension/manifest definitions in `lib/project-source.js` drive inventory, review scans, profile suggestions and terminal root discovery. Detection is advisory; unknown stacks use `other`. Explicit `--type`, `--about`, `--build` and `--test` choices persist locally in `.ai-work/askai-init.json` across map and refresh. Init never executes these commands. Symbol/import heuristics and optional navigation plugins do not support every language semantically. Normal CLI launch performs no source analysis.
 
 Long conversations are the biggest token cost: every turn re-sends the whole chat. `askai init` puts the context into small files, so `/clear` costs nothing and a new session reads only what the task needs.
@@ -369,7 +371,9 @@ askai cli: Prepare a project from the chat folder, then open an AskAI-only termi
 Usage: askai cli  --prepare --launch --review --path
 
 Summary:
-  Opens the dedicated interactive AskAI shell with project auto-detection and persistent terminal state. Use it when running multiple AskAI commands without repeatedly typing the askai prefix. It saves tokens by keeping routine diagnostics and session commands local; explicit AI reviews and launched AI agents still use model tokens.
+  Opens the dedicated interactive AskAI shell with project auto-detection and persistent terminal state. Use it when
+  running multiple AskAI commands without repeatedly typing the askai prefix. It saves tokens by keeping routine
+  diagnostics and session commands local; explicit AI reviews and launched AI agents still use model tokens.
 
 Use when: Prepare a project from the chat folder, then open an AskAI-only terminal. AI review is opt-in.
 
@@ -392,7 +396,10 @@ askai install: Install and wire the token-saving setup for Claude Code, Codex, A
 Usage: askai install
 
 Summary:
-  Installs and wires token-saving configurations, rule files, and baseline defaults across Claude Code, Cursor, Codex, and Antigravity. Use it when setting up a new development environment or switching profile tiers. It saves tokens by enforcing terse output rules, lower default reasoning tiers, prompt-caching configurations, and idle-drain protections across all AI hosts.
+  Installs and wires token-saving configurations, rule files, and baseline defaults across Claude Code, Cursor, Codex,
+  and Antigravity. Use it when setting up a new development environment or switching profile tiers. It saves tokens by
+  enforcing terse output rules, lower default reasoning tiers, prompt-caching configurations, and idle-drain protections
+  across all AI hosts.
 
 Use when: set up or finish this machine
 
@@ -415,7 +422,9 @@ askai update: Update AskAI itself from GitHub and re-apply the recorded profile.
 Usage: askai update
 
 Summary:
-  Fetches the latest AskAI release from GitHub and reapplies your recorded profile to ensure tools and rule blocks stay current. Use it regularly to keep your setup synchronized with upstream optimizations. It saves tokens by ensuring your prompt rules, model baselines, and integrations utilize the newest token-reduction strategies.
+  Fetches the latest AskAI release from GitHub and reapplies your recorded profile to ensure tools and rule blocks stay
+  current. Use it regularly to keep your setup synchronized with upstream optimizations. It saves tokens by ensuring
+  your prompt rules, model baselines, and integrations utilize the newest token-reduction strategies.
 
 Use when: AskAI itself is old
 
@@ -430,7 +439,9 @@ askai tools: Upgrade the tools AskAI installed and refresh its rule blocks.
 Usage: askai tools update
 
 Summary:
-  Upgrades AskAI-managed external packages like Serena, MarkItDown, and ccusage while refreshing rule blocks. Use it when new tool releases are available. It saves tokens by keeping language indexers and document converters on fast, stable releases that avoid broken trampoline stubs and failed extraction attempts.
+  Upgrades AskAI-managed external packages like Serena, MarkItDown, and ccusage while refreshing rule blocks. Use it
+  when new tool releases are available. It saves tokens by keeping language indexers and document converters on fast,
+  stable releases that avoid broken trampoline stubs and failed extraction attempts.
 
 Use when: an installed tool is old
 
@@ -445,7 +456,9 @@ askai status: Status in four environment columns, or one selected environment.
 Usage: askai status  --host --json
 
 Summary:
-  Reports real-time configuration health, MCP registrations, and tool states organized in environment columns. Use it to verify which hosts are ready and whether local optimizers are active. It saves tokens by surfacing misconfigurations offline so you never waste prompt turns discovering that a rule or server failed to load.
+  Reports real-time configuration health, MCP registrations, and tool states organized in environment columns. Use it to
+  verify which hosts are ready and whether local optimizers are active. It saves tokens by surfacing misconfigurations
+  offline so you never waste prompt turns discovering that a rule or server failed to load.
 
 Use when: Status in four environment columns, or one selected environment.
 
@@ -466,7 +479,9 @@ askai setup: Short check after install: which hosts are present, check counts, a
 Usage: askai setup  --yes
 
 Summary:
-  Runs a rapid post-install validation checking host presence, rule counts, and file integrity. Use it immediately after install or project init to confirm your environment is sound. It saves tokens by ensuring required short rule files are active and preventing broken setups that cause models to fall back to verbose defaults.
+  Runs a rapid post-install validation checking host presence, rule counts, and file integrity. Use it immediately after
+  install or project init to confirm your environment is sound. It saves tokens by ensuring required short rule files
+  are active and preventing broken setups that cause models to fall back to verbose defaults.
 
 Use when: Short check after install: which hosts are present, check counts, and whether the file validator passed.
 
@@ -486,7 +501,9 @@ askai check: Audit this machine and a repository against the token-saving guidel
 Usage: askai check
 
 Summary:
-  Audits your machine and repository against token-saving guidelines, identifying leaks, oversized rules, and unneeded billable keys. Use it after installation, weekly, or whenever AI usage spikes. It saves tokens by catching high-severity configuration leaks like unneeded API keys, oversized instruction files, and inactive prompt caching.
+  Audits your machine and repository against token-saving guidelines, identifying leaks, oversized rules, and unneeded
+  billable keys. Use it after installation, weekly, or whenever AI usage spikes. It saves tokens by catching
+  high-severity configuration leaks like unneeded API keys, oversized instruction files, and inactive prompt caching.
 
 Use when: just installed, or something feels off
 
@@ -508,7 +525,9 @@ askai why: The message and fix for one finding from askai check.
 Usage: askai why <id>
 
 Summary:
-  Explains the technical reasoning and exact fix command for any diagnostic finding reported by askai check. Use it whenever a health check flag needs explanation or remediation. It saves tokens by providing instant offline guidance and copy-paste fixes, eliminating the need to ask an AI agent how to resolve configuration warnings.
+  Explains the technical reasoning and exact fix command for any diagnostic finding reported by askai check. Use it
+  whenever a health check flag needs explanation or remediation. It saves tokens by providing instant offline guidance
+  and copy-paste fixes, eliminating the need to ask an AI agent how to resolve configuration warnings.
 
 Use when: one finding needs the reason
 
@@ -523,7 +542,9 @@ askai next: The top actions from askai check: at most 3 to do now and 2 for late
 Usage: askai next
 
 Summary:
-  Surfaces the top 3 immediate actions and 2 upcoming steps from your latest health checks. Use it at the start of a session, after breaks, or whenever you need direction on what to tackle next. It saves tokens by directing you to the highest-leverage task immediately, eliminating exploratory queries and trial-and-error prompts.
+  Surfaces the top 3 immediate actions and 2 upcoming steps from your latest health checks. Use it at the start of a
+  session, after breaks, or whenever you need direction on what to tackle next. It saves tokens by directing you to the
+  highest-leverage task immediately, eliminating exploratory queries and trial-and-error prompts.
 
 Use when: you are not sure what to do
 
@@ -538,7 +559,9 @@ askai handoff: Write .ai-work/HANDOFF.md from git facts. Judgment fields stay as
 Usage: askai handoff ["next step"]
 
 Summary:
-  Generates a structured note in .ai-work/HANDOFF.md capturing git changes, touched files, and open decisions. Use it before concluding a session or clearing context. It saves tokens by transferring essential project state to the next agent session in under 30 lines, avoiding costly full-codebase rescans.
+  Generates a structured note in .ai-work/HANDOFF.md capturing git changes, touched files, and open decisions. Use it
+  before concluding a session or clearing context. It saves tokens by transferring essential project state to the next
+  agent session in under 30 lines, avoiding costly full-codebase rescans.
 
 Use when: finish the note for the next session
 
@@ -559,7 +582,9 @@ askai weigh: Offline token estimate (chars/4), labeled estimate. Flags a file ov
 Usage: askai weigh
 
 Summary:
-  Calculates fast offline character-based token estimates for files or directories and flags items exceeding safe thresholds. Use it before asking an agent to read a large document or log. It saves tokens by preventing accidental injection of massive files into the prompt window that would inflate context costs.
+  Calculates fast offline character-based token estimates for files or directories and flags items exceeding safe
+  thresholds. Use it before asking an agent to read a large document or log. It saves tokens by preventing accidental
+  injection of massive files into the prompt window that would inflate context costs.
 
 Use when: a file may be too big to read
 
@@ -574,7 +599,9 @@ askai run: Run a command, keep the full log in .ai-work/last.log, and print the 
 Usage: askai run -- <command>
 
 Summary:
-  Executes build, test, or lint commands while capturing full output to .ai-work/last.log and displaying only the exit code and trailing lines. Use it for all terminal commands in an AI workflow. It saves tokens by preventing noisy compiler logs, test progress bars, and stack traces from consuming the context window.
+  Executes build, test, or lint commands while capturing full output to .ai-work/last.log and displaying only the exit
+  code and trailing lines. Use it for all terminal commands in an AI workflow. It saves tokens by preventing noisy
+  compiler logs, test progress bars, and stack traces from consuming the context window.
 
 Use when: a build or test prints too much
 
@@ -595,7 +622,9 @@ askai errors: Print error lines from a log, with two lines of context, de-duplic
 Usage: askai errors
 
 Summary:
-  Extracts and deduplicates the primary failure lines from .ai-work/last.log with 2 lines of context. Use it immediately following a failed askai run command. It saves tokens by distilling thousands of lines of terminal noise down to the exact 5 to 15 failure lines an agent needs to fix the issue.
+  Extracts and deduplicates the primary failure lines from .ai-work/last.log with 2 lines of context. Use it immediately
+  following a failed askai run command. It saves tokens by distilling thousands of lines of terminal noise down to the
+  exact 5 to 15 failure lines an agent needs to fix the issue.
 
 Use when: the last build failed
 
@@ -610,7 +639,9 @@ askai snapshot: Write a git diff patch and an untracked-file list under .ai-work
 Usage: askai snapshot
 
 Summary:
-  Saves current staged, unstaged, and untracked work into a standalone patch file under .ai-work/snapshots without altering git branches. Use it before risky agent refactors or exploratory edits. It saves tokens by providing an instant offline baseline to revert bad changes, avoiding lengthy AI-driven debugging and rollback chats.
+  Saves current staged, unstaged, and untracked work into a standalone patch file under .ai-work/snapshots without
+  altering git branches. Use it before risky agent refactors or exploratory edits. It saves tokens by providing an
+  instant offline baseline to revert bad changes, avoiding lengthy AI-driven debugging and rollback chats.
 
 Use when: save work without a commit
 
@@ -625,7 +656,9 @@ askai route: Pick a tier from the task words and print the cheaper-first escalat
 Usage: askai route "task"
 
 Summary:
-  Analyzes task wording to recommend the cheapest appropriate model tier (chore, build, or lead) and escalation rules. Use it before assigning a task to an agent to select the most economical tier. It saves tokens by preventing simple chores from running on costly frontier models, cutting routine execution costs significantly.
+  Analyzes task wording to recommend the cheapest appropriate model tier (chore, build, or lead) and escalation rules.
+  Use it before assigning a task to an agent to select the most economical tier. It saves tokens by preventing simple
+  chores from running on costly frontier models, cutting routine execution costs significantly.
 
 Use when: you want the tier, not a launch
 
@@ -640,7 +673,9 @@ askai stop: List running agent CLIs. --yes terminates them.
 Usage: askai stop
 
 Summary:
-  Scans for and terminates lingering background agent CLI processes and orphaned sessions. Use it when agent processes hang, loop continuously, or remain active after terminal closure. It saves tokens by immediately halting unattended processes and retry loops that silently consume background API quotas.
+  Scans for and terminates lingering background agent CLI processes and orphaned sessions. Use it when agent processes
+  hang, loop continuously, or remain active after terminal closure. It saves tokens by immediately halting unattended
+  processes and retry loops that silently consume background API quotas.
 
 Use when: an agent CLI is still running
 
@@ -655,7 +690,9 @@ askai bootstrap: Show a personal devcontainer setup; --repo writes a post-create
 Usage: askai bootstrap  --profile --repo
 
 Summary:
-  Configures devcontainer dotfiles and post-create scripts to wire AskAI inside containerized environments. Use it when setting up Docker containers, Codespaces, or remote dev environments. It saves tokens by automating rule enforcement and terse modes in containers so agents operate efficiently from the first turn.
+  Configures devcontainer dotfiles and post-create scripts to wire AskAI inside containerized environments. Use it when
+  setting up Docker containers, Codespaces, or remote dev environments. It saves tokens by automating rule enforcement
+  and terse modes in containers so agents operate efficiently from the first turn.
 
 Use when: Show a personal devcontainer setup; --repo writes a post-create script into this project.
 
@@ -676,9 +713,12 @@ askai ask: Offline answers on etiquette and the research: the rule, why, the com
 Usage: askai ask
 
 Summary:
-  Searches AskAI built-in knowledge base offline to answer questions on token habits, research, and tool etiquette. Use it whenever you need clarification on best practices or optimization strategies. It saves tokens by providing immediate answers locally with zero model calls or network queries.
+  Searches AskAI built-in knowledge base offline to answer questions on token habits, research, and tool etiquette. Use
+  it whenever you need clarification on best practices or optimization strategies. It saves tokens by providing
+  immediate answers locally with zero model calls or network queries.
 
-Use when: Offline answers on etiquette and the research: the rule, why, the command in each tool, and what AskAI automates.
+Use when: Offline answers on etiquette and the research: the rule, why, the command in each tool, and what AskAI
+automates.
 
 Exit: 0 when something matches, 1 otherwise
 ```
@@ -691,7 +731,9 @@ askai start: Start a task: ledger entry with tool, task, branch and last commit.
 Usage: askai start  --tool --task --repo
 
 Summary:
-  Records an initial task entry in the session ledger tracking tool, task summary, branch, and commit. Use it when beginning any distinct unit of work. It saves tokens by keeping task goals explicit and bounded, preventing scope creep and unnecessary file exploration by the agent.
+  Records an initial task entry in the session ledger tracking tool, task summary, branch, and commit. Use it when
+  beginning any distinct unit of work. It saves tokens by keeping task goals explicit and bounded, preventing scope
+  creep and unnecessary file exploration by the agent.
 
 Use when: Start a task: ledger entry with tool, task, branch and last commit.
 
@@ -713,7 +755,9 @@ askai break: Before a break: checklist, running agent CLIs, handoff reminder, a 
 Usage: askai break
 
 Summary:
-  Displays a pre-break checklist, verifies agent process states, reminds you to save a handoff, and logs a pause. Use it whenever stepping away from the keyboard for more than 15 minutes. It saves tokens by encouraging clean context boundaries so you do not resume with expired prompt caches or stale mental context.
+  Displays a pre-break checklist, verifies agent process states, reminds you to save a handoff, and logs a pause. Use it
+  whenever stepping away from the keyboard for more than 15 minutes. It saves tokens by encouraging clean context
+  boundaries so you do not resume with expired prompt caches or stale mental context.
 
 Use when: you are stepping away
 
@@ -728,7 +772,9 @@ askai resume: Coming back: time away, continue-or-fresh advice from the cache li
 Usage: askai resume
 
 Summary:
-  Inspects elapsed time, cache lifetime, git status, and the handoff file to generate a copy-ready resume prompt. Use it upon returning from a break or starting a fresh session. It saves tokens by advising whether to continue or restart and producing a focused prompt that loads only the files required.
+  Inspects elapsed time, cache lifetime, git status, and the handoff file to generate a copy-ready resume prompt. Use it
+  upon returning from a break or starting a fresh session. It saves tokens by advising whether to continue or restart
+  and producing a focused prompt that loads only the files required.
 
 Use when: you are back from a break
 
@@ -748,9 +794,12 @@ askai session: The per-repo ledger in .ai-work/: entries, handoff, measurements,
 Usage: askai session
 
 Summary:
-  Manages the per-repository ledger in .ai-work/ for tracking entries, measurements, difficulties, and time spent. Use it to log work milestones, evaluate productivity, and inspect token expenditure. It saves tokens by providing offline metrics and history without requiring conversational recaps or AI auditing.
+  Manages the per-repository ledger in .ai-work/ for tracking entries, measurements, difficulties, and time spent. Use
+  it to log work milestones, evaluate productivity, and inspect token expenditure. It saves tokens by providing offline
+  metrics and history without requiring conversational recaps or AI auditing.
 
-Use when: The per-repo ledger in .ai-work/: entries, handoff, measurements, report. askai start, askai break and askai resume are the daily names for those three actions.
+Use when: The per-repo ledger in .ai-work/: entries, handoff, measurements, report. askai start, askai break and askai
+resume are the daily names for those three actions.
 
 Exit: 0
 ```
@@ -763,9 +812,12 @@ askai scaffold: Write the files every agent reads: AGENTS.md, CLAUDE.md, docs/ai
 Usage: askai scaffold  --dry-run
 
 Summary:
-  Generates essential starter guidance files including AGENTS.md, CLAUDE.md, and .cursorignore without overwriting existing files. Use it when setting up a new repository or subproject. It saves tokens by installing clean ignore rules and short routers early, preventing models from ingesting untracked or binary assets.
+  Generates essential starter guidance files including AGENTS.md, CLAUDE.md, and .cursorignore without overwriting
+  existing files. Use it when setting up a new repository or subproject. It saves tokens by installing clean ignore
+  rules and short routers early, preventing models from ingesting untracked or binary assets.
 
-Use when: Write the files every agent reads: AGENTS.md, CLAUDE.md, docs/ai/PROJECT_PROFILE.md, .cursorignore, .ai-work/. Never overwrites.
+Use when: Write the files every agent reads: AGENTS.md, CLAUDE.md, docs/ai/PROJECT_PROFILE.md, .cursorignore, .ai-work/.
+Never overwrites.
 
 Options:
 Option    | Meaning
@@ -783,7 +835,9 @@ askai suggest: Recommend a profile from the files in a folder.
 Usage: askai suggest
 
 Summary:
-  Analyzes repository structure, file extensions, and dependencies to recommend the most suitable AskAI profile. Use it when onboarding a new project and deciding on configuration depth. It saves tokens by recommending lean setups tailored to actual needs, avoiding unused tools that add schema overhead.
+  Analyzes repository structure, file extensions, and dependencies to recommend the most suitable AskAI profile. Use it
+  when onboarding a new project and deciding on configuration depth. It saves tokens by recommending lean setups
+  tailored to actual needs, avoiding unused tools that add schema overhead.
 
 Use when: Recommend a profile from the files in a folder.
 
@@ -798,7 +852,9 @@ askai profiles: What each profile installs.
 Usage: askai profiles
 
 Summary:
-  Lists all available AskAI profiles (lean, code, docs, full, experimental) and the components each profile installs. Use it to evaluate which profile matches your workflow requirements. It saves tokens by making profile trade-offs transparent so you choose minimal configurations that avoid unnecessary background tools.
+  Lists all available AskAI profiles (lean, code, docs, full, experimental) and the components each profile installs.
+  Use it to evaluate which profile matches your workflow requirements. It saves tokens by making profile trade-offs
+  transparent so you choose minimal configurations that avoid unnecessary background tools.
 
 Use when: What each profile installs.
 
@@ -813,7 +869,9 @@ askai project: Manage registered projects, or copy Cursor rules into a repositor
 Usage: askai project <sub>
 
 Summary:
-  Manages registered project folders, refreshes knowledge packs, and configures local git exclusions. Use it when switching between projects or updating shared team rules. It saves tokens by keeping project router files synchronized and excluding local AI state from version control and workspace indexing.
+  Manages registered project folders, refreshes knowledge packs, and configures local git exclusions. Use it when
+  switching between projects or updating shared team rules. It saves tokens by keeping project router files synchronized
+  and excluding local AI state from version control and workspace indexing.
 
 Use when: this folder needs its pack
 
@@ -836,7 +894,9 @@ askai set: Select a project for this terminal or set a persistent fallback.
 Usage: askai set  --clear --clear
 
 Summary:
-  Selects the active project for the current terminal or designates a persistent default fallback. Use it when working across multiple repositories or shells. It saves tokens by ensuring commands resolve against the correct project paths, preventing mistaken reads against unrelated codebases.
+  Selects the active project for the current terminal or designates a persistent default fallback. Use it when working
+  across multiple repositories or shells. It saves tokens by ensuring commands resolve against the correct project
+  paths, preventing mistaken reads against unrelated codebases.
 
 Use when: Select a project for this terminal or set a persistent fallback.
 
@@ -857,7 +917,9 @@ askai shell: Enable terminal-scoped project selection in a shell.
 Usage: askai shell  --path
 
 Summary:
-  Generates shell integration hooks for PowerShell, bash, or zsh to maintain terminal-scoped active projects. Use it during initial setup to enable seamless shell navigation. It saves tokens by tracking active project context automatically, eliminating path errors and redundant directory discovery.
+  Generates shell integration hooks for PowerShell, bash, or zsh to maintain terminal-scoped active projects. Use it
+  during initial setup to enable seamless shell navigation. It saves tokens by tracking active project context
+  automatically, eliminating path errors and redundant directory discovery.
 
 Use when: Enable terminal-scoped project selection in a shell.
 
@@ -877,7 +939,9 @@ askai tips: The cheat sheet, offline, per tool. peak says whether Claude is in p
 Usage: askai tips
 
 Summary:
-  Displays offline cheat sheets, keyboard commands, and peak pricing hours tailored to each AI tool. Use it when starting work in Cursor, Claude Code, Codex, or Antigravity. It saves tokens by reminding you of native context commands and warning against expensive provider peak hours.
+  Displays offline cheat sheets, keyboard commands, and peak pricing hours tailored to each AI tool. Use it when
+  starting work in Cursor, Claude Code, Codex, or Antigravity. It saves tokens by reminding you of native context
+  commands and warning against expensive provider peak hours.
 
 Use when: The cheat sheet, offline, per tool. peak says whether Claude is in peak hours now.
 
@@ -892,7 +956,9 @@ askai test: Run the safe commands one by one, print a short status, and write on
 Usage: askai test  --out --json --real --notty
 
 Summary:
-  Executes safe AskAI commands on disposable fixtures to verify response formats, line budgets, and timing. Use it to validate AskAI operation on your platform without modifying real files. It saves tokens by verifying that output budgets remain concise, guaranteeing terminal outputs stay within token-friendly bounds.
+  Executes safe AskAI commands on disposable fixtures to verify response formats, line budgets, and timing. Use it to
+  validate AskAI operation on your platform without modifying real files. It saves tokens by verifying that output
+  budgets remain concise, guaranteeing terminal outputs stay within token-friendly bounds.
 
 Use when: Run the safe commands one by one, print a short status, and write one capture file.
 
@@ -915,9 +981,12 @@ askai statusline: Claude Code's status line command (reads the session JSON on s
 Usage: askai statusline  --demo
 
 Summary:
-  Outputs Claude Code status line showing model, context percentage, and cache status while recording snapshots. Use it configured as Claude Code status line command. It saves tokens by providing continuous visibility into context growth so you can compact or hand off before token costs escalate.
+  Outputs Claude Code status line showing model, context percentage, and cache status while recording snapshots. Use it
+  configured as Claude Code status line command. It saves tokens by providing continuous visibility into context growth
+  so you can compact or hand off before token costs escalate.
 
-Use when: Claude Code's status line command (reads the session JSON on stdin): model, context, cache; records snapshots for askai savings.
+Use when: Claude Code's status line command (reads the session JSON on stdin): model, context, cache; records snapshots
+for askai savings.
 
 Options:
 Option | Meaning
@@ -935,7 +1004,8 @@ askai restore: List backup timestamps, or restore supported configuration files 
 Usage: askai restore  --dry-run --yes
 
 Summary:
-  Lists automatic configuration backups and restores supported configuration files from a selected timestamp. Current files are backed up before restoration. This is a local recovery operation and does not call AI.
+  Lists automatic configuration backups and restores supported configuration files from a selected timestamp. Current
+  files are backed up before restoration. This is a local recovery operation and does not call AI.
 
 Use when: List backup timestamps, or restore supported configuration files from one backup.
 
@@ -956,9 +1026,12 @@ askai uninstall: Remove only what AskAI added: keys still holding AskAI's value,
 Usage: askai uninstall  --only --dry-run
 
 Summary:
-  Removes AskAI-managed settings, rule blocks, and registrations while preserving your custom configurations and backups. Use it when removing AskAI from a machine. It saves tokens by executing cleanly offline from recorded manifests without requiring AI guidance or complex cleanup prompts.
+  Removes AskAI-managed settings, rule blocks, and registrations while preserving your custom configurations and
+  backups. Use it when removing AskAI from a machine. It saves tokens by executing cleanly offline from recorded
+  manifests without requiring AI guidance or complex cleanup prompts.
 
-Use when: Remove only what AskAI added: keys still holding AskAI's value, its marked blocks, its own files and registrations.
+Use when: Remove only what AskAI added: keys still holding AskAI's value, its marked blocks, its own files and
+registrations.
 
 Options:
 Option    | Meaning
@@ -977,7 +1050,9 @@ askai version: Print the AskAI version.
 Usage: askai version
 
 Summary:
-  Prints current AskAI version, and with the all option, details system, shell, Node, and git environments. Use it when verifying updates or collecting environment diagnostics. It saves tokens by providing complete system diagnostics in one command without asking an AI model to inspect your machine.
+  Prints current AskAI version, and with the all option, details system, shell, Node, and git environments. Use it when
+  verifying updates or collecting environment diagnostics. It saves tokens by providing complete system diagnostics in
+  one command without asking an AI model to inspect your machine.
 
 Use when: Print the AskAI version.
 
@@ -992,9 +1067,12 @@ askai init: Scan eligible first-party source files, consult detected frameworks'
 Usage: askai init  --name --path --about --type
 
 Summary:
-  Scans source files, consults official framework documentation, and generates a compact project knowledge pack. Use it once per repository to establish AI guidance files. It saves tokens by replacing broad whole-repo indexing with a concise under-333-line router, saving up to 70% of startup prompt overhead.
+  Scans source files, consults official framework documentation, and generates a compact project knowledge pack. Use it
+  once per repository to establish AI guidance files. It saves tokens by replacing broad whole-repo indexing with a
+  concise under-333-line router, saving up to 70% of startup prompt overhead.
 
-Use when: Scan eligible first-party source files, consult detected frameworks' official docs, write a compact project knowledge pack and register its path.
+Use when: Scan eligible first-party source files, consult detected frameworks' official docs, write a compact project
+knowledge pack and register its path.
 
 Options:
 Option  | Meaning
@@ -1015,7 +1093,9 @@ askai review: Show which project inputs changed since host AI review; record com
 Usage: askai review  --project --json --all
 
 Summary:
-  Compares source hashes and manifests against the last AI review to highlight what inputs changed. Use it before launching an AI CLI or after major pull requests. It saves tokens by pinpointing modified files so agents only review changed components rather than re-reading the entire repository.
+  Compares source hashes and manifests against the last AI review to highlight what inputs changed. Use it before
+  launching an AI CLI or after major pull requests. It saves tokens by pinpointing modified files so agents only review
+  changed components rather than re-reading the entire repository.
 
 Use when: Show which project inputs changed since host AI review; record completion after review.
 
@@ -1037,9 +1117,12 @@ askai map: Regenerate docs/ai/PROJECT_MAP.md from README folder descriptions and
 Usage: askai map  --dry-run --diff
 
 Summary:
-  Regenerates docs/ai/PROJECT_MAP.md from folder structures and README descriptions while preserving custom notes. Use it when files or directories are restructured. It saves tokens by providing agents with a compact architectural index, eliminating costly broad directory listings and recursive file searches.
+  Regenerates docs/ai/PROJECT_MAP.md from folder structures and README descriptions while preserving custom notes. Use
+  it when files or directories are restructured. It saves tokens by providing agents with a compact architectural index,
+  eliminating costly broad directory listings and recursive file searches.
 
-Use when: Regenerate docs/ai/PROJECT_MAP.md from README folder descriptions and conventional names; preserve purposes you edited.
+Use when: Regenerate docs/ai/PROJECT_MAP.md from README folder descriptions and conventional names; preserve purposes
+you edited.
 
 Options:
 Option    | Meaning
@@ -1058,7 +1141,9 @@ askai models: Model and effort per task tier (lead, build, chore) for each tool;
 Usage: askai models
 
 Summary:
-  Displays and configures model selections and reasoning effort levels across task tiers for each tool. Use it to customize model assignments or verify subscription IDs. It saves tokens by routing routine chores to fast, inexpensive models (like Haiku or Flash) and preserving premium frontier models for lead tasks.
+  Displays and configures model selections and reasoning effort levels across task tiers for each tool. Use it to
+  customize model assignments or verify subscription IDs. It saves tokens by routing routine chores to fast, inexpensive
+  models (like Haiku or Flash) and preserving premium frontier models for lead tasks.
 
 Use when: the model or effort looks wrong
 
@@ -1073,7 +1158,9 @@ askai go: Start a session with the tier's model and effort fixed for the whole s
 Usage: askai go <tool> "task"
 
 Summary:
-  Starts an agent session in Claude Code, Cursor, Codex, or Antigravity with fixed tier models and a structured prompt. Use it when launching a focused coding session. It saves tokens by locking in the appropriate model and effort at the start, preventing mid-session tier drift and expensive model over-provisioning.
+  Starts an agent session in Claude Code, Cursor, Codex, or Antigravity with fixed tier models and a structured prompt.
+  Use it when launching a focused coding session. It saves tokens by locking in the appropriate model and effort at the
+  start, preventing mid-session tier drift and expensive model over-provisioning.
 
 Use when: start the coding app on a task
 
@@ -1094,7 +1181,9 @@ askai prompt: Turn a rough or dictated ask into a structured prompt: goal, files
 Usage: askai prompt "idea"
 
 Summary:
-  Transforms rough or dictated tasks into structured prompts with goals, files, done criteria, and token constraints. Use it before submitting any task to an agent. It saves tokens by removing conversational fluff and instructing the agent to return diffs and line-bounded outputs, slashing multi-turn banter.
+  Transforms rough or dictated tasks into structured prompts with goals, files, done criteria, and token constraints.
+  Use it before submitting any task to an agent. It saves tokens by removing conversational fluff and instructing the
+  agent to return diffs and line-bounded outputs, slashing multi-turn banter.
 
 Use when: turn a rough idea into a task
 
@@ -1115,7 +1204,9 @@ askai mcp: Every MCP server in the four tools, and a switch: Antigravity's disab
 Usage: askai mcp
 
 Summary:
-  Lists, toggles, or parks Model Context Protocol servers across Claude Code, Cursor, Codex, and Antigravity. Use it between sessions to enable only relevant tools. It saves tokens by disabling unneeded MCP servers, directly reducing prompt overhead since tool schemas are injected on every turn.
+  Lists, toggles, or parks Model Context Protocol servers across Claude Code, Cursor, Codex, and Antigravity. Use it
+  between sessions to enable only relevant tools. It saves tokens by disabling unneeded MCP servers, directly reducing
+  prompt overhead since tool schemas are injected on every turn.
 
 Use when: too many tool servers are on
 
@@ -1130,9 +1221,12 @@ askai audit: The seven-point token audit: memory files, tools and proxies, model
 Usage: askai audit  --tool --project --json
 
 Summary:
-  Performs a comprehensive 7-point audit of memory rules, proxies, models, subagents, and prompt cache reuse. Use it when analyzing token spend or investigating unexpected costs. It saves tokens by uncovering hidden leaks such as unneeded subagent frontier models, bloated rule files, and poor cache hit rates.
+  Performs a comprehensive 7-point audit of memory rules, proxies, models, subagents, and prompt cache reuse. Use it
+  when analyzing token spend or investigating unexpected costs. It saves tokens by uncovering hidden leaks such as
+  unneeded subagent frontier models, bloated rule files, and poor cache hit rates.
 
-Use when: The seven-point token audit: memory files, tools and proxies, model and effort, hooks, subagents, scheduled work, cache reuse.
+Use when: The seven-point token audit: memory files, tools and proxies, model and effort, hooks, subagents, scheduled
+work, cache reuse.
 
 Options:
 Option    | Meaning
@@ -1152,7 +1246,9 @@ askai infra: Tools and repository files.
 Usage: askai infra  --json
 
 Summary:
-  Provides a complete inventory of installed tools, hosts, MCP servers, plugins, skills, and project analysis. Use it to inspect your overall AI infrastructure offline. It saves tokens by providing a full diagnostic summary in one command, eliminating exploratory prompts about what tools are available.
+  Provides a complete inventory of installed tools, hosts, MCP servers, plugins, skills, and project analysis. Use it to
+  inspect your overall AI infrastructure offline. It saves tokens by providing a full diagnostic summary in one command,
+  eliminating exploratory prompts about what tools are available.
 
 Use when: Tools and repository files.
 
@@ -1172,7 +1268,9 @@ askai guide: The etiquette for each moment of work, offline.
 Usage: askai guide
 
 Summary:
-  Displays offline workflow etiquette for specific moments like starting, taking breaks, clearing, or compacting context. Use it whenever unsure of the best workflow step. It saves tokens by guiding you to clear and hand off context at the 60% threshold, preventing quadratic context growth.
+  Displays offline workflow etiquette for specific moments like starting, taking breaks, clearing, or compacting
+  context. Use it whenever unsure of the best workflow step. It saves tokens by guiding you to clear and hand off
+  context at the 60% threshold, preventing quadratic context growth.
 
 Use when: The etiquette for each moment of work, offline.
 
@@ -1187,7 +1285,9 @@ askai docs: Find AskAI documents or check generated command documentation for dr
 Usage: askai docs  --print
 
 Summary:
-  Opens AskAI documentation guides or verifies generated reference documents against source code. Use it to read manuals or ensure documentation consistency in CI. It saves tokens by providing complete offline documentation locally, eliminating questions to AI models about tool usage.
+  Opens AskAI documentation guides or verifies generated reference documents against source code. Use it to read manuals
+  or ensure documentation consistency in CI. It saves tokens by providing complete offline documentation locally,
+  eliminating questions to AI models about tool usage.
 
 Use when: Find AskAI documents or check generated command documentation for drift.
 
@@ -1207,7 +1307,9 @@ askai plugins: Every token tool researched: evidence, what runs on its own versu
 Usage: askai plugins
 
 Summary:
-  Lists evaluated token-saving plugins, evidence, usage guides, and installation commands. Use it to review and manage tools like Serena, Context7, and Graphify. It saves tokens by providing empirical evidence for each tool so you adopt only plugins that measurably reduce net token spend.
+  Lists evaluated token-saving plugins, evidence, usage guides, and installation commands. Use it to review and manage
+  tools like Serena, Context7, and Graphify. It saves tokens by providing empirical evidence for each tool so you adopt
+  only plugins that measurably reduce net token spend.
 
 Use when: deciding whether a tool is worth keeping
 
@@ -1222,7 +1324,9 @@ askai convert: Convert a PDF, Office file, web page or YouTube URL to Markdown w
 Usage: askai convert
 
 Summary:
-  Converts PDFs, Office files, web pages, or transcripts to clean Markdown using Microsoft MarkItDown locally. Use it before providing external documents to an AI agent. It saves tokens by stripping binary formatting, images, and styling, reducing document token footprint by up to 90%.
+  Converts PDFs, Office files, web pages, or transcripts to clean Markdown using Microsoft MarkItDown locally. Use it
+  before providing external documents to an AI agent. It saves tokens by stripping binary formatting, images, and
+  styling, reducing document token footprint by up to 90%.
 
 Use when: a PDF or Office file should be text
 
@@ -1237,7 +1341,9 @@ askai clear: Gate before /clear or /compact: is the handoff fresh (under 30 minu
 Usage: askai clear
 
 Summary:
-  Checks whether your session handoff is fresh and safe before running clear or compact in your AI editor. Use it when context reaches 60% capacity. It saves tokens by enforcing clean handoffs before clearing, preventing the loss of critical context that leads to expensive recovery queries.
+  Checks whether your session handoff is fresh and safe before running clear or compact in your AI editor. Use it when
+  context reaches 60% capacity. It saves tokens by enforcing clean handoffs before clearing, preventing the loss of
+  critical context that leads to expensive recovery queries.
 
 Use when: the chat is long (over 60%)
 
@@ -1252,7 +1358,9 @@ askai context: What to do at this context level: continue, hand off, clear. 60% 
 Usage: askai context  --used --window
 
 Summary:
-  Evaluates current token usage percentage against model limits and recommends whether to continue, hand off, or clear. Use it regularly during long sessions to monitor context health. It saves tokens by alerting you before context enters high-cost quadratic attention zones, prompting timely handoffs.
+  Evaluates current token usage percentage against model limits and recommends whether to continue, hand off, or clear.
+  Use it regularly during long sessions to monitor context health. It saves tokens by alerting you before context enters
+  high-cost quadratic attention zones, prompting timely handoffs.
 
 Use when: What to do at this context level: continue, hand off, clear. 60% is a warning, not an order to compact.
 
@@ -1273,7 +1381,9 @@ askai savings: Token savings reported by installed plugins, cache hits, and spen
 Usage: askai savings
 
 Summary:
-  Aggregates token savings, spend estimates, cache hit ratios, and plugin gains across recent sessions. Use it weekly or daily to review token efficiency. It saves tokens by tracking actual cache and plugin savings, helping you identify wasteful habits and optimize your ongoing development workflow.
+  Aggregates token savings, spend estimates, cache hit ratios, and plugin gains across recent sessions. Use it weekly or
+  daily to review token efficiency. It saves tokens by tracking actual cache and plugin savings, helping you identify
+  wasteful habits and optimize your ongoing development workflow.
 
 Use when: cost feels high
 
@@ -1296,9 +1406,12 @@ askai todo: Remaining setup and project-review steps: sign-ins, restarts, app se
 Usage: askai todo  --all
 
 Summary:
-  Lists pending manual setup and review steps like tool sign-ins, restarts, or model ID confirmations. Use it after installation or project review to see remaining human steps. It saves tokens by tracking action items outside the agent context window, avoiding repetitive agent reminders.
+  Lists pending manual setup and review steps like tool sign-ins, restarts, or model ID confirmations. Use it after
+  installation or project review to see remaining human steps. It saves tokens by tracking action items outside the
+  agent context window, avoiding repetitive agent reminders.
 
-Use when: Remaining setup and project-review steps: sign-ins, restarts, app settings, model IDs, one-time plugin steps, and repository facts that need confirmation. Checkable items clear themselves.
+Use when: Remaining setup and project-review steps: sign-ins, restarts, app settings, model IDs, one-time plugin steps,
+and repository facts that need confirmation. Checkable items clear themselves.
 
 Options:
 Option | Meaning
@@ -1316,7 +1429,9 @@ askai diff: git diff --stat, staged changes and the whitespace check, so you rev
 Usage: askai diff
 
 Summary:
-  Summarizes git diff stats, staged files, and whitespace checks before an agent review or handoff. Use it before asking an agent to review your work or create a commit. It saves tokens by giving the agent exact changed file paths and line ranges so it never reads entire unchanged files.
+  Summarizes git diff stats, staged files, and whitespace checks before an agent review or handoff. Use it before asking
+  an agent to review your work or create a commit. It saves tokens by giving the agent exact changed file paths and line
+  ranges so it never reads entire unchanged files.
 
 Use when: you want the change list
 
@@ -1331,9 +1446,12 @@ askai graph: Print the Mermaid architecture diagram from docs/ai/ARCHITECTURE.md
 Usage: askai graph
 
 Summary:
-  Prints the Mermaid architecture diagram from docs/ai/ARCHITECTURE.md and opens it in your browser. Use it to inspect project relationships and service boundaries. It saves tokens by enabling full architectural inspection visually and locally without using model tokens for codebase exploration.
+  Prints the Mermaid architecture diagram from docs/ai/ARCHITECTURE.md and opens it in your browser. Use it to inspect
+  project relationships and service boundaries. It saves tokens by enabling full architectural inspection visually and
+  locally without using model tokens for codebase exploration.
 
-Use when: Print the Mermaid architecture diagram from docs/ai/ARCHITECTURE.md and open it in the browser when the terminal is interactive.
+Use when: Print the Mermaid architecture diagram from docs/ai/ARCHITECTURE.md and open it in the browser when the
+terminal is interactive.
 
 Exit: 0, or 1 when there is none yet
 ```
@@ -1346,9 +1464,12 @@ askai chat: Where to paste a short standing instruction in Claude chat, ChatGPT,
 Usage: askai chat  --copy
 
 Summary:
-  Displays recommended standing instructions and setup guides for browser chats like Claude.ai, ChatGPT, and Gemini. Use it when setting up web or desktop AI chats for coding. It saves tokens by providing concise, high-impact instructions that fit within platform custom instruction limits.
+  Displays recommended standing instructions and setup guides for browser chats like Claude.ai, ChatGPT, and Gemini. Use
+  it when setting up web or desktop AI chats for coding. It saves tokens by providing concise, high-impact instructions
+  that fit within platform custom instruction limits.
 
-Use when: Where to paste a short standing instruction in Claude chat, ChatGPT, and Gemini, and how the four coding apps are set up instead.
+Use when: Where to paste a short standing instruction in Claude chat, ChatGPT, and Gemini, and how the four coding apps
+are set up instead.
 
 Options:
 Option | Meaning
@@ -1366,7 +1487,9 @@ askai direction: Print the one-screen working loop and the most useful command c
 Usage: askai direction
 
 Summary:
-  Prints the complete one-screen working loop and top command choices covering an entire productive day. Use it as a quick visual reference for daily AI workflows. It saves tokens by keeping developers aligned with the proven minimal loop, avoiding aimless prompting and unnecessary tool usage.
+  Prints the complete one-screen working loop and top command choices covering an entire productive day. Use it as a
+  quick visual reference for daily AI workflows. It saves tokens by keeping developers aligned with the proven minimal
+  loop, avoiding aimless prompting and unnecessary tool usage.
 
 Use when: Print the one-screen working loop and the most useful command choices.
 
@@ -1381,7 +1504,9 @@ askai help: List categories, show commands with one-line descriptions, or show d
 Usage: askai help [command]
 
 Summary:
-  Displays categorized command lists, detailed command manuals, option flags, and usage examples. Use it whenever you need syntax or guidance on any AskAI feature. It saves tokens by providing complete command documentation locally in your terminal, avoiding questions to AI models.
+  Displays categorized command lists, detailed command manuals, option flags, and usage examples. Use it whenever you
+  need syntax or guidance on any AskAI feature. It saves tokens by providing complete command documentation locally in
+  your terminal, avoiding questions to AI models.
 
 Use when: you need the exact command
 
