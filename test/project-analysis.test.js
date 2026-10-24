@@ -6,6 +6,89 @@ const project = require('../lib/project');
 const infra = require('../lib/infra');
 const research = require('../lib/project-research');
 
+test('generic CMake, shell wrappers and Swift packages do not imply firmware or iOS', () => {
+  const home = tmpHome();
+  try {
+    for (const [name, files] of Object.entries({
+      desktop: {'CMakeLists.txt':'project(desktop)', 'main.cpp':'int main() {}'},
+      wrapper: {'mk.sh':'touch SHOULD_NOT_EXIST', 'main.py':'print(1)'},
+      swift: {'Package.swift':'// swift-tools-version: 6.0', 'main.swift':'print(1)'}
+    })) {
+      const dir = path.join(home,name); fs.mkdirSync(dir);
+      for (const [file,body] of Object.entries(files)) write(path.join(dir,file),body);
+      const info = project.detect(dir);
+      assert.equal(info.type,'other',name);
+      if (name === 'wrapper') assert.equal(info.commands.build,'./mk.sh');
+      assert.equal(fs.existsSync(path.join(dir,'SHOULD_NOT_EXIST')),false);
+    }
+  } finally { rm(home); }
+});
+
+test('language inventory is shared by project analysis, review scan and profile suggestions', () => {
+  const home = tmpHome();
+  try {
+    const extensions = ['lua','ex','hs','f90','jl','zig','clj','ps1','hpp','kts','sv','fs'];
+    for (const ext of extensions) write(path.join(home,`sample.${ext}`),'// local source\n');
+    write(path.join(home,'private.key'),'secret');
+    const info = project.detect(home);
+    assert.equal(info.source.scanned,extensions.length);
+    assert.equal(require('../lib/suggest').scan(home).code,extensions.length);
+    const scan = require('../lib/scan');
+    assert.equal(scan.scanSource(home).files.filter(file=>scan.SOURCE_EXT.has(path.extname(file).slice(1))).length,extensions.length);
+    assert.ok(!info.source.rows.some(row=>row.file === 'private.key'));
+  } finally { rm(home); }
+});
+
+test('unknown language projects initialize with explicit commands and preserve owner files', () => {
+  const home = tmpHome();
+  try {
+    write(path.join(home,'main.unlisted'),'custom source');
+    write(path.join(home,'README.md'),'# Custom project');
+    write(path.join(home,'AGENTS.md'),'Owner guidance\n');
+    assert.equal(project.detect(home).type,'other');
+    const output = [];
+    project.init(home,{yes:true,offline:true,type:'other',build:'custom-builder build',test:'custom-builder test'},null,line=>output.push(line));
+    const map = fs.readFileSync(path.join(home,'docs/ai/PROJECT_MAP.md'),'utf8');
+    assert.match(map,/custom-builder build/); assert.match(map,/custom-builder test/);
+    assert.match(fs.readFileSync(path.join(home,'AGENTS.md'),'utf8'),/Owner guidance/);
+    assert.match(output.join('\n'),/languages not inferred/);
+    assert.ok(fs.existsSync(path.join(home,'.ai-work/HANDOFF.md')));
+    project.map(home,{},()=>{});
+    assert.match(fs.readFileSync(path.join(home,'docs/ai/PROJECT_MAP.md'),'utf8'),/custom-builder build/);
+    project.init(home,{yes:true,offline:true,refresh:true},null,()=>{});
+    assert.equal(project.detect(home).commands.test,'custom-builder test');
+    project.init(home,{yes:true,offline:true,dry:true,build:'preview only'},null,()=>{});
+    assert.equal(project.detect(home).commands.build,'custom-builder build');
+  } finally { rm(home); }
+});
+
+test('terminal root discovery supports non-JavaScript build systems without source analysis', () => {
+  const home = tmpHome();
+  try {
+    for (const manifest of ['CMakeLists.txt','Makefile','build.zig','Gemfile','mix.exs','dune-project','Project.toml']) {
+      const dir = path.join(home,manifest.replace(/\./g,'-')); fs.mkdirSync(path.join(dir,'src'),{recursive:true});
+      write(path.join(dir,manifest),'');
+      assert.equal(require('../lib/cli-prepare').rootOf(path.join(dir,'src')),dir);
+      assert.equal(fs.existsSync(path.join(dir,'.ai-work')),false);
+    }
+  } finally { rm(home); }
+});
+
+test('review tracks non-JavaScript manifests and a generic wrapper creates no firmware todo', () => {
+  const home = tmpHome();
+  try {
+    const repo = path.join(home,'custom'); fs.mkdirSync(repo);
+    write(path.join(repo,'Makefile'),'all:\n\techo build\n');
+    write(path.join(repo,'mk.sh'),'#!/bin/sh\n');
+    const review = require('../lib/project-review');
+    review.done(repo);
+    write(path.join(repo,'Makefile'),'all:\n\techo changed\n');
+    assert.ok(review.status(repo).changed.includes('Makefile'));
+    const todos = require('../lib/todo').collectItems(makeCtx(path.join(home,'host')),repo);
+    assert.ok(!todos.some(item=>item.id === 'compile-commands'));
+  } finally { rm(home); }
+});
+
 test('init fills project docs from README, manifest and entry code, and refresh preserves edits', () => {
   const home = tmpHome();
   try {

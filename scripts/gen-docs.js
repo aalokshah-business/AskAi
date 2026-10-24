@@ -287,6 +287,8 @@ The diagram source renders on GitHub and in Mermaid-aware editors. A dry run sto
 
 ## 5a. Project knowledge pack (askai init)
 
+Project workflows accept any folder and language. Shared extension/manifest definitions in ${code('lib/project-source.js')} drive inventory, review scans, profile suggestions and terminal root discovery. Detection is advisory; unknown stacks use ${code('other')}. Explicit ${code('--type')}, ${code('--about')}, ${code('--build')} and ${code('--test')} choices persist locally in ${code('.ai-work/askai-init.json')} across map and refresh. Init never executes these commands. Symbol/import heuristics and optional navigation plugins do not support every language semantically. Normal CLI launch performs no source analysis.
+
 Long conversations are the biggest token cost: every turn re-sends the whole chat. ${code('askai init')} puts the context into small files, so ${code('/clear')} costs nothing and a new session reads only what the task needs.
 
 | File | Purpose |

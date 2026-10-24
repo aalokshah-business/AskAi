@@ -356,6 +356,17 @@ From `/askai-cli` (Codex: `$askai-cli`), type `report [hours]` or `status` in th
 
 It exits 1 only when the spend part could not be produced; use `askai check` when you want a failing exit code for health. When Cursor is wired, the report says that its usage is not included.
 
+## Any project or programming language
+
+Core project selection, handoffs, bounded command output, checks and usage reporting do not require a particular programming language. Initialize any existing folder; unknown stacks use `other`. Automatic language/framework detection and optional navigation plugins have narrower coverage and do not validate every toolchain.
+
+```sh
+askai init --path /path/to/project --name myproject --type other --build "your-build-command" --test "your-test-command" --offline --yes
+askai map --project myproject
+```
+
+Use your actual build/test commands. Init records them without executing them and preserves explicit choices across map and refresh. Keep credentials out of command arguments. Language percentages describe recognized extensions; source symbols/imports are heuristic. Plain CMake and shell wrappers do not imply firmware; a Swift package alone does not imply iOS. Normal `askai cli` launch performs no source review. See [installation guidance](docs/INSTALL.md#custom-projects-and-toolchains).
+
 ## Commands
 
 ```

@@ -2,6 +2,20 @@
 
 This guide takes you from a Git checkout or downloaded zip to a working setup on Windows, macOS, Linux or WSL: what to prepare, how to preview and install, how to check it worked, and every file AskAI creates. What each setting does and why: `docs/ARCHITECTURE.md`.
 
+## Custom projects and toolchains
+
+Installation configures supported AI clients globally; project initialization is separate and accepts any existing folder, regardless of language. Run from the project root or pass its path. A registered name selects the same project for later project-aware commands.
+
+```sh
+askai init --path /path/to/project --name myproject --type other --build "your-build-command" --test "your-test-command" --offline --yes
+askai check --project myproject
+askai map --project myproject
+```
+
+Replace the sample commands with your verified commands; on Windows use a quoted Windows path. Init stores explicit type/description/build/test choices in local `.ai-work/askai-init.json`; map and refresh retain them. To change a choice, run init again with its replacement flag. Dry runs do not save choices. Never put credentials in command arguments.
+
+Detection is advisory. Shared language extensions cover common application, systems, scripting, scientific and HDL sources. Unknown extensions remain in the file inventory but are not semantically analyzed. Source indexing uses limited declaration/import heuristics; it cannot prove runtime architecture or complete symbol coverage. Optional MCP/LSP tools have their own language and platform limits. Unsupported toolchains need explicit commands; AskAI does not guess boards, install arbitrary compilers, or run builds during init. CMake alone is not firmware evidence, and Package.swift alone is not iOS evidence. `project build` discovers only supported metadata; use init's command overrides for other build systems. Default CLI launch remains free of source analysis.
+
 ## The short version
 
 AskAI installs straight from GitHub: nothing to download first. Node 20 or newer is required (22 is the next minimum). Run **one command per project**. The default profile is `lean`. AskAI wires hosts whose CLIs are already on PATH. It does not install Claude Code unless you pass `--install-host claude`. Optional tools are `askai install --add ID`. Data lives in `~/.askai` (an older `~/.claude/askai` folder is still read).

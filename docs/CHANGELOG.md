@@ -4,6 +4,9 @@ AskAI follows semantic versioning from 1.0.0 (see [RELEASING.md](RELEASING.md)).
 
 ## Unreleased
 
+- Make project inventory, review scans and profile suggestions share broader language coverage. Broaden terminal root discovery and review manifest tracking without adding launch-time source analysis.
+- Stop classifying generic CMake/mk.sh projects as firmware or Swift packages as iOS. Keep unknown stacks usable, label inference limits, and preserve explicit init type/description/build/test choices across map and refresh.
+
 - Discover an existing mk.sh firmware wrapper and preserve ./mk.sh as the explicitly selected build argv, without executing it or guessing target arguments.
 
 - Add explicit MCP stdio verification across four host configurations, with project overrides, bounded protocol checks, redacted logs and subprocess cleanup. Distinguish server responsiveness from editor attachment.
