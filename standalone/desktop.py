@@ -39,6 +39,10 @@ def main():
         style.configure('TLabel', background=theme['surface'])
         style.configure('TButton', background=theme['secondary'], foreground=theme['accent'], padding=(10, 6), borderwidth=1)
         style.map('TButton', background=[('active', theme['accent'])], foreground=[('active', theme['surface'])])
+        style.configure('Primary.TButton', background=theme['accent'], foreground=theme['surface'])
+        style.map('Primary.TButton', background=[('active', theme['accent'])], foreground=[('active', theme['surface'])])
+        style.configure('TEntry', fieldbackground=theme['surface'])
+        style.map('TEntry', fieldbackground=[('readonly', theme['surface'])])
         style.configure('TCombobox', fieldbackground=theme['surface'], padding=4)
         style.map('TCombobox', fieldbackground=[('readonly', theme['surface'])])
         style.configure('TNotebook', background=theme['background'], borderwidth=0)
@@ -101,7 +105,7 @@ def main():
         ttk.Label(conversion, text='Output folder (file defaults to its own folder; YouTube defaults to project folder)').grid(row=2, column=0, columnspan=2, sticky='w')
         ttk.Entry(conversion, textvariable=folder).grid(row=3, column=0, sticky='ew', pady=(4, 12))
         ttk.Button(conversion, text='Browse...', command=lambda: browse_folder(folder)).grid(row=3, column=1, padx=(12, 0), pady=(4, 12))
-        convert = ttk.Button(conversion, text='Convert', command=lambda: start({'kind': 'convert', 'source': source.get().strip(), 'folder': folder.get().strip()}))
+        convert = ttk.Button(conversion, text='Convert', style='Primary.TButton', command=lambda: start({'kind': 'convert', 'source': source.get().strip(), 'folder': folder.get().strip()}))
         convert.grid(row=4, column=0, sticky='w')
         ttk.Label(conversion, text='Local extraction / OCR. YouTube needs captions + network. Existing Markdown stays intact.').grid(row=5, column=0, columnspan=2, sticky='w', pady=(8, 0))
         for column in range(3):
@@ -246,7 +250,7 @@ def main():
         def command_request():
             return {'kind': 'command', 'command': command.get(), 'variant': definition()['id'], 'environment': environment_values.get(environment.get(), ''), 'fields': {name: widget.get() for name, widget in field_widgets.items()}, 'options': [{'flag': row['flag'].get(), 'value': row['value'].get()} for row in option_rows]}
 
-        run = ttk.Button(buttons, text='Run Command', command=lambda: start(command_request()))
+        run = ttk.Button(buttons, text='Run Command', style='Primary.TButton', command=lambda: start(command_request()))
         run.pack(side='left')
         help_button = ttk.Button(buttons, text='Command Help', command=lambda: start({'kind': 'command', 'command': 'help', 'args': 'command ' + command.get()}))
         help_button.pack(side='left', padx=10)

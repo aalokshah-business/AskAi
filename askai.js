@@ -1667,6 +1667,7 @@ async function cmdCli(o) {
   }
   rl.close(); replRl = null; return 0;
 }
+const nodeNoticesSeen = new Set();
 function emitNodeNotice(o, cmd) {
   const platform = require('./lib/platform');
   const line = platform.nodeNotice();
@@ -1674,12 +1675,15 @@ function emitNodeNotice(o, cmd) {
   if (!line || o.json || o.quiet || process.env.ASKAI_QUIET) return;
   if (!always) {
     const home = path.resolve(o.claudeHome || require('./lib/claude-config').defaultClaudeHome());
-    const stamp = path.join(home, 'askai', 'node-eol.txt');
+    const paths = cfg.claudePaths(home, !!(o.claudeHome || process.env.CLAUDE_CONFIG_DIR));
+    const stamp = path.join(paths.askaiDir, 'node-eol.txt');
     const day = new Date().toISOString().slice(0, 10);
     let prev = '';
     try { prev = fs.readFileSync(stamp, 'utf8').trim(); } catch (_) { /* first time today */ }
-    if (prev === day) return;
-    try { fs.mkdirSync(path.dirname(stamp), { recursive: true }); fs.writeFileSync(stamp, `${day}\n`); } catch (_) { /* still print */ }
+    const key=stamp+'|'+day;
+    if (prev === day || nodeNoticesSeen.has(key)) return;
+    nodeNoticesSeen.add(key);
+    if(!o.dry && ['cli','install','update','upgrade','tools','init'].includes(cmd) && fs.existsSync(paths.manifest))try { fs.writeFileSync(stamp, `${day}\n`); } catch (_) { /* still print */ }
   }
   console.error(line);
 }
@@ -1841,7 +1845,7 @@ async function main() {
   }
 }
 
-module.exports = { parseArgs, buildCtx, select, main, launchPlan, launchWindowsCli, sessionTerminalPlan, cliInstallPlan, diagramOpenable, suggestCommand, syncLegacyApp, cliArgs, VERSION, optionTypes:Object.fromEntries([...Object.keys(BOOL).map(k=>[k,'boolean']),...Object.keys(VAL).map(k=>[k,'value'])]) };
+module.exports = { parseArgs, buildCtx, select, main, launchPlan, launchWindowsCli, sessionTerminalPlan, cliInstallPlan, diagramOpenable, suggestCommand, syncLegacyApp, cliArgs, emitNodeNotice, VERSION, optionTypes:Object.fromEntries([...Object.keys(BOOL).map(k=>[k,'boolean']),...Object.keys(VAL).map(k=>[k,'value'])]) };
 if (require.main === module) {
   main().then(code => { process.exitCode = code || 0; }, e => { console.error(`askai: ${e.message}`); process.exitCode = 1; });
 }

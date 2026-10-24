@@ -4,6 +4,8 @@ AskAI follows semantic versioning from 1.0.0 (see [RELEASING.md](RELEASING.md)).
 
 ## Unreleased
 
+- Keep Node 20 upgrade notices read-only during diagnostics and dry runs, and avoid creating a legacy data directory before first install.
+
 - Use content-sized desktop tabs, aligned Command/Action/Environment columns and a permanent Arguments section. Windows/Linux share a blue-and-white palette. Environment selections map only to supported CLI arguments; unsupported commands show Project Scope.
 - Keep optional desktop setup failures separate from core CLI installation. Explicit desktop setup still reports failure when Windows signing policy blocks the executable.
 
