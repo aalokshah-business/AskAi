@@ -5,6 +5,17 @@ on:
 permissions:
   contents: read
 jobs:
+  desktop-linux:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 24
+      - name: Linux GUI prerequisites
+        run: sudo apt-get update && sudo apt-get install -y python3-tk xvfb xauth tesseract-ocr
+      - name: Linux GUI controls and clipboard-handler smoke test
+        run: xvfb-run -a node scripts/test-desktop.js
   test:
     strategy:
       fail-fast: false
@@ -52,6 +63,8 @@ jobs:
         run: node scripts/gen-docs.js --check
       - name: Windows self-test
         run: ./scripts/windows-selftest.ps1
+      - name: Native Windows GUI controls and clipboard-handler smoke test
+        run: node scripts/test-desktop.js
   containers:
     strategy:
       fail-fast: false

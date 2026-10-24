@@ -4,6 +4,11 @@ AskAI follows semantic versioning from 1.0.0 (see [RELEASING.md](RELEASING.md)).
 
 ## Unreleased
 
+- Replace raw desktop command arguments with shared command/action forms, mandatory fields and add/remove option dropdowns on Windows and Linux. Preserve multiline output, pretty-print JSON, preview converted Markdown, add Copy output and explicit Local file/URL modes, and add native/Ubuntu GUI regression checks.
+
+- Add the Ask AI Windows/Linux desktop app: local file/image and YouTube-to-Markdown conversion, collision-safe output names, project selection, command picker, command help, output viewer and cancellable child processes. Windows installs add managed Desktop/Start Menu shortcuts and native .NET/Windows OCR; graphical Linux installs use Tkinter/Tesseract and desktop entries. Docker/container and headless Linux skip the GUI. Provide separate setup-desktop.ps1/setup-desktop.sh and askai desktop install/remove commands.
+- Track dated native-client MCP observations separately from server probes; expose missing/stale checks in todo and brief status without launching servers or AI.
+
 - Add runtime content/revision stamps, duplicate-copy visibility, CLI runtime identification and a fast configuration-only status mode.
 - Repair orphaned uv launchers through shared installer logic, accept and remember an explicit Python interpreter, and identify startup failures without changing OS security settings.
 - Add bounded direct Codex MCP observations and normalized client exports, with deduplication, redaction, unknown-outcome and scope/coverage labels; optionally record server probe evidence.

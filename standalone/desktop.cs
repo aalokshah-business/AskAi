@@ -1,0 +1,205 @@
+using System;
+using System.Collections.Generic;
+using System.Diagnostics;
+using System.Drawing;
+using System.IO;
+using System.Linq;
+using System.Reflection;
+using System.Text;
+using System.Threading.Tasks;
+using System.Web.Script.Serialization;
+using System.Windows.Forms;
+
+internal static class AskAI {
+    internal static readonly JavaScriptSerializer Json = new JavaScriptSerializer { MaxJsonLength = 8 * 1024 * 1024 };
+    internal static string Quote(string value) { return "\"" + value.Replace("\"", "\\\"").TrimEnd('\\') + "\""; }
+    internal static ProcessStartInfo StartInfo(string exe, string args) {
+        return new ProcessStartInfo(exe, args) { UseShellExecute = false, CreateNoWindow = true, RedirectStandardOutput = true, RedirectStandardError = true, StandardOutputEncoding = Encoding.UTF8, StandardErrorEncoding = Encoding.UTF8 };
+    }
+    [STAThread]
+    private static int Main(string[] args) {
+        string ready = args.Length > 3 ? args[3] : null;
+        try {
+            if (args.Length > 0 && args[0] == "--self-test") { Application.EnableVisualStyles(); using (var window = new AskWindow(args[1], args[2], Path.GetTempPath())) window.SelfTest(); Console.WriteLine("Native form, required fields, file picker and multiline copy passed."); return 0; }
+            if (args.Length > 0 && (args[0] == "--install-shortcuts" || args[0] == "--remove-shortcuts")) { Shortcuts(args[1], args[2], args[0] == "--remove-shortcuts", args.Length > 3 ? args[3] : null); return 0; }
+            if (args.Length > 0 && args[0] == "--ocr") {
+                string text = Recognize(args[1]);
+                if (String.IsNullOrWhiteSpace(text)) throw new Exception("No text recognized. Check image quality and Windows OCR language packs.");
+                using (var file = new FileStream(args[2], FileMode.CreateNew, FileAccess.Write))
+                using (var writer = new StreamWriter(file, new UTF8Encoding(false))) writer.Write("# " + Path.GetFileName(args[1]) + "\n\n" + text + "\n");
+                return 0;
+            }
+            if (args.Length < 2) throw new Exception("Open Ask AI using its installed shortcut or askai desktop.");
+            Application.EnableVisualStyles(); Application.SetCompatibleTextRenderingDefault(false);
+            var form = new AskWindow(args[0], args[1], args.Length > 2 ? args[2] : Environment.GetFolderPath(Environment.SpecialFolder.UserProfile));
+            if (!String.IsNullOrEmpty(ready)) form.Shown += delegate { File.WriteAllText(ready, "{\"ok\":true}"); };
+            Application.Run(form); return 0;
+        } catch (Exception error) {
+            if (!String.IsNullOrEmpty(ready) && args[0] != "--install-shortcuts" && args[0] != "--remove-shortcuts") File.WriteAllText(ready, Json.Serialize(new { ok = false, error = error.Message }));
+            if (args.Length > 0 && args[0].StartsWith("--")) Console.Error.WriteLine(error.Message);
+            else MessageBox.Show(error.Message, "Ask AI could not start", MessageBoxButtons.OK, MessageBoxIcon.Error);
+            return 1;
+        }
+    }
+    // Resolve OS-provided WinRT metadata at runtime; installing the Windows SDK is unnecessary.
+    private static Type WinType(string name) { return Type.GetType(name + ", Windows, ContentType=WindowsRuntime", true); }
+    private static object Call(Type type, object instance, string name, params object[] values) {
+        var method = type.GetMethods().First(m => m.Name == name && m.GetParameters().Length == values.Length);
+        return method.Invoke(instance, values);
+    }
+    private static object Await(object operation, Type resultType) {
+        var extensions = Assembly.LoadFrom(Path.Combine(System.Runtime.InteropServices.RuntimeEnvironment.GetRuntimeDirectory(), "System.Runtime.WindowsRuntime.dll")).GetType("System.WindowsRuntimeSystemExtensions", true);
+        var method = extensions.GetMethods().First(m => m.Name == "AsTask" && m.IsGenericMethod && m.GetGenericArguments().Length == 1 && m.GetParameters().Length == 1);
+        var task = (Task)method.MakeGenericMethod(resultType).Invoke(null, new object[] { operation });
+        task.GetAwaiter().GetResult(); return task.GetType().GetProperty("Result").GetValue(task, null);
+    }
+    private static string Recognize(string source) {
+        var storage = WinType("Windows.Storage.StorageFile");
+        var file = Await(Call(storage, null, "GetFileFromPathAsync", Path.GetFullPath(source)), storage);
+        var streamType = WinType("Windows.Storage.Streams.IRandomAccessStream");
+        var stream = Await(Call(storage, file, "OpenAsync", Enum.ToObject(WinType("Windows.Storage.FileAccessMode"), 0)), streamType);
+        object bitmap = null;
+        try {
+            var decoderType = WinType("Windows.Graphics.Imaging.BitmapDecoder");
+            var decoder = Await(Call(decoderType, null, "CreateAsync", stream), decoderType);
+            var bitmapType = WinType("Windows.Graphics.Imaging.SoftwareBitmap");
+            bitmap = Await(Call(decoderType, decoder, "GetSoftwareBitmapAsync", Enum.ToObject(WinType("Windows.Graphics.Imaging.BitmapPixelFormat"), 87), Enum.ToObject(WinType("Windows.Graphics.Imaging.BitmapAlphaMode"), 0)), bitmapType);
+            var engineType = WinType("Windows.Media.Ocr.OcrEngine");
+            var engine = Call(engineType, null, "TryCreateFromUserProfileLanguages");
+            if (engine == null) throw new Exception("Install a Windows OCR language pack first.");
+            uint max = (uint)engineType.GetProperty("MaxImageDimension").GetValue(null, null);
+            if ((int)bitmapType.GetProperty("PixelWidth").GetValue(bitmap, null) > max || (int)bitmapType.GetProperty("PixelHeight").GetValue(bitmap, null) > max) throw new Exception("Image exceeds Windows OCR dimensions; resize it first.");
+            var resultType = WinType("Windows.Media.Ocr.OcrResult");
+            var result = Await(Call(engineType, engine, "RecognizeAsync", bitmap), resultType);
+            var lines = (System.Collections.IEnumerable)resultType.GetProperty("Lines").GetValue(result, null);
+            var text = new List<string>(); foreach (object line in lines) text.Add(Convert.ToString(line.GetType().GetProperty("Text").GetValue(line, null)));
+            return String.Join("\n", text);
+        } finally { if (bitmap is IDisposable) ((IDisposable)bitmap).Dispose(); if (stream is IDisposable) ((IDisposable)stream).Dispose(); }
+    }
+    private static object Property(object obj, string name) { return obj.GetType().InvokeMember(name, BindingFlags.GetProperty, null, obj, null); }
+    private static void Set(object obj, string name, object value) { obj.GetType().InvokeMember(name, BindingFlags.SetProperty, null, obj, new object[] { value }); }
+    private static void Shortcuts(string root, string node, bool remove, string testFolder) {
+        var shell = Activator.CreateInstance(Type.GetTypeFromProgID("WScript.Shell"));
+        var folders = String.IsNullOrEmpty(testFolder) ? new[] { Environment.GetFolderPath(Environment.SpecialFolder.DesktopDirectory), Environment.GetFolderPath(Environment.SpecialFolder.Programs) } : new[] { testFolder };
+        var links = new List<KeyValuePair<string, object>>();
+        foreach (string folder in folders.Where(f => !String.IsNullOrEmpty(f))) {
+            string file = Path.Combine(folder, "Ask AI.lnk");
+            if (remove && !File.Exists(file)) continue;
+            var link = shell.GetType().InvokeMember("CreateShortcut", BindingFlags.InvokeMethod, null, shell, new object[] { file });
+            if (File.Exists(file) && Convert.ToString(Property(link, "Description")) != "Ask AI managed desktop launcher") throw new Exception("Preserved unrelated shortcut: " + file);
+            links.Add(new KeyValuePair<string, object>(file, link));
+        }
+        foreach (var item in links) {
+            if (remove) { File.Delete(item.Key); continue; }
+            Directory.CreateDirectory(Path.GetDirectoryName(item.Key));
+            Set(item.Value, "TargetPath", Assembly.GetExecutingAssembly().Location);
+            Set(item.Value, "Arguments", Quote(root) + " " + Quote(node));
+            Set(item.Value, "WorkingDirectory", Environment.GetFolderPath(Environment.SpecialFolder.UserProfile));
+            Set(item.Value, "Description", "Ask AI managed desktop launcher");
+            item.Value.GetType().InvokeMember("Save", BindingFlags.InvokeMethod, null, item.Value, null);
+        }
+    }
+}
+
+internal sealed class AskWindow : Form {
+    private readonly string root, node;
+    private readonly TextBox project = new TextBox(), source = new TextBox(), folder = new TextBox(), output = new TextBox();
+    private readonly ComboBox commands = new ComboBox(), actions = new ComboBox();
+    private readonly Label commandInfo = new Label(), status = new Label();
+    private readonly FlowLayoutPanel fieldsPanel = new FlowLayoutPanel(), optionsPanel = new FlowLayoutPanel();
+    private readonly Dictionary<string, Control> fields = new Dictionary<string, Control>();
+    private readonly List<OptionRow> optionRows = new List<OptionRow>();
+    private readonly Button convert = new Button(), run = new Button(), help = new Button(), stop = new Button(), open = new Button(), openFolder = new Button(), chooseFile = new Button(), addOption = new Button();
+    private readonly RadioButton fileMode = new RadioButton(), urlMode = new RadioButton();
+    private readonly Dictionary<string, object>[] catalog;
+    private Dictionary<string, object>[] variants;
+    private Process job; private string lastOutput; private bool closing;
+    private sealed class OptionRow { internal ComboBox Flag; internal Control Value; internal Button Remove; internal Panel Panel; }
+    private static IEnumerable<Dictionary<string, object>> Objects(object value) { return ((System.Collections.IEnumerable)value).Cast<object>().Select(o => (Dictionary<string, object>)o); }
+    private static string TextOf(Dictionary<string, object> row, string key) { return row.ContainsKey(key) ? Convert.ToString(row[key]) : ""; }
+    private static bool Required(Dictionary<string, object> row) { return row.ContainsKey("required") && Convert.ToBoolean(row["required"]); }
+    private Dictionary<string, object> SelectedVariant { get { return variants[Math.Max(0, actions.SelectedIndex)]; } }
+    internal static string Multiline(string value) { return System.Text.RegularExpressions.Regex.Replace(value ?? "", "\\r\\n|\\r|\\n", "\r\n"); }
+    internal static void CopyText(string value, Action<string> clipboard) { if (!String.IsNullOrEmpty(value)) clipboard(value); }
+    private static Button Button(string text, EventHandler handler) { var button = new Button { Text = text, AutoSize = true, MinimumSize = new Size(100, 30), Margin = new Padding(4) }; if (handler != null) button.Click += handler; return button; }
+    private static TableLayoutPanel Table(int columns) { return new TableLayoutPanel { AutoSize = true, Dock = DockStyle.Top, ColumnCount = columns, Padding = new Padding(6) }; }
+    private static void Label(TableLayoutPanel table, string text, int column, int row) { table.Controls.Add(new Label { Text = text, AutoSize = true, Anchor = AnchorStyles.Left, Margin = new Padding(4, 8, 8, 8) }, column, row); }
+    private void Browse(Control target, bool directory) {
+        if (directory) { using (var dialog = new FolderBrowserDialog { SelectedPath = project.Text }) if (dialog.ShowDialog(this) == DialogResult.OK) target.Text = dialog.SelectedPath; }
+        else using (var dialog = new OpenFileDialog { Filter = "All files|*.*" }) if (dialog.ShowDialog(this) == DialogResult.OK) target.Text = dialog.FileName;
+    }
+    private Control Input(Dictionary<string, object> definition) {
+        if (TextOf(definition, "kind") == "boolean") { var boolean = new ComboBox { DropDownStyle = ComboBoxStyle.DropDownList }; boolean.Items.AddRange(new object[] { "true", "false" }); boolean.SelectedIndex = 0; return boolean; }
+        if (definition.ContainsKey("choices")) { var combo = new ComboBox { DropDownStyle = ComboBoxStyle.DropDownList }; foreach (object value in (System.Collections.IEnumerable)definition["choices"]) combo.Items.Add(value); return combo; }
+        return new TextBox();
+    }
+    private void RefreshForm() {
+        fieldsPanel.Controls.Clear(); fields.Clear(); optionsPanel.Controls.Clear(); optionRows.Clear();
+        foreach (var field in Objects(SelectedVariant["positionals"])) {
+            var row = Table(3); row.Width = 830; row.ColumnStyles.Add(new ColumnStyle(SizeType.Absolute, 185)); row.ColumnStyles.Add(new ColumnStyle(SizeType.Percent, 100)); row.ColumnStyles.Add(new ColumnStyle(SizeType.Absolute, 110));
+            Label(row, TextOf(field, "label") + (Required(field) ? " *" : " (optional)"), 0, 0);
+            var control = Input(field); control.Dock = DockStyle.Fill; row.Controls.Add(control, 1, 0); fields[TextOf(field, "name")] = control;
+            string name = TextOf(field, "name"); if (name.Contains("path") || name.Contains("directory") || name.Contains("file")) row.Controls.Add(Button("Browse...", delegate { Browse(control, name.Contains("directory") || name.Contains("path")); }), 2, 0);
+            fieldsPanel.Controls.Add(row);
+        }
+        foreach (var option in Objects(SelectedVariant["options"]).Where(Required)) AddOption(TextOf(option, "flag"));
+        addOption.Enabled = Objects(SelectedVariant["options"]).Any();
+        if (Convert.ToString(commands.SelectedItem) == "status" && Objects(SelectedVariant["options"]).Any(o => TextOf(o,"flag") == "brief")) AddOption("brief");
+    }
+    private void AddOption(string initial = null) {
+        var available = Objects(SelectedVariant["options"]).Where(o => !optionRows.Any(r => Convert.ToString(r.Flag.SelectedItem) == TextOf(o, "flag"))).ToArray();
+        if (available.Length == 0) { status.Text = "All available options already added."; return; }
+        var row = new OptionRow { Panel = new Panel { Width = 830, Height = 42 }, Flag = new ComboBox { DropDownStyle = ComboBoxStyle.DropDownList, Bounds = new Rectangle(4, 6, 220, 28) }, Remove = Button("Remove", null) };
+        foreach (var option in Objects(SelectedVariant["options"])) row.Flag.Items.Add(TextOf(option, "flag"));
+        row.Panel.Controls.Add(row.Flag); row.Remove.SetBounds(710, 4, 105, 32); row.Panel.Controls.Add(row.Remove);
+        row.Flag.SelectedIndexChanged += delegate {
+            if (row.Value != null) row.Panel.Controls.Remove(row.Value);
+            var selected = Objects(SelectedVariant["options"]).First(o => TextOf(o,"flag") == Convert.ToString(row.Flag.SelectedItem));
+            row.Value = Input(selected); row.Value.SetBounds(240, 6, 450, 28); row.Panel.Controls.Add(row.Value);
+            bool mandatory = Required(selected); row.Remove.Enabled = !mandatory; row.Flag.Enabled = !mandatory;
+            row.Remove.Text = mandatory ? "Required *" : "Remove";
+        };
+        row.Remove.Click += delegate { optionsPanel.Controls.Remove(row.Panel); optionRows.Remove(row); row.Panel.Dispose(); };
+        row.Flag.SelectedItem = initial ?? TextOf(available[0], "flag"); optionRows.Add(row); optionsPanel.Controls.Add(row.Panel);
+    }
+    private Dictionary<string, object> CommandRequest() {
+        var values = fields.ToDictionary(item => item.Key, item => (object)item.Value.Text);
+        var options = optionRows.Select(row => new Dictionary<string, object> { { "flag", Convert.ToString(row.Flag.SelectedItem) }, { "value", row.Value.Text } }).ToArray();
+        return new Dictionary<string, object> { { "kind", "command" }, { "command", Convert.ToString(commands.SelectedItem) }, { "variant", SelectedVariant["id"] }, { "fields", values }, { "options", options } };
+    }
+    internal AskWindow(string appRoot, string nodePath, string projectPath) {
+        root = appRoot; node = nodePath; Text = "Ask AI"; Size = new Size(1040, Math.Min(920, Screen.PrimaryScreen.WorkingArea.Height - 30)); MinimumSize = new Size(900, 650); StartPosition = FormStartPosition.CenterScreen; Font = new Font("Segoe UI", 10);
+        using (var process = Process.Start(AskAI.StartInfo(node, AskAI.Quote(Path.Combine(root,"standalone","desktop-bridge.js")) + " --catalog"))) {
+            string json = process.StandardOutput.ReadToEnd(), error = process.StandardError.ReadToEnd(); process.WaitForExit(); if (process.ExitCode != 0) throw new Exception(error); catalog = AskAI.Json.Deserialize<Dictionary<string, object>[]>(json);
+        }
+        var layout = new TableLayoutPanel { Dock = DockStyle.Fill, ColumnCount = 1, RowCount = 6, Padding = new Padding(14) }; Controls.Add(layout); layout.ColumnStyles.Add(new ColumnStyle(SizeType.Percent,100));
+        layout.RowStyles.Add(new RowStyle(SizeType.AutoSize)); layout.RowStyles.Add(new RowStyle(SizeType.AutoSize)); layout.RowStyles.Add(new RowStyle(SizeType.Absolute,310)); layout.RowStyles.Add(new RowStyle(SizeType.Percent,100)); layout.RowStyles.Add(new RowStyle(SizeType.AutoSize)); layout.RowStyles.Add(new RowStyle(SizeType.AutoSize));
+        layout.Controls.Add(new Label { Text = "Ask AI", Font = new Font("Segoe UI",22,FontStyle.Bold), AutoSize = true },0,0);
+        var projectRow = Table(3); projectRow.ColumnStyles.Add(new ColumnStyle(SizeType.AutoSize)); projectRow.ColumnStyles.Add(new ColumnStyle(SizeType.Percent,100)); projectRow.ColumnStyles.Add(new ColumnStyle(SizeType.AutoSize)); Label(projectRow,"Project folder",0,0); project.Dock=DockStyle.Fill; project.Text=Directory.Exists(projectPath)?projectPath:Environment.GetFolderPath(Environment.SpecialFolder.UserProfile); projectRow.Controls.Add(project,1,0); projectRow.Controls.Add(Button("Browse...",delegate{Browse(project,true);}),2,0); layout.Controls.Add(projectRow,0,1);
+        var tabs = new TabControl { Dock=DockStyle.Fill }; var conversion = new TabPage("Convert to Markdown"); var command = new TabPage("AskAI commands"); tabs.TabPages.Add(conversion); tabs.TabPages.Add(command); layout.Controls.Add(tabs,0,2);
+        var conversionLayout=Table(3); conversionLayout.Dock=DockStyle.Fill; conversionLayout.ColumnStyles.Add(new ColumnStyle(SizeType.Absolute,170)); conversionLayout.ColumnStyles.Add(new ColumnStyle(SizeType.Percent,100)); conversionLayout.ColumnStyles.Add(new ColumnStyle(SizeType.AutoSize)); conversion.Controls.Add(conversionLayout);
+        var modes=new FlowLayoutPanel{AutoSize=true,Dock=DockStyle.Fill}; fileMode.Text="Local file";urlMode.Text="YouTube / web URL";fileMode.AutoSize=urlMode.AutoSize=true;modes.Controls.Add(fileMode);modes.Controls.Add(urlMode);conversionLayout.Controls.Add(modes,1,0);Label(conversionLayout,"Input type",0,0);
+        Label(conversionLayout,"File / URL *",0,1);source.Dock=DockStyle.Fill;conversionLayout.Controls.Add(source,1,1);chooseFile.Text="Choose file...";chooseFile.AutoSize=true;chooseFile.Click+=delegate{using(var dialog=new OpenFileDialog{Filter="Documents and images|*.pdf;*.docx;*.pptx;*.xlsx;*.xls;*.png;*.jpg;*.jpeg;*.bmp;*.tif;*.tiff;*.html;*.csv;*.txt;*.md|All files|*.*"})if(dialog.ShowDialog(this)==DialogResult.OK){source.Text=dialog.FileName;folder.Text=Path.GetDirectoryName(dialog.FileName);}};conversionLayout.Controls.Add(chooseFile,2,1);
+        fileMode.CheckedChanged+=delegate{source.ReadOnly=fileMode.Checked;chooseFile.Visible=fileMode.Checked;source.Clear();};fileMode.Checked=true;
+        Label(conversionLayout,"Output folder",0,2);folder.Dock=DockStyle.Fill;conversionLayout.Controls.Add(folder,1,2);conversionLayout.Controls.Add(Button("Browse...",delegate{Browse(folder,true);}),2,2);
+        convert.Text="Convert";convert.AutoSize=true;convert.Click+=async delegate{await Work(new Dictionary<string,object>{{"kind","convert"},{"source",source.Text.Trim()},{"folder",folder.Text.Trim()}});};conversionLayout.Controls.Add(convert,1,3);
+        var note=new Label{Text="Blank output folder uses the file's folder or selected project for URLs. Existing files are preserved.\nYouTube needs accessible captions. Other video services need a supported transcript first.\nLocal OCR extracts image text; review recognition errors.",AutoSize=true,Dock=DockStyle.Fill};conversionLayout.Controls.Add(note,1,4);conversionLayout.SetColumnSpan(note,2);
+        var commandLayout=new TableLayoutPanel{Dock=DockStyle.Fill,ColumnCount=1,RowCount=3};commandLayout.ColumnStyles.Add(new ColumnStyle(SizeType.Percent,100));commandLayout.RowStyles.Add(new RowStyle(SizeType.AutoSize));commandLayout.RowStyles.Add(new RowStyle(SizeType.Percent,100));commandLayout.RowStyles.Add(new RowStyle(SizeType.AutoSize));command.Controls.Add(commandLayout);
+        var selection=Table(3);selection.ColumnStyles.Add(new ColumnStyle(SizeType.Absolute,230));selection.ColumnStyles.Add(new ColumnStyle(SizeType.Absolute,220));selection.ColumnStyles.Add(new ColumnStyle(SizeType.Percent,100));commands.DropDownStyle=actions.DropDownStyle=ComboBoxStyle.DropDownList;commands.Dock=actions.Dock=DockStyle.Fill;selection.Controls.Add(commands,0,0);selection.Controls.Add(actions,1,0);commandInfo.AutoSize=true;commandInfo.MaximumSize=new Size(450,0);selection.Controls.Add(commandInfo,2,0);commandLayout.Controls.Add(selection,0,0);
+        var scroll=new Panel{AutoScroll=true,Dock=DockStyle.Fill};var formStack=new FlowLayoutPanel{FlowDirection=FlowDirection.TopDown,WrapContents=false,AutoSize=true,Dock=DockStyle.Top};scroll.Controls.Add(formStack);fieldsPanel.FlowDirection=optionsPanel.FlowDirection=FlowDirection.TopDown;fieldsPanel.WrapContents=optionsPanel.WrapContents=false;fieldsPanel.AutoSize=optionsPanel.AutoSize=true;formStack.Controls.Add(fieldsPanel);formStack.Controls.Add(new Label{Text="Options — select an option, then its value. * Required.",AutoSize=true});formStack.Controls.Add(optionsPanel);addOption.Text="Add option";addOption.AutoSize=true;addOption.Click+=delegate{AddOption();};formStack.Controls.Add(addOption);commandLayout.Controls.Add(scroll,0,1);
+        var commandButtons=new FlowLayoutPanel{AutoSize=true,Dock=DockStyle.Fill};run.Text="Run command";help.Text="Command help";run.AutoSize=help.AutoSize=true;run.Click+=async delegate{await Work(CommandRequest());};help.Click+=async delegate{await Work(new Dictionary<string,object>{{"kind","command"},{"command","help"},{"args","command "+commands.SelectedItem}});};commandButtons.Controls.Add(run);commandButtons.Controls.Add(help);commandButtons.Controls.Add(Button("Open terminal",delegate{try{Process.Start(new ProcessStartInfo(node,AskAI.Quote(Path.Combine(root,"askai.js"))+" cli"){WorkingDirectory=project.Text,UseShellExecute=true});}catch(Exception e){status.Text=e.Message;}}));commandLayout.Controls.Add(commandButtons,0,2);
+        commands.SelectedIndexChanged+=delegate{var entry=catalog.First(c=>TextOf(c,"name")==Convert.ToString(commands.SelectedItem));commandInfo.Text=TextOf(entry,"summary");variants=Objects(entry["variants"]).ToArray();actions.Items.Clear();foreach(var definition in variants)actions.Items.Add(TextOf(definition,"label"));actions.SelectedIndex=0;};actions.SelectedIndexChanged+=delegate{if(actions.SelectedIndex>=0)RefreshForm();};foreach(var entry in catalog)commands.Items.Add(entry["name"]);commands.SelectedItem="status";
+        output.Multiline=true;output.ReadOnly=true;output.WordWrap=true;output.ScrollBars=ScrollBars.Vertical;output.Font=new Font("Consolas",10);output.Dock=DockStyle.Fill;output.Text="Ready. Choose a file or URL, or select a command.\r\nNo command or source analysis runs on startup.";layout.Controls.Add(output,0,3);
+        var resultButtons=new FlowLayoutPanel{AutoSize=true,Dock=DockStyle.Fill};resultButtons.Controls.Add(Button("Copy output",delegate{try{CopyText(output.Text,Clipboard.SetText);status.Text="Output copied.";}catch(Exception e){status.Text="Clipboard unavailable: "+e.Message;}}));stop.Text="Stop";open.Text="Open Markdown";openFolder.Text="Open folder";stop.AutoSize=open.AutoSize=openFolder.AutoSize=true;stop.Enabled=open.Enabled=openFolder.Enabled=false;stop.Click+=delegate{StopJob();};open.Click+=delegate{if(lastOutput!=null)Process.Start("notepad.exe",AskAI.Quote(lastOutput));};openFolder.Click+=delegate{if(lastOutput!=null)Process.Start("explorer.exe",AskAI.Quote(Path.GetDirectoryName(lastOutput)));};resultButtons.Controls.Add(stop);resultButtons.Controls.Add(open);resultButtons.Controls.Add(openFolder);status.AutoSize=true;status.Text="Ready";resultButtons.Controls.Add(status);layout.Controls.Add(resultButtons,0,4);
+        layout.Controls.Add(new Label{Text="Conversion uses local extraction/OCR. Commands that launch AI may use your subscription. Use Open terminal for interactive prompts.",AutoSize=true,Dock=DockStyle.Fill},0,5);
+        FormClosing+=delegate(object sender,FormClosingEventArgs e){if(job!=null&&!job.HasExited){if(MessageBox.Show(this,"Stop the running operation and close Ask AI?","Ask AI",MessageBoxButtons.YesNo)!=DialogResult.Yes){e.Cancel=true;return;}closing=true;StopJob();}};
+    }
+    private void StopJob(){try{if(job!=null&&!job.HasExited)Process.Start(new ProcessStartInfo("taskkill.exe","/pid "+job.Id+" /t /f"){UseShellExecute=false,CreateNoWindow=true});}catch(Exception e){status.Text=e.Message;}}
+    private async Task Work(Dictionary<string,object> request){
+        if(job!=null)return;if(!Directory.Exists(project.Text)){MessageBox.Show(this,"Choose an existing project folder.","Ask AI");return;}string file=Path.Combine(Path.GetTempPath(),"askai-desktop-"+Guid.NewGuid().ToString("N")+".json");
+        try{request["project"]=project.Text;File.WriteAllText(file,AskAI.Json.Serialize(request),new UTF8Encoding(false));var info=AskAI.StartInfo(node,AskAI.Quote(Path.Combine(root,"standalone","desktop-bridge.js"))+" "+AskAI.Quote(file));info.WorkingDirectory=project.Text;job=Process.Start(info);run.Enabled=convert.Enabled=help.Enabled=false;stop.Enabled=true;open.Enabled=openFolder.Enabled=false;lastOutput=null;status.Text="Running...";output.Text="Working...";
+            Task<string> stdout=job.StandardOutput.ReadToEndAsync(),stderr=job.StandardError.ReadToEndAsync();await Task.WhenAll(stdout,stderr);job.WaitForExit();if(closing)return;if(String.IsNullOrWhiteSpace(stdout.Result))throw new Exception("No result. "+stderr.Result);var result=AskAI.Json.Deserialize<Dictionary<string,object>>(stdout.Result);output.Text=Multiline(result.ContainsKey("display")?Convert.ToString(result["display"]):String.Join("\n",new[]{TextOf(result,"stdout"),TextOf(result,"stderr"),stderr.Result}));status.Text="Finished: exit "+result["code"];if(result.ContainsKey("output")&&result["output"]!=null){lastOutput=Convert.ToString(result["output"]);open.Enabled=openFolder.Enabled=true;}
+        }catch(Exception e){if(!closing){output.Text=e.Message;status.Text="Failed";}}finally{if(File.Exists(file))File.Delete(file);if(job!=null)job.Dispose();job=null;if(!closing){run.Enabled=convert.Enabled=help.Enabled=true;stop.Enabled=false;}}
+    }
+    internal void SelfTest(){foreach(var entry in catalog){commands.SelectedItem=entry["name"];for(int index=0;index<variants.Length;index++){actions.SelectedIndex=index;if(fields.Count!=Objects(SelectedVariant["positionals"]).Count())throw new Exception("Command fields missing: "+entry["name"]);foreach(var required in Objects(SelectedVariant["options"]).Where(Required))if(!optionRows.Any(row=>Convert.ToString(row.Flag.SelectedItem)==TextOf(required,"flag")))throw new Exception("Required option missing");}}commands.SelectedItem="why";if(fields.Count!=1)throw new Exception("Required command field missing");commands.SelectedItem="start";if(optionRows.Count!=2)throw new Exception("Required options missing");commands.SelectedItem="mcp";actions.SelectedIndex=variants.Select(v=>TextOf(v,"label")).ToList().IndexOf("confirm");if(fields.Count!=1||optionRows.Count!=3)throw new Exception("MCP confirm fields missing");string copied=null;CopyText(Multiline("first\nsecond\n\nthird"),s=>copied=s);if(copied!="first\r\nsecond\r\n\r\nthird")throw new Exception("Multiline copy failed");if(chooseFile.Parent==null||!fileMode.Checked||!source.ReadOnly)throw new Exception("File picker missing");}
+}

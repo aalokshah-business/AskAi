@@ -24,7 +24,7 @@ test('validate-install: nothing installed -> one clear FAIL, exit 1', () => {
 test('validate-install: a good install passes; a broken one names the file and the fix; it writes nothing', () => {
   const { H, repo, env } = setup();
   try {
-    const ins = cp.spawnSync(process.execPath, [path.join(ROOT, 'askai.js'), 'install', '--yes', '--target', 'all', '--profile', 'minimal', '--skip', 'claude', '--no-path', '--project', repo], { env, encoding: 'utf8', timeout: 300000 });
+    const ins = cp.spawnSync(process.execPath, [path.join(ROOT, 'askai.js'), 'install', '--yes', '--target', 'all', '--profile', 'minimal', '--skip', 'claude', '--no-path', '--no-desktop', '--project', repo], { env, encoding: 'utf8', timeout: 300000 });
     assert.strictEqual(ins.status, 0, ins.stdout + ins.stderr);
     const snapshot = () => {
       const since = fs.statSync(path.join(H, '.askai', 'manifest.json')).mtimeMs;
@@ -48,7 +48,7 @@ test('validate-install: a good install passes; a broken one names the file and t
 test('validate-install: a Cursor-only install does not fail Claude Code checks', () => {
   const { H, repo, env } = setup();
   try {
-    const ins = cp.spawnSync(process.execPath, [path.join(ROOT, 'askai.js'), 'install', '--yes', '--target', 'cursor', '--profile', 'minimal', '--no-path', '--project', repo], { env, encoding: 'utf8', timeout: 180000 });
+    const ins = cp.spawnSync(process.execPath, [path.join(ROOT, 'askai.js'), 'install', '--yes', '--target', 'cursor', '--profile', 'minimal', '--no-path', '--no-desktop', '--project', repo], { env, encoding: 'utf8', timeout: 180000 });
     assert.strictEqual(ins.status, 0, ins.stdout + ins.stderr);
     const r = cp.spawnSync(process.execPath, [path.join(ROOT, 'scripts', 'validate-install.js'), repo, '--files'], { encoding: 'utf8', env, timeout: 60000 });
     assert.strictEqual(r.status, 0, r.stdout + r.stderr);
@@ -61,7 +61,7 @@ test('validate-install: a Cursor-only install does not fail Claude Code checks',
 test('validate-install: MCP servers the manifest expects must be in each tool config; an API key in the environment fails', () => {
   const { H, repo, env } = setup();
   try {
-    cp.spawnSync(process.execPath, [path.join(ROOT, 'askai.js'), 'install', '--yes', '--target', 'all', '--profile', 'minimal', '--skip', 'claude', '--no-path', '--project', repo], { env, encoding: 'utf8', timeout: 300000 });
+    cp.spawnSync(process.execPath, [path.join(ROOT, 'askai.js'), 'install', '--yes', '--target', 'all', '--profile', 'minimal', '--skip', 'claude', '--no-path', '--no-desktop', '--project', repo], { env, encoding: 'utf8', timeout: 300000 });
     const mf = path.join(H, '.askai', 'manifest.json'); const m = JSON.parse(fs.readFileSync(mf, 'utf8'));
     m.components.headroom = { hosts: ['claude', 'cursor', 'agy', 'codex'], command: 'headroom', args: ['mcp', 'serve'] }; fs.writeFileSync(mf, JSON.stringify(m));
     fs.writeFileSync(path.join(H, '.claude.json'), JSON.stringify({ mcpServers: { headroom: { command: 'headroom' } } }));

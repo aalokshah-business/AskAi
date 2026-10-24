@@ -65,6 +65,16 @@ askai mcp telemetry
 
 Use actual event times and stable unique call IDs; the sample is schema documentation, not evidence. Imports accept at most 4 MiB, reject future/invalid dates, deduplicate host/event IDs and discard arguments, outputs and authentication fields. Do not put credentials in identifiers. Native Antigravity opaque logs remain unsupported; normalized imports are explicitly user-supplied observations. A call observation is historical use, not proof of current attachment or savings.
 
+### Record native-client observations
+
+`askai mcp connections --tool codex` lists missing, failed or stale native-client checks separately from process probes. After inspecting the client's MCP view, record the actual observation:
+
+```text
+askai mcp confirm serena --tool codex --success 1 --notes "Native MCP view shows connected" --test-tool get_current_config
+```
+
+Include `--test-tool` only when that tool actually succeeded in the client. Use `--success 0` for a failed connection. These project-local records expire after 24 hours or configuration-file changes; recheck after restarting the client too. They remain user reports, never independently verified attachment. `todo` surfaces outstanding checks per environment; `status --brief` summarizes fresh reports without starting servers or calling AI. Notes must not contain credentials.
+
 ## 2. Record real quota observations
 
 AskAI does not currently fetch Cursor or Antigravity account quota through an integrated vendor API. Read the account dashboard and record it without API credentials:

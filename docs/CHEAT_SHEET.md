@@ -78,6 +78,7 @@ Global flags, on any command: `--yes` `--dry-run` `--json` `--project`. A comman
 
 | Command | Use when |
 |---|---|
+| `askai desktop` | convert files or run commands in a window |
 | `askai errors` | the last build failed |
 | `askai diff` | you want the change list |
 | `askai clear` | the chat is long (over 60%) |

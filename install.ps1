@@ -26,6 +26,7 @@
 .PARAMETER Only           Comma-separated component ids (askai profiles and docs\ARCHITECTURE.md list them all).
 .PARAMETER Skip           Comma-separated component ids to leave out.
 .PARAMETER NoPath         Do not add the askai command to the user PATH.
+.PARAMETER NoDesktop      Skip the Windows Ask AI app shortcuts and its additional document/YouTube dependencies.
 .PARAMETER Caveman        Terse-reply level: lite | full | ultra | off (default full).
 .PARAMETER ClaudeHome     Use this folder instead of ~\.claude (testing).
 .PARAMETER CursorHome     Use this folder instead of ~\.cursor (testing).
@@ -70,6 +71,7 @@ param(
   [string]$Only,
   [string]$Skip,
   [switch]$NoPath,
+  [switch]$NoDesktop,
   [ValidateSet('lite', 'full', 'ultra', 'off')][string]$Caveman,
   [string]$ClaudeHome,
   [string]$CursorHome,
@@ -181,6 +183,7 @@ if ($Ccusage) { $argv += '--ccusage' }
 if ($Only) { $argv += @('--only', $Only) }
 if ($Skip) { $argv += @('--skip', $Skip) }
 if ($NoPath) { $argv += '--no-path' }
+if ($NoDesktop) { $argv += '--no-desktop' }
 if ($Caveman) { $argv += @('--caveman', $Caveman) }
 if ($ClaudeHome) { $argv += @('--claude-home', $ClaudeHome) }
 if ($CursorHome) { $argv += @('--cursor-home', $CursorHome) }

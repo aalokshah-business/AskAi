@@ -491,7 +491,7 @@ test('refreshDerived: rewrites the Cursor project rules of recorded projects whe
 }));
 
 // ---- markitdown -------------------------------------------------------------------------------------------------------
-const MD_SPEC = 'markitdown[pdf,docx,pptx,xlsx,xls]';
+const MD_SPEC = 'markitdown[pdf,docx,pptx,xlsx,xls,youtube-transcription]';
 function uvFakes(name, tools = { uv: '/bin/uv' }) {
   return { tools, act: (cmd, args) => { if (args[0] === 'tool' && args[1] === 'install') tools[name] = `/bin/${name}`; return OK; } };
 }

@@ -86,6 +86,7 @@ const COMMAND_SOURCE = {
   plugins: 'lib/plugins.js; lib/plugins-ready.js; lib/usage-guide.js',
   savings: 'askai.js cmdSavings; lib/usage.js; lib/savings.js',
   convert: 'askai.js cmdConvert',
+  desktop: 'lib/desktop.js; standalone/desktop.cs; standalone/desktop.py; standalone/desktop-bridge.js; setup-desktop.ps1; setup-desktop.sh',
   clear: 'lib/guide.js',
   context: 'lib/guide.js',
   todo: 'lib/todo.js; lib/findings.js',

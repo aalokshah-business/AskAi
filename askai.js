@@ -69,6 +69,8 @@ const VAL = { output: 'output', kind: 'kind', about: 'about', type: 'type', tier
   success: 'success', 'rework-minutes': 'reworkMinutes', 'usage-source': 'usageSource', notes: 'notes', lsp: 'lsp', threshold: 'threshold', for: 'for', host: 'host', add: 'add', compare: 'compare', 'install-host': 'installHost', goal: 'goal' };
 Object.assign(VAL, {'window-id':'windowId', variant:'variant', python:'python', timeout:'timeout', budget:'budget', phase:'phase', acceptance:'acceptance', 'account-label':'accountLabel'});
 Object.assign(BOOL,{record:'record',isolated:'isolated'});
+Object.assign(BOOL,{'no-desktop':'noDesktop'});
+Object.assign(VAL,{'test-tool':'testTool'});
 const has = (o, k) => Object.prototype.hasOwnProperty.call(o, k);
 
 function parseArgs(argv) {
@@ -442,6 +444,10 @@ const planText = (ctx, plan) => (S.IS_WIN ? plan : plan.replace(/winget install 
 
 async function cmdInstall(o) {
   if (o.list) { for (const c of comps.ALL) console.log(c.id); return 0; }
+  if (require('./lib/desktop').environment().supported && !o.noDesktop && !o.claudeHome && !process.env.CLAUDE_CONFIG_DIR) {
+    o.desktopExtras=true;
+    if(!list(o.only).length)o.markitdown=true;
+  }
   if (o.seedOnly && (!o.target || o.target === 'auto')) o.target = 'claude';
   if (o.profile === 'max' && !o.lsp) o.lsp = 'ts,py'; // the max profile includes Claude Code's TypeScript and Python code intelligence
   if (o.project) registrationName(o, projectDir(o, o.project));
@@ -458,7 +464,7 @@ async function cmdInstall(o) {
   ctx.hostSel = hosts;
   const sel = select(o, 'install', recordedProfile(ctx), hosts);
   const prof = profiles.get(o.profile || recordedProfile(ctx));
-  const skipOf = (c, d) => d.state === 'other' || (d.state === 'ok' && !o.force && !(c.id === 'caveman' && o.caveman));
+  const skipOf = (c, d) => d.state === 'other' || (d.state === 'ok' && !o.force && !(c.id === 'caveman' && o.caveman) && !(c.id==='markitdown' && o.desktopExtras && ctx.manifest.components?.markitdown?.desktopFormats!==1));
   const rows = sel.map(c => { const d = safeDetect(c, ctx); return { c, d, skip: skipOf(c, d) }; });
 
   console.log(`askai install${o.dry ? ' (dry-run: nothing is written or installed)' : ''}${o.seedOnly ? ' (seed-only: settings for a host that may not be installed yet)' : ''}   for ${hostLine(ctx, hosts)}`);
@@ -488,6 +494,7 @@ async function cmdInstall(o) {
     console.log(`  command entry points: ${installCommands(ctx, hosts)} written`);
     console.log(`  user PATH: ${pathStep(ctx, true)}`);
     console.log(`  Git Bash alias (~/.bashrc): ${ctx.editBashAlias(true)}`);
+    if(!o.noDesktop)console.log(`  desktop: ${require('./lib/desktop').install(ctx)}`);
     results.push({ id: 'askai', result: o.dry ? 'planned' : 'ok' });
   } catch (e) { console.error(`  failed: ${e.message}`); results.push({ id: 'askai', result: 'failed', detail: e.message }); }
 
@@ -835,6 +842,7 @@ async function cmdUninstall(o) {
       } catch (e) { console.error(`  failed: ${e.message}`); failed++; }
     }
     if (!o.dry) try { require('./lib/project-shell').uninstall(registryHome(o)); } catch (e) { console.error(`  shell integration removal failed: ${e.message}`); failed++; }
+    try { console.log(require('./lib/desktop').install(ctx,true)); } catch(e) { console.error(e.message); failed++; }
   }
   try { comps.refreshDerived(ctx); } catch (e) { ctx.log.warn(`could not refresh derived files: ${e.message}`); }
   console.log('\n[askai] commands, shim, PATH, app');
@@ -1032,6 +1040,19 @@ function cmdPrompt(o) {
 }
 async function cmdMcp(o) {
   const ctx = buildCtx(o, true); const a = o._[1] || 'list';
+  if(a==='connections') {
+    const rows=mcpLib.connections(ctx,projectDir(o),{tool:o.tool || o.host});
+    if(o.json)console.log(JSON.stringify(rows,null,2));
+    else {
+      console.log(rows.length?require('./lib/columns').table(['Client','Server','Client evidence','Reported test tool'],rows.map(r=>[r.tool,r.name,r.state,r.testedTool || '-'])).join('\n'):'No matching configured servers.');
+      console.log('User-reported checks expire after 24h or configuration changes. Server probes do not establish client attachment. Recheck after reconnecting/restarting the client.');
+      console.log('Record a real check: askai mcp confirm NAME --tool HOST --success 1|0 --notes "native MCP view result" [--test-tool NAME]');
+    }return 0;
+  }
+  if(a==='confirm') {
+    const result=mcpLib.confirmClient(ctx,projectDir(o),o._[2],{...o,tool:o.tool || o.host});
+    console.log(o.json?JSON.stringify(result,null,2):`${o.dry?'Would record':'Recorded'} ${result.tool}/${result.name}: ${result.state}; this is a user report, not an automated connection test.`);return 0;
+  }
   if (a === 'import') {
     const result=mcpLib.importTelemetry(projectDir(o),o._[2],o.tool || o.host,{dry:o.dry});
     console.log(o.json ? JSON.stringify(result) : `${o.dry ? 'Would import' : 'Imported'} ${result.added} observations; ${result.duplicates} duplicates. No arguments, outputs or credentials stored.`); return 0;
@@ -1091,7 +1112,8 @@ async function cmdConvert(o) {
   if (o._[1] === 'scan') { console.log(require('./lib/daily').scanOffice(projectDir(o), o)); return 0; }
   const src = o._[1];
   if (!src) { console.log('askai convert <file|url> [--out file.md]: PDF, Word, PowerPoint, Excel, HTML, YouTube URL -> Markdown (Microsoft MarkItDown, local)'); return 1; }
-  if (!ctx.which('markitdown')) { console.log('MarkItDown is not installed: askai install --only markitdown (or --profile docs). Videos other than YouTube need a transcriber first (graphifyy[video] or Whisper).'); return 1; }
+  const converter=ctx.which('markitdown') || comps.uvToolExe(ctx,'markitdown');
+  if (!converter) { console.log('MarkItDown is not installed: askai install --only markitdown (or --profile docs). Videos other than YouTube need a transcriber first (graphifyy[video] or Whisper).'); return 1; }
   const isUrl = /^https?:\/\//.test(src);
   const isYoutube = isUrl && /(?:youtube\.com|youtu\.be)/i.test(src);
   let resolvedSrc = src;
@@ -1104,7 +1126,7 @@ async function cmdConvert(o) {
   if (fs.existsSync(out)) { console.log(`${out} exists; choose another --out`); return 1; }
   fs.mkdirSync(path.dirname(out), { recursive: true });
 
-  const bin = ctx.which('markitdown') || 'markitdown';
+  const bin = converter;
   if (isYoutube) {
     console.log(`Converting YouTube video: ${resolvedSrc}`);
     console.log('Fetching transcript and metadata with MarkItDown...');
@@ -1117,6 +1139,7 @@ async function cmdConvert(o) {
   const start = Date.now();
   const frames = ['|', '/', '-', '\\'];
   let tick = 0;
+  let reportedSecond = -1;
   const isTty = process.stderr.isTTY;
 
   const child = require('child_process').spawn(bin, [resolvedSrc, '-o', out], {
@@ -1140,7 +1163,8 @@ async function cmdConvert(o) {
 
     if (isTty) {
       process.stderr.write(`\r  [${spin}] ${elapsed}s elapsed - ${statusMsg}... `);
-    } else if (elapsed > 0 && elapsed % 5 === 0) {
+    } else if (elapsed > 0 && elapsed % 5 === 0 && elapsed !== reportedSecond) {
+      reportedSecond = elapsed;
       console.error(`  [${elapsed}s] ${statusMsg}...`);
     }
   }, 500);
@@ -1720,6 +1744,19 @@ async function main() {
       return a === 'install' ? plugins.install(ctx, o._[2], o) : plugins.list(ctx); }
     case 'savings': return cmdSavings(o);
     case 'convert': return cmdConvert(o);
+    case 'desktop': {
+      const action=o._[1] || 'open';
+      if(action==='install'){
+        const available=require('./lib/desktop').environment();
+        if(!available.supported){console.log(`Ask AI desktop skipped: ${available.reason}; use askai cli.`);return 0;}
+        return cmdInstall({...o,only:'markitdown',_:['install']});
+      }
+      if(action==='catalog'){console.log(JSON.stringify(require('./lib/desktop').catalog(),null,2));return 0;}
+      if(action==='remove'){console.log(require('./lib/desktop').install(buildCtx(o,true),true));return 0;}
+      if(action!=='open')throw Error('askai desktop [open|install|remove|catalog]');
+      if(o.dry){console.log(`Open Ask AI desktop for ${projectDir(o)}`);return 0;}
+      await require('./lib/desktop').launch(projectDir(o));console.log('Ask AI desktop launch requested.');return 0;
+    }
     case 'clear': {
       const dir = projectDir(o);
       const hs = require('./lib/session').handoffState(dir);
@@ -1801,7 +1838,7 @@ async function main() {
   }
 }
 
+module.exports = { parseArgs, buildCtx, select, main, launchPlan, launchWindowsCli, sessionTerminalPlan, cliInstallPlan, diagramOpenable, suggestCommand, syncLegacyApp, cliArgs, VERSION, optionTypes:Object.fromEntries([...Object.keys(BOOL).map(k=>[k,'boolean']),...Object.keys(VAL).map(k=>[k,'value'])]) };
 if (require.main === module) {
   main().then(code => { process.exitCode = code || 0; }, e => { console.error(`askai: ${e.message}`); process.exitCode = 1; });
 }
-module.exports = { parseArgs, buildCtx, select, main, launchPlan, launchWindowsCli, sessionTerminalPlan, cliInstallPlan, diagramOpenable, suggestCommand, syncLegacyApp, VERSION };

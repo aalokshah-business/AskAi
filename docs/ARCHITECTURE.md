@@ -173,7 +173,7 @@ In install order. Evidence labels: measured (a third-party saving), mixed, claim
 - **`cursor-serena`** · Cursor · in its profiles · evidence: unmeasured · mirrors `serena`.
   Serena for Cursor (MCP server). winget install astral-sh.uv on Windows, brew install uv on macOS, curl -fsSL https://astral.sh/uv/install.sh | sh; if that host is blocked, python3 -m pip install --user uv on Linux if missing; uv tool install -p 3.13 serena-agent; serena init; add a "serena" entry (--context ide, project from the working directory) to ~/.cursor/mcp.json
 - **`markitdown`** · all hosts · opt-in (--markitdown) · evidence: unmeasured.
-  markitdown (PDF and Office files to Markdown). winget install astral-sh.uv on Windows, brew install uv on macOS, curl -fsSL https://astral.sh/uv/install.sh | sh; if that host is blocked, python3 -m pip install --user uv on Linux if missing; uv tool install -p 3.13 markitdown[pdf,docx,pptx,xlsx,xls] (Microsoft, runs locally; converts a document to Markdown once so it is read as text); add its bin dir to the user PATH
+  markitdown (PDF and Office files to Markdown). winget install astral-sh.uv on Windows, brew install uv on macOS, curl -fsSL https://astral.sh/uv/install.sh | sh; if that host is blocked, python3 -m pip install --user uv on Linux if missing; uv tool install -p 3.13 markitdown[pdf,docx,pptx,xlsx,xls,youtube-transcription] (Microsoft, runs locally; converts a document to Markdown once so it is read as text); add its bin dir to the user PATH
 - **`cursor-rules`** · Cursor · in its profiles · evidence: unmeasured · mirrors `rules`.
   Cursor user rules (~/.cursor/rules). writes ~/.cursor/rules/askai-*.mdc for the profile (always-applied token rules, plus glob-scoped code and document rules). Cursor loads these in every project on this machine. A file without the askai marker is left alone
 - **`ccusage`** · Claude Code · opt-in (--ccusage) · evidence: none.
@@ -335,6 +335,7 @@ Where each command is implemented. Written from the `case` list in `askai.js` be
 | `askai plugins` | `lib/plugins.js; lib/plugins-ready.js; lib/usage-guide.js` |
 | `askai savings` | `askai.js cmdSavings; lib/usage.js; lib/savings.js` |
 | `askai convert` | `askai.js cmdConvert` |
+| `askai desktop` | `lib/desktop.js; standalone/desktop.cs; standalone/desktop.py; standalone/desktop-bridge.js; setup-desktop.ps1; setup-desktop.sh` |
 | `askai clear` | `lib/guide.js` |
 | `askai context` | `lib/guide.js` |
 | `askai todo` | `lib/todo.js; lib/findings.js` |
@@ -1527,6 +1528,18 @@ Summary:
 Use when: you need the exact command
 
 Exit: 0
+```
+
+#### `askai desktop`
+
+```text
+askai desktop: Open the Ask AI Windows/Linux desktop app for Markdown conversion and command output.
+
+Usage: askai desktop
+
+Use when: convert files or run commands in a window
+
+Exit: 0 on success; 1 on unsupported platforms or setup failure
 ```
 
 ## 11. Inside the agents

@@ -3,6 +3,7 @@
 .ai-work/
 hooks/.claude/
 node_modules/
+desktop-bin/
 graphify-out/
 .codebase-memory/
 repomix-output.*
