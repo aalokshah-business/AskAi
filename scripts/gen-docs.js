@@ -65,7 +65,7 @@ const COMMAND_SOURCE = {
   report: 'askai.js cmdReport; lib/usage.js',
   profiles: 'askai.js cmdProfiles; lib/profiles.js',
   suggest: 'askai.js cmdSuggest; lib/suggest.js',
-  project: 'askai.js cmdProject; lib/project.js; lib/project-registry.js; lib/project-refresh.js; lib/project-review.js; lib/daily.js',
+  project: 'lib/project-build.js; askai.js cmdProject; lib/project.js; lib/project-registry.js; lib/project-refresh.js; lib/project-review.js; lib/daily.js',
   set: 'askai.js cmdSet; lib/project-registry.js',
   shell: 'askai.js cmdShell; lib/project-shell.js',
   uninstall: 'askai.js cmdUninstall; lib/components.js',

@@ -67,6 +67,7 @@ const VAL = { output: 'output', kind: 'kind', about: 'about', type: 'type', tier
   repo: 'repo', tool: 'tool', model: 'model', effort: 'effort', task: 'task', difficulty: 'difficulty', summary: 'summary', next: 'next',
   result: 'result', minutes: 'minutes', 'input-tokens': 'inputTokens', 'output-tokens': 'outputTokens', 'cached-tokens': 'cachedTokens',
   success: 'success', 'rework-minutes': 'reworkMinutes', 'usage-source': 'usageSource', notes: 'notes', lsp: 'lsp', threshold: 'threshold', for: 'for', host: 'host', add: 'add', compare: 'compare', 'install-host': 'installHost', goal: 'goal' };
+Object.assign(VAL, {'window-id':'windowId', variant:'variant'});
 const has = (o, k) => Object.prototype.hasOwnProperty.call(o, k);
 
 function parseArgs(argv) {
@@ -698,6 +699,20 @@ function cmdShell(o) {
 
 // Cursor: write (or show, or remove) the token rules of a project in <dir>/.cursor/rules.
 function cmdProject(o) {
+  if (o._[1] === 'build') {
+    const build = require('./lib/project-build'); const dir = projectDir(o);
+    const result = o._[2] === 'select' ? build.select(dir,o._[3],{dry:o.dry}) : build.discover(dir);
+    if (o.json) console.log(JSON.stringify(result,null,2));
+    else if (result.argv) console.log(`${o.dry ? 'Would save' : 'Saved'} unverified build selection.\nCommand argv: ${JSON.stringify(result.argv)}\n${result.note}`);
+    else {
+      console.log(require('./lib/columns').table(['Kind','Preset / environment','Build directory'],result.presets.map(p=>[p.kind,p.name,p.binaryDir || 'resolved by build system'])).join('\n'));
+      console.log(`Compile databases: ${result.databases.join(', ') || 'none found at standard locations'}`);
+      if (result.zephyr) console.log('Zephyr detected: board and toolchain must come from your supported build command; no board was guessed.');
+      for (const warning of result.warnings) console.log(`Not verified: ${warning}`);
+      console.log(`${result.note}\nChoose explicitly: askai project build select NAME`);
+    }
+    return 0;
+  }
   if (!o._[1] && !o.print && !o.remove && !o.profile && !o.force) return cmdProjectRegistry({ ...o, _: ['project', 'show'] });
   if (o._[1] === 'refresh') {
     const dir = projectDir(o, o._[2]);
@@ -997,11 +1012,20 @@ function cmdPrompt(o) {
   else if (o.resume && !o._[1]) text = promptLib.resume(projectDir(o));
   else { const r = promptLib.task({ ask: o._.slice(1).join(' '), tier: o.tier, tool: o.tool, files: o.files, done: o.done, mode: o.mode, kind: o.kind, output: o.output, resume: o.resume }); text = r.text; }
   console.log(text);
-  if (o.copy) { const via = require('./lib/session').copyText ? require('./lib/session').copyText(text) : null; if (via) console.log(`(copied with ${via})`); }
+  if (o.copy) { const via = require('./lib/session').copyText ? require('./lib/session').copyText(text) : null; if (via) console.log(via === 'osc52' ? '(OSC 52 clipboard request sent; paste is not verified)' : `(copied with ${via})`); }
   return 0;
 }
-function cmdMcp(o) {
+async function cmdMcp(o) {
   const ctx = buildCtx(o, true); const a = o._[1] || 'list';
+  if (a === 'verify') {
+    const rows = await mcpLib.verify(ctx,projectDir(o),{tool:o.tool || o.host,name:o._[2]});
+    if (o.json) console.log(JSON.stringify(rows,null,2));
+    else {
+      console.log(rows.length ? require('./lib/columns').table(['Tool','Server','Result','Tools','Evidence'],rows.map(r=>[r.tool,r.name,r.state,r.tools,r.detail])).join('\n') : 'No matching MCP servers configured.');
+      console.log('Explicit server probe only; editor connection, tool usefulness and token savings are not verified. No tools/call or AI request is sent.');
+    }
+    return rows.some(r=>['failed','timeout','cleanup-failed'].includes(r.state)) ? 1 : 0;
+  }
   if (a === 'list') { console.log(mcpLib.render(mcpLib.list(ctx).filter(r => !o.tool || r.tool === o.tool))); return 0; }
   if (a === 'on' || a === 'off') {
     const name = o._[2]; if (!name) { console.log('which server? askai mcp off <name> [--tool claude|codex|cursor|agy]'); return 1; }
@@ -1010,10 +1034,10 @@ function cmdMcp(o) {
     for (const t of tools) console.log(`  ${t}: ${mcpLib.setState(ctx, t, name, a === 'on', o.dry)}${o.dry ? ' (dry-run)' : ''}`);
     console.log('Takes effect in the next session (a change mid-session would rebuild the prompt cache).'); return 0;
   }
-  console.log('askai mcp [list | on <name> | off <name>] [--tool claude|codex|cursor|agy]'); return 1;
+  console.log('askai mcp [list | verify [NAME] | on <name> | off <name>] [--tool claude|codex|cursor|agy]'); return 1;
 }
 function cmdDocs(o) {
-  const DOCS = { install: 'INSTALL.md', architecture: 'ARCHITECTURE.md', projects: 'PROJECT_MANAGEMENT.md', guide: 'ASKAI_GUIDE.md', cheatsheet: 'CHEAT_SHEET.md', changelog: 'CHANGELOG.md', preview: 'PREVIEW_MATRIX.md', container: 'CONTAINER_REVIEW.md' };
+  const DOCS = { install: 'INSTALL.md', architecture: 'ARCHITECTURE.md', projects: 'PROJECT_MANAGEMENT.md', guide: 'ASKAI_GUIDE.md', cheatsheet: 'CHEAT_SHEET.md', changelog: 'CHANGELOG.md', preview: 'PREVIEW_MATRIX.md', container: 'CONTAINER_REVIEW.md', support: 'SUPPORT_WORKFLOWS.md' };
   const name = o._[1];
   if (name === 'check') {
     const script = path.join(SRC, 'scripts', 'gen-docs.js');
@@ -1267,7 +1291,7 @@ function cmdChat(o) {
     console.log(text);
     if (o.copy) {
       const via = require('./lib/session').copyText(text);
-      if (via) console.log(`(copied with ${via})`);
+      if (via) console.log(via === 'osc52' ? '(OSC 52 clipboard request sent; paste is not verified)' : `(copied with ${via})`);
     }
     return 0;
   }

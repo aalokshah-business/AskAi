@@ -511,3 +511,7 @@ Status: askai status shows Codex, Antigravity, Cursor and Claude Code in four co
 ## Linux containers and terminal output
 
 AskAI wraps audit evidence and help options without truncation, keeps table columns aligned, and adapts status to terminal width. Infra reports missing base tools, configuration-versus-desktop limits and remote MCP checks. See [the container command review](docs/CONTAINER_REVIEW.md), or run askai docs container --print.
+
+## Explicit support workflows
+
+Use askai mcp verify --tool cursor for a bounded stdio server probe, askai session quota to record dashboard observations, askai project build to discover existing build presets, and askai resume --copy for clipboard transfer with a saved-file fallback. These are explicit operations; server responsiveness is not an editor connection, quota differences are not proven savings, and firmware boards are never guessed. See [support workflows](docs/SUPPORT_WORKFLOWS.md) or askai docs support --print.

@@ -92,6 +92,8 @@ The safe self-test uses disposable fixtures, but its presentation flags are heur
 
 ## Remaining support gaps
 
+Follow-up implementation adds explicit stdio server probes, manual quota observations/comparisons, build discovery/selection and a persistent clipboard fallback. See [support workflows](SUPPORT_WORKFLOWS.md) or `askai docs support --print`. The limits below still apply to end-to-end verification and causal savings claims.
+
 - No universal end-to-end MCP health probe across the four desktop clients. Configured, connected, called and beneficial are different states.
 - No Cursor/Antigravity quota counter or controlled automatic measurement of weekly subscription savings.
 - No automatic inference of the correct firmware build target, generated headers, compile flags or security invariants.

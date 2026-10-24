@@ -105,7 +105,7 @@ The commands below are also implemented. This table plus the twelve and the addi
 | `askai bootstrap` | Show a personal devcontainer setup; --repo writes a post-create script into this project. | `askai bootstrap [dir] [--profile P] [--repo]` |
 | `askai ask` | Offline answers on etiquette and the research: the rule, why, the command in each tool, and what AskAI automates. | `askai ask <words>` |
 | `askai start` | Start a task: ledger entry with tool, task, branch and last commit. | `askai start --tool T --task "..." [--repo DIR]` |
-| `askai session` | The per-repo ledger in .ai-work/: entries, handoff, measurements, report. askai start, askai break and askai resume are the daily names for those three actions. | `askai session init\|pause\|status\|finish\|measure\|report [--repo DIR] [...]` |
+| `askai session` | The per-repo ledger in .ai-work/: entries, handoff, measurements, report. askai start, askai break and askai resume are the daily names for those three actions. | `askai session init\|pause\|status\|finish\|measure\|report\|quota [report] [options]` |
 | `askai scaffold` | Write the files every agent reads: AGENTS.md, CLAUDE.md, docs/ai/PROJECT_PROFILE.md, .cursorignore, .ai-work/. Never overwrites. | `askai scaffold [dir] [--dry-run]` |
 | `askai suggest` | Recommend a profile from the files in a folder. | `askai suggest [dir]` |
 | `askai profiles` | What each profile installs. | `askai profiles` |
@@ -123,7 +123,7 @@ The commands below are also implemented. This table plus the twelve and the addi
 | `askai audit` | The seven-point token audit: memory files, tools and proxies, model and effort, hooks, subagents, scheduled work, cache reuse. | `askai audit [dir] [--tool claude\|codex\|cursor\|agy] [--project name\|dir] [--json]` |
 | `askai infra` | Tools and repository files. | `askai infra [dir] [--json]` |
 | `askai guide` | The etiquette for each moment of work, offline. | `askai guide [install\|start\|work\|break\|resume\|clear\|compact\|cache\|models\|subagents\|mcp\|output\|prompts\|docs\|plugins\|peak\|all]` |
-| `askai docs` | Find AskAI documents or check generated command documentation for drift. | `askai docs [install\|architecture\|projects\|guide\|cheatsheet\|changelog\|preview\|container\|check] [--print]` |
+| `askai docs` | Find AskAI documents or check generated command documentation for drift. | `askai docs [install\|architecture\|projects\|guide\|cheatsheet\|changelog\|preview\|container\|support\|check] [--print]` |
 | `askai context` | What to do at this context level: continue, hand off, clear. 60% is a warning, not an order to compact. | `askai context <percent> \| --used N --window M` |
 | `askai todo` | Remaining setup and project-review steps: sign-ins, restarts, app settings, model IDs, one-time plugin steps, and repository facts that need confirmation. Checkable items clear themselves. | `askai todo [dir] [--all] \| askai todo done <id> \| askai todo undo <id>` |
 | `askai graph` | Print the Mermaid architecture diagram from docs/ai/ARCHITECTURE.md and open it in the browser when the terminal is interactive. | `askai graph [dir]` |

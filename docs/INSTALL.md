@@ -672,3 +672,9 @@ Status: askai status shows Codex, Antigravity, Cursor and Claude Code in four co
 Use askai cli directly in the Cursor terminal for normal scrollback. With tmux, Ctrl+B then [ opens copy mode; Page Up scrolls and q exits it. Run askai infra, askai check --all, askai status cursor and askai todo. Configuration files alone do not prove a connected MCP server. Inspect the remote workspace MCP Logs.
 
 The installer bundles these display and diagnostic improvements with the CLI; no separate formatter, plugin or AI review is required. C/C++ build flags, live editor readiness and desktop clipboard access still need environment-specific verification. See [the container review and remediation steps](CONTAINER_REVIEW.md), also available with askai docs container --print.
+
+## Explicit support workflows
+
+Use askai mcp verify --tool cursor for a bounded stdio server probe, askai session quota to record dashboard observations, askai project build to discover existing build presets, and askai resume --copy for clipboard transfer with a saved-file fallback. These are explicit operations; server responsiveness is not an editor connection, quota differences are not proven savings, and firmware boards are never guessed. See [support workflows](SUPPORT_WORKFLOWS.md) or askai docs support --print.
+
+The installer bundles these commands with AskAI. No extra diagnostic daemon, model calls or clipboard permission changes are installed. Native MCP authentication, actual firmware build execution and terminal clipboard permissions remain explicit user actions.

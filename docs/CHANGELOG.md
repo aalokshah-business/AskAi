@@ -4,6 +4,11 @@ AskAI follows semantic versioning from 1.0.0 (see [RELEASING.md](RELEASING.md)).
 
 ## Unreleased
 
+- Add explicit MCP stdio verification across four host configurations, with project overrides, bounded protocol checks, redacted logs and subprocess cleanup. Distinguish server responsiveness from editor attachment.
+- Add manual session quota observations and matched-workload observational comparisons, with reset detection and no quota-to-token conversion.
+- Add project build discovery and explicit preset selection; never guess firmware boards or execute builds.
+- Always save resume clipboard fallback text, bound OSC 52 payloads, describe missing paste acknowledgement and report tmux clipboard limitations.
+
 - Linux-container command review: shared wrapping tables for audit/help/docs, responsive status columns, scoped infra requirements and honest MCP/desktop evidence labels. List missing base tools and remote editor checks; clarify plugin interface types and restore timestamps.
 - Reject blank/invalid session measurements; make check --fix --dry-run non-mutating. Fix self-test weigh input, shell-expression quoting and expected validation exits; distinguish presentation flags from failed checks. Add tmux scroll/copy guidance and askai docs container with remaining support limits.
 

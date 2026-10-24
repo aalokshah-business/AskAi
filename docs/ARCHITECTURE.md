@@ -308,7 +308,7 @@ Where each command is implemented. Written from the `case` list in `askai.js` be
 | `askai status` | `askai.js cmdStatus; lib/status.js; lib/findings.js` |
 | `askai profiles` | `askai.js cmdProfiles; lib/profiles.js` |
 | `askai suggest` | `askai.js cmdSuggest; lib/suggest.js` |
-| `askai project` | `askai.js cmdProject; lib/project.js; lib/project-registry.js; lib/project-refresh.js; lib/project-review.js; lib/daily.js` |
+| `askai project` | `lib/project-build.js; askai.js cmdProject; lib/project.js; lib/project-registry.js; lib/project-refresh.js; lib/project-review.js; lib/daily.js` |
 | `askai set` | `askai.js cmdSet; lib/project-registry.js` |
 | `askai shell` | `askai.js cmdShell; lib/project-shell.js` |
 | `askai uninstall` | `askai.js cmdUninstall; lib/components.js` |
@@ -743,17 +743,12 @@ Exit: 0
 ```text
 askai session: The per-repo ledger in .ai-work/: entries, handoff, measurements, report. askai start, askai break and askai resume are the daily names for those three actions.
 
-Usage: askai session  --repo
+Usage: askai session
 
 Summary:
   Manages the per-repository ledger in .ai-work/ for tracking entries, measurements, difficulties, and time spent. Use it to log work milestones, evaluate productivity, and inspect token expenditure. It saves tokens by providing offline metrics and history without requiring conversational recaps or AI auditing.
 
 Use when: The per-repo ledger in .ai-work/: entries, handoff, measurements, report. askai start, askai break and askai resume are the daily names for those three actions.
-
-Options:
-Option | Meaning
--------+----------------------------------
---repo | see askai help session --advanced
 
 Exit: 0
 ```
