@@ -80,7 +80,7 @@ test('suggest command: text and --json output, and a bad directory exits 1', () 
     const t = cli(['suggest', dir, '--claude-home', home]);
     assert.strictEqual(t.code, 0, t.err);
     assert.match(t.out, /suggested profile: coding/);
-    assert.match(t.out, /askai install --profile coding/);
+    assert.match(t.out, /askai install --target claude --profile coding/);
     assert.match(t.out, /~\/\.cursor\/rules/);
     assert.match(t.out, /askai project/);
     const j = JSON.parse(cli(['suggest', dir, '--json', '--claude-home', home]).out);

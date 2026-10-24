@@ -35,7 +35,10 @@ flowchart LR
 - `lib/project-registry.js` resolves short project names to folders. `lib/project.js` and `lib/project-source.js` scan eligible source and manage the project knowledge pack; `.ai-work/` holds local review and handoff state.
 - `lib/plugins-ready.js` recommends a source-only Graphify build for the first run; full document/image extraction is an explicit, model-using Graphify operation.
 - Existing recorded profiles skip tool installation during `cli --prepare`; first setup and explicit refresh still configure tools. `lib/usage.js` separates uncached input from cached input and distinguishes raw totals from weekly plan usage. Installer runtime synchronization refreshes an existing managed legacy app without replacing its surrounding state files.
-- `askai cli --prepare` selects a registered project, refreshes its pack through `lib/project.js`, then returns changed paths for host AI review. The review marker in `.ai-work/` is written only after that review.
+- Default `askai cli --prepare` selects a project and opens the terminal without source analysis. Explicit `--review` enables setup and changed-path review; the review marker is written only after that review.
+- `lib/runtime.js` fingerprints installed code and stamps its revision. `lib/graph-query.js` bounds optional queries and reports graph freshness without rebuilding implicitly.
+- MCP diagnostics separate configured, responding and client-attached states. `lib/mcp.js` reads bounded direct Codex call events and normalized exports; wrapper text and opaque Antigravity logs are not inferred. Reports distinguish account-wide logs from project exports.
+- `lib/session.js` records quota plans and before/after observations; comparisons require matched account/window/task/model/effort/acceptance, successful outcomes and explicit isolation confirmation.
 - `askai update` fetches the latest checkout into the AskAI installation and reapplies its recorded profile. With `--agents`, separate host sessions review the checkout before Codex applies verified changes.
 
 ## Critical invariants (must never break)
@@ -44,7 +47,7 @@ flowchart LR
 - `askai uninstall` removes only what AskAI added, as recorded in the manifest. (README.md Safety)
 
 ## Known problems and current focus
-- None confirmed by the scan. README.md ## Known risks lists vendor interactions that are still unverified.
+- Native Codex/Antigravity reconnection remains a human check. No valid baseline/AskAI trial has run, so net subscription savings remain unproven. Static indexing and graph freshness do not prove complete language semantics.
 
 ## Decisions
 Add a row after a decision is made: date, decision, why.

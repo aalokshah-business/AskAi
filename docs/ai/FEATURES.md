@@ -14,8 +14,11 @@ One line per feature. “documented” means README.md describes it; “detected
 | Compact command surface and complete command sheets | `lib/surface.js`, `lib/help.js`, `scripts/gen-docs.js` | tested | `test/cycle5.test.js` checks every public help name is represented in `docs/CHEAT_SHEET.md`; `scripts/gen-docs.js --check` checks the PDF source hash |
 | Command-by-command validation | `lib/selftest.js` | tested | `askai test` runs safe commands in a disposable fixture; `--real` is read-only |
 | Project setup review | `lib/cli-prepare.js`, `lib/project-review.js` | tested | `askai cli --prepare` reports source changes; an agent verifies the generated pack before `askai review done` |
-| Plugin readiness | `lib/plugins-ready.js` | tested | `askai plugins ready` reports connected tools and recommends source-only Graphify indexing when no graph exists |
+| Plugin readiness | `lib/plugins-ready.js` | tested | `askai plugins ready` reports configuration without claiming live attachment; `mcp verify` performs separate server probes |
 | Transparent usage and cheaper CLI preparation | `lib/usage.js`, `askai.js` | tested | `test/usage-clarity.test.js` checks uncached input, cache share, and skipped repeat installation; raw tokens are not quota or measured savings |
 | Legacy installation compatibility | `askai.js`, `lib/claude-config.js` | tested | `test/install-location.test.js` checks old PATH runtime refresh and preservation of installation state |
 
 - Container output review: wrapped audit/help/docs tables, responsive status, environment-scoped infra evidence, validated measurements and non-mutating dry-run checks.
+- Runtime identity and orphaned-tool repair: revision/content stamps, duplicate-copy visibility, broken uv launcher detection and explicit Python selection.
+- MCP observations and safe graph queries: bounded/redacted telemetry imports, coverage labels, query deadlines, rg fallback and graph freshness hints.
+- Quota experiment plans: explicit matched-workload metadata and before/after acceptance gates; no invented baseline or automatic quota-savings claim.

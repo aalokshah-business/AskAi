@@ -8,7 +8,7 @@
 
 <!-- askai:begin router (askai init --refresh updates this block; write your own notes outside it) -->
 ## Project
-Make AI coding subscriptions last longer: installs and wires up existing token-saving tools (RTK, Context Mode, Serena, markitdown, Caveman-style rules) for Claude Code, Cursor, OpenAI Codex and Google Antigravity on Windows, macOS, Linux and WSL, with a hook-free session ledger, handoff and cheat sheet. Type: other. Languages: JavaScript 96%, Python 4%.
+Make AI coding subscriptions last longer: installs and wires up existing token-saving tools (RTK, Context Mode, Serena, markitdown, Caveman-style rules) for Claude Code, Cursor, OpenAI Codex and Google Antigravity on Windows, macOS, Linux and WSL, with a hook-free session ledger, handoff and cheat sheet. Type: other. Languages: JavaScript 89%, PowerShell 4%, Python 4%, Shell 3%.
 
 ## Read only what the task needs
 | Need | File |

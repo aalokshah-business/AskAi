@@ -90,7 +90,7 @@ const COMMAND_SOURCE = {
   context: 'lib/guide.js',
   todo: 'lib/todo.js; lib/findings.js',
   diff: 'askai.js cmdDiff',
-  graph: 'askai.js cmdGraph',
+  graph: 'askai.js cmdGraph; lib/graph-query.js',
   hook: 'lib/hook.js',
   check: 'askai.js cmdCheck; lib/check.js; lib/findings.js',
   why: 'askai.js cmdWhy; lib/findings.js',
@@ -114,7 +114,7 @@ const COMMAND_SOURCE = {
   tips: 'lib/tips.js',
   cheat: 'lib/surface.js',
   direction: 'lib/surface.js',
-  version: 'askai.js',
+  version: 'askai.js; lib/runtime.js',
   '--version': 'askai.js',
 };
 function commandMap() {
@@ -286,6 +286,8 @@ flowchart LR
 The diagram source renders on GitHub and in Mermaid-aware editors. A dry run stops after the plan. Each component has ${code('detect')}, ${code('install')}, ${code('update')} and ${code('uninstall')}; mirrors (for example ${code('cursor-serena')} for ${code('serena')}) follow the component they mirror.
 
 ## 5a. Project knowledge pack (askai init)
+
+Runtime copying writes ${code('runtime.json')} with a revision and content fingerprint; ${code('lib/runtime.js')} compares known installed copies without relying on version labels. ${code('status --brief')} skips process/usage probes. Shared uv recovery honors ${code('--python PATH')} and a remembered local choice. ${code('lib/graph-query.js')} bounds queries and reports heuristic freshness. MCP telemetry explicitly labels partial user-log/project-export evidence; quota plans require matched account/window/acceptance and successful isolated workloads before printing comparisons.
 
 Live audits distinguish installation/configuration, server protocol responsiveness, client attachment, observed calls and measured effect. ${code('plugins ready')} does not prove a connection. ${code('mcp verify')} preserves early-exit failures and leaves Windows npm shell launchers to native clients. Cross-client status examines registrations beyond the last install target. See ${code('docs/SUPPORT_WORKFLOWS.md')} for runtime drift and missing telemetry; Headroom reports use its durable savings command, not proxy performance data.
 

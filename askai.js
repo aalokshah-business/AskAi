@@ -67,7 +67,8 @@ const VAL = { output: 'output', kind: 'kind', about: 'about', type: 'type', tier
   repo: 'repo', tool: 'tool', model: 'model', effort: 'effort', task: 'task', difficulty: 'difficulty', summary: 'summary', next: 'next',
   result: 'result', minutes: 'minutes', 'input-tokens': 'inputTokens', 'output-tokens': 'outputTokens', 'cached-tokens': 'cachedTokens',
   success: 'success', 'rework-minutes': 'reworkMinutes', 'usage-source': 'usageSource', notes: 'notes', lsp: 'lsp', threshold: 'threshold', for: 'for', host: 'host', add: 'add', compare: 'compare', 'install-host': 'installHost', goal: 'goal' };
-Object.assign(VAL, {'window-id':'windowId', variant:'variant'});
+Object.assign(VAL, {'window-id':'windowId', variant:'variant', python:'python', timeout:'timeout', budget:'budget', phase:'phase', acceptance:'acceptance', 'account-label':'accountLabel'});
+Object.assign(BOOL,{record:'record',isolated:'isolated'});
 const has = (o, k) => Object.prototype.hasOwnProperty.call(o, k);
 
 function parseArgs(argv) {
@@ -204,6 +205,7 @@ function saveManifest(ctx, command, results) {
   if (ctx.dry) return;
   const m = ctx.manifest;
   m.askaiVersion = VERSION;
+  if(ctx.opts.python)m.python=ctx.opts.python;
   m.runs = [...(m.runs || []), { at: new Date().toISOString(), command, results }].slice(-20);
   ctx.backup(ctx.paths.manifest);
   cfg.saveManifest(ctx.paths, m);
@@ -304,6 +306,7 @@ function copyApp(ctx, dest = ctx.paths.app) {
     fs.mkdirSync(path.join(dest, 'docs'), { recursive: true });
     for (const n of fs.readdirSync(path.join(SRC, 'docs'))) if (/\.(md|png)$/i.test(n)) fs.copyFileSync(path.join(SRC, 'docs', n), path.join(dest, 'docs', n));
   }
+  require('./lib/runtime').stamp(SRC,dest);
   return `copied to ${dest}`;
 }
 
@@ -517,12 +520,12 @@ async function cmdInstall(o) {
   else {
     console.log(`\nDone. Open a NEW ${hostNames(hosts).join(' / ')} session so hooks, plugins and MCP servers load.`);
     if (!hosts.claude) console.log(`AskAI's own program is in ${ctx.paths.askaiDir}. A Cursor-only install uses that folder too. It is not a Claude Code setup.`);
-    if (hosts.cursor) console.log('Cursor user rules are in ~/.cursor/rules and apply in every project on this machine. Restart Cursor so it reads the hooks, MCP servers and rules. `askai project` writes the same files into one repo for git; skip it here, or the always-applied rule is loaded twice.');
+    if (hosts.cursor) console.log('Cursor user rules apply across projects. Restart Cursor to reload hooks, MCP servers and rules. Use askai init for project guidance; askai project lists registered folders.');
     if (hosts.cursor) console.log('In Cursor chat, type / and choose askai-cli. Cursor reads <project>/.cursor/commands/askai-cli.md. On SSH or a devcontainer it does not read ~/.cursor/commands from the remote home. Open the project folder itself, not its parent, then reload the window.');
   }
   if (o.project) { console.log(''); const dir = projectDir(o, o.project); const name = registrationName(o, dir); const references = await project.research(dir, { offline: o.offline, dry: o.dry }); project.init(dir, { yes: true, dry: o.dry, about: o.about, type: o.type, references }, ctx); registerProject({ ...o, name }, dir); }
   ensureSessionTerminal(o, false, ctx.sandbox);
-  if (!o.dry) { console.log('Check this machine: askai setup' + (o.project ? ` ${o.project}` : ' <repo>') + '.'); console.log('In a new chat: /askai-cli sets up the project (Codex: $askai-cli). /askai-plugins finishes one-time plugin setup and says when each tool is called.'); try { const dir = o.project ? projectDir(o, o.project) : null; const list = todo.items(ctx, dir); const n = todo.open(list).length; if (n && dir) console.log(`\nRemaining setup and review steps (${n}); askai todo ${dir} shows them again:\n${todo.render(list)}`); else if (n) console.log(`Next: askai todo lists ${n} remaining setup and review steps.`); } catch (_) { /* best effort */ } }
+  if (!o.dry) { console.log('Check this machine: askai setup' + (o.project ? ` ${o.project}` : ' <repo>') + '.'); console.log('In a new chat: /askai-cli opens the terminal without source analysis (Codex: $askai-cli). /askai-plugins finishes one-time plugin setup and says when each tool is called.'); try { const dir = o.project ? projectDir(o, o.project) : null; const list = todo.items(ctx, dir); const n = todo.open(list).length; if (n && dir) console.log(`\nRemaining setup and review steps (${n}); askai todo ${dir} shows them again:\n${todo.render(list)}`); else if (n) console.log(`Next: askai todo lists ${n} remaining setup and review steps.`); } catch (_) { /* best effort */ } }
   if (o.dry) return 0;
   const optional = new Set(['rtk', 'context-mode', 'caveman-plugin', 'headroom', 'graphify', 'context7', 'repomix', 'codebase-memory', 'claude-mem']);
   const requiredFail = failed.filter(r => !optional.has(r.id));
@@ -565,6 +568,7 @@ async function cmdUpdate(o) {
 function cmdStatus(o) {
   const host = status.statusHost(o.host || o._[1]);
   const ctx = buildCtx(o, false);
+  if(o.brief){const view=status.brief(ctx,projectDir(o),{host});console.log(o.json?JSON.stringify(view.result,null,2):view.lines.join('\n'));return 0;}
   ctx.refreshPath();
   if (o.json) { console.log(JSON.stringify(status.statusRows(status.collect(ctx), host), null, 2)); return 0; }
   console.log(status.renderStatus(ctx, projectDir(o), { host }).lines.join('\n'));
@@ -619,7 +623,7 @@ function cmdSuggest(o) {
   if (o.json) { console.log(JSON.stringify(r, null, 2)); return 0; }
   console.log(`${dir}\n  ${r.counts.code} code, ${r.counts.textDocs} text documents, ${r.counts.binaryDocs} PDF/Office files${r.counts.truncated ? ' (scan stopped at the entry limit)' : ''}`);
   console.log(`  suggested profile: ${r.profile}: ${r.reason}`);
-  console.log(`\nMachine configuration (choose the host you use):\n  Claude Code: askai install --target claude --profile ${r.profile}\n  Cursor:      askai install --target cursor --profile ${r.profile}\nProject guidance: askai init --path "${dir}"\nGlobal Cursor rules apply across projects; askai project lists registered projects.`);
+  console.log(`\nMachine configuration (choose the host you use):\n  Claude Code: askai install --target claude --profile ${r.profile}\n  Cursor:      askai install --target cursor --profile ${r.profile}\nProject guidance: askai init --path "${dir}"\nGlobal Cursor rules (~/.cursor/rules) apply across projects; askai project lists registered projects.`);
   return 0;
 }
 
@@ -972,7 +976,18 @@ function cmdDiff(o) {
   }
   return check.status === 0 ? 0 : 1;
 }
-function cmdGraph(o) {
+async function cmdGraph(o) {
+  if (['query','status'].includes(o._[1])) {
+    const graph=require('./lib/graph-query'); const dir=projectDir(o);
+    const result=o._[1]==='status'?graph.status(dir):await graph.query(dir,o._.slice(2).join(' '),{timeout:o.timeout,budget:o.budget});
+    if(o.json)console.log(JSON.stringify(result,null,2));
+    else {
+      console.log(`Graph: ${result.state}${result.freshness ? '; freshness '+result.freshness.state : ''}`);
+      if(result.output)console.log(result.output.trim());
+      if(result.note)console.log(result.note);
+      if(result.fallback)console.log(result.fallback);
+    }return ['ok','no-newer-source-observed','possibly-stale','unknown'].includes(result.state)?0:1;
+  }
   const repo = projectDir(o, o._[1]);
   const f = path.join(repo, 'docs', 'ai', 'ARCHITECTURE.md');
   let t; try { t = fs.readFileSync(f, 'utf8'); } catch (_) { console.log(`no ${f}: run askai init`); return 1; }
@@ -1017,8 +1032,23 @@ function cmdPrompt(o) {
 }
 async function cmdMcp(o) {
   const ctx = buildCtx(o, true); const a = o._[1] || 'list';
+  if (a === 'import') {
+    const result=mcpLib.importTelemetry(projectDir(o),o._[2],o.tool || o.host,{dry:o.dry});
+    console.log(o.json ? JSON.stringify(result) : `${o.dry ? 'Would import' : 'Imported'} ${result.added} observations; ${result.duplicates} duplicates. No arguments, outputs or credentials stored.`); return 0;
+  }
+  if (a === 'telemetry') {
+    const result=mcpLib.telemetry(ctx,projectDir(o),7);
+    if (o.json) console.log(JSON.stringify(result,null,2));
+    else {
+      console.log(require('./lib/columns').table(['Tool','Server','Calls observed','Failed / unknown','Evidence scope'],result.rows.map(r=>[r.tool,r.server,r.calls,`${r.failures}/${r.unknownOutcomes}`,`${r.userLogCalls} user / ${r.projectExportCalls} exported`])).join('\n'));
+      if(!result.rows.length)console.log('No MCP calls observed in supported evidence; coverage is partial.');
+      for (const [tool,coverage] of Object.entries(result.coverage)) console.log(`${tool}: ${coverage}`);
+      console.log('Partial local/exported evidence only; no observed call is not proof of no use. Wrapped tool code is not counted as a call. Native-client attachment remains unverified.');
+    } return 0;
+  }
   if (a === 'verify') {
     const rows = await mcpLib.verify(ctx,projectDir(o),{tool:o.tool || o.host,name:o._[2]});
+    if (o.record && !o.dry) { session.ensure(projectDir(o),false); fs.writeFileSync(path.join(projectDir(o),session.DIR,'mcp-verification.json'),JSON.stringify({at:new Date().toISOString(),scope:'server-process-only',clientConnectionVerified:false,rows},null,2)+'\n'); }
     if (o.json) console.log(JSON.stringify(rows,null,2));
     else {
       console.log(rows.length ? require('./lib/columns').table(['Tool','Server','Result','Tools','Evidence'],rows.map(r=>[r.tool,r.name,r.state,r.tools,r.detail])).join('\n') : 'No matching MCP servers configured.');
@@ -1588,6 +1618,7 @@ async function cmdCli(o) {
   const keys = () => { if (process.stdin.isTTY && process.stdin.setRawMode) { try { process.stdin.setRawMode(true); } catch (_) { /* a child command released the console */ } } };
   console.log('AskAI CLI. Type a command for Claude Code, Codex, Antigravity or Cursor; exit to leave.');
   console.log(`Project folder: ${process.cwd()}`);
+  console.log(require('./lib/runtime').describe(SRC));
   if (!fs.existsSync(path.join(process.cwd(), session.DIR, 'askai-init.json'))) {
     console.log(`Project setup: askai init --path "${process.cwd()}"`);
     console.log('Run this command to initialize this folder; nothing is initialized automatically.');
@@ -1746,7 +1777,15 @@ async function main() {
     case 'chat': return cmdChat(o);
     case 'tips': return cmdTips(o);
     case 'direction': console.log(require('./lib/surface').direction()); return 0;
-    case 'version': case '--version': console.log(o.all ? require('./lib/platform').supportText(VERSION) : VERSION); return 0;
+    case 'version': case '--version': {
+      if(o.json || o.all){
+        const ctx=buildCtx(o,true), runtime=require('./lib/runtime');
+        const info=runtime.inventory(SRC,[ctx.paths.app,path.join(ctx.paths.home,'askai','app')]);
+        if(o.json)console.log(JSON.stringify({version:VERSION,...info},null,2));
+        else console.log(require('./lib/platform').supportText(VERSION)+'\n'+runtime.describe(SRC)+'\n'+info.copies.map(r=>`${r.matchesCurrent?'same content':'DIFFERENT CONTENT'}: ${r.root}`).join('\n'));
+      }else console.log(VERSION);
+      return 0;
+    }
     default: {
       const renamed = { continue: ['resume'], etiquette: ['guide', 'all'], checkpoint: ['session', 'pause'], work: ['guide', 'work'], peak: ['tips', 'peak'], projects: ['project', 'list'], cheat: ['direction'], doctor: ['check'], report: ['savings'] };
       if (renamed[cmd]) {

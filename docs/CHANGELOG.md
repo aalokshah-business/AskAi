@@ -4,6 +4,13 @@ AskAI follows semantic versioning from 1.0.0 (see [RELEASING.md](RELEASING.md)).
 
 ## Unreleased
 
+- Add runtime content/revision stamps, duplicate-copy visibility, CLI runtime identification and a fast configuration-only status mode.
+- Repair orphaned uv launchers through shared installer logic, accept and remember an explicit Python interpreter, and identify startup failures without changing OS security settings.
+- Add bounded direct Codex MCP observations and normalized client exports, with deduplication, redaction, unknown-outcome and scope/coverage labels; optionally record server probe evidence.
+- Add explicit quota plans and stricter matched before/after comparisons; ignore invalid legacy measurements and never invent baseline evidence.
+- Bound Graphify queries with deadlines/output budgets, freshness hints and targeted-search fallback. Preserve edited guidance visibly during refresh.
+- Preserve scan-cache object identity while isolating init overrides; invalidate cached source evidence after repeated edits to an already-dirty nested file.
+
 - Correct live-audit diagnostics: preserve early MCP exit failures instead of false cleanup failures, resolve Windows npm launchers before probing, and label plugin readiness as configuration rather than connection.
 - Show cross-client registrations independently of the last installation target. Wrap detailed help prose and avoid mistaking indentation/table separators for Git output or duplicated evidence.
 - Use Headroom's durable savings report instead of proxy performance output; document runtime drift, orphaned uv launchers, missing telemetry and the limits of quota comparisons.

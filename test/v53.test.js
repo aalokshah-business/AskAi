@@ -149,7 +149,7 @@ test('infra marks an MCP server working only after a transcript call', () => wit
   const r = infra.collect(ctx, null);
   assert.strictEqual(r.plugins.find(p => p.id === 'serena').state, 'cursor working, 1 call/7d');
   assert.strictEqual(r.plugins.find(p => p.id === 'context7').state, 'cursor configured, no call observed in available 7-day logs');
-  assert.match(infra.render(r), /working means a transcript call/);
+  assert.match(infra.render(r), /working means a call observed/);
 }));
 
 test('todo names npm global bin folder when installed tools are absent from PATH', () => withHome(h => {

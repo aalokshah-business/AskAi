@@ -93,9 +93,9 @@ test('quota observations keep windows separate, detect resets, and compare only 
   try {
     assert.equal(session.run('quota',{repo:home,tool:'cursor',used:'10'},print),1);
     assert.ok(!fs.existsSync(path.join(home,'.ai-work','quota-observations.jsonl')));
-    const common={repo:home,tool:'cursor',window:'100',usageSource:'dashboard',task:'same task',model:'same-model',effort:'medium',name:'trial'};
+    const common={repo:home,tool:'cursor',window:'100',usageSource:'dashboard',task:'same task',model:'same-model',effort:'medium',name:'trial',accountLabel:'test-account',acceptance:'tests pass',isolated:true};
     for (const [variant,start,end] of [['baseline',10,20],['askai',30,36]]) {
-      for (const used of [start,end]) assert.equal(session.run('quota',{...common,variant,windowId:variant,used:String(used)},print),0);
+      for (const [i,used] of [start,end].entries()) assert.equal(session.run('quota',{...common,variant,windowId:'same-window',phase:i?'after':'before',success:i?1:undefined,used:String(used)},print),0);
     }
     for (const used of [90,2]) session.run('quota',{...common,windowId:'reset',used:String(used)},print);
     session.run('quota',{repo:home,_:['session','quota','report']},print);

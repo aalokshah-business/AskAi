@@ -109,6 +109,8 @@ The diagram source renders on GitHub and in Mermaid-aware editors. A dry run sto
 
 ## 5a. Project knowledge pack (askai init)
 
+Runtime copying writes `runtime.json` with a revision and content fingerprint; `lib/runtime.js` compares known installed copies without relying on version labels. `status --brief` skips process/usage probes. Shared uv recovery honors `--python PATH` and a remembered local choice. `lib/graph-query.js` bounds queries and reports heuristic freshness. MCP telemetry explicitly labels partial user-log/project-export evidence; quota plans require matched account/window/acceptance and successful isolated workloads before printing comparisons.
+
 Live audits distinguish installation/configuration, server protocol responsiveness, client attachment, observed calls and measured effect. `plugins ready` does not prove a connection. `mcp verify` preserves early-exit failures and leaves Windows npm shell launchers to native clients. Cross-client status examines registrations beyond the last install target. See `docs/SUPPORT_WORKFLOWS.md` for runtime drift and missing telemetry; Headroom reports use its durable savings command, not proxy performance data.
 
 Project workflows accept any folder and language. Shared extension/manifest definitions in `lib/project-source.js` drive inventory, review scans, profile suggestions and terminal root discovery. Detection is advisory; unknown stacks use `other`. Explicit `--type`, `--about`, `--build` and `--test` choices persist locally in `.ai-work/askai-init.json` across map and refresh. Init never executes these commands. Symbol/import heuristics and optional navigation plugins do not support every language semantically. Normal CLI launch performs no source analysis.
@@ -337,7 +339,7 @@ Where each command is implemented. Written from the `case` list in `askai.js` be
 | `askai context` | `lib/guide.js` |
 | `askai todo` | `lib/todo.js; lib/findings.js` |
 | `askai diff` | `askai.js cmdDiff` |
-| `askai graph` | `askai.js cmdGraph` |
+| `askai graph` | `askai.js cmdGraph; lib/graph-query.js` |
 | `askai hook` | `lib/hook.js` |
 | `askai why` | `askai.js cmdWhy; lib/findings.js` |
 | `askai next` | `askai.js; lib/daily.js` |
@@ -360,7 +362,7 @@ Where each command is implemented. Written from the `case` list in `askai.js` be
 | `askai chat` | `lib/chat.js` |
 | `askai tips` | `lib/tips.js` |
 | `askai direction` | `lib/surface.js` |
-| `askai version` | `askai.js` |
+| `askai version` | `askai.js; lib/runtime.js` |
 | `askai --version` | `askai.js` |
 
 #### `askai cli`
@@ -453,7 +455,7 @@ Exit: 0 or 1
 ```text
 askai status: Status in four environment columns, or one selected environment.
 
-Usage: askai status  --host --json
+Usage: askai status  --host --json --brief
 
 Summary:
   Reports real-time configuration health, MCP registrations, and tool states organized in environment columns. Use it to
@@ -463,10 +465,11 @@ Summary:
 Use when: Status in four environment columns, or one selected environment.
 
 Options:
-Option | Meaning
--------+---------------------------------
---host | see askai help status --advanced
---json | see askai help status --advanced
+Option  | Meaning
+--------+---------------------------------
+--host  | see askai help status --advanced
+--json  | see askai help status --advanced
+--brief | see askai help status --advanced
 
 Exit: 0; invalid environments fail
 ```
@@ -1047,7 +1050,7 @@ Exit: 0 or 1
 ```text
 askai version: Print the AskAI version.
 
-Usage: askai version
+Usage: askai version  --all --json
 
 Summary:
   Prints current AskAI version, and with the all option, details system, shell, Node, and git environments. Use it when
@@ -1055,6 +1058,12 @@ Summary:
   one command without asking an AI model to inspect your machine.
 
 Use when: Print the AskAI version.
+
+Options:
+Option | Meaning
+-------+----------------------------------
+--all  | see askai help version --advanced
+--json | see askai help version --advanced
 
 Exit: 0
 ```
@@ -1443,7 +1452,7 @@ Exit: 1 when the whitespace check finds problems
 ```text
 askai graph: Print the Mermaid architecture diagram from docs/ai/ARCHITECTURE.md and open it in the browser when the terminal is interactive.
 
-Usage: askai graph
+Usage: askai graph  --timeout --budget --json
 
 Summary:
   Prints the Mermaid architecture diagram from docs/ai/ARCHITECTURE.md and opens it in your browser. Use it to inspect
@@ -1452,6 +1461,13 @@ Summary:
 
 Use when: Print the Mermaid architecture diagram from docs/ai/ARCHITECTURE.md and open it in the browser when the
 terminal is interactive.
+
+Options:
+Option    | Meaning
+----------+--------------------------------
+--timeout | see askai help graph --advanced
+--budget  | see askai help graph --advanced
+--json    | see askai help graph --advanced
 
 Exit: 0, or 1 when there is none yet
 ```
@@ -1677,7 +1693,7 @@ Exit: 0
 - **Cursor models and plans** (`askai ask cursor-models`): Free and Plus: Grok 4.7 and Composer only; Sonnet needs Premium or above (billed at API price).
   Why: Cursor help, Available models (2026).
   AskAI: askai models set cursor.useSonnet true
-- **Seeing what each plugin saves** (`askai ask savings`): askai savings runs each installed plugin's own report (rtk gain, ccusage daily, headroom perf, codebase-memory projects, Graphify graph status); askai plugins info <id> shows the in-agent commands.
+- **Seeing what each plugin saves** (`askai ask savings`): askai savings runs each installed plugin's own report (rtk gain, ccusage daily, headroom savings, codebase-memory projects, Graphify graph status); askai plugins info <id> shows the in-agent commands.
   Why: Tools report their own estimates; RTK's counter showed 96M saved during runs that cost more. Compare with askai savings and askai audit.
   AskAI: askai savings 7
 - **Shorter replies** (`askai ask output-size`): On by default: the terse rule (Caveman-style), the diff-only rule, Codex verbosity low, and the output line in askai prompt. For one task: askai prompt --output diff.

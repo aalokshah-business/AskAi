@@ -100,12 +100,12 @@ The commands below are also implemented. This table plus the twelve and the addi
 | Command | Purpose | Form |
 |---|---|---|
 | `askai cli` | Prepare a project from the chat folder, then open an AskAI-only terminal. AI review is opt-in. | `askai cli [--prepare] [--launch] [--review] [--path DIR] [--about TEXT]` |
-| `askai status` | Status in four environment columns, or one selected environment. | `askai status [codex\|antigravity\|cursor\|claude] [--host HOST] [--json]` |
+| `askai status` | Status in four environment columns, or one selected environment. | `askai status [codex\|antigravity\|cursor\|claude] [--host HOST] [--json] [--brief]` |
 | `askai setup` | Short check after install: which hosts are present, check counts, and whether the file validator passed. | `askai setup [dir] [--yes]` |
 | `askai bootstrap` | Show a personal devcontainer setup; --repo writes a post-create script into this project. | `askai bootstrap [dir] [--profile P] [--repo]` |
 | `askai ask` | Offline answers on etiquette and the research: the rule, why, the command in each tool, and what AskAI automates. | `askai ask <words>` |
 | `askai start` | Start a task: ledger entry with tool, task, branch and last commit. | `askai start --tool T --task "..." [--repo DIR]` |
-| `askai session` | The per-repo ledger in .ai-work/: entries, handoff, measurements, report. askai start, askai break and askai resume are the daily names for those three actions. | `askai session init\|pause\|status\|finish\|measure\|report\|quota [report] [options]` |
+| `askai session` | The per-repo ledger in .ai-work/: entries, handoff, measurements, report. askai start, askai break and askai resume are the daily names for those three actions. | `askai session init\|pause\|status\|finish\|measure\|report\|quota [plan\|report] [options]` |
 | `askai scaffold` | Write the files every agent reads: AGENTS.md, CLAUDE.md, docs/ai/PROJECT_PROFILE.md, .cursorignore, .ai-work/. Never overwrites. | `askai scaffold [dir] [--dry-run]` |
 | `askai suggest` | Recommend a profile from the files in a folder. | `askai suggest [dir]` |
 | `askai profiles` | What each profile installs. | `askai profiles` |
@@ -116,7 +116,7 @@ The commands below are also implemented. This table plus the twelve and the addi
 | `askai statusline` | Claude Code's status line command (reads the session JSON on stdin): model, context, cache; records snapshots for askai savings. | `askai statusline [--demo]` |
 | `askai restore` | List backup timestamps, or restore supported configuration files from one backup. | `askai restore [stamp] [--dry-run] [--yes]` |
 | `askai uninstall` | Remove only what AskAI added: keys still holding AskAI's value, its marked blocks, its own files and registrations. | `askai uninstall [--only ID,ID] [--dry-run]` |
-| `askai version` | Print the AskAI version. | `askai version` |
+| `askai version` | Print the AskAI version. | `askai version [--all] [--json]` |
 | `askai init` | Scan eligible first-party source files, consult detected frameworks' official docs, write a compact project knowledge pack and register its path. | `askai init [dir] [--name NAME] [--path DIR] [--about "..."] [--type T] [--yes] [--refresh] [--offline] [--dry-run] [--build "cmd"] [--test "cmd"]` |
 | `askai review` | Show which project inputs changed since host AI review; record completion after review. | `askai review [status\|done] [--project NAME] [--json] [--all]` |
 | `askai map` | Regenerate docs/ai/PROJECT_MAP.md from README folder descriptions and conventional names; preserve purposes you edited. | `askai map [dir] [--dry-run] [--diff]` |
@@ -126,7 +126,7 @@ The commands below are also implemented. This table plus the twelve and the addi
 | `askai docs` | Find AskAI documents or check generated command documentation for drift. | `askai docs [install\|architecture\|projects\|guide\|cheatsheet\|changelog\|preview\|container\|support\|check] [--print]` |
 | `askai context` | What to do at this context level: continue, hand off, clear. 60% is a warning, not an order to compact. | `askai context <percent> \| --used N --window M` |
 | `askai todo` | Remaining setup and project-review steps: sign-ins, restarts, app settings, model IDs, one-time plugin steps, and repository facts that need confirmation. Checkable items clear themselves. | `askai todo [dir] [--all] \| askai todo done <id> \| askai todo undo <id>` |
-| `askai graph` | Print the Mermaid architecture diagram from docs/ai/ARCHITECTURE.md and open it in the browser when the terminal is interactive. | `askai graph [dir]` |
+| `askai graph` | Print the Mermaid architecture diagram from docs/ai/ARCHITECTURE.md and open it in the browser when the terminal is interactive. | `askai graph [dir] \| query "question" [--timeout 10] [--budget 600] \| status [--json]` |
 | `askai chat` | Where to paste a short standing instruction in Claude chat, ChatGPT, and Gemini, and how the four coding apps are set up instead. | `askai chat [claude\|chatgpt\|gemini\|code] [--copy]` |
 | `askai direction` | Print the one-screen working loop and the most useful command choices. | `askai direction` |
 
@@ -150,7 +150,7 @@ Legacy spellings `continue`, `etiquette`, `checkpoint`, `work`, `peak`, `project
 | Purpose | Claude Code | Codex | Antigravity | Cursor |
 |---|---|---|---|---|
 | What fills the context | `/context` | `/status` | `/context` | `/context` |
-| Usage | `/usage` | `/usage daily` | `/usage` | Dashboard, Usage |
+| Usage | `/usage` | `/status` | `/usage` | Dashboard, Usage |
 | New task | `/clear` | `/new` | `/clear` | `/new` |
 | Keep a long chat | `/compact keep: goal, files, test` | `/compact` | new chat plus a handoff | `/summarize` |
 | Plan before editing | `/plan` | `/plan` | `/plan` | `/plan` |

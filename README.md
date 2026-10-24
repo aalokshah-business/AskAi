@@ -360,6 +360,8 @@ It exits 1 only when the spend part could not be produced; use `askai check` whe
 
 For a live-machine audit, missing MCP reports, broken Python launchers, or differences between the installed app and a checkout, see [audit and reporting guidance](docs/SUPPORT_WORKFLOWS.md#audit-the-installed-runtime-and-missing-reports). Configured tools are not necessarily connected; compression estimates do not establish subscription savings.
 
+Routine checks: `askai status --brief`. Runtime identity: `askai version --all` or `--json`. Bounded code-graph lookup: `askai graph query "question" --timeout 10 --budget 600`; freshness: `askai graph status`. These commands do not launch AI or rebuild a graph automatically. See [MCP evidence and matched quota plans](docs/SUPPORT_WORKFLOWS.md) for partial telemetry, local exports, and before/after measurement requirements.
+
 Core project selection, handoffs, bounded command output, checks and usage reporting do not require a particular programming language. Initialize any existing folder; unknown stacks use `other`. Automatic language/framework detection and optional navigation plugins have narrower coverage and do not validate every toolchain.
 
 ```sh

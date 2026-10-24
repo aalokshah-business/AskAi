@@ -27,6 +27,10 @@ Sources: [Codex MCP](https://developers.openai.com/codex/mcp), [Codex usage](htt
 
 ## 1. Verify MCP servers across four environments
 
+For routine checks use `askai status --brief`: this reads configuration and explicitly skips live probes and usage scans. Full `status`, `infra` and `audit` remain explicit detailed commands. `askai version --all` shows runtime revision, location and known duplicate app copies; `--json` adds content fingerprints and install-stamp integrity. Plain `version` retains its original script-compatible output. CLI startup also identifies its runtime.
+
+Installer recovery accepts `askai install --only serena,headroom --python PATH --yes`. An explicitly selected interpreter is remembered locally for later uv installs. `ASKAI_PYTHON` overrides the remembered choice. The package resolver still enforces compatibility; do not copy machine-specific interpreter paths to a different laptop. Broken launchers are detected even when their executable remains. No security policy is disabled to make Python start.
+
 ```text
 askai mcp verify --tool cursor
 askai mcp verify --tool claude
@@ -42,6 +46,24 @@ For supported stdio configurations, AskAI starts a short-lived server, sends MCP
 Results distinguish verified, initialized without tools, partial pagination, disabled, failed, timeout and not verified. HTTP/OAuth, complex TOML and Windows `.cmd` launchers require native-client verification. Unknown protocol versions remain unverified. A startup timeout may mean the package is downloading or indexing; inspect it in the native client rather than treating that as a demonstrated model/token problem.
 
 **A responding server is not proof that your editor has connected to it.** JSON explicitly reports `clientConnectionVerified: false`. Check Cursor MCP Logs, Claude Code `/mcp`, and the corresponding tools/settings in Codex and Antigravity. AskAI never runs these probes automatically from status, check, infra or its default self-test.
+
+## 1a. Read partial MCP usage evidence
+
+`askai mcp verify --tool codex --record` saves the probe time and its server-process-only scope in `.ai-work/mcp-verification.json`; it does not record a native-client connection. `askai mcp telemetry --json` reads direct structured MCP call events from supported Codex session JSONL plus project-local normalized exports. It bounds native reads to 100 recent files, 16 MiB per file and 32 MiB total; skipped files are reported. Calls hidden inside wrapper code are not inferred from text. Missing outcomes remain unknown. Counters distinguish account-wide user-log observations from project exports, and zero recorded failures does not prove successful calls.
+
+For a client without a supported native log reader, import a reviewed normalized JSONL export:
+
+```json
+{"timestamp":"2026-10-24T10:00:00Z","server":"serena","tool":"find_symbol","eventId":"unique-call-id","status":"success"}
+```
+
+```text
+askai mcp import events.jsonl --tool agy --dry-run
+askai mcp import events.jsonl --tool agy
+askai mcp telemetry
+```
+
+Use actual event times and stable unique call IDs; the sample is schema documentation, not evidence. Imports accept at most 4 MiB, reject future/invalid dates, deduplicate host/event IDs and discard arguments, outputs and authentication fields. Do not put credentials in identifiers. Native Antigravity opaque logs remain unsupported; normalized imports are explicitly user-supplied observations. A call observation is historical use, not proof of current attachment or savings.
 
 ## 2. Record real quota observations
 
@@ -61,13 +83,23 @@ Observations stay in `.ai-work/quota-observations.jsonl`, separate from the exis
 
 ### Compare a baseline and AskAI workflow
 
+Create an explicit plan first; this records metadata and does not run or invent a baseline:
+
+```text
+askai session quota plan --name trial-1 --tool codex --task "same regression" --model MODEL --effort medium --account-label local-account --acceptance "identical tests pass"
+askai session quota --name trial-1 --variant baseline --phase before --used ACTUAL --window-id SAME-WINDOW --usage-source dashboard --isolated
+askai session quota --name trial-1 --variant baseline --phase after --used ACTUAL --window-id SAME-WINDOW --usage-source dashboard --isolated --success 1
+```
+
+Replace ACTUAL with observed numbers. Repeat the same workload in the AskAI variant, using `--variant askai`. Saved plan metadata is inherited by matching `--name` readings. `--isolated` is a human confirmation of no other account activity; do not pass it when that is untrue. The after reading records whether acceptance passed with `--success 1` or failed with `--success 0`. Compare only within the same account and quota window. Record ordinary non-isolated observations separately; they cannot establish an effect.
+
 For each workflow, take a reading before and after the same accepted workload. Add:
 
 ```text
 --variant baseline --name trial-1 --task matched-workload --model actual-model-id --effort medium
 ```
 
-For the AskAI phase, use `--variant askai` and the same experiment, task, model and effort. Keep the appropriate window ID on each phase. `session quota report` prints an observed comparison only when each labeled phase has two usable readings and matching metadata.
+For the AskAI phase, use `--variant askai` and the same experiment, account label, window ID, task, model, effort and acceptance criteria. `session quota report` prints an observed comparison only when each workflow has eligible before/after readings, successful acceptance and isolation confirmation. Missing metadata, different windows, resets and unsuccessful runs remain inconclusive. Blank legacy measurement CSV rows are ignored rather than treated as zero-usage evidence.
 
 Keep account/plan, task difficulty, accepted result and background activity comparable. Include setup/review costs when assessing the total benefit. Quota is account-wide, often rounded, and may update late. **An observed difference does not prove that AskAI caused a saving.** Raw tokens and cache ratios are not converted into plan quota.
 
