@@ -36,7 +36,7 @@ flowchart LR
 - `lib/plugins-ready.js` recommends a source-only Graphify build for the first run; full document/image extraction is an explicit, model-using Graphify operation.
 - Existing recorded profiles skip tool installation during `cli --prepare`; first setup and explicit refresh still configure tools. `lib/usage.js` separates uncached input from cached input and distinguishes raw totals from weekly plan usage. Installer runtime synchronization refreshes an existing managed legacy app without replacing its surrounding state files.
 - `askai cli --prepare` selects a registered project, refreshes its pack through `lib/project.js`, then returns changed paths for host AI review. The review marker in `.ai-work/` is written only after that review.
-- `askai upgrade` fetches the latest checkout into the AskAI installation and reapplies its recorded profile. With `--agents`, separate host sessions review the checkout before Codex applies verified changes.
+- `askai update` fetches the latest checkout into the AskAI installation and reapplies its recorded profile. With `--agents`, separate host sessions review the checkout before Codex applies verified changes.
 
 ## Critical invariants (must never break)
 - AskAI never enters credentials. Sign-in stays in each tool. (README.md Safety)

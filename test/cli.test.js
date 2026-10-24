@@ -306,20 +306,14 @@ test('retired report points to savings and check', () => withHome(home => {
   for (const f of ['askai', 'settings.json', 'CLAUDE.md', 'commands']) assert.ok(!fs.existsSync(path.join(home, f)), `${f} not created`);
 }));
 
-test('retired inventory points to infra', () => withHome(home => {
-  const r = run(home, 'inventory');
-  assert.strictEqual(r.code, 0, r.out + r.err);
-  assert.match(r.out, /askai inventory is retired/);
-  assert.match(r.out, /infra/);
-  for (const f of ['askai', 'settings.json', 'CLAUDE.md', 'commands']) assert.ok(!fs.existsSync(path.join(home, f)), `${f} not created`);
-}));
+test('removed inventory and upgrade are unknown commands', () => withHome(home => {
+  const rInv = run(home, 'inventory');
+  assert.strictEqual(rInv.code, 2);
+  assert.match(rInv.err, /Unknown command "inventory"/);
 
-test('retired upgrade points to update', () => withHome(home => {
-  const r = run(home, 'upgrade');
-  assert.strictEqual(r.code, 0, r.out + r.err);
-  assert.match(r.out, /askai upgrade is retired/);
-  assert.match(r.out, /update/);
-  for (const f of ['askai', 'settings.json', 'CLAUDE.md', 'commands']) assert.ok(!fs.existsSync(path.join(home, f)), `${f} not created`);
+  const rUpg = run(home, 'upgrade');
+  assert.strictEqual(rUpg.code, 2);
+  assert.match(rUpg.err, /Unknown command "upgrade"/);
 }));
 
 test('statusline prints a single line and never fails, even on garbage stdin', () => withHome(home => {

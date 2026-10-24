@@ -34,7 +34,7 @@ else {
 const ver = run(['version']).out.trim();
 /^\d+\.\d+\.\d+$/.test(ver) ? add('PASS', 'askai', `version ${ver}`) : add('FAIL', 'askai', `askai version printed "${tilde(ver).slice(0, 80)}"`, 'run the one-line install again');
 const srcVer = (readJ(path.join(askaiDir, 'src', 'package.json')) || {}).version;
-if (srcVer && srcVer !== ver) add('WARN', 'askai', `installed ${ver} but the downloaded source is ${srcVer}`, 'askai upgrade');
+if (srcVer && srcVer !== ver) add('WARN', 'askai', `installed ${ver} but the downloaded source is ${srcVer}`, 'askai update');
 which(process.platform === 'win32' ? 'askai.cmd' : 'askai') ? add('PASS', 'askai', '`askai` is on PATH in this terminal') : add('WARN', 'askai', '`askai` is not on PATH in this terminal', `open a NEW terminal (PATH changes need one); or run: node ${tilde(appJs)}`);
 Object.keys(comps).length ? add('PASS', 'askai', `manifest: profile ${manifest.profile || '?'}, target ${manifest.target || '?'}, ${Object.keys(comps).length} components recorded`) : add('FAIL', 'askai', 'manifest has no components: nothing was installed', 'askai install --yes --target all --profile max --project <repo>');
 const helpN = (run(['help', 'all']).out.match(/^askai /gm) || []).length;

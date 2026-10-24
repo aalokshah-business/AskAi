@@ -4,8 +4,8 @@ AskAI follows semantic versioning from 1.0.0 (see [RELEASING.md](RELEASING.md)).
 
 ## Unreleased
 
-- Retired duplicate `askai inventory` in favor of `askai infra`.
-- Retired duplicate `askai upgrade` in favor of `askai update`. Consolidated `--check`, `--dry-run`, and `--agents` into `askai update`.
+- Removed duplicate `askai inventory` (use `askai infra`).
+- Removed duplicate `askai upgrade` (use `askai update`). Consolidated `--check`, `--dry-run`, and `--agents` into `askai update`.
 - Hardened Serena and MarkItDown tool detection and upgrades against broken uv trampoline stubs (`isBrokenTrampoline`); safe skip when Serena is absent from `uv tool list`.
 - Added AskAI launcher detection (`isAskaiLauncher`) and CRLF/LF line ending normalization to command installation and removal on Windows.
 - Formatted `askai plugins` output in aligned tabular columns.

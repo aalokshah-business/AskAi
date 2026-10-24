@@ -57,7 +57,7 @@ Flags: --yes --dry-run --profile (default ${profiles.DEFAULT}) --add --list --ho
        --output-safe --out --name --path --build --test --threshold --for --include-untracked --personal --shared --undo --review --week --fill
        --cache --plugins --full --agents --demo --launch --prepare --clear --offline --copy --fix --refresh --resume --import-cursor --env --save
 Profiles: minimal | code | docs | full | experimental. Aliases: coding = code, max = experimental.
-Old names stay: askai upgrade = update, askai tools update = components.
+Old names stay: askai tools update = components.
 `;
 
 // ---- args --------------------------------------------------------------------------------------------------------
@@ -771,16 +771,6 @@ function cmdReport(o) {
   return 0;
 }
 
-function cmdInventory(o) {
-  console.log('askai inventory is retired. Run askai infra.');
-  return 0;
-}
-
-function cmdUpgrade(o) {
-  console.log('askai upgrade is retired. Run askai update.');
-  return 0;
-}
-
 async function cmdUninstall(o) {
   const ctx = buildCtx(o);
   preflight(ctx);
@@ -1418,7 +1408,7 @@ function launchCli() {
     return r.status || 0;
   } else {
     console.log('No graphical terminal on this machine, and tmux is not installed. A devcontainer cannot open a new window. In the Cursor terminal run: askai cli');
-    console.log('askai upgrade or askai setup installs tmux when this user can. Otherwise run: sudo apt-get install -y tmux');
+    console.log('askai update or askai setup installs tmux when this user can. Otherwise run: sudo apt-get install -y tmux');
     return 0;
   }
   if (r.status !== 0) { console.error(`Could not open a terminal. Run askai cli in the Cursor terminal. ${String(r.stderr || (r.error && r.error.message) || '').trim()}`); return 1; }
@@ -1555,8 +1545,6 @@ async function main() {
   o._.unshift(cmd);
   if (cmd === 'doctor') return cmdDoctor(o);
   if (cmd === 'report') return cmdReport(o);
-  if (cmd === 'inventory') return cmdInventory(o);
-  if (cmd === 'upgrade') return cmdUpgrade(o);
   if (cmd === 'help' && o.help) { console.log(help.render('help', { advanced: !!o.advanced })); return 0; }
   if (cmd === 'help' && o.list) { console.log(help.names().slice().sort().join('\n')); return 0; }
   if (cmd === 'help' && o._[1] === 'all') { console.log(`askai ${VERSION}: every command in full\n\n` + help.names().map(n => help.render(n, { advanced: true })).join(`\n\n${'-'.repeat(72)}\n\n`)); return 0; }
@@ -1666,7 +1654,7 @@ async function main() {
     case 'direction': console.log(require('./lib/surface').direction()); return 0;
     case 'version': case '--version': console.log(o.all ? require('./lib/platform').supportText(VERSION) : VERSION); return 0;
     default: {
-      const renamed = { continue: ['resume'], etiquette: ['guide', 'all'], checkpoint: ['session', 'pause'], work: ['guide', 'work'], peak: ['tips', 'peak'], projects: ['project', 'list'], cheat: ['direction'], doctor: ['check'], report: ['savings'], inventory: ['infra'], upgrade: ['update'] };
+      const renamed = { continue: ['resume'], etiquette: ['guide', 'all'], checkpoint: ['session', 'pause'], work: ['guide', 'work'], peak: ['tips', 'peak'], projects: ['project', 'list'], cheat: ['direction'], doctor: ['check'], report: ['savings'] };
       if (renamed[cmd]) {
         hintOnce(buildCtx(o, true), `alias-${cmd}`, `askai ${cmd} is now askai ${renamed[cmd].join(' ')}`);
         process.argv = [process.argv[0], process.argv[1], ...renamed[cmd], ...rest];
