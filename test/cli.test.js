@@ -6,7 +6,7 @@ const assert = require('node:assert');
 const { parseArgs, select, launchPlan, sessionTerminalPlan, cliInstallPlan, VERSION } = require('../askai');
 const { ASKAI, WIN, tmpHome, rm, write, readJson, cli, fs, path } = require('./helpers');
 
-const SAFE = ['--only', 'baseline,caveman,statusline', '--no-path', '--yes'];
+const SAFE = ['--target', 'claude', '--only', 'baseline,caveman,statusline', '--no-path', '--yes'];
 const run = (home, ...args) => cli([...args, '--claude-home', home]);
 function withHome(fn) {
   const home = tmpHome();

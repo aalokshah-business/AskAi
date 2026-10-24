@@ -40,6 +40,7 @@ function makeCtx(home, opts = {}, fakes = {}) {
     if (ctx.dry) return good;
     return fakes.act ? fakes.act(cmd, args, ctx) : good;
   };
+  ctx.hostSel = require('../lib/cursor').hosts(ctx);
   return ctx;
 }
 

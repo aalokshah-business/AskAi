@@ -1,0 +1,12 @@
+{
+  "background": "#F3F6FA",
+  "surface": "#FFFFFF",
+  "text": "#172B4D",
+  "muted": "#526581",
+  "accent": "#2563EB",
+  "secondary": "#EAF1FF",
+  "border": "#D8E1EE",
+  "font": "Arial",
+  "fontSize": 10,
+  "monospace": "Courier New"
+}

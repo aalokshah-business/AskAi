@@ -4,6 +4,12 @@ AskAI follows semantic versioning from 1.0.0 (see [RELEASING.md](RELEASING.md)).
 
 ## Unreleased
 
+- Use content-sized desktop tabs, aligned Command/Action/Environment columns and a permanent Arguments section. Windows/Linux share a blue-and-white palette. Environment selections map only to supported CLI arguments; unsupported commands show Project Scope.
+- Keep optional desktop setup failures separate from core CLI installation. Explicit desktop setup still reports failure when Windows signing policy blocks the executable.
+
+- Align desktop command/action selectors, use Title Case for UI captions and display headings, show Markdown controls only on conversion, and add an Ask AI Help tab with full command help on Windows/Linux.
+- Repair cross-platform command argument handling and keep npm diagnostics from writing logs; make host fixtures and release/skip assertions independent of the developer laptop.
+
 - Replace raw desktop command arguments with shared command/action forms, mandatory fields and add/remove option dropdowns on Windows and Linux. Preserve multiline output, pretty-print JSON, preview converted Markdown, add Copy output and explicit Local file/URL modes, and add native/Ubuntu GUI regression checks.
 
 - Add the Ask AI Windows/Linux desktop app: local file/image and YouTube-to-Markdown conversion, collision-safe output names, project selection, command picker, command help, output viewer and cancellable child processes. Windows installs add managed Desktop/Start Menu shortcuts and native .NET/Windows OCR; graphical Linux installs use Tkinter/Tesseract and desktop entries. Docker/container and headless Linux skip the GUI. Provide separate setup-desktop.ps1/setup-desktop.sh and askai desktop install/remove commands.

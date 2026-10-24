@@ -267,7 +267,7 @@ test('assert-skips prints a skip reason and rejects a silent skip', () => {
     const loud = path.join(dir, 'loud.tap');
     write(loud, 'ok 1 - preview # SKIP needs bash\n');
     const ok = cp.spawnSync(process.execPath, [path.join(__dirname, '..', 'scripts', 'assert-skips.js'), loud], { encoding: 'utf8' });
-    assert.strictEqual(ok.status, 0, ok.stderr);
+    assert.strictEqual(ok.status, process.platform === 'linux' ? 1 : 0, ok.stderr);
     assert.match(ok.stdout, /needs bash/);
     const quiet = path.join(dir, 'quiet.tap');
     write(quiet, 'ok 2 - hidden # SKIP\n');

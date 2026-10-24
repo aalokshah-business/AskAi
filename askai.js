@@ -494,9 +494,12 @@ async function cmdInstall(o) {
     console.log(`  command entry points: ${installCommands(ctx, hosts)} written`);
     console.log(`  user PATH: ${pathStep(ctx, true)}`);
     console.log(`  Git Bash alias (~/.bashrc): ${ctx.editBashAlias(true)}`);
-    if(!o.noDesktop)console.log(`  desktop: ${require('./lib/desktop').install(ctx)}`);
     results.push({ id: 'askai', result: o.dry ? 'planned' : 'ok' });
   } catch (e) { console.error(`  failed: ${e.message}`); results.push({ id: 'askai', result: 'failed', detail: e.message }); }
+  if(!o.noDesktop && results.some(r=>r.id==='askai'&&r.result!=='failed')){
+    try{console.log(`  desktop: ${require('./lib/desktop').install(ctx)}`);}
+    catch(e){console.error(`  desktop needs attention: ${e.message}`);results.push({id:'desktop',result:o.desktopRequired?'failed':'needs-you',detail:e.message});}
+  }
 
   let takenOver = false;
   for (const r of rows) {
@@ -519,7 +522,7 @@ async function cmdInstall(o) {
 
   console.log('\nSummary');
   for (const r of results) {
-    const after = o.dry || r.id === 'askai' || r.result === 'failed' ? '' : `  now: ${safeDetect(comps.byId(r.id), ctx).state}`;
+    const after = o.dry || r.id === 'askai' || r.id === 'desktop' || r.result === 'failed' ? '' : `  now: ${safeDetect(comps.byId(r.id), ctx).state}`;
     console.log(`  ${pad(r.id, w)}  ${pad(r.result, 8)}${r.detail ? ` ${r.detail}` : ''}${after}`);
   }
   if (o.dry) console.log('\nDry-run only. Re-run without --dry-run to apply.');
@@ -1749,7 +1752,7 @@ async function main() {
       if(action==='install'){
         const available=require('./lib/desktop').environment();
         if(!available.supported){console.log(`Ask AI desktop skipped: ${available.reason}; use askai cli.`);return 0;}
-        return cmdInstall({...o,only:'markitdown',_:['install']});
+        return cmdInstall({...o,only:'markitdown',desktopRequired:true,_:['install']});
       }
       if(action==='catalog'){console.log(JSON.stringify(require('./lib/desktop').catalog(),null,2));return 0;}
       if(action==='remove'){console.log(require('./lib/desktop').install(buildCtx(o,true),true));return 0;}
@@ -1800,7 +1803,7 @@ async function main() {
     case 'handoff': { const sentence = o.goal || o._.slice(1).join(' '); const r = require('./lib/daily').writeHandoff(projectDir(o), { ...o, sentence }); const hs = require('./lib/session').handoffState(projectDir(o)); console.log(`${r.file} (${hs.state})`); if (r.extra) console.log(r.extra); return 0; }
     case 'route': { const ask = o._.slice(1).join(' '); if (!ask) { console.log('Usage: askai route "task"'); return 1; } const models = require('./lib/models'); const tier = models.guessTier(ask); const ctx = buildCtx(o, true); const host = (ctx.cursorPaths && (ctx.which('agent') || ctx.which('cursor') || ctx.which('cursor-agent'))) ? 'cursor' : ctx.codexPaths && ctx.which('codex') ? 'codex' : ctx.agyPaths && ctx.which('agy') ? 'agy' : 'claude'; const choice = host === 'claude' ? models.afterFailures(tier, models.failureCount(projectDir(o))) : models.pick(models.load(ctx), host, tier); console.log(`host: ${host}\ntier: ${tier}\nmodel: ${choice.model}\neffort: ${choice.effort || 'medium'}`); return 0; }
     case 'weigh': { const daily = require('./lib/daily'); const targets = o._[1] ? [o._[1]] : ['AGENTS.md', 'CLAUDE.md', 'GEMINI.md'].map(n => require('path').join(projectDir(o), n)).filter(f => fs.existsSync(f)); if (!targets.length) { console.log('Usage: askai weigh <path>'); return 1; } for (const t of targets) { const r = daily.weigh(t, Number(o.threshold) || 8000); console.log(r.text); } return 0; }
-    case 'run': { const cmd = o._.slice(1).join(' '); if (!cmd) { console.log('Usage: askai run -- <command>'); return 1; } const r = require('./lib/daily').runCmd(projectDir(o), cmd, o); console.log(r.text); return r.code; }
+    case 'run': { const argv = o._.slice(1), cmd = argv.join(' '); if (!cmd) { console.log('Usage: askai run -- <command>'); return 1; } const r = require('./lib/daily').runCmd(projectDir(o), cmd, {...o,argv}); console.log(r.text); return r.code; }
     case 'errors': { console.log(require('./lib/daily').errors(o._[1] || require('path').join(projectDir(o), '.ai-work', 'last.log'))); return 0; }
     case 'snapshot': { console.log(require('./lib/daily').snapshot(projectDir(o), o)); return 0; }
     case 'stop': { const r = require('./lib/daily').stop(o); console.log(r.text); return r.code; }

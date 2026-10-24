@@ -4,6 +4,7 @@
 hooks/.claude/
 node_modules/
 desktop-bin/
+/tap.txt
 graphify-out/
 .codebase-memory/
 repomix-output.*

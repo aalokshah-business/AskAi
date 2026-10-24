@@ -154,7 +154,7 @@ test('infra marks an MCP server working only after a transcript call', () => wit
 
 test('todo names npm global bin folder when installed tools are absent from PATH', () => withHome(h => {
   const bin = path.join(h, 'npm-global');
-  write(path.join(bin, 'ccusage' + (process.platform === 'win32' ? '.cmd' : '')), 'shim');
+  write(path.join(process.platform === 'win32' ? bin : path.join(bin,'bin'), 'ccusage' + (process.platform === 'win32' ? '.cmd' : '')), 'shim');
   const ctx = makeCtx(h, {}, { probe: (cmd, args) => ({ ok: cmd === 'npm' && args.join(' ') === 'prefix -g', stdout: bin + '\n' }) });
   const item = todo.items(ctx, null).find(i => i.id === 'npm-global-path');
   assert.ok(item && item.text.includes('ccusage') && item.how.includes(bin));

@@ -23,7 +23,7 @@ test('MIT licence, code owner, ruleset that keeps main safe, read-only workflow 
 test('setup-github.js: dry run lists every setting; with gh it applies them and checks collaborators', { skip: process.platform === 'win32' && 'uses a fake gh shell script' }, () => {
   const dry = cp.spawnSync(process.execPath, [path.join(ROOT, 'scripts', 'setup-github.js'), '--dry-run'], { encoding: 'utf8' });
   assert.strictEqual(dry.status, 0, dry.stdout + dry.stderr);
-  for (const s of ['--visibility public', '--default-branch main', 'actions/permissions', 'default_workflow_permissions=read', 'private-vulnerability-reporting', 'rulesets', 'release create v1.0.1']) assert.ok(dry.stdout.includes(s), s);
+  for (const s of ['--visibility public', '--default-branch main', 'actions/permissions', 'default_workflow_permissions=read', 'private-vulnerability-reporting', 'rulesets', 'release create v'+require('../package.json').version]) assert.ok(dry.stdout.includes(s), s);
   const H = fs.mkdtempSync(path.join(os.tmpdir(), 'askai-gh-'));
   try {
     const log = path.join(H, 'calls.log');
@@ -31,7 +31,7 @@ test('setup-github.js: dry run lists every setting; with gh it applies them and 
     const r = cp.spawnSync(process.execPath, [path.join(ROOT, 'scripts', 'setup-github.js')], { encoding: 'utf8', env: { ...process.env, PATH: `${H}:${process.env.PATH}` } });
     assert.strictEqual(r.status, 0, r.stdout + r.stderr);
     const calls = fs.readFileSync(log, 'utf8');
-    for (const s of ['auth status', 'repo edit aalokshah-business/AskAi --visibility public', '-X POST repos/aalokshah-business/AskAi/rulesets --input', 'release create v1.0.1']) assert.ok(calls.includes(s), s);
+    for (const s of ['auth status', 'repo edit aalokshah-business/AskAi --visibility public', '-X POST repos/aalokshah-business/AskAi/rulesets --input', 'release create v'+require('../package.json').version]) assert.ok(calls.includes(s), s);
     assert.match(r.stdout, /nobody but you can push/);
   } finally { fs.rmSync(H, { recursive: true, force: true }); }
 });
