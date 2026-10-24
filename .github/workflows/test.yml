@@ -33,7 +33,7 @@ jobs:
         with:
           node-version: ${{ matrix.node }}
       - name: Unit and CLI tests
-        run: node --test --test-reporter tap test/*.test.js > tap.txt
+        run: node scripts/ci-test.js
       - name: Print skips and fail if a Linux bash test was skipped
         run: node scripts/assert-skips.js tap.txt
       - name: Generated docs are current
@@ -56,7 +56,7 @@ jobs:
         with:
           node-version: ${{ matrix.node }}
       - name: Unit and CLI tests
-        run: node --test --test-reporter tap test/*.test.js > tap.txt
+        run: node scripts/ci-test.js
       - name: Print skips
         run: node scripts/assert-skips.js tap.txt
       - name: Generated docs are current
