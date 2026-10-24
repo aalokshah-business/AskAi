@@ -344,7 +344,7 @@ function installCommands(ctx, hosts = ctx.hostSel) {
     return out;
   };
   const entries = [
-    ...hostEntries('askai-cli.md', 'askai-cli', 'Set up a project with AskAI and AI review, then open its terminal. Use when the user invokes askai-cli.'),
+    ...hostEntries('askai-cli.md', 'askai-cli', 'Open the AskAI terminal. AI setup and review are opt-in with --review. Use when the user invokes askai-cli.'),
     ...hostEntries('askai-plugins.md', 'askai-plugins', 'Use the connected token tools in this chat. Use when the user invokes askai-plugins.'),
   ];
   // Retire only launchers recorded in AskAI's manifest. Keep edited or user-owned files.
@@ -1416,6 +1416,15 @@ async function cmdPrepare(o) {
     const emit = (code, body) => { console.log = log; log(o.json ? JSON.stringify(body, null, 2) : text(body)); return code; };
     if (picked.need) return emit(2, picked);
     const dir = picked.path;
+    if (!o.review) {
+      return emit(0, {
+        action: 'launch', project: picked.project || path.basename(dir), path: dir, how: picked.how,
+        init: 'skipped', install: { skipped: true },
+        review: { skipped: true, state: 'not-checked' },
+        setup: fs.existsSync(path.join(dir, session.DIR, 'askai-init.json')) ? 'initialized' : 'not-initialized',
+        instruction: 'Open the terminal with askai cli --launch in this project folder. No source analysis or AI review was run. Request --review explicitly for setup and review.',
+      });
+    }
     const review = projectReview.status(dir);
     const required = ['AGENTS.md', 'CLAUDE.md', 'GEMINI.md', '.cursorignore', 'docs/ai/PROJECT_MAP.md',
       'docs/ai/SOURCE_INDEX.md', 'docs/ai/ARCHITECTURE.md', 'docs/ai/FEATURES.md',

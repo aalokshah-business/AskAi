@@ -49,13 +49,46 @@ test('prepare asks for a type it cannot detect and not for commands it found', (
   assert.deepStrictEqual(q.map(x => x.id), ['type']);
 });
 
-test('cli --prepare inits a named folder offline and launches only after review done', () => withHome(root => {
+test('default prepare launches without analysis, initialization, or review-marker changes', () => withHome(root => {
+  const proj = path.join(root, 'fast');
+  fs.mkdirSync(proj);
+  fs.writeFileSync(path.join(proj, 'package.json'), '{"name":"fast"}');
+  const args = ['cli', '--prepare', '--json', '--path', proj];
+  const env = { ASKAI_HOME: process.env.ASKAI_HOME };
+  const fresh = cli(args, { env });
+  assert.strictEqual(fresh.code, 0, fresh.err);
+  const body = JSON.parse(fresh.out);
+  assert.strictEqual(body.action, 'launch');
+  assert.strictEqual(body.setup, 'not-initialized');
+  assert.strictEqual(body.review.skipped, true);
+  assert.strictEqual(body.install.skipped, true);
+  assert.deepStrictEqual(fs.readdirSync(proj), ['package.json']);
+  assert.ok(!fs.existsSync(process.env.ASKAI_HOME), 'no registration or install writes');
+
+  const work = path.join(proj, '.ai-work');
+  fs.mkdirSync(work);
+  fs.writeFileSync(path.join(work, 'askai-init.json'), '{}');
+  const marker = path.join(work, 'ai-review.json');
+  fs.writeFileSync(marker, 'intentionally unreadable review marker');
+  fs.writeFileSync(path.join(proj, 'AGENTS.md'), 'Keep this text.');
+  const stale = cli([...args, '--refresh', '--yes'], { env });
+  assert.strictEqual(stale.code, 0, stale.err);
+  const next = JSON.parse(stale.out);
+  assert.strictEqual(next.action, 'launch');
+  assert.strictEqual(next.review.state, 'not-checked');
+  assert.strictEqual(next.init, 'skipped');
+  assert.strictEqual(fs.readFileSync(marker, 'utf8'), 'intentionally unreadable review marker');
+  assert.strictEqual(fs.readFileSync(path.join(proj, 'AGENTS.md'), 'utf8'), 'Keep this text.');
+  assert.ok(!fs.existsSync(path.join(proj, 'docs')));
+}));
+
+test('explicit --review initializes a named folder offline and launches only after review done', () => withHome(root => {
   const proj = path.join(root, 'shop');
   fs.mkdirSync(proj);
   fs.writeFileSync(path.join(proj, 'package.json'), JSON.stringify({ name: 'shop', description: 'A shop', scripts: { test: 'node --test', build: 'node build.js' } }));
   fs.writeFileSync(path.join(proj, 'index.js'), 'console.log(1)\n');
   const env = { ASKAI_HOME: process.env.ASKAI_HOME, ASKAI_CLI_INSTALL: '0' };
-  const args = ['cli', '--prepare', '--json', '--offline', '--about', 'A shop for members', '--path', proj];
+  const args = ['cli', '--prepare', '--review', '--json', '--offline', '--about', 'A shop for members', '--path', proj];
   const first = cli(args, { env });
   assert.strictEqual(first.code, 0, first.err + first.out);
   const body = JSON.parse(first.out);
@@ -111,16 +144,16 @@ test('cli --prepare requires a description before a review', () => withHome(root
   fs.mkdirSync(proj);
   fs.writeFileSync(path.join(proj, 'package.json'), JSON.stringify({ name: 'shop', description: 'A shop' }));
   const env = { ASKAI_HOME: process.env.ASKAI_HOME, ASKAI_CLI_INSTALL: '0' };
-  const blocked = cli(['cli', '--prepare', '--json', '--offline', '--path', proj], { env });
+  const blocked = cli(['cli', '--prepare', '--review', '--json', '--offline', '--path', proj], { env });
   assert.strictEqual(blocked.code, 2);
   const body = JSON.parse(blocked.out);
   assert.strictEqual(body.need, 'about');
   assert.strictEqual(body.default, 'A shop');
   assert.ok(!fs.existsSync(path.join(proj, 'AGENTS.md')));
-  const bypass = cli(['cli', '--prepare', '--json', '--offline', '--yes', '--path', proj], { env });
+  const bypass = cli(['cli', '--prepare', '--review', '--json', '--offline', '--yes', '--path', proj], { env });
   assert.strictEqual(bypass.code, 2, '--yes must not skip the project description');
   assert.strictEqual(JSON.parse(bypass.out).need, 'about');
-  const ok = cli(['cli', '--prepare', '--json', '--offline', '--path', proj, '--about', 'A shop for members'], { env });
+  const ok = cli(['cli', '--prepare', '--review', '--json', '--offline', '--path', proj, '--about', 'A shop for members'], { env });
   assert.strictEqual(ok.code, 0, ok.err + ok.out);
   assert.match(fs.readFileSync(path.join(proj, 'AGENTS.md'), 'utf8'), /A shop for members/);
 }));

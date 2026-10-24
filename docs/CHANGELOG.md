@@ -4,6 +4,7 @@ AskAI follows semantic versioning from 1.0.0 (see [RELEASING.md](RELEASING.md)).
 
 ## Unreleased
 
+- `/askai-cli` now opens the terminal by default, without source scans, installation, init, research, or AI review. `--review` explicitly enables the existing AI setup/review workflow. A stale or missing review does not block normal launch and is never marked current automatically. Terminal `askai init` and all other commands remain available.
 - Codex usage labels raw tokens, shows uncached input and cache share, and distinguishes them from weekly plan usage and measured savings. `askai cli --prepare` keeps an existing installation's profile and skips reinstalling tools; first setup and explicit `--refresh` still configure the machine.
 - Installs and upgrades also refresh an existing managed legacy `~/.claude/askai/app`, so an old PATH entry cannot run stale help or to-do checks. A registry-only `~/.askai` folder no longer switches installation state away from an existing legacy install. Configuration and completion records are preserved.
 - `help` lists seven categories with command counts. `help work` lists short command descriptions; `help check` shows full command instructions. `help category NAME` and `help command NAME` resolve shared names and category aliases explicitly.

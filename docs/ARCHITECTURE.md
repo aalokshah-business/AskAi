@@ -132,7 +132,7 @@ Initialization also registers the canonical folder under a short name in `~/.ask
 
 Init scans eligible first-party source files locally (up to 1 MiB per file), records static declarations, routes and cross-folder imports, and fetches page titles from up to four fixed official framework documentation sites. It uses no model tokens and sends no repository contents. `--offline` skips the web lookup. Static evidence cannot establish runtime behavior, the current work order or handoff state; review those separately. Generated source detail is stored behind the short router and refreshed only when unedited.
 
-The installed `askai-cli` entry point in each host runs `askai cli --prepare`. Prepare chooses the project from a named path, otherwise the chat's repository, otherwise the only registered project, and it asks only when several projects remain. It runs `askai init` when the pack is missing or source changed. The host agent then verifies the pack against code and official docs, asks for facts the repository cannot establish, and calls `askai review done`. That marker is gitignored in `.ai-work/` and compares source hashes on later calls. AI review uses model tokens; `askai init` in a terminal does not. `/askai-plugins` runs `askai plugins ready`: connected servers wait until the task matches, and the one-time step still left (a missing Graphify graph, an unregistered RTK hook) is done then. A new machine is checked with `askai setup <repo>`, which prints the hosts it found, the check counts, and whether the file validator passed. Status, infra, plugins, and the to-do list stay on their own commands.
+The installed `askai-cli` entry point runs `askai cli --prepare`: select a project and launch its terminal without scans, installation, initialization, research, or AI review. Missing/stale review does not block launch; skipped review is never marked current. Explicit `--review` enables setup and host AI verification, with a description question for new/stale packs. Only after that review may the host call `askai review done`. Normal terminal `askai init` generates a static pack without a model. Chat invocation itself still uses tokens; direct `askai cli` avoids that chat turn. `/askai-plugins` handles its own one-time actions. Status, infra, plugins, and todo remain separate commands.
 
 ## 5b. Model and effort per tier
 
@@ -295,7 +295,7 @@ Install and update refresh both the active runtime and an existing managed legac
 
 ## 10. Commands
 
-`askai cli --prepare` installs tools on first setup or explicit `--refresh`; an existing manifest preserves the selected profile and skips installation. Source changes can still require host AI review. Run diagnostics directly in a terminal when the model does not need their output. `askai savings 7` shows uncached Codex input and cache share; cached input is already included in input, and raw totals are not weekly plan usage or measured savings. `rtk proxy` passes raw output through.
+Only `askai cli --prepare --review` enables setup/review. Within that explicit workflow, first setup or `--refresh` installs tools; an existing recorded profile otherwise skips installation. Source changes alone never enable review during normal launch. Run diagnostics directly in a terminal when the model does not need their output. `askai savings 7` shows uncached Codex input and cache share; cached input is already included in input, and raw totals are not weekly plan usage or measured savings. `rtk proxy` passes raw output through.
 
 Where each command is implemented. Written from the `case` list in `askai.js` before behavior changes; `node scripts/gen-docs.js` fails if a command has no row.
 
@@ -366,19 +366,19 @@ Where each command is implemented. Written from the `case` list in `askai.js` be
 #### `askai cli`
 
 ```text
-askai cli: Prepare a project from the chat folder, then open an AskAI-only terminal.
+askai cli: Prepare a project from the chat folder, then open an AskAI-only terminal. AI review is opt-in.
 
-Usage: askai cli  --prepare --launch --path --about
+Usage: askai cli  --prepare --launch --review --path
 
-Use when: Prepare a project from the chat folder, then open an AskAI-only terminal.
+Use when: Prepare a project from the chat folder, then open an AskAI-only terminal. AI review is opt-in.
 
 Options:
   --prepare                                see askai help cli --advanced
   --launch                                 see askai help cli --advanced
+  --review                                 see askai help cli --advanced
   --path                                   see askai help cli --advanced
-  --about                                  see askai help cli --advanced
 
-Exit: 0, or 2 when the project or the description must be supplied
+Exit: 0, or 2 when the project (or description during explicit review) must be supplied
 ```
 
 #### `askai install`

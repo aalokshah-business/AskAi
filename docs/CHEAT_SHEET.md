@@ -99,7 +99,7 @@ The commands below are also implemented. This table plus the twelve and the addi
 
 | Command | Purpose | Form |
 |---|---|---|
-| `askai cli` | Prepare a project from the chat folder, then open an AskAI-only terminal. | `askai cli [--prepare] [--launch] [--path DIR] [--about TEXT]` |
+| `askai cli` | Prepare a project from the chat folder, then open an AskAI-only terminal. AI review is opt-in. | `askai cli [--prepare] [--launch] [--review] [--path DIR] [--about TEXT]` |
 | `askai status` | Per-tool state against your profile, with measured savings where a tool reports them. | `askai status` |
 | `askai doctor` | Alias of askai check. Same rows, same exit code. | `askai doctor` |
 | `askai setup` | Short check after install: which hosts are present, check counts, and whether the file validator passed. | `askai setup [dir] [--yes]` |
