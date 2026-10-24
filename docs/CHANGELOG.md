@@ -4,6 +4,8 @@ AskAI follows semantic versioning from 1.0.0 (see [RELEASING.md](RELEASING.md)).
 
 ## Unreleased
 
+- Added comprehensive Summary sections to all 56 commands in `askai help <command>` and `askai help all`, explaining command purpose, when to use it, and how it delivers token savings.
+- Updated command reference poster and PDF (AskAI-commands-A3.png and AskAI-commands.pdf) to organize commands across 8 sections matching the 7 help categories plus Start here.
 - Removed duplicate `askai inventory` (use `askai infra`).
 - Removed duplicate `askai upgrade` (use `askai update`). Consolidated `--check`, `--dry-run`, and `--agents` into `askai update`.
 - Hardened Serena and MarkItDown tool detection and upgrades against broken uv trampoline stubs (`isBrokenTrampoline`); safe skip when Serena is absent from `uv tool list`.

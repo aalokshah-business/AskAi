@@ -266,7 +266,7 @@ def render_pdf(sections):
     doc.save(PDF_OUT)
     doc.close()
     check = pymupdf.open(PDF_OUT)
-    text = "\n".join(p.get_text() for p in check)
+    text = "\n".join(p.get_text() for p in check).replace("\ufd3e", "(").replace("\ufd3f", ")")
     for title, _items in sections:
         if title not in text:
             raise SystemExit(f"PDF is missing section {title}")
@@ -277,7 +277,7 @@ def render_pdf(sections):
         " " if ch.isspace() else ("-" if ch in "-\u2010\u2011\u2013\u2014" else ch)
         for ch in text
     )
-    head = norm.split("Set up the machine", 1)[0]
+    head = norm.split(sections[1][0], 1)[0]
     cli_at = head.find("/askai-cli")
     plug_at = head.find("/askai-plugins")
     if cli_at < 0 or plug_at < 0 or cli_at > plug_at:
