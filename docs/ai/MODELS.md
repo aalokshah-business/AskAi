@@ -6,9 +6,9 @@ Choose the tier when the session starts (`askai go <tool> --tier <tier>`) and ke
 
 | Tier | Use for | Claude Code | Codex | Cursor | Antigravity |
 | --- | --- | --- | --- | --- | --- |
-| lead (`architect`) | Architecture and design, ambiguous debugging, security, cross-module integration | sonnet, max | gpt-6.1-sol, high | grok-4.7, xhigh | flash, high |
+| lead (`architect`) | Architecture and design, ambiguous debugging, security, cross-module integration | sonnet, xhigh | gpt-6.1-sol, high | grok-4.7, xhigh | flash, high |
 | build (`builder`) | Features, enhancements and bug fixes within the existing design | sonnet, high | gpt-6.1-sol, medium | grok-4.7, high | flash, high |
-| chore (`runner`) | Cleanup, running scripts and tests, git, search, small docs edits | haiku, medium | gpt-6-luna, medium | grok-4.7, medium | flash, high |
+| chore (`runner`) | Cleanup, running scripts and tests, git, search, small docs edits | haiku, xhigh | gpt-6-luna, high | grok-4.7, medium | flash, high |
 
 - Routine work runs in the main session with no subagents. Delegate a bounded task to the tier's agent by name.
 - Claude Code: subagent files set `model` and `effort`; for `max` in the main session AskAI sets `CLAUDE_CODE_EFFORT_LEVEL=max` (the settings key downgrades it).

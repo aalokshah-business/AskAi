@@ -153,7 +153,7 @@ unset ANTHROPIC_API_KEY ANTHROPIC_BASE_URL OPENAI_API_KEY
 env | grep -E 'ANTHROPIC|OPENAI'      # should print nothing
 ```
 
-`askai check` and `askai doctor` flag these variables, including an `ANTHROPIC_API_KEY` set inside Claude Code's `settings.json`.
+`askai check` and `askai check` flag these variables, including an `ANTHROPIC_API_KEY` set inside Claude Code's `settings.json`.
 
 **Proxies.** `HTTPS_PROXY` and `HTTP_PROXY` are fine for downloads. Do not set `ANTHROPIC_BASE_URL` for a proxy unless you mean to leave your plan's billing.
 
@@ -245,7 +245,7 @@ Then start a new session in each tool:
 | Antigravity | `/usage`; `~/.gemini/GEMINI.md` has the askai block |
 | Cursor | `~/.cursor/rules/` holds the `askai-*.mdc` files |
 
-`askai setup` prints status, the guideline audit, infra, which plugins are waiting, the to-do list, and the file validator. Exit 1 means the audit or the file validator failed. It does not sign you in, and it does not prove a plugin saved tokens. `working` in the infra section is the call evidence. `askai version`, `askai doctor`, and `node scripts/validate-install.js <repo>` remain available when you want one section.
+`askai setup` prints status, the guideline audit, infra, which plugins are waiting, the to-do list, and the file validator. Exit 1 means the audit or the file validator failed. It does not sign you in, and it does not prove a plugin saved tokens. `working` in the infra section is the call evidence. `askai version`, `askai check`, and `node scripts/validate-install.js <repo>` remain available when you want one section.
 
 ## 8. Set up each repository
 
@@ -437,7 +437,7 @@ unset ANTHROPIC_API_KEY ANTHROPIC_BASE_URL OPENAI_API_KEY
 env | grep -E 'ANTHROPIC|OPENAI'      # should print nothing
 ```
 
-`askai check` and `askai doctor` flag these variables, including an `ANTHROPIC_API_KEY` set inside Claude Code's `settings.json`.
+`askai check` and `askai check` flag these variables, including an `ANTHROPIC_API_KEY` set inside Claude Code's `settings.json`.
 
 **Proxies.** `HTTPS_PROXY` and `HTTP_PROXY` are fine for downloads. Do not set `ANTHROPIC_BASE_URL` for a proxy unless you mean to leave your plan's billing.
 
@@ -529,7 +529,7 @@ Then start a new session in each tool:
 | Antigravity | `/usage`; `~/.gemini/GEMINI.md` has the askai block |
 | Cursor | `~/.cursor/rules/` holds the `askai-*.mdc` files |
 
-`askai setup` prints status, the guideline audit, infra, which plugins are waiting, the to-do list, and the file validator. Exit 1 means the audit or the file validator failed. It does not sign you in, and it does not prove a plugin saved tokens. `working` in the infra section is the call evidence. `askai version`, `askai doctor`, and `node scripts/validate-install.js <repo>` remain available when you want one section.
+`askai setup` prints status, the guideline audit, infra, which plugins are waiting, the to-do list, and the file validator. Exit 1 means the audit or the file validator failed. It does not sign you in, and it does not prove a plugin saved tokens. `working` in the infra section is the call evidence. `askai version`, `askai check`, and `node scripts/validate-install.js <repo>` remain available when you want one section.
 
 ## 8. Set up each repository
 
@@ -658,3 +658,11 @@ powershell -ExecutionPolicy Bypass -File .\scripts\windows-selftest.ps1
 ```
 
 It checks the checksums, runs `install.ps1 -DryRun` (must write nothing), installs, runs `askai check`, uninstalls (must leave nothing), runs the automated tests, and deletes the temporary folder.
+
+Windows terminal launch uses a visible PowerShell window in the selected project folder. If no window appears, run `askai cli` in your terminal. Uninitialized folders show `askai init --path "<project-folder>"` at startup; initialization is never automatic.
+
+Interactive AskAI terminals restore key editing when an AI host exports TERM=dumb, so Backspace and Delete work normally. After upgrading, exit and reopen an existing AskAI shell to load current category help.
+
+Use askai check as the single health command. It lists coverage for all four tools; passing details are hidden unless --all. doctor is retired and prints a migration hint only.
+
+Status: askai status shows Codex, Antigravity, Cursor and Claude Code in four columns, with shared local tools below. Use askai status codex or askai status --host antigravity to select one environment; --json uses the same filter. Widen the terminal for the four-column view.

@@ -83,6 +83,9 @@ test('cheat sheet is the working loop and matches the registry', () => {
   assert.deepStrictEqual(listed.slice().sort(), help.names().slice().sort(), 'every help command appears once in the command index');
   assert.doesNotMatch(sheet, /ask the agent to write HANDOFF\.md/);
   assert.strictEqual(surface.markdown().includes('Once per machine'), true);
+  const dir = run(['direction']);
+  assert.strictEqual(dir.status, 0);
+  assert.ok(dir.stdout.split(/\n/).length <= 40);
   const cheat = run(['cheat']);
   assert.strictEqual(cheat.status, 0);
   assert.ok(cheat.stdout.split(/\n/).length <= 40);

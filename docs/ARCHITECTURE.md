@@ -303,11 +303,9 @@ Where each command is implemented. Written from the `case` list in `askai.js` be
 | --- | --- |
 | `askai cli` | `askai.js cmdCli; lib/cli-prepare.js` |
 | `askai install` | `askai.js cmdInstall; lib/components.js; lib/profiles.js; lib/agents.js` |
-| `askai update` | `askai.js cmdUpgrade` |
+| `askai update` | `askai.js cmdUpdateSelf` |
 | `askai tools` | `askai.js cmdUpdate; lib/components.js` |
 | `askai status` | `askai.js cmdStatus; lib/status.js; lib/findings.js` |
-| `askai doctor` | `askai.js cmdDoctor; lib/status.js; lib/findings.js` |
-| `askai report` | `askai.js cmdReport; lib/usage.js` |
 | `askai profiles` | `askai.js cmdProfiles; lib/profiles.js` |
 | `askai suggest` | `askai.js cmdSuggest; lib/suggest.js` |
 | `askai project` | `askai.js cmdProject; lib/project.js; lib/project-registry.js; lib/project-refresh.js; lib/project-review.js; lib/daily.js` |
@@ -326,11 +324,9 @@ Where each command is implemented. Written from the `case` list in `askai.js` be
 | `askai mcp` | `askai.js cmdMcp; lib/mcp.js` |
 | `askai audit` | `lib/audit.js; lib/findings.js` |
 | `askai infra` | `lib/infra.js` |
-| `askai inventory` | `lib/infra.js` |
 | `askai guide` | `lib/guide.js` |
 | `askai docs` | `askai.js cmdDocs` |
 | `askai plugins` | `lib/plugins.js; lib/plugins-ready.js; lib/usage-guide.js` |
-| `askai upgrade` | `askai.js cmdUpgrade` |
 | `askai savings` | `askai.js cmdSavings; lib/usage.js; lib/savings.js` |
 | `askai convert` | `askai.js cmdConvert` |
 | `askai clear` | `lib/guide.js` |
@@ -359,7 +355,7 @@ Where each command is implemented. Written from the `case` list in `askai.js` be
 | `askai scaffold` | `askai.js cmdScaffold; lib/scaffold.js` |
 | `askai chat` | `lib/chat.js` |
 | `askai tips` | `lib/tips.js` |
-| `askai cheat` | `lib/surface.js` |
+| `askai direction` | `lib/surface.js` |
 | `askai version` | `askai.js` |
 | `askai --version` | `askai.js` |
 
@@ -408,7 +404,7 @@ Usage: askai update
 
 Use when: AskAI itself is old
 
-Exit: 0 or 1
+Exit: 0, or 1 when install or the agent workflow fails
 ```
 
 #### `askai tools`
@@ -426,25 +422,17 @@ Exit: 0 or 1
 #### `askai status`
 
 ```text
-askai status: Per-tool state against your profile, with measured savings where a tool reports them.
+askai status: Status in four environment columns, or one selected environment.
 
-Usage: askai status
+Usage: askai status  --host --json
 
-Use when: Per-tool state against your profile, with measured savings where a tool reports them.
+Use when: Status in four environment columns, or one selected environment.
 
-Exit: 0
-```
+Options:
+  --host                                   see askai help status --advanced
+  --json                                   see askai help status --advanced
 
-#### `askai doctor`
-
-```text
-askai doctor: Alias of askai check. Same rows, same exit code.
-
-Usage: askai doctor
-
-Use when: Alias of askai check. Same rows, same exit code.
-
-Exit: 1 when a finding is severity now, else 0
+Exit: 0; invalid environments fail
 ```
 
 #### `askai setup`
@@ -667,18 +655,6 @@ Options:
 Exit: 0
 ```
 
-#### `askai report`
-
-```text
-askai report: Full spend report plus one line from askai check --brief.
-
-Usage: askai report
-
-Use when: Full spend report plus one line from askai check --brief.
-
-Exit: 0
-```
-
 #### `askai session`
 
 ```text
@@ -815,11 +791,11 @@ Exit: 0 when every command finished, 1 when one did not run
 #### `askai statusline`
 
 ```text
-askai statusline: Claude Code's status line command (reads the session JSON on stdin): model, context, cache; records snapshots for askai report.
+askai statusline: Claude Code's status line command (reads the session JSON on stdin): model, context, cache; records snapshots for askai savings.
 
 Usage: askai statusline  --demo
 
-Use when: Claude Code's status line command (reads the session JSON on stdin): model, context, cache; records snapshots for askai report.
+Use when: Claude Code's status line command (reads the session JSON on stdin): model, context, cache; records snapshots for askai savings.
 
 Options:
   --demo                                   see askai help statusline --advanced
@@ -979,11 +955,13 @@ Exit: 0, or 1 for an unknown server
 ```text
 askai audit: The seven-point token audit: memory files, tools and proxies, model and effort, hooks, subagents, scheduled work, cache reuse.
 
-Usage: askai audit  --json
+Usage: askai audit  --tool --project --json
 
 Use when: The seven-point token audit: memory files, tools and proxies, model and effort, hooks, subagents, scheduled work, cache reuse.
 
 Options:
+  --tool                                   see askai help audit --advanced
+  --project                                see askai help audit --advanced
   --json                                   see askai help audit --advanced
 
 Exit: 1 when a high-severity finding exists
@@ -992,29 +970,14 @@ Exit: 1 when a high-severity finding exists
 #### `askai infra`
 
 ```text
-askai infra: Tools and repository files. Alias of askai inventory.
+askai infra: Tools and repository files.
 
 Usage: askai infra  --json
 
-Use when: Tools and repository files. Alias of askai inventory.
+Use when: Tools and repository files.
 
 Options:
   --json                                   see askai help infra --advanced
-
-Exit: 0
-```
-
-#### `askai inventory`
-
-```text
-askai inventory: Tools and repository files. Alias of askai infra.
-
-Usage: askai inventory  --json
-
-Use when: Tools and repository files. Alias of askai infra.
-
-Options:
-  --json                                   see askai help inventory --advanced
 
 Exit: 0
 ```
@@ -1098,22 +1061,6 @@ Options:
 Exit: 0
 ```
 
-#### `askai upgrade`
-
-```text
-askai upgrade: Older spelling of askai update: fetch AskAI and re-apply the recorded profile.
-
-Usage: askai upgrade  --dry-run --agents
-
-Use when: Older spelling of askai update: fetch AskAI and re-apply the recorded profile.
-
-Options:
-  --dry-run                                see askai help upgrade --advanced
-  --agents                                 see askai help upgrade --advanced
-
-Exit: 0, or 1 when install or the agent workflow fails
-```
-
 #### `askai savings`
 
 ```text
@@ -1186,12 +1133,12 @@ Options:
 Exit: 0, or 1 for an unknown name
 ```
 
-#### `askai cheat`
+#### `askai direction`
 
 ```text
-askai cheat: Print the one-screen working loop and the most useful command choices.
+askai direction: Print the one-screen working loop and the most useful command choices.
 
-Usage: askai cheat
+Usage: askai direction
 
 Use when: Print the one-screen working loop and the most useful command choices.
 
@@ -1399,7 +1346,7 @@ Every tool below was researched (official docs, third-party benchmarks, communit
 
 | Category | Tool | Finding | In AskAI |
 | --- | --- | --- | --- |
-| Built in | Claude Code /doctor | Weekly health check: large CLAUDE.md, agent descriptions over 15K tokens, MCP tools over 25K, permission conflicts | askai check and askai doctor add billing, model, effort and four-tool checks |
+| Built in | Claude Code /doctor | Weekly health check: large CLAUDE.md, agent descriptions over 15K tokens, MCP tools over 25K, permission conflicts | askai check adds billing, model, effort and four-tool checks |
 | Built in | /usage, /context, /insights, plan mode, /clear, effort, skills, advisor | Official ways to see and cut usage | askai tips and askai ask point to them per tool |
 | Terse output | Caveman (skill, plugin, proxy) | Median -8% cost in six studies; its proxy is a third party in the request path | askai writes a terse block (--caveman lite\|full\|ultra\|off); --caveman-plugin is opt-in; the proxy is not installed |
 | Terse output | SuperClaude --uc | Claims 30-50%; no third-party measurement; the framework loads several thousand tokens of instructions | Not installed; askai ask superclaude |
@@ -1438,7 +1385,7 @@ Every tool below was researched (official docs, third-party benchmarks, communit
 - Backups before the first change to each file; `askai restore` lists and restores them.
 - Marked blocks in CLAUDE.md, AGENTS.md and GEMINI.md; text outside them is never touched.
 - `askai uninstall` removes keys only while they still hold AskAI's value, its blocks, its own files and its MCP and plugin registrations.
-- `askai check` fails when `ANTHROPIC_API_KEY` or `ANTHROPIC_BASE_URL` is set or Antigravity's paid credits are on; `askai doctor` adds broken-config checks.
+- `askai check` fails when `ANTHROPIC_API_KEY` or `ANTHROPIC_BASE_URL` is set or Antigravity's paid credits are on; `askai check` shows per-tool configuration coverage.
 
 ## 15. Testing and previews
 

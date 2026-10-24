@@ -32,19 +32,19 @@ test('get.sh fetches AskAI from the repository and runs the installer with the o
   } finally { fs.rmSync(H, { recursive: true, force: true }); }
 });
 
-test('askai upgrade clones or updates the source and re-runs install with the recorded profile', { skip: !hasGit && 'needs git' }, () => {
+test('askai update clones or updates the source and re-runs install with the recorded profile', { skip: !hasGit && 'needs git' }, () => {
   const H = fs.mkdtempSync(path.join(os.tmpdir(), 'askai-up-'));
   try {
     const repo = fakeGitHub(H); const env = { ...process.env, HOME: H, ASKAI_REPO_URL: repo };
     const askai = a => cp.spawnSync(process.execPath, [path.join(ROOT, 'askai.js'), ...a], { env, encoding: 'utf8', input: '', timeout: 180000 });
     const c = path.join(H, 'c');
     const ins = askai(['install', '--yes', '--profile', 'minimal', '--target', 'claude', '--skip', 'claude', '--no-path', '--claude-home', c]); assert.strictEqual(ins.status, 0, ins.stdout + ins.stderr);
-    const dry = askai(['upgrade', '--dry-run', '--claude-home', c]); assert.match(dry.stdout, /would clone[\s\S]*--profile minimal --target claude/);
-    const up = askai(['upgrade', '--only', 'caveman', '--no-path', '--claude-home', c]);
+    const dry = askai(['update', '--dry-run', '--claude-home', c]); assert.match(dry.stdout, /would clone[\s\S]*--profile minimal --target claude/);
+    const up = askai(['update', '--only', 'caveman', '--no-path', '--claude-home', c]);
     assert.strictEqual(up.status, 0, up.stdout + up.stderr); assert.match(up.stdout, /AskAI .* -> 1\.3\.0/);
     assert.ok(fs.existsSync(path.join(c, 'askai', 'src', 'askai.js')));
-    const again = askai(['upgrade', '--only', 'caveman', '--no-path', '--claude-home', c]); assert.strictEqual(again.status, 0, 'update an existing checkout to the latest'); assert.match(again.stdout, /-> 1\.3\.0/);
-    const agentPlan = askai(['upgrade', '--agents', '--dry-run', '--claude-home', c]);
+    const again = askai(['update', '--only', 'caveman', '--no-path', '--claude-home', c]); assert.strictEqual(again.status, 0, 'update an existing checkout to the latest'); assert.match(again.stdout, /-> 1\.3\.0/);
+    const agentPlan = askai(['update', '--agents', '--dry-run', '--claude-home', c]);
     assert.strictEqual(agentPlan.status, 0, agentPlan.stdout + agentPlan.stderr);
     assert.match(agentPlan.stdout, /Claude Code, Cursor and Codex in sequence/);
   } finally { fs.rmSync(H, { recursive: true, force: true }); }

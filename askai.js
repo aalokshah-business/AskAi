@@ -47,7 +47,7 @@ askai help <command> for one command. askai help all for every command. --help o
 Setup: install, update, tools update, uninstall, restore, profiles, suggest, scaffold, project, set
 Every day: check, why, test, ask, next, handoff, weigh, run, errors, stop, break, resume, savings, go, prompt
 Project: init, review, map, refresh, models, mcp, audit, setup, todo, convert, clear, diff, graph, context, snapshot
-Reference: status, doctor, report, infra, guide, tips, docs, session, chat, statusline, bootstrap, route
+Reference: status, doctor, infra, guide, tips, docs, session, chat, statusline, bootstrap, route
 
 Flags: --yes --dry-run --profile (default ${profiles.DEFAULT}) --add --list --host --brief --quiet --no-color
        --target --only --skip --main-model (default claude-haiku-5-5) --subagent-model --codex-model --effort --json --seed-only --ignore-originals
@@ -327,6 +327,15 @@ function writeShim(ctx) {
   if (!win) fs.chmodSync(file, 0o755);
 }
 
+function isAskaiLauncher(target, content) {
+  if (typeof content !== 'string') return false;
+  const base = path.basename(target).toLowerCase();
+  const parent = path.basename(path.dirname(target)).toLowerCase();
+  const isLauncher = base === 'askai-cli.md' || base === 'askai-plugins.md' ||
+    (base === 'skill.md' && (parent === 'askai-cli' || parent === 'askai-plugins'));
+  return isLauncher && (content.includes('AskAI') || content.includes('askai'));
+}
+
 function installCommands(ctx, hosts = ctx.hostSel) {
   const files = ctx.manifest.files = (ctx.manifest.files || []);
   const source = path.join(SRC, 'commands');
@@ -374,9 +383,12 @@ function installCommands(ctx, hosts = ctx.hostSel) {
     const target = entry.target;
     const text = entry.text.replace(/\{\{ASKAI\}\}/g, () => askaiCmd(ctx));
     const current = fs.existsSync(target) ? fs.readFileSync(target, 'utf8') : null;
-    if (current === text) continue;
+    if (current !== null && current.replace(/\r\n/g, '\n') === text.replace(/\r\n/g, '\n')) continue;
     const owned = files.find(f => f.path === target);
-    if (current !== null && (!owned || owned.sha !== sha(current)) && !ctx.opts.force) { ctx.log.warn(`${target} exists and was not written by askai; left in place (use --force to overwrite)`); continue; }
+    const curSha = current ? sha(current) : null;
+    const curShaNorm = current ? sha(current.replace(/\r\n/g, '\n')) : null;
+    const recognized = (owned && (owned.sha === curSha || owned.sha === curShaNorm)) || isAskaiLauncher(target, current);
+    if (current !== null && !recognized && !ctx.opts.force) { ctx.log.warn(`${target} exists and was not written by askai; left in place (use --force to overwrite)`); continue; }
     changed++;
     if (ctx.dry) { ctx.log.plan(`write ${target}`); continue; }
     ctx.backup(target);
@@ -395,7 +407,8 @@ function removeCommands(ctx) {
     let text = null;
     try { text = fs.readFileSync(f.path, 'utf8'); } catch (_) { /* gone */ }
     if (text === null) continue;
-    if (sha(text) !== f.sha) { ctx.log.warn(`${f.path} was edited after askai wrote it, left in place`); kept.push(f); continue; }
+    const s1 = sha(text), s2 = sha(text.replace(/\r\n/g, '\n'));
+    if (s1 !== f.sha && s2 !== f.sha) { ctx.log.warn(`${f.path} was edited after askai wrote it, left in place`); kept.push(f); continue; }
     if (ctx.dry) { ctx.log.plan(`remove ${f.path}`); kept.push(f); continue; }
     ctx.backup(f.path);
     fs.rmSync(f.path, { force: true });
@@ -549,15 +562,17 @@ async function cmdUpdate(o) {
 }
 
 function cmdStatus(o) {
+  const host = status.statusHost(o.host || o._[1]);
   const ctx = buildCtx(o, false);
   ctx.refreshPath();
-  if (o.json) { console.log(JSON.stringify(status.collect(ctx), null, 2)); return 0; }
-  console.log(status.renderStatus(ctx, projectDir(o)).lines.join('\n'));
+  if (o.json) { console.log(JSON.stringify(status.statusRows(status.collect(ctx), host), null, 2)); return 0; }
+  console.log(status.renderStatus(ctx, projectDir(o), { host }).lines.join('\n'));
   return 0;
 }
 
 function cmdDoctor(o) {
-  return cmdCheck(o);
+  console.log('askai doctor is retired. Run askai check (or askai check --all for passing rows).');
+  return 0;
 }
 
 // The profiles and what each installs; the one in effect is marked.
@@ -751,12 +766,19 @@ function cmdProject(o) {
 }
 
 // report is savings --full plus one check --brief line. It has no sections of its own.
-async function cmdReport(o) {
-  const code = await cmdSavings({ ...o, full: true });
-  const lines = [];
-  check.run(buildCtx(o, true), projectDir(o, null, false), { brief: true }, line => lines.push(line));
-  if (lines.length) console.log(lines.join('\n'));
-  return code;
+function cmdReport(o) {
+  console.log('askai report is retired. Run askai savings (plugin savings) or askai check (health checks).');
+  return 0;
+}
+
+function cmdInventory(o) {
+  console.log('askai inventory is retired. Run askai infra.');
+  return 0;
+}
+
+function cmdUpgrade(o) {
+  console.log('askai upgrade is retired. Run askai update.');
+  return 0;
 }
 
 async function cmdUninstall(o) {
@@ -889,9 +911,9 @@ function cmdStatusline(o) {
 
 // ---- main --------------------------------------------------------------------------------------------------------
 // ---- everyday commands ------------------------------------------------------------------------------------------------
-// askai upgrade: fetch the latest AskAI from GitHub into ~/.claude/askai/src (git), then run its install with the profile and
+// askai update: fetch the latest AskAI from GitHub into ~/.claude/askai/src (git), then run its install with the profile and
 // target recorded last time. Always the latest (the default branch); ASKAI_REPO_URL / ASKAI_REPO point at a fork or a test copy.
-function cmdUpgrade(o, rest) {
+function cmdUpdateSelf(o, rest) {
   const cp = require('child_process'); const ctx = buildCtx(o, true);
   const src = path.join(ctx.paths.askaiDir, 'src');
   const url = process.env.ASKAI_REPO_URL || `https://github.com/${process.env.ASKAI_REPO || 'aalokshah-business/AskAi'}.git`;
@@ -1040,6 +1062,21 @@ function cmdConvert(o) {
   if (r.status === 0) { const n = fs.readFileSync(out, 'utf8').length; console.log(`wrote ${out} (~${Math.ceil(n / 4).toLocaleString('en-US')} tokens). Point the agent at the section it needs, not the whole file.`); }
   return r.status || 0;
 }
+async function cmdInit(o) {
+  const dir = projectDir(o, o.path || o._[1]);
+  const name = registrationName(o, dir);
+  const ctx = buildCtx(o, true);
+  const oo = await project.ask(dir, o);
+  const references = await project.research(dir, { offline: o.offline, dry: o.dry });
+  project.init(dir, { ...oo, dry: o.dry, references }, ctx);
+  if (!o.dry) {
+    let chosen = o.profile;
+    if (!chosen) { try { chosen = suggestLib.suggest(dir).profile; } catch (_) { chosen = null; } }
+    status.rememberProjectProfile(dir, chosen);
+  }
+  registerProject({ ...o, name }, dir);
+  return 0;
+}
 async function cmdSetup(o) {
   const ctx = buildCtx(o, true);
   ctx.refreshPath();
@@ -1061,7 +1098,8 @@ async function cmdSetup(o) {
   }
   const code = await cmdInstall({ ...o, yes: true, _: ['install'] });
   if (code) return code;
-  return cmdInit({ ...o, _: ['init', dir] }) || 0;
+  console.log(`\nWizard: step 2 of 2 — askai init ${dir}`);
+  return (await cmdInit({ ...o, yes: true, _: ['init', dir] })) || 0;
 }
 function cmdWhy(o) {
   const id = o._[1];
@@ -1341,6 +1379,12 @@ function launchInMultiplexer(cp, script, kind) {
   }
   return 0;
 }
+function launchWindowsCli(cp, cwd, node, script, caller) {
+  const quote = value => `'${value.replace(/'/g, "''")}'`;
+  const ps = `$env:TERM='xterm-256color'; Set-Location -LiteralPath ${quote(cwd)}; ${caller ? `$env:ASKAI_HOST=${quote(caller)}; ` : ''}& ${quote(node)} ${quote(script)} cli`;
+  const encoded = Buffer.from(ps, 'utf16le').toString('base64');
+  return cp.spawnSync('powershell.exe', ['-NoProfile', '-NonInteractive', '-Command', `$ErrorActionPreference='Stop'; Start-Process powershell.exe -WindowStyle Normal -WorkingDirectory ${quote(cwd)} -ArgumentList '-NoExit','-NoProfile','-ExecutionPolicy','Bypass','-EncodedCommand','${encoded}' -ErrorAction Stop`], { encoding: 'utf8' });
+}
 function launchCli() {
   const cp = require('child_process');
   const caller = require('./lib/infra').detectCaller();
@@ -1360,26 +1404,7 @@ function launchCli() {
   });
   let r;
   if (plan === 'win32') {
-    const os = require('os');
-    const launcher = path.join(os.tmpdir(), `askai-launch-${Date.now()}.cmd`);
-    const envSet = caller ? `set "ASKAI_HOST=${caller}"\r\n` : '';
-    const content = `@echo off\r\ntitle AskAI CLI\r\ncd /d "${process.cwd()}"\r\n${envSet}"${process.execPath}" "${script}" cli\r\n`;
-    try { fs.writeFileSync(launcher, content, 'utf8'); } catch (_) {}
-    const taskName = `AskAiCli_${Date.now()}`;
-    const tr = `cmd.exe /c "${launcher}"`;
-    const cr = cp.spawnSync('schtasks.exe', ['/create', '/tn', taskName, '/tr', tr, '/sc', 'once', '/st', '23:59', '/it', '/f'], { encoding: 'utf8' });
-    if (cr.status === 0) {
-      cp.spawnSync('schtasks.exe', ['/run', '/tn', taskName], { encoding: 'utf8' });
-      setTimeout(() => {
-        try { cp.spawnSync('schtasks.exe', ['/delete', '/tn', taskName, '/f'], { encoding: 'utf8' }); } catch (_) {}
-        try { fs.unlinkSync(launcher); } catch (_) {}
-      }, 3000).unref();
-      r = { status: 0 };
-    } else {
-      const ps = `${caller ? `$env:ASKAI_HOST='${caller}'; ` : ''}& '${process.execPath.replace(/'/g, "''")}' '${script.replace(/'/g, "''")}' cli`;
-      const encoded = Buffer.from(ps, 'utf16le').toString('base64');
-      r = cp.spawnSync('powershell.exe', ['-NoProfile', '-NonInteractive', '-Command', `Start-Process powershell.exe -ArgumentList '-NoExit','-NoProfile','-ExecutionPolicy','Bypass','-EncodedCommand','${encoded}'`], { encoding: 'utf8' });
-    }
+    r = launchWindowsCli(cp, process.cwd(), process.execPath, script, caller);
   } else if (plan === 'darwin') {
     const cmd = [process.execPath, script, 'cli'].map(x => `'${x.replace(/'/g, "'\\''")}'`).join(' ');
     r = cp.spawnSync('osascript', ['-e', `tell application "Terminal" to do script "${cmd.replace(/\\/g, '\\\\').replace(/"/g, '\\"')}"`], { encoding: 'utf8', env: { ...process.env, ...(caller ? { ASKAI_HOST: caller } : {}) } });
@@ -1397,7 +1422,7 @@ function launchCli() {
     return 0;
   }
   if (r.status !== 0) { console.error(`Could not open a terminal. Run askai cli in the Cursor terminal. ${String(r.stderr || (r.error && r.error.message) || '').trim()}`); return 1; }
-  console.log('Opened AskAI CLI.'); return 0;
+  console.log('Requested AskAI terminal. If no window appears, run askai cli in your terminal.'); return 0;
 }
 async function cmdPrepare(o) {
   const log = console.log;
@@ -1472,10 +1497,17 @@ async function cmdPrepare(o) {
 async function cmdCli(o) {
   if (o.prepare) return cmdPrepare(o);
   if (o.launch) return launchCli();
+  // AI host shells can export TERM=dumb, which disables Node readline editing.
+  if (process.stdin.isTTY && process.env.TERM === 'dumb') process.env.TERM = 'xterm-256color';
   const rl = readline.createInterface({ input: process.stdin, output: process.stdout, terminal: !!process.stdin.isTTY });
   replRl = rl;
   const keys = () => { if (process.stdin.isTTY && process.stdin.setRawMode) { try { process.stdin.setRawMode(true); } catch (_) { /* a child command released the console */ } } };
   console.log('AskAI CLI. Type a command for Claude Code, Codex, Antigravity or Cursor; exit to leave.');
+  console.log(`Project folder: ${process.cwd()}`);
+  if (!fs.existsSync(path.join(process.cwd(), session.DIR, 'askai-init.json'))) {
+    console.log(`Project setup: askai init --path "${process.cwd()}"`);
+    console.log('Run this command to initialize this folder; nothing is initialized automatically.');
+  }
   rl.setPrompt('askai> '); rl.prompt();
   for await (const line of rl) {
     rl.pause();
@@ -1521,6 +1553,10 @@ async function main() {
   if (o.quiet) process.env.ASKAI_QUIET = '1';
   emitNodeNotice(o, cmd);
   o._.unshift(cmd);
+  if (cmd === 'doctor') return cmdDoctor(o);
+  if (cmd === 'report') return cmdReport(o);
+  if (cmd === 'inventory') return cmdInventory(o);
+  if (cmd === 'upgrade') return cmdUpgrade(o);
   if (cmd === 'help' && o.help) { console.log(help.render('help', { advanced: !!o.advanced })); return 0; }
   if (cmd === 'help' && o.list) { console.log(help.names().slice().sort().join('\n')); return 0; }
   if (cmd === 'help' && o._[1] === 'all') { console.log(`askai ${VERSION}: every command in full\n\n` + help.names().map(n => help.render(n, { advanced: true })).join(`\n\n${'-'.repeat(72)}\n\n`)); return 0; }
@@ -1543,11 +1579,9 @@ async function main() {
   switch (cmd) {
     case 'cli': return cmdCli(o);
     case 'install': return cmdInstall(o);
-    case 'update': { const ctx = buildCtx(o, true); if (o.check) { const cp = require('child_process'); const url = process.env.ASKAI_REPO_URL || `https://github.com/${process.env.ASKAI_REPO || 'aalokshah-business/AskAi'}.git`; console.log(`askai update --check · local ${VERSION}`); const r = cp.spawnSync('git', ['ls-remote', url, 'HEAD'], { encoding: 'utf8', timeout: 20000, windowsHide: true }); if (r.status !== 0) { console.log('could not reach the AskAI git remote'); return 1; } console.log(`remote ${String(r.stdout || '').split(/\s/)[0].slice(0, 12) || 'unknown'}`); return 0; } hintOnce(ctx, 'update-means-askai', 'askai update now updates AskAI itself. Installed tools: askai tools update'); return cmdUpgrade(o, rest); }
+    case 'update': { const ctx = buildCtx(o, true); if (o.check) { const cp = require('child_process'); const url = process.env.ASKAI_REPO_URL || `https://github.com/${process.env.ASKAI_REPO || 'aalokshah-business/AskAi'}.git`; console.log(`askai update --check · local ${VERSION}`); const r = cp.spawnSync('git', ['ls-remote', url, 'HEAD'], { encoding: 'utf8', timeout: 20000, windowsHide: true }); if (r.status !== 0) { console.log('could not reach the AskAI git remote'); return 1; } console.log(`remote ${String(r.stdout || '').split(/\s/)[0].slice(0, 12) || 'unknown'}`); return 0; } hintOnce(ctx, 'update-means-askai', 'askai update now updates AskAI itself. Installed tools: askai tools update'); return cmdUpdateSelf(o, rest); }
     case 'tools': { if ((o._[1] || '') !== 'update') { console.error('askai tools update'); return 1; } return cmdUpdate(o); }
     case 'status': return cmdStatus(o);
-    case 'doctor': return cmdDoctor(o);
-    case 'report': return cmdReport(o);
     case 'profiles': return cmdProfiles(o);
     case 'suggest': return cmdSuggest(o);
     case 'project': return cmdProject(o);
@@ -1557,16 +1591,7 @@ async function main() {
     case 'restore': return cmdRestore(o);
     case 'statusline': return cmdStatusline(o);
     case 'session': return cmdSession(o);
-    case 'init': {
-      const dir = projectDir(o, o.path || o._[1]); const name = registrationName(o, dir); const ctx = buildCtx(o, true); const oo = await project.ask(dir, o); const references = await project.research(dir, { offline: o.offline, dry: o.dry });
-      project.init(dir, { ...oo, dry: o.dry, references }, ctx);
-      if (!o.dry) {
-        let chosen = o.profile;
-        if (!chosen) { try { chosen = suggestLib.suggest(dir).profile; } catch (_) { chosen = null; } }
-        status.rememberProjectProfile(dir, chosen);
-      }
-      registerProject({ ...o, name }, dir); return 0;
-    }
+    case 'init': return cmdInit(o);
     case 'review': { const action = o._[1] || 'status'; if (!['status', 'done'].includes(action)) throw new Error('askai review accepts status or done'); const dir = projectDir(o, o.path || o._[2]); const result = action === 'done' ? projectReview.done(dir) : projectReview.status(dir, { all: !!o.all }); console.log(o.json ? JSON.stringify(result, null, 2) : `AI review ${result.state}: ${result.scanned}/${result.eligible} source files scanned${result.skipped ? `, ${result.skipped} skipped` : ''}${action === 'status' ? `; ${result.changedCount} changed, ${result.removedCount} removed${result.pathsTruncated ? '; path list capped at 40 (use --all --json)' : ''}` : ''}`); return 0; }
     case 'map': project.map(projectDir(o, o._[1]), { dry: o.dry }); return 0;
     case 'models': return cmdModels(o);
@@ -1574,14 +1599,12 @@ async function main() {
     case 'prompt': return cmdPrompt(o);
     case 'mcp': return cmdMcp(o);
     case 'audit': return audit.run(buildCtx(o, true), projectDir(o, o._[1]), o);
-    case 'infra':
-    case 'inventory': { const ctx = buildCtx(o, true); const r = infra.collect(ctx, projectDir(o, o._[1])); console.log(o.json ? JSON.stringify(r, null, 2) : infra.render(r)); return 0; }
+    case 'infra': { const ctx = buildCtx(o, true); const r = infra.collect(ctx, projectDir(o, o._[1])); console.log(o.json ? JSON.stringify(r, null, 2) : infra.render(r)); return 0; }
     case 'guide': { const t = guide.render(o._[1], projectDir(o)); if (!t) { console.log(`No guide for "${o._[1]}". Topics: ${guide.ORDER.join(', ')}`); return 1; } console.log(t); if (o._[1] === 'work') { try { const ctx = buildCtx(o, true); const open = todo.open(todo.items(ctx, projectDir(o))); if (open.length) console.log(`\nYour open to-dos (${open.length}): ${open.slice(0, 3).map(i => i.text).join('; ')}${open.length > 3 ? '; ...' : ''}\nAll of them: askai todo`); } catch (_) { /* no context */ } } return 0; }
     case 'docs': return cmdDocs(o);
     case 'plugins': { const ctx = buildCtx(o, true); const a = o._[1] || 'list'; if (a === 'ready') { const ready = require('./lib/plugins-ready'); const report = ready.ready(ctx, projectDir(o, o.path || o._[2])); console.log(o.json ? JSON.stringify(report, null, 2) : ready.render(report)); return 0; } if (a === 'decisions') { console.log(plugins.decisions()); return 0; }
       if (a === 'info' || a === 'use') { if (!o._[2]) { console.log(`which one? askai plugins info <id>   ids: ${require('./lib/plugins').P.map(p => p.id).join(', ')}`); return 1; } const r = plugins.info(o._[2]); console.log(`\nHow to use it\n${require('./lib/usage-guide').render(o._[2])}`); return r; }
       return a === 'install' ? plugins.install(ctx, o._[2], o) : plugins.list(ctx); }
-    case 'upgrade': { const ctx = buildCtx(o, true); hintOnce(ctx, 'upgrade-alias', 'askai upgrade is now askai update'); return cmdUpgrade(o, rest); }
     case 'savings': return cmdSavings(o);
     case 'convert': return cmdConvert(o);
     case 'clear': {
@@ -1640,10 +1663,10 @@ async function main() {
     case 'scaffold': return cmdScaffold(o);
     case 'chat': return cmdChat(o);
     case 'tips': return cmdTips(o);
-    case 'cheat': console.log(require('./lib/surface').cheat()); return 0;
+    case 'direction': console.log(require('./lib/surface').direction()); return 0;
     case 'version': case '--version': console.log(o.all ? require('./lib/platform').supportText(VERSION) : VERSION); return 0;
     default: {
-      const renamed = { continue: ['resume'], etiquette: ['guide', 'all'], checkpoint: ['session', 'pause'], work: ['guide', 'work'], peak: ['tips', 'peak'], projects: ['project', 'list'] };
+      const renamed = { continue: ['resume'], etiquette: ['guide', 'all'], checkpoint: ['session', 'pause'], work: ['guide', 'work'], peak: ['tips', 'peak'], projects: ['project', 'list'], cheat: ['direction'], doctor: ['check'], report: ['savings'], inventory: ['infra'], upgrade: ['update'] };
       if (renamed[cmd]) {
         hintOnce(buildCtx(o, true), `alias-${cmd}`, `askai ${cmd} is now askai ${renamed[cmd].join(' ')}`);
         process.argv = [process.argv[0], process.argv[1], ...renamed[cmd], ...rest];
@@ -1660,4 +1683,4 @@ async function main() {
 if (require.main === module) {
   main().then(code => { process.exitCode = code || 0; }, e => { console.error(`askai: ${e.message}`); process.exitCode = 1; });
 }
-module.exports = { parseArgs, buildCtx, select, main, launchPlan, sessionTerminalPlan, cliInstallPlan, diagramOpenable, suggestCommand, syncLegacyApp, VERSION };
+module.exports = { parseArgs, buildCtx, select, main, launchPlan, launchWindowsCli, sessionTerminalPlan, cliInstallPlan, diagramOpenable, suggestCommand, syncLegacyApp, VERSION };

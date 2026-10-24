@@ -135,3 +135,52 @@ test('mcp off/on restores all four hosts; dry run leaves config unchanged', () =
     assert.match(run('mcp', 'list', '--tool', tool).output, /matrix-smoke\s+on/);
   }
 }));
+
+test('command execution matrix: runs each command, dumps output, and analyzes for errors and structure', () => fixture(({ root, home, run }) => {
+  const repo = path.join(root, 'repo');
+  fs.mkdirSync(repo, { recursive: true });
+  fs.writeFileSync(path.join(repo, 'README.md'), '# Repo\n');
+
+  const commands = [
+    { args: ['version'], expectCode: [0], expectMatch: /^\d+\.\d+\.\d+/ },
+    { args: ['status'], expectCode: [0], expectMatch: /machine\s+/ },
+    { args: ['check'], expectCode: [0], expectMatch: /Tool coverage/ },
+    { args: ['infra'], expectCode: [0], expectMatch: /AskAI\s+·/ },
+    { args: ['profiles'], expectCode: [0], expectMatch: /profile in effect/ },
+    { args: ['tips'], expectCode: [0], expectMatch: /habits for now/ },
+    { args: ['guide'], expectCode: [0], expectMatch: /start/ },
+    { args: ['models'], expectCode: [0], expectMatch: /tool\s+tier\s+agent/ },
+    { args: ['mcp'], expectCode: [0], expectMatch: /MCP servers/ },
+    { args: ['plugins'], expectCode: [0], expectMatch: /id\s+hosts\s+state/ },
+    { args: ['todo'], expectCode: [0], expectMatch: /Nothing left for you to do|open|\[/ },
+    { args: ['docs'], expectCode: [0], expectMatch: /askai docs/ },
+    { args: ['chat'], expectCode: [0], expectMatch: /AskAI cannot install into Claude chat/ },
+    { args: ['direction'], expectCode: [0], expectMatch: /AskAI\s+one screen/ },
+    { args: ['suggest', repo], expectCode: [0], expectMatch: /suggest/i },
+    { args: ['errors'], expectCode: [0], expectMatch: /No run logged/ },
+    { args: ['audit'], expectCode: [0, 1], expectMatch: /FINDING\s*\|\s*SEVERITY/ },
+    { args: ['setup', '--dry-run', '--yes'], expectCode: [0], expectMatch: /AskAI setup/ },
+    { args: ['map', '--dry-run'], expectCode: [0], expectMatch: /PROJECT_MAP/ },
+    { args: ['scaffold', '--dry-run'], expectCode: [0], expectMatch: /scaffold/ },
+    { args: ['stop', '--dry-run'], expectCode: [0] },
+  ];
+
+  const dumpLog = path.join(root, 'command-dump.log');
+  const dumpStream = [];
+
+  for (const c of commands) {
+    const r = run(...c.args);
+    dumpStream.push(`=== askai ${c.args.join(' ')} (exit ${r.code}) ===\n${r.output}\n`);
+    assert.ok(c.expectCode.includes(r.code), `Command ${c.args.join(' ')} returned unexpected exit code ${r.code}`);
+    if (c.expectMatch) {
+      assert.match(r.output, c.expectMatch, `Command ${c.args.join(' ')} output did not match pattern`);
+    }
+    assert.ok(!/ReferenceError|TypeError|SyntaxError|UnhandledPromiseRejection|unknown command/i.test(r.output),
+      `Command ${c.args.join(' ')} produced runtime error: ${r.output}`);
+    assert.ok(r.output.trim().length > 0, `Command ${c.args.join(' ')} produced empty output`);
+  }
+
+  fs.writeFileSync(dumpLog, dumpStream.join('\n'), 'utf8');
+  assert.ok(fs.existsSync(dumpLog), 'command dump file written');
+  assert.ok(fs.statSync(dumpLog).size > 1000, 'command dump contains captured execution data');
+}));

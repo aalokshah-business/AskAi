@@ -141,6 +141,45 @@ test('askai cli runs commands without prefixes and exits', () => {
   assert.match(r.stdout, /AskAI CLI[\s\S]*askai> 1\.3\.0[\s\S]*askai cli: Prepare a project from the chat folder/);
 });
 
+test('Windows CLI requests a visible window, preserves quoted paths and returns launch errors', () => {
+  const { launchWindowsCli } = require('../askai');
+  let captured;
+  const failure = { status: 1, stderr: 'launch denied' };
+  const fake = { spawnSync: (...args) => { captured = args; return failure; } };
+  assert.strictEqual(launchWindowsCli(fake, "C:\\work\\Sam's app", 'C:\\node.exe', 'C:\\AskAI\\askai.js', 'codex'), failure);
+  assert.strictEqual(captured[0], 'powershell.exe');
+  const command = captured[1].at(-1);
+  assert.match(command, /-WindowStyle Normal/);
+  assert.match(command, /-WorkingDirectory 'C:\\work\\Sam''s app'/);
+  assert.match(command, /-ErrorAction Stop/);
+  const encoded = command.match(/-EncodedCommand','([^']+)'/)[1];
+  const decoded = Buffer.from(encoded, 'base64').toString('utf16le');
+  assert.match(decoded, /Set-Location -LiteralPath 'C:\\work\\Sam''s app'/);
+  assert.match(decoded, /ASKAI_HOST='codex'/);
+  assert.match(decoded, /TERM='xterm-256color'/);
+  assert.match(decoded, /'C:\\AskAI\\askai.js' cli$/);
+});
+
+test('terminal editing handles Backspace and DEL before category help, including after a command', () => {
+  const cp = require('child_process');
+  const script = `Object.defineProperty(process.stdin, 'isTTY', {value:true}); process.stdin.setRawMode=()=>{}; process.argv=[process.execPath,${JSON.stringify(path.join(__dirname, '..', 'askai.js'))},'cli']; require(${JSON.stringify(path.join(__dirname, '..', 'askai.js'))}).main();`;
+  const r = cp.spawnSync(process.execPath, ['-e', script], {
+    env: { ...process.env, TERM: 'dumb' },
+    input: 'version\nhelp category systemx\b\nhelp category systemx\x7f\nexit\n', encoding: 'utf8', timeout: 10000,
+  });
+  assert.strictEqual(r.status, 0, r.stderr);
+  assert.strictEqual((r.stdout.match(/System \(shell, CLI & environment\)/g) || []).length, 2);
+  assert.doesNotMatch(r.stdout, /No help category/);
+});
+
+test('CLI shows an init command for its current uninitialized folder without writing files', () => withHome(root => {
+  const cp = require('child_process');
+  const r = cp.spawnSync(process.execPath, [path.join(__dirname, '..', 'askai.js'), 'cli'], { cwd: root, input: 'exit\n', encoding: 'utf8', timeout: 10000 });
+  assert.strictEqual(r.status, 0, r.stderr);
+  assert.ok(r.stdout.includes(`askai init --path "${root}"`));
+  assert.ok(!fs.existsSync(path.join(root, '.ai-work', 'askai-init.json')));
+}));
+
 test('install replaces owned generic askai entry without deleting edited copies', () => withHome(home => {
   const flags = ['--claude-home', home, '--target', 'claude', '--only', 'baseline', '--no-path', '--yes'];
   assert.strictEqual(cli(['install', ...flags]).code, 0);
@@ -259,11 +298,27 @@ test('status --json and doctor run read-only against an empty home', () => withH
   for (const f of ['askai', 'settings.json', 'CLAUDE.md', 'commands']) assert.ok(!fs.existsSync(path.join(home, f)), `${f} not created`);
 }));
 
-test('report is usage --full plus one check --brief line', () => withHome(home => {
+test('retired report points to savings and check', () => withHome(home => {
   const r = run(home, 'report', '1');
   assert.strictEqual(r.code, 0, r.out + r.err);
-  assert.match(r.out, /^check: \d+ ok, \d+ to improve, \d+ failing$/m);
-  assert.doesNotMatch(r.out, /TOOLS AND MEASURED SAVINGS/);
+  assert.match(r.out, /askai report is retired/);
+  assert.match(r.out, /savings/);
+  for (const f of ['askai', 'settings.json', 'CLAUDE.md', 'commands']) assert.ok(!fs.existsSync(path.join(home, f)), `${f} not created`);
+}));
+
+test('retired inventory points to infra', () => withHome(home => {
+  const r = run(home, 'inventory');
+  assert.strictEqual(r.code, 0, r.out + r.err);
+  assert.match(r.out, /askai inventory is retired/);
+  assert.match(r.out, /infra/);
+  for (const f of ['askai', 'settings.json', 'CLAUDE.md', 'commands']) assert.ok(!fs.existsSync(path.join(home, f)), `${f} not created`);
+}));
+
+test('retired upgrade points to update', () => withHome(home => {
+  const r = run(home, 'upgrade');
+  assert.strictEqual(r.code, 0, r.out + r.err);
+  assert.match(r.out, /askai upgrade is retired/);
+  assert.match(r.out, /update/);
   for (const f of ['askai', 'settings.json', 'CLAUDE.md', 'commands']) assert.ok(!fs.existsSync(path.join(home, f)), `${f} not created`);
 }));
 

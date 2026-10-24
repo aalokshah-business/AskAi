@@ -166,7 +166,7 @@ test('a stale agent file is agents.drift and plugins use the short columns', () 
     assert.match(text.join('\n'), /askai project refresh --agents/);
     const lines = [];
     require('../lib/plugins').list(ctx, s => lines.push(s));
-    assert.match(lines[0], /id  hosts  state  verdict  recommendation/);
+    assert.match(lines[0], /id\s+hosts\s+state\s+verdict\s+recommendation/);
     assert.doesNotMatch(lines.join('\n'), /measured: none independent\. For C\/C\+\+/);
   } finally { rm(dir); }
 });

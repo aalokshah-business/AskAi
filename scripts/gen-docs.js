@@ -59,10 +59,9 @@ function claudeSettings() {
 const COMMAND_SOURCE = {
   cli: 'askai.js cmdCli; lib/cli-prepare.js',
   install: 'askai.js cmdInstall; lib/components.js; lib/profiles.js; lib/agents.js',
-  update: 'askai.js cmdUpgrade',
+  update: 'askai.js cmdUpdateSelf',
   tools: 'askai.js cmdUpdate; lib/components.js',
   status: 'askai.js cmdStatus; lib/status.js; lib/findings.js',
-  doctor: 'askai.js cmdDoctor; lib/status.js; lib/findings.js',
   report: 'askai.js cmdReport; lib/usage.js',
   profiles: 'askai.js cmdProfiles; lib/profiles.js',
   suggest: 'askai.js cmdSuggest; lib/suggest.js',
@@ -82,11 +81,9 @@ const COMMAND_SOURCE = {
   mcp: 'askai.js cmdMcp; lib/mcp.js',
   audit: 'lib/audit.js; lib/findings.js',
   infra: 'lib/infra.js',
-  inventory: 'lib/infra.js',
   guide: 'lib/guide.js',
   docs: 'askai.js cmdDocs',
   plugins: 'lib/plugins.js; lib/plugins-ready.js; lib/usage-guide.js',
-  upgrade: 'askai.js cmdUpgrade',
   savings: 'askai.js cmdSavings; lib/usage.js; lib/savings.js',
   convert: 'askai.js cmdConvert',
   clear: 'lib/guide.js',
@@ -116,6 +113,7 @@ const COMMAND_SOURCE = {
   chat: 'lib/chat.js',
   tips: 'lib/tips.js',
   cheat: 'lib/surface.js',
+  direction: 'lib/surface.js',
   version: 'askai.js',
   '--version': 'askai.js',
 };
@@ -142,7 +140,7 @@ function tierTable() {
   }));
 }
 const ECOSYSTEM = [
-  ['Built in', 'Claude Code /doctor', 'Weekly health check: large CLAUDE.md, agent descriptions over 15K tokens, MCP tools over 25K, permission conflicts', 'askai check and askai doctor add billing, model, effort and four-tool checks'],
+  ['Built in', 'Claude Code /doctor', 'Weekly health check: large CLAUDE.md, agent descriptions over 15K tokens, MCP tools over 25K, permission conflicts', 'askai check adds billing, model, effort and four-tool checks'],
   ['Built in', '/usage, /context, /insights, plan mode, /clear, effort, skills, advisor', 'Official ways to see and cut usage', 'askai tips and askai ask point to them per tool'],
   ['Terse output', 'Caveman (skill, plugin, proxy)', 'Median -8% cost in six studies; its proxy is a third party in the request path', 'askai writes a terse block (--caveman lite|full|ultra|off); --caveman-plugin is opt-in; the proxy is not installed'],
   ['Terse output', 'SuperClaude --uc', 'Claims 30-50%; no third-party measurement; the framework loads several thousand tokens of instructions', 'Not installed; askai ask superclaude'],
@@ -415,7 +413,7 @@ ${table(['Category', 'Tool', 'Finding', 'In AskAI'], ECOSYSTEM)}
 - Backups before the first change to each file; ${code('askai restore')} lists and restores them.
 - Marked blocks in CLAUDE.md, AGENTS.md and GEMINI.md; text outside them is never touched.
 - ${code('askai uninstall')} removes keys only while they still hold AskAI's value, its blocks, its own files and its MCP and plugin registrations.
-- ${code('askai check')} fails when ${code('ANTHROPIC_API_KEY')} or ${code('ANTHROPIC_BASE_URL')} is set or Antigravity's paid credits are on; ${code('askai doctor')} adds broken-config checks.
+- ${code('askai check')} fails when ${code('ANTHROPIC_API_KEY')} or ${code('ANTHROPIC_BASE_URL')} is set or Antigravity's paid credits are on; ${code('askai check')} shows per-tool configuration coverage.
 
 ## 15. Testing and previews
 

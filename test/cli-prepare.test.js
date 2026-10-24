@@ -161,7 +161,7 @@ test('cli --prepare requires a description before a review', () => withHome(root
 test('askai help lists command names in alphabetical order', () => {
   const names = cli(['help', '--list']).out.trim().split(/\r?\n/).filter(Boolean);
   assert.deepStrictEqual(names, [...names].sort());
-  assert.ok(names.includes('init') && names.includes('upgrade'));
+  assert.ok(names.includes('init') && names.includes('update'));
   assert.match(cli(['help']).out, /help by category/);
   assert.match(cli(['help', 'init']).out, /Usage: askai init/);
 });

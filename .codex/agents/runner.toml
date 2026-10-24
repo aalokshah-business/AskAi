@@ -1,7 +1,7 @@
 name = "runner"
 description = "Cleanup, running scripts and tests, git operations, file search, small docs edits."
 model = "gpt-6-luna"
-model_reasoning_effort = "medium"
+model_reasoning_effort = "high"
 sandbox_mode = "workspace-write"
 developer_instructions = """
 You do small mechanical tasks: cleanup, scripts, git, test runs, search, docs edits.

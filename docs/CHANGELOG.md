@@ -4,6 +4,23 @@ AskAI follows semantic versioning from 1.0.0 (see [RELEASING.md](RELEASING.md)).
 
 ## Unreleased
 
+- Retired duplicate `askai inventory` in favor of `askai infra`.
+- Retired duplicate `askai upgrade` in favor of `askai update`. Consolidated `--check`, `--dry-run`, and `--agents` into `askai update`.
+- Hardened Serena and MarkItDown tool detection and upgrades against broken uv trampoline stubs (`isBrokenTrampoline`); safe skip when Serena is absent from `uv tool list`.
+- Added AskAI launcher detection (`isAskaiLauncher`) and CRLF/LF line ending normalization to command installation and removal on Windows.
+- Formatted `askai plugins` output in aligned tabular columns.
+- Enhanced `askai audit` reporting with host/scope attribution, column alignment, and support for Antigravity, Cursor, and Codex checks.
+
+- Group status into four environment columns, wrapping long text, with shared local utilities below. Support status HOST and status --host HOST (including antigravity/agy), also for JSON. Shared MCP and Graphify registration states are reported per host.
+
+- Retire duplicate doctor from command help and self-test; old invocations show a migration hint only. check shows coverage for Claude Code, Codex, Antigravity and Cursor, including unavailable or unselected hosts; --all shows passing details.
+
+- Renamed `askai cheat` to `askai direction`. `askai cheat` is retained as a backwards-compatible alias that runs `askai direction`. Updated generated documentation and command index.
+
+- Restore interactive readline editing under inherited TERM=dumb; Windows launch sets a terminal type that supports editing. Add regression checks for Backspace, DEL and all explicit help categories.
+
+- Windows CLI launch requests a visible PowerShell window directly, preserves the project folder and propagates launch errors. Startup shows an explicit init command for uninitialized folders.
+
 - `/askai-cli` now opens the terminal by default, without source scans, installation, init, research, or AI review. `--review` explicitly enables the existing AI setup/review workflow. A stale or missing review does not block normal launch and is never marked current automatically. Terminal `askai init` and all other commands remain available.
 - Codex usage labels raw tokens, shows uncached input and cache share, and distinguishes them from weekly plan usage and measured savings. `askai cli --prepare` keeps an existing installation's profile and skips reinstalling tools; first setup and explicit `--refresh` still configure the machine.
 - Installs and upgrades also refresh an existing managed legacy `~/.claude/askai/app`, so an old PATH entry cannot run stale help or to-do checks. A registry-only `~/.askai` folder no longer switches installation state away from an existing legacy install. Configuration and completion records are preserved.

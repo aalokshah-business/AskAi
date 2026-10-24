@@ -241,7 +241,7 @@ A rule file without askai's marker line is not askai's: it is skipped unless `--
 | Capability | OpenAI Codex | Google Antigravity CLI and app |
 |---|---|---|
 | Token rules + terse style | Managed block in `~/.codex/AGENTS.md` (`codex-rules`) | Managed block in `~/.gemini/GEMINI.md` (`agy-rules`) |
-| Cheap defaults | `codex-baseline`: effort medium, verbosity low, no personality section, subagent effort medium (all add-if-absent) | `agy-baseline`: `useG1Credits` is left false; `askai doctor` warns when it is true |
+| Cheap defaults | `codex-baseline`: effort medium, verbosity low, no personality section, subagent effort medium (all add-if-absent) | `agy-baseline`: `useG1Credits` is left false; `askai check` warns when it is true |
 | Shell-output compression (RTK) | `rtk init -g --codex --auto-patch` (RTK's PreToolUse hook) | `rtk init -g --agent antigravity --auto-patch` (RTK's plugin in `~/.gemini/config/plugins/rtk`) |
 | Code navigation (Serena) | `codex mcp add serena -- serena start-mcp-server --context codex --project-from-cwd` | `serena` entry in `~/.gemini/config/mcp_config.json` (`--context ide`) |
 | Large-output sandbox (Context Mode) | Supported by Context Mode itself: run its installer (`npx skills add mksglu/context-mode`); askai does not guess its flags | Same |
@@ -340,8 +340,8 @@ Claude's peak window (announced March 2026) is weekdays 08:00-14:00 US Eastern: 
 ```powershell
 askai report [hours]  # everything in one view (default 6h)
 askai status          # profile, per-tool state, where it is wired, measured savings
-askai doctor          # health checks (exit 1 on failure)
-askai report --json   # machine-readable; status --json and doctor --json also exist
+askai check          # health checks (exit 1 on failure)
+askai report --json   # machine-readable; status --json and check --json also exist
 ```
 
 From `/askai-cli` (Codex: `$askai-cli`), type `report [hours]` or `status` in the AskAI terminal. Claude Code's `/context-mode:ctx-stats` reports the current Context Mode session. The status line shows RTK's running total, and cache hit and context use when Claude Code reports them.
@@ -349,12 +349,12 @@ From `/askai-cli` (Codex: `$askai-cli`), type `report [hours]` or `status` in th
 `askai report` prints these sections, each independent, so one failing does not hide the others:
 
 1. **Tools and measured savings**: the profile in effect and the state and wiring of each tool (same as `askai status`).
-2. **Health**: the `askai doctor` checks.
+2. **Health**: the `askai check` checks.
 3. **Cache and context per session**: from the snapshots the status line records in `~/.askai/sessions` (kept 14 days): context use, prompt-cache hit, misses per request, re-cache tokens and the last miss cause, for each session in the window. Claude Code reports these figures; AskAI does not recompute them. Cache figures cover the main conversation only, not subagents.
 4. **Usage and cost by day** (only when ccusage is installed): ccusage's own output, its first lines only, not parsed.
 5. **Spend from transcripts**: a savings ledger, then where tokens went (main conversation against subagents, top sessions by cost). The ledger was written for the retired hook system: most rows read 0 with an evidence label of none, and the skill name-only overrides row is computed from config. Treat its NET line as a floor, not a total.
 
-It exits 1 only when the spend part could not be produced; use `askai doctor` when you want a failing exit code for health. When Cursor is wired, the report says that its usage is not included.
+It exits 1 only when the spend part could not be produced; use `askai check` when you want a failing exit code for health. When Cursor is wired, the report says that its usage is not included.
 
 ## Commands
 
@@ -402,7 +402,7 @@ askai todo [dir] [--all] | todo done|undo <id>   everything only you can do, per
 askai convert <file|url> [--out file.md]         PDF, Office file, web page or YouTube URL to Markdown, locally
 askai docs [install|architecture|projects|guide|cheatsheet|changelog|preview|check] [--print]
 askai update | tools update                fetch AskAI, or refresh the tools it installed
-askai report [hours] [--json] | status | doctor [--json]
+askai report [hours] [--json] | status | check [--json]
 askai uninstall [--tools] [--force] [--yes] | restore [stamp] [--yes]
 askai statusline | version | help [command]
 ```
@@ -413,7 +413,7 @@ Components for `--only` and `--skip`: `token-kit, claude, baseline, rtk, context
 
 | Parameter | Meaning |
 |---|---|
-| `-Action` | `install` (default), `update`, `status`, `doctor`, `report`, `profiles`, `suggest`, `project`, `restore`, `uninstall` |
+| `-Action` | `install` (default), `update`, `status`, `check`, `report`, `profiles`, `suggest`, `project`, `restore`, `uninstall` |
 | `-Workflow` (alias `-Profile`) | `minimal`, `coding`, `docs`, `full` |
 | `-Target` | `auto`, `claude`, `cursor`, `both` |
 | `-Markitdown`, `-Ccusage` | Add that tool to the workflow |
@@ -441,25 +441,25 @@ Components for `--only` and `--skip`: `token-kit, claude, baseline, rtk, context
 - `--dry-run` writes nothing and installs nothing; it prints the plan.
 - `RTK_TELEMETRY_DISABLED=1` is set for the RTK commands askai runs.
 - askai never enters credentials. Sign-ins some tools need are left to the tool.
-- `askai doctor` warns about the settings that silently move you off your subscription: `ANTHROPIC_API_KEY` (Claude Code uses it instead of your plan, and `claude -p` always does), `ANTHROPIC_BASE_URL` (a proxy), `OPENAI_API_KEY`, and Antigravity's `useG1Credits: true`.
+- `askai check` warns about the settings that silently move you off your subscription: `ANTHROPIC_API_KEY` (Claude Code uses it instead of your plan, and `claude -p` always does), `ANTHROPIC_BASE_URL` (a proxy), `OPENAI_API_KEY`, and Antigravity's `useG1Credits: true`.
 
 ## Known risks
 
-- RTK and Context Mode both hook Bash tool calls. Their interaction is unverified; `askai doctor` warns when more than one such hook is registered.
+- RTK and Context Mode both hook Bash tool calls. Their interaction is unverified; `askai check` warns when more than one such hook is registered.
 - Serena and Context Mode add MCP servers. Claude Code defers MCP tool definitions by default, so the per-session cost should be small, but it is not measured here and not zero (each server is a process that starts with the session).
 - Serena writes a `.serena/` folder into projects it works in.
 - uv keeps a `cpython-X.Y-<platform>` minor-version link (a junction on Windows) next to each Python it downloads. A link whose target folder is missing makes `uv tool install` fail with "Missing expected target directory for Python minor version link". Before the install, and again after a failure that names such a link, askai removes dangling links inside uv's python directory (only the link; the Python folder is never touched) and retries once. The root cause of the broken link is not known.
 - Serena's ownership is recorded as soon as the `uv tool install` step succeeds, so `askai uninstall --tools` removes `serena-agent` even when a later step failed. If an earlier askai run failed at the uv step and you finished the install by hand, the next `askai install --only serena --force` treats Serena as askai's; that guess is wrong if you had installed Serena yourself independently. A Serena that askai did not install is left alone unless `--force` is given.
 - Serena's tool bin dir (`~/.local/bin` for uv) is added to the user PATH so `serena` works in a shell. An already-ok Serena is skipped by a normal install, so use `askai install --only serena --force` to get the PATH entry on a machine that has Serena already. `askai uninstall --tools` removes that PATH entry again, but only if askai added it.
-- If you install the Caveman plugin as well as the `CLAUDE.md` directive, terse instructions are duplicated; `askai doctor` flags it.
+- If you install the Caveman plugin as well as the `CLAUDE.md` directive, terse instructions are duplicated; `askai check` flags it.
 - RTK needs `rg` for some filters (`winget install BurntSushi.ripgrep.MSVC`).
 - Rule files are input tokens each time they load. They are short and path-scoped, but whether a profile's rules save more than they cost has not been measured.
 - markitdown and ccusage are third-party packages askai has not run on this machine: their licences, command-line behaviour, and (for ccusage) output format and price lookups are unverified. Cursor documents `~/.cursor/rules` as machine-local user rules; glob attachment from that folder, as opposed to a project's `.cursor/rules`, is Cursor's behaviour (see [Claude Code and Cursor](#claude-code-and-cursor)).
 - Unverified until first real run: whether `serena init` prompts (it runs with stdin closed and a timeout, failure allowed), whether the `context-mode` CLI ends up on PATH, the shape of `claude plugin list --json` with plugins present, and whether `rtk init -g --uninstall` needs `--auto-patch` (askai falls back to removing the hook entry itself).
-- `--claude-home DIR` and `--cursor-home DIR` are testing aids: RTK's own `init -g` may still write to the real `~/.claude` and `~/.cursor`, and running status or doctor against them lets the real Claude CLI create its own files there.
-- askai's status, doctor and install call `claude plugin list --json`. The Claude CLI itself may migrate values in `settings.json` when it runs (observed on Claude Code 2.1.281: `"model": "opus"` became `"opus[1m]"`). That is the CLI's behaviour, not askai's, and it can happen before askai's own backup of that file.
+- `--claude-home DIR` and `--cursor-home DIR` are testing aids: RTK's own `init -g` may still write to the real `~/.claude` and `~/.cursor`, and running status or check against them lets the real Claude CLI create its own files there.
+- askai's status, check and install call `claude plugin list --json`. The Claude CLI itself may migrate values in `settings.json` when it runs (observed on Claude Code 2.1.281: `"model": "opus"` became `"opus[1m]"`). That is the CLI's behaviour, not askai's, and it can happen before askai's own backup of that file.
 
-- Codex and Antigravity wiring follows each vendor's documentation (October 2026), but has not had a real first run on a machine with those tools: whether `rtk init -g --codex` and `--agent antigravity` accept `--auto-patch`, the exact shape of `codex mcp add`, and whether Antigravity's app reads `~/.gemini/config/skills` as documented. Start with `--dry-run`, then `askai doctor`.
+- Codex and Antigravity wiring follows each vendor's documentation (October 2026), but has not had a real first run on a machine with those tools: whether `rtk init -g --codex` and `--agent antigravity` accept `--auto-patch`, the exact shape of `codex mcp add`, and whether Antigravity's app reads `~/.gemini/config/skills` as documented. Start with `--dry-run`, then `askai check`.
 - On macOS and Linux askai runs the vendors' installer scripts (`claude.ai/install.sh`, `astral.sh/uv/install.sh`) when Homebrew is absent; the install plan names each URL before the one confirmation. If `astral.sh` is blocked, uv is installed with `python3 -m pip install --user uv` from PyPI. It never prompts for a password: ripgrep and `gh` without Homebrew are a manual `apt`/`dnf` step. On a headless Linux machine, upgrade, update, and setup install `tmux` when the user is root or `sudo -n` works.
 - `--main-model` is applied only when `settings.json` has no `model`. The default is `claude-haiku-5-5`. If you rely on Opus for everyday work, pass `--main-model keep`.
 
@@ -482,7 +482,7 @@ Tests use throwaway folders under the OS temp dir with fake process runners: not
 - `lib/rules.js`: the path-scoped rules, as `~/.claude/rules` files and Cursor `.mdc` files.
 - `lib/cursor.js`: Cursor config paths, `mcp.json` and `hooks.json` edits, user and project rule files.
 - `lib/claude-config.js`: safe edits of `settings.json` and `CLAUDE.md`, backups, manifest.
-- `lib/status.js`, `lib/sys.js`, `lib/winpath.js`: status/doctor/cache views, process helpers, user PATH edit.
+- `lib/status.js`, `lib/sys.js`, `lib/winpath.js`: status/check/cache views, process helpers, user PATH edit.
 - `lib/mcp.js`: `askai mcp` — list, on/off and park/unpark for every MCP server across the four tools.
 - `lib/models.js`: `askai models` — model and effort per task tier, per tool.
 - `lib/plugins.js`, `lib/plugins-ready.js`, `lib/usage-guide.js`: `askai plugins` — the researched tool catalogue, `askai plugins ready`, and each one's usage guide.
@@ -499,3 +499,11 @@ Tests use throwaway folders under the OS temp dir with fake process runners: not
 - `commands/`: `/askai-cli` sets up a project and opens the terminal. `/askai-plugins` finishes one-time plugin setup and says when each connected tool is called. Claude Code, Cursor, and Antigravity install both. Codex gets the prompts and the `$askai-cli` and `$askai-plugins` skills. Earlier AskAI command files are retired during installation when AskAI still owns them.
 - `legacy/`: the retired self-built hook system and its installer. Not used by anything above.
 - `test/`: the test suite.
+
+Windows terminal launch uses a visible PowerShell window in the selected project folder. If no window appears, run `askai cli` in your terminal. Uninitialized folders show `askai init --path "<project-folder>"` at startup; initialization is never automatic.
+
+Interactive AskAI terminals restore key editing when an AI host exports TERM=dumb, so Backspace and Delete work normally. After upgrading, exit and reopen an existing AskAI shell to load current category help.
+
+Use askai check as the single health command. It lists coverage for all four tools; passing details are hidden unless --all. doctor is retired and prints a migration hint only.
+
+Status: askai status shows Codex, Antigravity, Cursor and Claude Code in four columns, with shared local tools below. Use askai status codex or askai status --host antigravity to select one environment; --json uses the same filter. Widen the terminal for the four-column view.

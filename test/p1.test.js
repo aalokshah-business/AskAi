@@ -9,6 +9,25 @@ const audit = require('../lib/audit');
 
 const withHome = fn => { const h = tmpHome(); try { return fn(h); } finally { rm(h); } };
 const KEYS = ['ANTHROPIC_API_KEY', 'ANTHROPIC_BASE_URL', 'OPENAI_API_KEY'];
+test('check always names four hosts, including passing and unchecked hosts', () => withHome(home => {
+  const ctx = makeCtx(home);
+  ctx.manifest.target = 'all';
+  const previous = findings.collectFindings;
+  findings.collectFindings = () => [{host:'codex', group:'codex', severity:'ok', message:'config checked'}];
+  try {
+    const output = [];
+    assert.equal(check.run(ctx, null, {}, line => output.push(line)), 0);
+    const text = output.join('\n');
+    assert.match(text, /Codex: 1 ok, 0 to improve, 0 failing/);
+    for (const label of ['Claude Code', 'Antigravity', 'Cursor']) assert.ok(text.includes(`${label}: not checked`));
+    assert.doesNotMatch(text, /config checked/);
+    assert.match(text, /check --all/);
+    ctx.manifest.target = 'cursor';
+    const subset = [];
+    check.run(ctx, null, {}, line => subset.push(line));
+    assert.ok(subset.includes('  Claude Code: not selected for installation'));
+  } finally { findings.collectFindings = previous; }
+}));
 function withoutBilling(fn) {
   const saved = {};
   for (const k of KEYS) { saved[k] = process.env[k]; delete process.env[k]; }

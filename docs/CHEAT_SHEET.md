@@ -100,13 +100,11 @@ The commands below are also implemented. This table plus the twelve and the addi
 | Command | Purpose | Form |
 |---|---|---|
 | `askai cli` | Prepare a project from the chat folder, then open an AskAI-only terminal. AI review is opt-in. | `askai cli [--prepare] [--launch] [--review] [--path DIR] [--about TEXT]` |
-| `askai status` | Per-tool state against your profile, with measured savings where a tool reports them. | `askai status` |
-| `askai doctor` | Alias of askai check. Same rows, same exit code. | `askai doctor` |
+| `askai status` | Status in four environment columns, or one selected environment. | `askai status [codex\|antigravity\|cursor\|claude] [--host HOST] [--json]` |
 | `askai setup` | Short check after install: which hosts are present, check counts, and whether the file validator passed. | `askai setup [dir] [--yes]` |
 | `askai bootstrap` | Show a personal devcontainer setup; --repo writes a post-create script into this project. | `askai bootstrap [dir] [--profile P] [--repo]` |
 | `askai ask` | Offline answers on etiquette and the research: the rule, why, the command in each tool, and what AskAI automates. | `askai ask <words>` |
 | `askai start` | Start a task: ledger entry with tool, task, branch and last commit. | `askai start --tool T --task "..." [--repo DIR]` |
-| `askai report` | Full spend report plus one line from askai check --brief. | `askai report [days]` |
 | `askai session` | The per-repo ledger in .ai-work/: entries, handoff, measurements, report. askai start, askai break and askai resume are the daily names for those three actions. | `askai session init\|pause\|status\|finish\|measure\|report [--repo DIR] [...]` |
 | `askai scaffold` | Write the files every agent reads: AGENTS.md, CLAUDE.md, docs/ai/PROJECT_PROFILE.md, .cursorignore, .ai-work/. Never overwrites. | `askai scaffold [dir] [--dry-run]` |
 | `askai suggest` | Recommend a profile from the files in a folder. | `askai suggest [dir]` |
@@ -115,26 +113,24 @@ The commands below are also implemented. This table plus the twelve and the addi
 | `askai shell` | Enable terminal-scoped project selection in a shell. | `askai shell init powershell\|bash\|zsh \| install SHELL --path PROFILE \| uninstall` |
 | `askai tips` | The cheat sheet, offline, per tool. peak says whether Claude is in peak hours now. | `askai tips [claude\|codex\|agy\|cursor\|session\|habits\|peak]` |
 | `askai test` | Run the safe commands one by one, print a short status, and write one capture file. | `askai test [--out FILE] [--json] [--real] [--notty] [--compare FILE]` |
-| `askai statusline` | Claude Code's status line command (reads the session JSON on stdin): model, context, cache; records snapshots for askai report. | `askai statusline [--demo]` |
+| `askai statusline` | Claude Code's status line command (reads the session JSON on stdin): model, context, cache; records snapshots for askai savings. | `askai statusline [--demo]` |
 | `askai restore` | List backups, or put a backed-up file back. | `askai restore [file]` |
 | `askai uninstall` | Remove only what AskAI added: keys still holding AskAI's value, its marked blocks, its own files and registrations. | `askai uninstall [--only ID,ID] [--dry-run]` |
 | `askai version` | Print the AskAI version. | `askai version` |
 | `askai init` | Scan eligible first-party source files, consult detected frameworks' official docs, write a compact project knowledge pack and register its path. | `askai init [dir] [--name NAME] [--path DIR] [--about "..."] [--type T] [--yes] [--refresh] [--offline] [--dry-run] [--build "cmd"] [--test "cmd"]` |
 | `askai review` | Show which project inputs changed since host AI review; record completion after review. | `askai review [status\|done] [--project NAME] [--json] [--all]` |
 | `askai map` | Regenerate docs/ai/PROJECT_MAP.md from README folder descriptions and conventional names; preserve purposes you edited. | `askai map [dir] [--dry-run] [--diff]` |
-| `askai audit` | The seven-point token audit: memory files, tools and proxies, model and effort, hooks, subagents, scheduled work, cache reuse. | `askai audit [dir] [--json]` |
-| `askai infra` | Tools and repository files. Alias of askai inventory. | `askai infra [dir] [--json]` |
-| `askai inventory` | Tools and repository files. Alias of askai infra. | `askai inventory [dir] [--json]` |
+| `askai audit` | The seven-point token audit: memory files, tools and proxies, model and effort, hooks, subagents, scheduled work, cache reuse. | `askai audit [dir] [--tool claude\|codex\|cursor\|agy] [--project name\|dir] [--json]` |
+| `askai infra` | Tools and repository files. | `askai infra [dir] [--json]` |
 | `askai guide` | The etiquette for each moment of work, offline. | `askai guide [install\|start\|work\|break\|resume\|clear\|compact\|cache\|models\|subagents\|mcp\|output\|prompts\|docs\|plugins\|peak\|all]` |
 | `askai docs` | Find AskAI documents or check generated command documentation for drift. | `askai docs [install\|architecture\|projects\|guide\|cheatsheet\|changelog\|preview\|check] [--print]` |
 | `askai context` | What to do at this context level: continue, hand off, clear. 60% is a warning, not an order to compact. | `askai context <percent> \| --used N --window M` |
-| `askai upgrade` | Older spelling of askai update: fetch AskAI and re-apply the recorded profile. | `askai upgrade [--dry-run] [--agents] [install options]` |
 | `askai todo` | Remaining setup and project-review steps: sign-ins, restarts, app settings, model IDs, one-time plugin steps, and repository facts that need confirmation. Checkable items clear themselves. | `askai todo [dir] [--all] \| askai todo done <id> \| askai todo undo <id>` |
 | `askai graph` | Print the Mermaid architecture diagram from docs/ai/ARCHITECTURE.md and open it in the browser when the terminal is interactive. | `askai graph [dir]` |
 | `askai chat` | Where to paste a short standing instruction in Claude chat, ChatGPT, and Gemini, and how the four coding apps are set up instead. | `askai chat [claude\|chatgpt\|gemini\|code] [--copy]` |
-| `askai cheat` | Print the one-screen working loop and the most useful command choices. | `askai cheat` |
+| `askai direction` | Print the one-screen working loop and the most useful command choices. | `askai direction` |
 
-Legacy spellings `continue`, `etiquette`, `checkpoint`, `work`, `peak`, and `projects` still route to their current commands. Prefer `resume`, `guide`, `session pause`, `guide work`, `tips peak`, and `project list` in new scripts.
+Legacy spellings `continue`, `etiquette`, `checkpoint`, `work`, `peak`, `projects`, and `cheat` still route to their current commands. Prefer `resume`, `guide`, `session pause`, `guide work`, `tips peak`, `project list`, and `direction` in new scripts.
 
 ## Which command, when
 

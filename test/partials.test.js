@@ -206,13 +206,13 @@ test('the same sentence is not printed by both guide and tips', () => {
   assert.deepStrictEqual(dup, []);
 });
 
-test('doctor prints the same rows as check', () => {
+test('retired doctor points to check without printing a duplicate audit', () => {
   const home = tmpHome();
   try {
     const a = cli(['doctor', '--claude-home', home, '--repo', home]);
-    const b = cli(['check', '--claude-home', home, '--repo', home]);
-    assert.strictEqual(a.out, b.out);
-    assert.strictEqual(a.code, b.code);
+    assert.match(a.out, /doctor is retired.*askai check/);
+    assert.doesNotMatch(a.out, /Tool coverage|to improve, \d+ failing\./);
+    assert.strictEqual(a.code, 0);
   } finally { rm(home); }
 });
 

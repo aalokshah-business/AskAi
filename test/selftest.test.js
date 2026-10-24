@@ -10,7 +10,7 @@ test('askai test runs only commands that do not install or launch an agent', () 
     assert.ok(!names.includes(banned), banned);
   }
   assert.ok(selftest.PLAN.some(s => s.args[0] === 'go' && s.args.includes('--dry-run')));
-  assert.ok(names.includes('status') && names.includes('doctor') && names.includes('check'));
+  assert.ok(names.includes('status') && !names.includes('doctor') && names.includes('check'));
 });
 
 test('askai test writes one capture and a short status', () => {
@@ -18,7 +18,7 @@ test('askai test writes one capture and a short status', () => {
   try {
     const scripted = {
       version: { code: 0, stdout: '1.2.5\n' },
-      doctor: { code: 1, stdout: 'FAIL  settings   broken json\n\n0 ok, 0 warning(s), 1 failure(s)\n' },
+      status: { code: 1, stdout: 'FAIL  settings   broken json\n\n0 ok, 0 warning(s), 1 failure(s)\n' },
       check: { code: 0, stdout: '\n2 ok, 3 to improve, 0 failing.\n' },
       context: { code: 1, stdout: 'Give the level: askai context 62\n' },
       savings: { timedOut: true, stdout: '' },
@@ -34,7 +34,7 @@ test('askai test writes one capture and a short status', () => {
     });
     const text = fs.readFileSync(result.file, 'utf8');
     assert.ok(text.includes('## askai status'));
-    assert.ok(text.includes('## askai doctor'));
+    assert.ok(text.includes('## askai check'));
     assert.ok(text.includes('FAIL  settings'));
     assert.ok(text.includes('skipped:'));
     assert.match(text, /mode: sandbox/);

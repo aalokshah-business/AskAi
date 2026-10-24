@@ -20,6 +20,13 @@ test('category help has one short description per command and supports aliases',
   assert.doesNotMatch(r.out, /Usage:/);
 });
 
+test('every explicit category name and alias resolves, including system', () => {
+  for (const [name, cat] of Object.entries(help.CATEGORIES)) {
+    assert.equal(cli(['help', 'category', name]).code, 0, name);
+    for (const alias of cat.aliases) assert.equal(help.findCategory(alias)[0], name, alias);
+  }
+});
+
 test('command help includes detailed options and disambiguates category names', () => {
   assert.match(cli(['help', 'check']).out, /Usage: askai check \[dir\]/);
   assert.match(cli(['help', 'command', 'setup']).out, /Usage: askai setup/);

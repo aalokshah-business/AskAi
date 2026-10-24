@@ -8,7 +8,7 @@
 
 <!-- askai:begin router (askai init --refresh updates this block; write your own notes outside it) -->
 ## Project
-Make AI coding subscriptions last longer by setting up token-saving tools, project guidance, handoffs, and a cheat sheet across Claude Code, Cursor, Codex, and Antigravity. Type: other. Languages: JavaScript 96%, Python 4%.
+Make AI coding subscriptions last longer: installs and wires up existing token-saving tools (RTK, Context Mode, Serena, markitdown, Caveman-style rules) for Claude Code, Cursor, OpenAI Codex and Google Antigravity on Windows, macOS, Linux and WSL, with a hook-free session ledger, handoff and cheat sheet. Type: other. Languages: JavaScript 96%, Python 4%.
 
 ## Read only what the task needs
 | Need | File |
@@ -42,7 +42,7 @@ Make AI coding subscriptions last longer by setting up token-saving tools, proje
 - When a feature or the structure changes, update one line in FEATURES.md or ARCHITECTURE.md.
 
 ## Delegation
-- Tiers: lead `architect` (architecture, design, hard bugs, security), build `builder` (features and fixes within the design), chore `runner` (cleanup, scripts, git, test runs, search). Claude Code: sonnet/high, sonnet/high, haiku/medium; other tools: docs/ai/MODELS.md.
+- Tiers: lead `architect` (architecture, design, hard bugs, security), build `builder` (features and fixes within the design), chore `runner` (cleanup, scripts, git, test runs, search). Claude Code: sonnet/xhigh, sonnet/high, haiku/xhigh; other tools: docs/ai/MODELS.md.
 - Routine work: no subagents. Give a subagent one bounded task, the files it owns, and a limit (15 tool calls, 1,500 characters).
 - After two failed attempts: stop, report the cause, escalate one tier. Never relax a test to make it pass; verify results yourself.
 <!-- askai:end -->
