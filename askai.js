@@ -1781,7 +1781,7 @@ async function main() {
       if(action==='remove'){console.log(require('./lib/desktop').install(buildCtx(o,true),true));return 0;}
       if(action!=='open')throw Error('askai desktop [open|install|remove|catalog]');
       if(o.dry){console.log(`Open Ask AI desktop for ${projectDir(o)}`);return 0;}
-      await require('./lib/desktop').launch(projectDir(o));console.log('Ask AI desktop launch requested.');return 0;
+      await require('./lib/desktop').launch(projectDir(o));console.log('Ask AI window reported ready (startup check passed).');return 0;
     }
     case 'clear': {
       const dir = projectDir(o);

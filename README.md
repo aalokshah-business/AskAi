@@ -92,6 +92,8 @@ Troubleshooting: a `#!/bin/bash` script with a trailing CR fails in Linux (`*.sh
 
 ## Documentation
 
+**Desktop startup:** Installation prepares Windows GUI builds, including an existing matching legacy PATH copy. Permission failures identify the build folder and recovery command; startup checks detect immediate window exits. See [desktop troubleshooting](docs/INSTALL.md#ask-ai-desktop-windows-and-linux).
+
 | Document | What it covers |
 | --- | --- |
 | [docs/INSTALL.md](docs/INSTALL.md) | Step-by-step install for Windows, macOS, Linux and WSL, every option, every file AskAI creates, troubleshooting |

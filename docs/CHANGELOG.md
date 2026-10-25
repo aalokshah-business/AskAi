@@ -4,9 +4,13 @@ AskAI follows semantic versioning from 1.0.0 (see [RELEASING.md](RELEASING.md)).
 
 ## Unreleased
 
+- In Codex workspace-write sessions, the GUI skill requests normal approval for the desktop launch only; preparation stays sandboxed. Explain that sandboxed process listings may not see external desktop windows.
+
+- Prepare the GUI build in matching legacy PATH installations during Windows setup. Report build permission failures with the installation folder and recovery command; do not retry access-denied compilation. Detect process exits before readiness and during a short startup check, reporting exit status instead of claiming launch success.
+
 - `/askai-gui` now runs the same project-prepare flow as `/askai-cli` (select or ask for the project, run `askai init` and setup/review only when `--review` is explicitly requested) before opening the desktop app, instead of opening it against whatever folder happened to be current. `askai cli --prepare --for gui` returns `askai gui` in its `instruction` field instead of `askai cli --launch`.
 - Delete earlier compiled desktop-bin exes once a new one is built, so `askai update`/`install` (which already rebuilds the desktop app from the latest source on every run, through the shortcut-install step) always leaves exactly the current build on disk instead of accumulating one file per past compile.
-- Retry the desktop app's one-time native compile up to 3 times when csc.exe fails with "Error generating Win32 resource" - a known Windows csc.exe quirk where antivirus real-time scanning transiently locks its temp resource file.
+- Retry transient native resource-generation failures up to three times; access-denied failures are reported immediately because their cause may be permissions or policy.
 - Desktop GUI: pad tab captions so no letter is clipped, move the status line ("Output copied.", "Ready") to the right of the result buttons instead of flush against them, color it teal, and remove the redundant "Select a command..." line from the Help tab (both apps).
 - Fix `askai`/`askai cli`/`askai gui` not resolving on Windows from a non-interactive shell (the kind an agent's shell tool runs, including Antigravity, Codex and Cursor): Git Bash does not do PATHEXT resolution for bare `askai` (only `askai.cmd`), and the `~/.bashrc` alias that worked around it only applies to interactive shells. Windows installs now also get an extensionless `askai` POSIX shim next to `askai.cmd`, the same file already written on macOS/Linux, so bare `askai` resolves everywhere without depending on the alias.
 - Give the Windows and Linux desktop app a navy header band with a drawn Ask AI mark, a teal-accented Output panel heading, and group the Command dropdown (both tabs) by its `askai help` category with a heading row between groups. Add `navy` and `teal` to `desktop-theme.json`.

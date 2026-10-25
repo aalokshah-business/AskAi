@@ -369,6 +369,8 @@ ${claudeSettings()}
 | Claude Code, Cursor, Codex, Antigravity | ${code('askai-plugins')} command or skill | one-time plugin setup, then call each tool only when the task matches |
 | Claude Code, Cursor, Codex, Antigravity | ${code('askai-gui')} command or skill | opens the Ask AI desktop app (${code('askai gui')}, alias for ${code('askai desktop open')}) |
 
+Windows installation prepares the GUI executable and shares it with matching legacy PATH installations. Launch waits for window readiness and a short survival check; build permissions, process startup failures and early exits produce separate errors. No security policy is changed.
+
 ## 9. Files and data AskAI keeps
 
 Install and update refresh both the active runtime and an existing managed legacy ${code('~/.claude/askai/app')} runtime. Old PATH entries and shell aliases therefore use current code. A registry-only ${code('~/.askai')} directory does not override an existing legacy installation's state. Runtime synchronization leaves manifests, credentials and to-do completion records outside the app untouched.
