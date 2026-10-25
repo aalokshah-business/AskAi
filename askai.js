@@ -1137,7 +1137,12 @@ async function cmdConvert(o) {
   if (fs.existsSync(out)) { console.log(`${out} exists; choose another --out`); return 1; }
   fs.mkdirSync(path.dirname(out), { recursive: true });
 
-  const bin = converter;
+  // Prefer the tool's own venv python (-m markitdown) over the uv trampoline exe in `converter`: on this
+  // platform the trampoline reliably drops the YouTube transcript (exits 0, no error) on a call that
+  // succeeds through the venv python directly, same markitdown version, same arguments.
+  const uvPython = comps.uvToolPython(ctx, 'markitdown');
+  const bin = uvPython || converter;
+  const baseArgs = uvPython ? ['-m', 'markitdown'] : [];
   if (isYoutube) {
     console.log(`Converting YouTube video: ${resolvedSrc}`);
     console.log('Fetching transcript and metadata with MarkItDown...');
@@ -1153,7 +1158,7 @@ async function cmdConvert(o) {
   let reportedSecond = -1;
   const isTty = process.stderr.isTTY;
 
-  const child = require('child_process').spawn(bin, [resolvedSrc, '-o', out], {
+  const child = require('child_process').spawn(bin, [...baseArgs, resolvedSrc, '-o', out], {
     stdio: ['ignore', 'pipe', 'pipe'],
     shell: false
   });

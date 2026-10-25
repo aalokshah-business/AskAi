@@ -93,6 +93,20 @@ test('convert on a source MarkItDown reads as empty reports it instead of a sile
   } finally { rm(home); }
 });
 
+test('convert prefers markitdown\'s own venv python over the uv trampoline when one is installed', { skip: hasMarkitdown ? false : 'markitdown not installed' }, () => {
+  // The uv-generated trampoline (`uv tool dir --bin`) silently drops a YouTube transcript on this platform -
+  // same markitdown version, same arguments succeed through the tool's own venv python -m markitdown. When
+  // both exist, askai must resolve and prefer the venv python so it never invokes the trampoline directly.
+  const comps = require('../lib/components');
+  const sys = require('../lib/sys');
+  const realCtx = { which: sys.which, probe: (cmd, args, o) => sys.run(cmd, args, o) };
+  const python = comps.uvToolPython(realCtx, 'markitdown');
+  if (python === null) return; // not a uv tool install on this machine; nothing to prefer
+  assert.ok(fs.existsSync(python), `resolved venv python does not exist: ${python}`);
+  const r = require('node:child_process').spawnSync(python, ['-m', 'markitdown', '--version'], { encoding: 'utf8' });
+  assert.strictEqual(r.status, 0, (r.stdout || '') + (r.stderr || ''));
+});
+
 test('convert on a source with a broken font map reports the (cid:N) garbage instead of writing it', { skip: hasMarkitdown ? false : 'markitdown not installed' }, () => {
   const home = tmpHome();
   try {
