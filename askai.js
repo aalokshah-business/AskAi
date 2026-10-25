@@ -1541,10 +1541,6 @@ function launchWindowsCli(cp, cwd, node, script, caller) {
 }
 function launchCli() {
   const cp = require('child_process');
-  try {
-    const desktop = require('./lib/desktop');
-    if (desktop.environment().supported) desktop.launch(process.cwd()).catch(() => {});
-  } catch (_) { /* GUI is a best-effort extra; the terminal launch below is what matters */ }
   const caller = require('./lib/infra').detectCaller();
   if (caller) process.env.ASKAI_HOST = caller;
   const script = path.join(SRC, 'askai.js');

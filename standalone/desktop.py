@@ -136,14 +136,14 @@ def main():
         for column in range(3):
             commands.columnconfigure(column, weight=1, uniform='command-columns')
         picker = ttk.Combobox(commands, textvariable=command, values=grouped_values(catalog), state='readonly', width=22)
-        ttk.Label(commands, text='Command').grid(row=0, column=0, sticky='w')
-        ttk.Label(commands, text='Action').grid(row=0, column=1, sticky='w')
+        ttk.Label(commands, text='Command', font=(theme['font'], theme['fontSize'], 'bold')).grid(row=0, column=0, sticky='w')
+        ttk.Label(commands, text='Action', font=(theme['font'], theme['fontSize'], 'bold')).grid(row=0, column=1, sticky='w')
         picker.grid(row=1, column=0, sticky='ew', padx=(0, 8))
         action = tk.StringVar()
         action_picker = ttk.Combobox(commands, textvariable=action, state='readonly')
         action_picker.grid(row=1, column=1, sticky='ew', padx=(0, 8))
         environment = tk.StringVar()
-        ttk.Label(commands, text='Environment').grid(row=0, column=2, sticky='w')
+        ttk.Label(commands, text='Environment', font=(theme['font'], theme['fontSize'], 'bold')).grid(row=0, column=2, sticky='w')
         environment_picker = ttk.Combobox(commands, textvariable=environment, state='readonly')
         environment_picker.grid(row=1, column=2, sticky='ew')
         environment_values = {}
@@ -197,10 +197,16 @@ def main():
                 widget = ttk.Entry(parent)
             return widget
 
+        def update_add_option_state():
+            used = [item['flag'].get() for item in option_rows]
+            has_more = any(row['flag'] not in used for row in visible_options())
+            add_option_btn.configure(state='normal' if has_more else 'disabled')
+
         def add_option(initial=None):
             available = [row for row in visible_options() if row['flag'] not in [item['flag'].get() for item in option_rows]]
             if not available:
                 status.set('All available options already added.')
+                update_add_option_state()
                 return
             panel = ttk.Frame(form_frame)
             panel.grid(row=100 + len(option_rows), column=0, columnspan=3, sticky='ew', pady=3)
@@ -224,6 +230,7 @@ def main():
                 option_rows.remove(row)
                 for index, item in enumerate(option_rows):
                     item['panel'].grid_configure(row=100 + index)
+                update_add_option_state()
                 fit_controls()
 
             remove = ttk.Button(panel, text='Remove', command=remove_option)
@@ -232,6 +239,7 @@ def main():
             flag.set(initial or available[0]['flag'])
             configure_value()
             option_rows.append(row)
+            update_add_option_state()
             fit_controls()
 
         def refresh_form(event=None):
@@ -256,6 +264,11 @@ def main():
                     add_option(field['flag'])
             if command.get() == 'status' and any(row['flag'] == 'brief' for row in visible_options()):
                 add_option('brief')
+            # Show the first optional argument row without waiting for Add Option, so selecting a command
+            # alone reveals whether it has any optional arguments at all.
+            if not option_rows and visible_options():
+                add_option(visible_options()[0]['flag'])
+            update_add_option_state()
             fit_controls()
 
         def describe(event=None):
@@ -273,10 +286,11 @@ def main():
 
         picker.bind('<<ComboboxSelected>>', describe)
         action_picker.bind('<<ComboboxSelected>>', refresh_form)
-        describe()
         buttons = ttk.Frame(commands)
         buttons.grid(row=4, column=0, columnspan=3, sticky='w', pady=(4, 0))
-        ttk.Button(buttons, text='Add Option', command=add_option).pack(side='left', padx=(0, 8))
+        add_option_btn = ttk.Button(buttons, text='Add Option', command=add_option)
+        add_option_btn.pack(side='left', padx=(0, 8))
+        describe()
         def command_request():
             return {'kind': 'command', 'command': command.get(), 'variant': definition()['id'], 'environment': environment_values.get(environment.get(), ''), 'fields': {name: widget.get() for name, widget in field_widgets.items()}, 'options': [{'flag': row['flag'].get(), 'value': row['value'].get()} for row in option_rows]}
 
@@ -296,7 +310,7 @@ def main():
         ttk.Button(buttons, text='Open Terminal', command=terminal).pack(side='left')
         help_command = tk.StringVar(value='status')
         help_tab.columnconfigure(1, weight=1)
-        ttk.Label(help_tab, text='Command').grid(row=0, column=0, sticky='w', padx=(0, 12))
+        ttk.Label(help_tab, text='Command', font=(theme['font'], theme['fontSize'], 'bold')).grid(row=0, column=0, sticky='w', padx=(0, 12))
         help_picker = ttk.Combobox(help_tab, textvariable=help_command, values=grouped_values(catalog), state='readonly')
         help_picker.grid(row=0, column=1, sticky='ew', padx=(0, 12))
 

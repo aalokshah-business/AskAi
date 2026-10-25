@@ -4,6 +4,8 @@ AskAI follows semantic versioning from 1.0.0 (see [RELEASING.md](RELEASING.md)).
 
 ## Unreleased
 
+- `askai cli --launch` no longer also opens the desktop app. `/askai-cli` and `/askai-gui` are independent again: each opens only what it says.
+- Desktop GUI: show the first optional argument's dropdown as soon as a command is picked instead of only after clicking Add Option, so selecting a command reveals whether it has optional arguments at all. Add Option now disables itself when a command has no optional arguments, or once every one has been added, and re-enables if one is removed. Bold the Command/Action/Environment labels (Commands and Help tabs) and the Input type/File URL/Output Folder labels (Convert tab).
 - In Codex workspace-write sessions, the GUI skill requests normal approval for the desktop launch only; preparation stays sandboxed. Explain that sandboxed process listings may not see external desktop windows.
 
 - Prepare the GUI build in matching legacy PATH installations during Windows setup. Report build permission failures with the installation folder and recovery command; do not retry access-denied compilation. Detect process exits before readiness and during a short startup check, reporting exit status instead of claiming launch success.
