@@ -4,6 +4,7 @@ AskAI follows semantic versioning from 1.0.0 (see [RELEASING.md](RELEASING.md)).
 
 ## Unreleased
 
+- Desktop GUI: pad tab captions so no letter is clipped, move the status line ("Output copied.", "Ready") to the right of the result buttons instead of flush against them, color it teal, and remove the redundant "Select a command..." line from the Help tab (both apps).
 - Fix `askai`/`askai cli`/`askai gui` not resolving on Windows from a non-interactive shell (the kind an agent's shell tool runs, including Antigravity, Codex and Cursor): Git Bash does not do PATHEXT resolution for bare `askai` (only `askai.cmd`), and the `~/.bashrc` alias that worked around it only applies to interactive shells. Windows installs now also get an extensionless `askai` POSIX shim next to `askai.cmd`, the same file already written on macOS/Linux, so bare `askai` resolves everywhere without depending on the alias.
 - Give the Windows and Linux desktop app a navy header band with a drawn Ask AI mark, a teal-accented Output panel heading, and group the Command dropdown (both tabs) by its `askai help` category with a heading row between groups. Add `navy` and `teal` to `desktop-theme.json`.
 - Add `askai gui` (alias for `askai desktop open`) and the matching `/askai-gui` command/skill for Claude Code, Cursor, Codex and Antigravity, alongside `/askai-cli` and `/askai-plugins`. `askai cli --launch` now also opens the desktop app, best-effort, when the platform supports it.
