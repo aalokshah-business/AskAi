@@ -1650,7 +1650,8 @@ Exit: 0 on success; 1 on unsupported platforms or setup failure
   Why: Vendor reports 47-92% on large tool outputs; four independent studies found a median +32% cost; proxy mode moved Claude Code to API billing in your screenshot.
   AskAI: askai install --headroom; askai infra shows where it is registered
 - **Proxies and routers** (`askai ask proxies`): Avoid on a subscription. Route to a cheaper model with askai go / the advisor / subagents instead of a third-party proxy.
-  Why: Proxies can switch billing, break the prompt cache and send code to third parties. OmniRoute specifically points ANTHROPIC_BASE_URL at a local router that relabels free-tier third-party models (OpenRouter, Kiro, Antigravity, Nvidia NIM) as a fake Claude model name and swaps ANTHROPIC_AUTH_TOKEN for its own key: likely a terms violation with Anthropic and with each free-tier provider, no SLA on model availability, and your code goes through every connected provider in the round-robin, not just Anthropic.
+  Why: Proxies can switch billing, break the prompt cache and send code to third parties. OmniRoute specifically points ANTHROPIC_BASE_URL at a local router that relabels free-tier third-party models (OpenRouter, Kiro, Antigravity, Nvidia NIM) as a fake Claude model name and swaps ANTHROPIC_AUTH_TOKEN for its own key. The same pattern exists for Codex: a creator video walks through replacing ~/.codex/config.toml with a base_url pointing at a local proxy (llm7-codex-proxy) in front of a free third-party gateway (llm7.io) to bypass a ChatGPT plan's own Codex limit entirely, labelled as "free and unlimited." Both are likely a terms violation with the vendor and with each free-tier provider, no SLA on model availability, and your code goes through every connected provider, not just the one you pay for.
+  AskAI: askai audit flags ANTHROPIC_BASE_URL and a Codex config.toml base_url the same way
 - **Code navigation plugins** (`askai ask lsp`): Install the official code-intelligence plugin for typed languages.
   Why: LSP navigation measured -13% cost (Marmelab); Anthropic recommends it.
   AskAI: askai install --lsp ts,py
@@ -1693,8 +1694,8 @@ Exit: 0 on success; 1 on unsupported platforms or setup failure
 - **Prompt modifiers** (`askai ask modes`): Add one modifier line instead of a long instruction: BLUNT, BRUTAL, ASSUME, COUNTER, CONTRAST.
   Why: One line replaces several turns of back-and-forth when you want a direct critique.
   AskAI: askai prompt --mode brutal
-- **Graphify** (`askai ask graphify`): Optional for very large repos: build the graph once and point the agent at GRAPH_REPORT.md.
-  Why: Claims 71.5x fewer tokens per query; an independent test saw ~0% when the agent ignored the graph; building it costs tokens; its Claude hook fires on every search.
+- **Graphify** (`askai ask graphify`): Optional for very large repos: build the graph once and point the agent at GRAPH_REPORT.md. Re-run its update command after a change before trusting the graph for that area; a stale graph makes the agent confidently wrong the same way a stale CodeGraph index does.
+  Why: Claims 71.5x fewer tokens per query; a different creator video states the same claim as "up to 71%" (times and percent are not the same number, and the two sources do not agree with each other, let alone with reality); an independent test saw ~0% when the agent ignored the graph; building it costs tokens; its Claude hook fires on every search.
   AskAI: askai plugins install graphify; askai map links the report
 - **Graftcode rules** (`askai ask graftcode`): In a project that uses Graftcode, add its rules so agents call methods through generated packages instead of writing REST code.
   Why: Graftcode publishes a small CLAUDE.md router plus per-language rules read on demand (grft-dev/graftcode-demos).
@@ -1719,8 +1720,8 @@ Exit: 0 on success; 1 on unsupported platforms or setup failure
 - **Seeing what each plugin saves** (`askai ask savings`): askai savings runs each installed plugin's own report (rtk gain, ccusage daily, headroom savings, codebase-memory projects, Graphify graph status); askai plugins info <id> shows the in-agent commands.
   Why: Tools report their own estimates; RTK's counter showed 96M saved during runs that cost more. Compare with askai savings and askai audit.
   AskAI: askai savings 7
-- **Shorter replies** (`askai ask output-size`): On by default: the terse rule (Caveman-style), the diff-only rule, Codex verbosity low, and the output line in askai prompt. For one task: askai prompt --output diff.
-  Why: Output tokens cost about five times input on Claude. Caveman itself advertises 65% fewer output tokens; independent measurement across six studies puts the real median at about 8% — use the measured number, not the vendor claim.
+- **Shorter replies** (`askai ask output-size`): On by default: the terse rule (Caveman-style), the diff-only rule, Codex verbosity low, and the output line in askai prompt. For one task: askai prompt --output diff. Trimming is per session, not permanent: turn it down for a task where you need the agent reasoning out loud, since the shrunk replies also become its own context on later turns.
+  Why: Output tokens cost about five times input on Claude. Caveman itself advertises 65% fewer output tokens; independent measurement across six studies puts the real median at about 8% — use the measured number, not the vendor claim. Aggressive trimming is a quality risk too, not only a savings number: a terser past reply carries less of the agent's own reasoning forward into later turns.
   AskAI: askai prompt --output diff; --caveman ultra for the shortest replies
 - **Things only you can do** (`askai ask todo`): askai todo lists every manual step per tool and repository; checkable ones clear themselves.
   Why: A plugin that is installed but never set up costs tokens without saving any.
@@ -1753,7 +1754,7 @@ Every tool below was researched (official docs, third-party benchmarks, communit
 | Code navigation | Claude Code LSP plugins | -13% cost (Marmelab) | Opt-in --lsp ts,py,kotlin,ruby,swift |
 | Code navigation | Serena | No third-party measurement | coding and full profiles, all four hosts |
 | Code navigation | CodeGraph, code-review-graph, Graphify, Claude Context, Token Savior and others | Small or no measured effect | Not installed |
-| Audit | claude-config-doctor (LLM skill), claude-doctor (offline transcript analysis) | Useful reviews; the LLM one spends tokens per run | askai check is deterministic and free |
+| Audit | claude-config-doctor (LLM skill), claude-doctor (offline transcript analysis), Token Optimizer (6 LLM subagents reading CLAUDE.md, skills, MCPs, commands and hooks) | Useful reviews; the LLM ones spend tokens per run to measure things a script can count for free | askai check and askai audit are deterministic and free |
 | Plugin bundles | context_guard, token-saver, TokenRoll scout | No third-party measurement; scout moves reads to subagents (still billed) | Their sound parts are askai settings and rules |
 | Budget guard | tokenlens | Warns or blocks against your weekly cap; saves nothing per task | askai savings and the status line show spend |
 | Measurement | ccusage, Claude-Code-Usage-Monitor, ccstatusline, CCometixLine, claude-powerline, claude-hud | Show where tokens go | ccusage in the full profile; askai status line |

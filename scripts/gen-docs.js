@@ -154,7 +154,7 @@ const ECOSYSTEM = [
   ['Code navigation', 'Claude Code LSP plugins', '-13% cost (Marmelab)', 'Opt-in --lsp ts,py,kotlin,ruby,swift'],
   ['Code navigation', 'Serena', 'No third-party measurement', 'coding and full profiles, all four hosts'],
   ['Code navigation', 'CodeGraph, code-review-graph, Graphify, Claude Context, Token Savior and others', 'Small or no measured effect', 'Not installed'],
-  ['Audit', 'claude-config-doctor (LLM skill), claude-doctor (offline transcript analysis)', 'Useful reviews; the LLM one spends tokens per run', 'askai check is deterministic and free'],
+  ['Audit', 'claude-config-doctor (LLM skill), claude-doctor (offline transcript analysis), Token Optimizer (6 LLM subagents reading CLAUDE.md, skills, MCPs, commands and hooks)', 'Useful reviews; the LLM ones spend tokens per run to measure things a script can count for free', 'askai check and askai audit are deterministic and free'],
   ['Plugin bundles', 'context_guard, token-saver, TokenRoll scout', 'No third-party measurement; scout moves reads to subagents (still billed)', 'Their sound parts are askai settings and rules'],
   ['Budget guard', 'tokenlens', 'Warns or blocks against your weekly cap; saves nothing per task', 'askai savings and the status line show spend'],
   ['Measurement', 'ccusage, Claude-Code-Usage-Monitor, ccstatusline, CCometixLine, claude-powerline, claude-hud', 'Show where tokens go', 'ccusage in the full profile; askai status line'],

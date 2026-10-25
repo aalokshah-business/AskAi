@@ -9,6 +9,6 @@ tags:
   - shorter
   - caveman
   - terse
-rule: On by default: the terse rule (Caveman-style), the diff-only rule, Codex verbosity low, and the output line in askai prompt. For one task: askai prompt --output diff.
-why: Output tokens cost about five times input on Claude. Caveman itself advertises 65% fewer output tokens; independent measurement across six studies puts the real median at about 8% — use the measured number, not the vendor claim.
+rule: On by default: the terse rule (Caveman-style), the diff-only rule, Codex verbosity low, and the output line in askai prompt. For one task: askai prompt --output diff. Trimming is per session, not permanent: turn it down for a task where you need the agent reasoning out loud, since the shrunk replies also become its own context on later turns.
+why: Output tokens cost about five times input on Claude. Caveman itself advertises 65% fewer output tokens; independent measurement across six studies puts the real median at about 8% — use the measured number, not the vendor claim. Aggressive trimming is a quality risk too, not only a savings number: a terser past reply carries less of the agent's own reasoning forward into later turns.
 auto: askai prompt --output diff; --caveman ultra for the shortest replies

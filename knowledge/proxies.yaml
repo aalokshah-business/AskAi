@@ -7,5 +7,8 @@ tags:
   - omniroute
   - claudeslim
   - wrap
+  - llm7
+  - codex proxy
 rule: Avoid on a subscription. Route to a cheaper model with askai go / the advisor / subagents instead of a third-party proxy.
-why: Proxies can switch billing, break the prompt cache and send code to third parties. OmniRoute specifically points ANTHROPIC_BASE_URL at a local router that relabels free-tier third-party models (OpenRouter, Kiro, Antigravity, Nvidia NIM) as a fake Claude model name and swaps ANTHROPIC_AUTH_TOKEN for its own key: likely a terms violation with Anthropic and with each free-tier provider, no SLA on model availability, and your code goes through every connected provider in the round-robin, not just Anthropic.
+why: Proxies can switch billing, break the prompt cache and send code to third parties. OmniRoute specifically points ANTHROPIC_BASE_URL at a local router that relabels free-tier third-party models (OpenRouter, Kiro, Antigravity, Nvidia NIM) as a fake Claude model name and swaps ANTHROPIC_AUTH_TOKEN for its own key. The same pattern exists for Codex: a creator video walks through replacing ~/.codex/config.toml with a base_url pointing at a local proxy (llm7-codex-proxy) in front of a free third-party gateway (llm7.io) to bypass a ChatGPT plan's own Codex limit entirely, labelled as "free and unlimited." Both are likely a terms violation with the vendor and with each free-tier provider, no SLA on model availability, and your code goes through every connected provider, not just the one you pay for.
+auto: askai audit flags ANTHROPIC_BASE_URL and a Codex config.toml base_url the same way

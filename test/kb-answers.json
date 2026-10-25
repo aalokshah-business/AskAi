@@ -133,7 +133,7 @@
   },
   {
     "id": "proxies",
-    "render": "Proxies and routers\n  Rule: Avoid on a subscription. Route to a cheaper model with askai go / the advisor / subagents instead of a third-party proxy.\n  Why:  Proxies can switch billing, break the prompt cache and send code to third parties. OmniRoute specifically points ANTHROPIC_BASE_URL at a local router that relabels free-tier third-party models (OpenRouter, Kiro, Antigravity, Nvidia NIM) as a fake Claude model name and swaps ANTHROPIC_AUTH_TOKEN for its own key: likely a terms violation with Anthropic and with each free-tier provider, no SLA on model availability, and your code goes through every connected provider in the round-robin, not just Anthropic."
+    "render": "Proxies and routers\n  Rule: Avoid on a subscription. Route to a cheaper model with askai go / the advisor / subagents instead of a third-party proxy.\n  Why:  Proxies can switch billing, break the prompt cache and send code to third parties. OmniRoute specifically points ANTHROPIC_BASE_URL at a local router that relabels free-tier third-party models (OpenRouter, Kiro, Antigravity, Nvidia NIM) as a fake Claude model name and swaps ANTHROPIC_AUTH_TOKEN for its own key. The same pattern exists for Codex: a creator video walks through replacing ~/.codex/config.toml with a base_url pointing at a local proxy (llm7-codex-proxy) in front of a free third-party gateway (llm7.io) to bypass a ChatGPT plan's own Codex limit entirely, labelled as \"free and unlimited.\" Both are likely a terms violation with the vendor and with each free-tier provider, no SLA on model availability, and your code goes through every connected provider, not just the one you pay for.\n  askai:       askai audit flags ANTHROPIC_BASE_URL and a Codex config.toml base_url the same way"
   },
   {
     "id": "lsp",
@@ -201,7 +201,7 @@
   },
   {
     "id": "graphify",
-    "render": "Graphify\n  Rule: Optional for very large repos: build the graph once and point the agent at GRAPH_REPORT.md.\n  Why:  Claims 71.5x fewer tokens per query; an independent test saw ~0% when the agent ignored the graph; building it costs tokens; its Claude hook fires on every search.\n  askai:       askai plugins install graphify; askai map links the report"
+    "render": "Graphify\n  Rule: Optional for very large repos: build the graph once and point the agent at GRAPH_REPORT.md. Re-run its update command after a change before trusting the graph for that area; a stale graph makes the agent confidently wrong the same way a stale CodeGraph index does.\n  Why:  Claims 71.5x fewer tokens per query; a different creator video states the same claim as \"up to 71%\" (times and percent are not the same number, and the two sources do not agree with each other, let alone with reality); an independent test saw ~0% when the agent ignored the graph; building it costs tokens; its Claude hook fires on every search.\n  askai:       askai plugins install graphify; askai map links the report"
   },
   {
     "id": "graftcode",
@@ -237,7 +237,7 @@
   },
   {
     "id": "output-size",
-    "render": "Shorter replies\n  Rule: On by default: the terse rule (Caveman-style), the diff-only rule, Codex verbosity low, and the output line in askai prompt. For one task: askai prompt --output diff.\n  Why:  Output tokens cost about five times input on Claude. Caveman itself advertises 65% fewer output tokens; independent measurement across six studies puts the real median at about 8% — use the measured number, not the vendor claim.\n  askai:       askai prompt --output diff; --caveman ultra for the shortest replies"
+    "render": "Shorter replies\n  Rule: On by default: the terse rule (Caveman-style), the diff-only rule, Codex verbosity low, and the output line in askai prompt. For one task: askai prompt --output diff. Trimming is per session, not permanent: turn it down for a task where you need the agent reasoning out loud, since the shrunk replies also become its own context on later turns.\n  Why:  Output tokens cost about five times input on Claude. Caveman itself advertises 65% fewer output tokens; independent measurement across six studies puts the real median at about 8% — use the measured number, not the vendor claim. Aggressive trimming is a quality risk too, not only a savings number: a terser past reply carries less of the agent's own reasoning forward into later turns.\n  askai:       askai prompt --output diff; --caveman ultra for the shortest replies"
   },
   {
     "id": "todo",

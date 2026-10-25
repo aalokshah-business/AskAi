@@ -5,6 +5,6 @@ tags:
   - knowledge graph
   - graph report
   - local rag
-rule: Optional for very large repos: build the graph once and point the agent at GRAPH_REPORT.md.
-why: Claims 71.5x fewer tokens per query; an independent test saw ~0% when the agent ignored the graph; building it costs tokens; its Claude hook fires on every search.
+rule: Optional for very large repos: build the graph once and point the agent at GRAPH_REPORT.md. Re-run its update command after a change before trusting the graph for that area; a stale graph makes the agent confidently wrong the same way a stale CodeGraph index does.
+why: Claims 71.5x fewer tokens per query; a different creator video states the same claim as "up to 71%" (times and percent are not the same number, and the two sources do not agree with each other, let alone with reality); an independent test saw ~0% when the agent ignored the graph; building it costs tokens; its Claude hook fires on every search.
 auto: askai plugins install graphify; askai map links the report
