@@ -24,6 +24,8 @@ SECTIONS = [
          "1. Start here. Looks at this folder, prepares it, and opens the terminal."),
         ("/askai-plugins Codex: $askai-plugins",
          "2. Then this. Looks at this folder and finishes the plugin setup still left."),
+        ("/askai-gui Codex: $askai-gui",
+         "3. Prefer a window. Opens the Ask AI desktop app (same as askai desktop open)."),
     ]),
     ("Work (active coding & session flow)", [
         ("askai next [dir]",

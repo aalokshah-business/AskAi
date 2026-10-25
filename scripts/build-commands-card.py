@@ -188,7 +188,7 @@ PDF_GEOM = {
 }
 
 
-def render_pdf(sections):
+def render_pdf(sections, out_pdf=PDF_OUT, title="AskAI command reference", footer="ASKAI  /  QUICK REFERENCE"):
     pages = layout(sections, pdf_measure(), PDF_GEOM)
     doc = pymupdf.open()
     pw, ph = PDF_GEOM["page"]
@@ -212,9 +212,9 @@ def render_pdf(sections):
             page.insert_text((x, top + fontsize * 0.82), text, fontname=fontname, fontsize=fontsize, color=color)
 
         page._line = line
-        line(42, 26, "AskAI command reference", "uib", 27, rgb(WHITE))
+        line(42, 26, title, "uib", 27, rgb(WHITE))
         line(42, 62, LEGEND, "ui", 10.5, rgb(MUTED))
-        line(42, 804, "ASKAI  /  QUICK REFERENCE", "ui", 9.5, rgb(FOOT))
+        line(42, 804, footer, "ui", 9.5, rgb(FOOT))
         label = f"{pi + 1:02d}"
         lw = pymupdf.Font(fontfile=fonts["ui"]).text_length(label, fontsize=9.5)
         page._line(pw - 42 - lw, 804, label, "ui", 9.5, rgb(FOOT))
@@ -263,13 +263,13 @@ def render_pdf(sections):
                         page._line(x + 12, ny, note, "ui", 9.5, rgb(FOOT))
                         ny += 14
 
-    doc.save(PDF_OUT)
+    doc.save(out_pdf)
     doc.close()
-    check = pymupdf.open(PDF_OUT)
+    check = pymupdf.open(out_pdf)
     text = "\n".join(p.get_text() for p in check).replace("\ufd3e", "(").replace("\ufd3f", ")")
-    for title, _items in sections:
-        if title not in text:
-            raise SystemExit(f"PDF is missing section {title}")
+    for section_title, _items in sections:
+        if section_title not in text:
+            raise SystemExit(f"PDF is missing section {section_title}")
     for banned in ("Install flags", "Also run these"):
         if banned in text:
             raise SystemExit(f"PDF still has old section {banned}")
@@ -277,14 +277,15 @@ def render_pdf(sections):
         " " if ch.isspace() else ("-" if ch in "-\u2010\u2011\u2013\u2014" else ch)
         for ch in text
     )
-    head = norm.split(sections[1][0], 1)[0]
-    cli_at = head.find("/askai-cli")
-    plug_at = head.find("/askai-plugins")
-    if cli_at < 0 or plug_at < 0 or cli_at > plug_at:
-        raise SystemExit("/askai-cli and /askai-plugins must lead the setup, in that order")
-    if norm.count("/askai-cli") != 1 or norm.count("/askai-plugins") != 1:
-        raise SystemExit("each slash command should appear once")
-    print(f"{check.page_count} pages -> {PDF_OUT}")
+    if sections and sections[0][0] == "Start here":
+        head = norm.split(sections[1][0], 1)[0]
+        starts = ["/askai-cli", "/askai-plugins", "/askai-gui"]
+        at = [head.find(s) for s in starts]
+        if any(a < 0 for a in at) or at != sorted(at):
+            raise SystemExit("/askai-cli, /askai-plugins and /askai-gui must lead the setup, in that order")
+        if any(norm.count(s) != 1 for s in starts):
+            raise SystemExit("each slash command should appear once")
+    print(f"{check.page_count} pages -> {out_pdf}")
 
 
 def png_layout(sections, scale):
@@ -323,7 +324,7 @@ def png_layout(sections, scale):
     return pages, geom
 
 
-def render_png(sections):
+def render_png(sections, out_png=PNG_OUT, title="AskAI command reference", footer="ASKAI  /  QUICK REFERENCE"):
     chosen = None
     for step in range(100, 45, -1):
         scale = step / 100
@@ -360,10 +361,10 @@ def render_png(sections):
 
     header_h = px(geom["header_h"])
     d.rectangle((0, 0, W, header_h), fill=NAVY)
-    d.text(px(geom["cols"][0], 14 * scale), "AskAI command reference", font=uib_title, fill=WHITE)
+    d.text(px(geom["cols"][0], 14 * scale), title, font=uib_title, fill=WHITE)
     d.text(px(geom["cols"][0], 36 * scale), LEGEND, font=ui, fill=MUTED)
     d.rectangle((0, H - px(28 * scale), W, H), fill=NAVY)
-    d.text(px(geom["cols"][0], ph - 24 * scale), "ASKAI  /  QUICK REFERENCE", font=foot_f, fill=WHITE)
+    d.text(px(geom["cols"][0], ph - 24 * scale), footer, font=foot_f, fill=WHITE)
 
     for ci, ops in enumerate(pages[0]):
         x = geom["cols"][ci]
@@ -406,14 +407,40 @@ def render_png(sections):
                     for bit in wrapped:
                         d.text(px(x + 10 * scale, ny), bit, font=note_f, fill=FOOT)
                         ny += 13 * scale
-    img.save(PNG_OUT, dpi=(600, 600), optimize=True)
-    print(f"scale={scale:.2f} -> {PNG_OUT}")
+    img.save(out_png, dpi=(600, 600), optimize=True)
+    print(f"scale={scale:.2f} -> {out_png}")
+
+
+GROUPS = [
+    (
+        "AskAI setup & entry points",
+        "ASKAI  /  SETUP  &  ENTRY POINTS",
+        {"Start here", "Setup (installation & maintenance)", "System (shell, CLI & environment)"},
+        ROOT / "docs" / "AskAI-setup-A3.png",
+        ROOT / "docs" / "AskAI-setup.pdf",
+    ),
+    (
+        "AskAI working reference",
+        "ASKAI  /  WHILE  YOU  WORK",
+        {"Work (active coding & session flow)", "Project (repository, pack & architecture)",
+         "Health (diagnostics, audit & checks)", "Cost & Levers (spend, tokens & levers)",
+         "Learn (guides, habits & etiquette)"},
+        ROOT / "docs" / "AskAI-working-A3.png",
+        ROOT / "docs" / "AskAI-working.pdf",
+    ),
+]
 
 
 def main():
-    sections = load_sections()
-    render_png(sections)
-    render_pdf(sections)
+    all_sections = load_sections()
+    titles = {title for title, _items in all_sections}
+    grouped = {title for _t, _f, members, _png, _pdf in GROUPS for title in members}
+    if titles - grouped:
+        raise SystemExit(f"section(s) not assigned to a poster: {sorted(titles - grouped)}")
+    for title, footer, members, out_png, out_pdf in GROUPS:
+        sections = [s for s in all_sections if s[0] in members]
+        render_png(sections, out_png, title, footer)
+        render_pdf(sections, out_pdf, title, footer)
 
 
 if __name__ == "__main__":

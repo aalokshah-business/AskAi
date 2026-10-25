@@ -98,6 +98,8 @@ Troubleshooting: a `#!/bin/bash` script with a trailing CR fails in Linux (`*.sh
 | [docs/ASKAI_GUIDE.md](docs/ASKAI_GUIDE.md) | The guide: AskAI, working etiquette, and the research behind every choice (also as .pdf and .docx) |
 | [docs/ARCHITECTURE.md](docs/ARCHITECTURE.md) | Architecture, components, settings and the full command reference, generated from the code |
 | [docs/CHEAT_SHEET.md](docs/CHEAT_SHEET.md), [PDF](docs/CHEAT_SHEET.pdf) | Framework, working loop, command choice, and the full command index |
+| [Setup poster](docs/AskAI-setup-A3.png) ([PDF](docs/AskAI-setup.pdf)) | Start here plus install/maintenance/shell commands, in one printable page: look at it once per setup, not while coding |
+| [Working poster](docs/AskAI-working-A3.png) ([PDF](docs/AskAI-working.pdf)) | Session/work, project, health, cost and learn commands, in one printable page: the day-to-day quick reference |
 | [docs/CHANGELOG.md](docs/CHANGELOG.md) | What changed in each version |
 | [docs/PREVIEW_MATRIX.md](docs/PREVIEW_MATRIX.md) | Install previews on every OS for every tool |
 | [docs/research/TOOLS_CATALOG.md](docs/research/TOOLS_CATALOG.md) | Every token-saving tool: claimed versus measured, and what AskAI does with it |
