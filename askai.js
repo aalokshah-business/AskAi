@@ -367,7 +367,7 @@ function installCommands(ctx, hosts = ctx.hostSel) {
   const entries = [
     ...hostEntries('askai-cli.md', 'askai-cli', 'Open the AskAI terminal. AI setup and review are opt-in with --review. Use when the user invokes askai-cli.'),
     ...hostEntries('askai-plugins.md', 'askai-plugins', 'Use the connected token tools in this chat. Use when the user invokes askai-plugins.'),
-    ...hostEntries('askai-gui.md', 'askai-gui', 'Open the Ask AI desktop GUI app. Use when the user invokes askai-gui.'),
+    ...hostEntries('askai-gui.md', 'askai-gui', 'Open the Ask AI desktop app. AI setup and review are opt-in with --review. Use when the user invokes askai-gui.'),
   ];
   // Retire only launchers recorded in AskAI's manifest. Keep edited or user-owned files.
   const old = [
@@ -1585,6 +1585,7 @@ function launchCli() {
 async function cmdPrepare(o) {
   const log = console.log;
   if (o.json) console.log = () => {};
+  const launch = o.for === 'gui' ? { cmd: 'askai gui', noun: 'the desktop app' } : { cmd: 'askai cli --launch', noun: 'the terminal' };
   try {
     const picked = cliPrepare.select(o);
     const text = body => [
@@ -1605,7 +1606,7 @@ async function cmdPrepare(o) {
         init: 'skipped', install: { skipped: true },
         review: { skipped: true, state: 'not-checked' },
         setup: fs.existsSync(path.join(dir, session.DIR, 'askai-init.json')) ? 'initialized' : 'not-initialized',
-        instruction: 'Open the terminal with askai cli --launch in this project folder. No source analysis or AI review was run. Request --review explicitly for setup and review.',
+        instruction: `Open ${launch.noun} with ${launch.cmd} in this project folder. No source analysis or AI review was run. Request --review explicitly for setup and review.`,
       });
     }
     const review = projectReview.status(dir);
@@ -1647,8 +1648,8 @@ async function cmdPrepare(o) {
       read: ['docs/ai/SOURCE_INDEX.md', 'docs/ai/PROJECT_MAP.md', 'docs/ai/ARCHITECTURE.md', 'docs/ai/FEATURES.md', 'docs/ai/REFERENCES.md', 'AGENTS.md'],
       questions: action === 'review' ? cliPrepare.questions(info) : [],
       instruction: action === 'launch'
-        ? 'The pack matches the last AI review. Open the terminal with askai cli --launch.'
-        : 'Start with changed and missing paths; use the source index for targeted lookup. If pathsTruncated, run askai review status --all --json. Fill evidence-backed gaps. Ask one bundled question only for facts code and chat cannot establish. Then askai review done and askai cli --launch.',
+        ? `The pack matches the last AI review. Open ${launch.noun} with ${launch.cmd}.`
+        : `Start with changed and missing paths; use the source index for targeted lookup. If pathsTruncated, run askai review status --all --json. Fill evidence-backed gaps. Ask one bundled question only for facts code and chat cannot establish. Then askai review done and ${launch.cmd}.`,
     });
   } finally { console.log = log; }
 }

@@ -158,6 +158,21 @@ test('cli --prepare requires a description before a review', () => withHome(root
   assert.match(fs.readFileSync(path.join(proj, 'AGENTS.md'), 'utf8'), /A shop for members/);
 }));
 
+test('cli --prepare --for gui points the launch instruction at askai gui, not the terminal', () => withHome(root => {
+  const proj = path.join(root, 'shop');
+  fs.mkdirSync(proj);
+  const env = { ASKAI_HOME: process.env.ASKAI_HOME, ASKAI_CLI_INSTALL: '0' };
+  const term = cli(['cli', '--prepare', '--json', '--path', proj], { env });
+  assert.strictEqual(term.code, 0, term.err + term.out);
+  assert.match(JSON.parse(term.out).instruction, /askai cli --launch/);
+  const gui = cli(['cli', '--prepare', '--json', '--for', 'gui', '--path', proj], { env });
+  assert.strictEqual(gui.code, 0, gui.err + gui.out);
+  const guiBody = JSON.parse(gui.out);
+  assert.match(guiBody.instruction, /askai gui/);
+  assert.ok(!/askai cli --launch/.test(guiBody.instruction));
+  assert.strictEqual(guiBody.action, 'launch');
+}));
+
 test('askai help lists command names in alphabetical order', () => {
   const names = cli(['help', '--list']).out.trim().split(/\r?\n/).filter(Boolean);
   assert.deepStrictEqual(names, [...names].sort());
