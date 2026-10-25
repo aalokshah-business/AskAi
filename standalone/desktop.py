@@ -111,10 +111,16 @@ def main():
         modes.grid(row=0, column=0, columnspan=2, sticky='w')
         ttk.Radiobutton(modes, text='Local File', variable=source_mode, value='file', command=lambda: mode_changed()).pack(side='left')
         ttk.Radiobutton(modes, text='YouTube / Web URL', variable=source_mode, value='url', command=lambda: mode_changed()).pack(side='left', padx=15)
+        ttk.Radiobutton(modes, text='Local Folder', variable=source_mode, value='folder', command=lambda: mode_changed()).pack(side='left')
         source_entry = ttk.Entry(conversion, textvariable=source, state='readonly')
         source_entry.grid(row=1, column=0, sticky='ew', pady=(4, 12))
 
         def browse_file():
+            if source_mode.get() == 'folder':
+                selected = filedialog.askdirectory()
+                if selected:
+                    source.set(selected)
+                return
             selected = filedialog.askopenfilename(filetypes=[('Documents and images', '*.pdf *.docx *.pptx *.xlsx *.xls *.png *.jpg *.jpeg *.bmp *.tif *.tiff *.html *.csv *.txt *.md'), ('All files', '*')])
             if selected:
                 source.set(selected)
@@ -125,14 +131,15 @@ def main():
 
         def mode_changed():
             source.set('')
-            source_entry.configure(state='readonly' if source_mode.get() == 'file' else 'normal')
-            file_button.configure(state='normal' if source_mode.get() == 'file' else 'disabled')
-        ttk.Label(conversion, text='Output folder (file defaults to its own folder; YouTube defaults to project folder)').grid(row=2, column=0, columnspan=2, sticky='w')
+            mode = source_mode.get()
+            source_entry.configure(state='normal' if mode == 'url' else 'readonly')
+            file_button.configure(state='disabled' if mode == 'url' else 'normal', text='Choose Folder...' if mode == 'folder' else 'Choose File...')
+        ttk.Label(conversion, text='Output folder (file defaults to its own folder; YouTube/folder default to project folder)').grid(row=2, column=0, columnspan=2, sticky='w')
         ttk.Entry(conversion, textvariable=folder).grid(row=3, column=0, sticky='ew', pady=(4, 12))
         ttk.Button(conversion, text='Browse...', command=lambda: browse_folder(folder)).grid(row=3, column=1, padx=(12, 0), pady=(4, 12))
         convert = ttk.Button(conversion, text='Convert', style='Primary.TButton', command=lambda: start({'kind': 'convert', 'source': source.get().strip(), 'folder': folder.get().strip()}))
         convert.grid(row=4, column=0, sticky='w')
-        ttk.Label(conversion, text='Local extraction / OCR. YouTube needs captions + network. Existing Markdown stays intact.').grid(row=5, column=0, columnspan=2, sticky='w', pady=(8, 0))
+        ttk.Label(conversion, text='Local extraction / OCR. YouTube needs captions + network. Existing Markdown stays intact.\nLocal Folder converts every supported file directly inside it (not subfolders) into the output folder.').grid(row=5, column=0, columnspan=2, sticky='w', pady=(8, 0))
         for column in range(3):
             commands.columnconfigure(column, weight=1, uniform='command-columns')
         picker = ttk.Combobox(commands, textvariable=command, values=grouped_values(catalog), state='readonly', width=22)
@@ -500,6 +507,14 @@ def main():
             copy_text('first\nsecond\n\nthird', copied.append)
             assert copied == ['first\nsecond\n\nthird'], 'Multiline copy failed'
             assert str(source_entry.cget('state')) == 'readonly' and file_button.winfo_manager() == 'grid', 'File picker missing'
+            source_mode.set('folder')
+            mode_changed()
+            assert str(source_entry.cget('state')) == 'readonly' and str(file_button.cget('state')) == 'normal' and file_button.cget('text') == 'Choose Folder...', 'Folder picker missing'
+            source_mode.set('url')
+            mode_changed()
+            assert str(source_entry.cget('state')) == 'normal' and str(file_button.cget('state')) == 'disabled', 'URL mode should allow typing and disable the picker'
+            source_mode.set('file')
+            mode_changed()
             root.after(300, root.destroy)
         root.mainloop()
     except Exception as error:

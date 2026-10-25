@@ -28,6 +28,28 @@ test('desktop request uses the selected project and rejects unknown commands or 
     const bad=await desktop.request({kind:'command',project:dir,command:'help',args:'"unclosed'}).catch(e=>e);assert.match(bad.message,/unclosed quote/);
   }finally{rm(dir);}
 });
+test('desktop request rejects a folder with nothing convertible in it',async()=>{
+  const dir=tmpHome();try{
+    write(path.join(dir,'notes.json'),'{}');
+    await assert.rejects(()=>desktop.request({kind:'convert',project:dir,source:dir}),/No convertible files/);
+  }finally{rm(dir);}
+});
+const hasMarkitdown=cp.spawnSync('markitdown',['--version'],{encoding:'utf8'}).status===0;
+test('desktop request on a folder converts every supported file into the output folder, skipping the rest',{skip:hasMarkitdown?false:'markitdown not installed'},async()=>{
+  const dir=tmpHome();try{
+    const src=path.join(dir,'inputs');fs.mkdirSync(src);
+    write(path.join(src,'one.txt'),'first document');
+    write(path.join(src,'two.txt'),'second document');
+    write(path.join(src,'skip.json'),'{}');
+    const out=path.join(dir,'out');fs.mkdirSync(out);
+    const r=await desktop.request({kind:'convert',project:dir,source:src,folder:out});
+    assert.equal(r.code,0);
+    assert.match(r.stdout,/Converted 2 of 2 file\(s\)/);
+    assert.ok(fs.existsSync(path.join(out,'one.md')));
+    assert.ok(fs.existsSync(path.join(out,'two.md')));
+    assert.ok(!fs.existsSync(path.join(out,'skip.md')));
+  }finally{rm(dir);}
+});
 test('desktop process capture enforces deadlines and treats shell text as data',async()=>{
   const dir=tmpHome();try{
     const r=await desktop.execute(['-e','console.log(process.argv[1])','$(untrusted); & echo'],dir);assert.equal(r.code,0);assert.match(r.stdout,/\$\(untrusted\); & echo/);
