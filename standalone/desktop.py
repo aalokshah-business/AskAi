@@ -17,6 +17,23 @@ def copy_text(text, sink):
     sink(text)
 
 
+CATEGORY_ORDER = ['work', 'project', 'setup', 'health', 'cost', 'learn', 'system', 'more']
+CATEGORY_LABEL = {'work': 'WORK', 'project': 'PROJECT', 'setup': 'SETUP', 'health': 'HEALTH',
+                   'cost': 'COST & LEVERS', 'learn': 'LEARN', 'system': 'SYSTEM', 'more': 'MORE'}
+
+
+def grouped_values(catalog):
+    """Command names grouped by help category, with a separator heading per group."""
+    out = []
+    for cat in CATEGORY_ORDER:
+        names = sorted(name for name, row in catalog.items() if row.get('category') == cat)
+        if not names:
+            continue
+        out.append(f'── {CATEGORY_LABEL[cat]} ──')
+        out.extend(names)
+    return out
+
+
 def main():
     parser = argparse.ArgumentParser()
     parser.add_argument('--app-root', required=True)
@@ -60,12 +77,20 @@ def main():
         source, folder = tk.StringVar(), tk.StringVar()
         source_mode = tk.StringVar(value='file')
         command, info, status = tk.StringVar(value='status'), tk.StringVar(), tk.StringVar(value='Ready')
+        last_command, last_help_command = 'status', 'status'
         jobs, state = queue.Queue(), {'process': None, 'output': None}
         header = ttk.Frame(root, padding=20)
         header.grid(row=0, column=0, sticky='ew')
         header.columnconfigure(1, weight=1)
-        ttk.Label(header, text='Ask AI', font=('', 22, 'bold')).grid(row=0, column=0, columnspan=3, sticky='w')
-        ttk.Label(header, text='Convert documents once. Run AskAI commands without sending output through chat.').grid(row=1, column=0, columnspan=3, sticky='w', pady=(8, 16))
+        banner = tk.Frame(header, background=theme['navy'], height=64)
+        banner.grid(row=0, column=0, columnspan=3, sticky='ew', pady=(0, 16))
+        banner.grid_propagate(False)
+        chip = tk.Canvas(banner, width=56, height=56, background=theme['navy'], highlightthickness=0)
+        chip.place(x=8, y=4)
+        chip.create_oval(4, 4, 44, 44, fill=theme['accent'], outline='')
+        chip.create_text(24, 24, text='AI', fill='white', font=(theme['font'], 13, 'bold'))
+        tk.Label(banner, text='Ask AI', font=(theme['font'], 22, 'bold'), background=theme['navy'], foreground='white').place(x=64, y=2)
+        tk.Label(banner, text='Convert documents once. Run AskAI commands without sending output through chat.', font=(theme['font'], 9), background=theme['navy'], foreground=theme['secondary']).place(x=64, y=38)
 
         def browse_folder(variable):
             selected = filedialog.askdirectory(initialdir=variable.get() or project.get())
@@ -110,7 +135,7 @@ def main():
         ttk.Label(conversion, text='Local extraction / OCR. YouTube needs captions + network. Existing Markdown stays intact.').grid(row=5, column=0, columnspan=2, sticky='w', pady=(8, 0))
         for column in range(3):
             commands.columnconfigure(column, weight=1, uniform='command-columns')
-        picker = ttk.Combobox(commands, textvariable=command, values=sorted(catalog), state='readonly', width=22)
+        picker = ttk.Combobox(commands, textvariable=command, values=grouped_values(catalog), state='readonly', width=22)
         ttk.Label(commands, text='Command').grid(row=0, column=0, sticky='w')
         ttk.Label(commands, text='Action').grid(row=0, column=1, sticky='w')
         picker.grid(row=1, column=0, sticky='ew', padx=(0, 8))
@@ -234,6 +259,11 @@ def main():
             fit_controls()
 
         def describe(event=None):
+            nonlocal last_command
+            if command.get() not in catalog:
+                command.set(last_command)
+                return
+            last_command = command.get()
             entry = catalog[command.get()]
             info.set(entry['summary'])
             definitions[:] = entry['variants']
@@ -267,16 +297,21 @@ def main():
         help_command = tk.StringVar(value='status')
         help_tab.columnconfigure(1, weight=1)
         ttk.Label(help_tab, text='Command').grid(row=0, column=0, sticky='w', padx=(0, 12))
-        help_picker = ttk.Combobox(help_tab, textvariable=help_command, values=sorted(catalog), state='readonly')
+        help_picker = ttk.Combobox(help_tab, textvariable=help_command, values=grouped_values(catalog), state='readonly')
         help_picker.grid(row=0, column=1, sticky='ew', padx=(0, 12))
 
         def show_help(event=None):
+            nonlocal last_help_command
+            if help_command.get() not in catalog:
+                help_command.set(last_help_command)
+                return
+            last_help_command = help_command.get()
             start({'kind': 'command', 'command': 'help', 'args': 'command ' + help_command.get() + ' --advanced'})
 
         help_picker.bind('<<ComboboxSelected>>', show_help)
         ttk.Button(help_tab, text='Show Detailed Help', command=show_help).grid(row=0, column=2, sticky='w')
         ttk.Label(help_tab, text='Select A Command To Read Its Complete CLI Help In The Output Panel.').grid(row=1, column=0, columnspan=3, sticky='w', pady=(12, 0))
-        ttk.Label(root, text='Output').grid(row=2, column=0, sticky='w', padx=20, pady=(14, 5))
+        tk.Label(root, text='OUTPUT', font=(theme['font'], 11, 'bold'), background=theme['background'], foreground=theme['teal']).grid(row=2, column=0, sticky='w', padx=20, pady=(14, 5))
         frame = ttk.Frame(root)
         frame.grid(row=3, column=0, sticky='nsew', padx=20)
         frame.rowconfigure(0, weight=1)
@@ -407,7 +442,7 @@ def main():
             root.after_idle(lambda: Path(options.ready).write_text('{"ok":true}', encoding='utf-8'))
         poll()
         if options.smoke_test:
-            assert len(tabs.tabs()) == 3 and list(help_picker['values']) == sorted(catalog), 'Help Tab Missing'
+            assert len(tabs.tabs()) == 3 and list(help_picker['values']) == grouped_values(catalog) == list(picker['values']), 'Help Tab Missing'
             tabs.select(commands)
             tab_changed()
             command_height = int(tabs.cget('height'))

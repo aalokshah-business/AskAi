@@ -4,6 +4,7 @@ AskAI follows semantic versioning from 1.0.0 (see [RELEASING.md](RELEASING.md)).
 
 ## Unreleased
 
+- Give the Windows and Linux desktop app a navy header band with a drawn Ask AI mark, a teal-accented Output panel heading, and group the Command dropdown (both tabs) by its `askai help` category with a heading row between groups. Add `navy` and `teal` to `desktop-theme.json`.
 - Add `askai gui` (alias for `askai desktop open`) and the matching `/askai-gui` command/skill for Claude Code, Cursor, Codex and Antigravity, alongside `/askai-cli` and `/askai-plugins`. `askai cli --launch` now also opens the desktop app, best-effort, when the platform supports it.
 - Split the single command-reference poster/PDF into two: `docs/AskAI-setup-A3.png`/`.pdf` (start here, install, shell) and `docs/AskAI-working-A3.png`/`.pdf` (session, project, health, cost, learn) so the daily-use reference no longer carries one-time setup content. Replaces `docs/AskAI-commands-A3.png` and `docs/AskAI-commands.pdf`.
 - Fail `convert` with one clean "not found" line for a missing local file instead of spawning MarkItDown; truncate any MarkItDown failure to its last line instead of the full traceback. Fix flaky `check`/`project`/`infra` tests on a machine with `ANTHROPIC_BASE_URL` set. Stop the desktop Help tab's command picker from stretching across unused width.

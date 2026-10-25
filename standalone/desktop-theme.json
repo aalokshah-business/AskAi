@@ -6,6 +6,9 @@
   "accent": "#2563EB",
   "secondary": "#EAF1FF",
   "border": "#D8E1EE",
+  "navy": "#142D4F",
+  "teal": "#1A7A72",
+  "headerText": "#FFFFFF",
   "font": "Arial",
   "fontSize": 10,
   "monospace": "Courier New"
