@@ -84,6 +84,7 @@ else if (exists(DIR.claude)) {
   has(path.join(DIR.claude, 'CLAUDE.md'), /askai:begin/) ? add('PASS', 'Claude Code', 'rules block in ~/.claude/CLAUDE.md') : add('FAIL', 'Claude Code', 'AskAI rules block missing from ~/.claude/CLAUDE.md', 'askai install --only caveman');
   exists(path.join(DIR.claude, 'commands', 'askai-cli.md')) ? add('PASS', 'Claude Code', '/askai-cli command present') : add('FAIL', 'Claude Code', '/askai-cli command missing', 'askai install --target all --yes');
   exists(path.join(DIR.claude, 'commands', 'askai-plugins.md')) ? add('PASS', 'Claude Code', '/askai-plugins command present') : add('FAIL', 'Claude Code', '/askai-plugins command missing', 'askai install --target all --yes');
+  exists(path.join(DIR.claude, 'commands', 'askai-gui.md')) ? add('PASS', 'Claude Code', '/askai-gui command present') : add('FAIL', 'Claude Code', '/askai-gui command missing', 'askai install --target all --yes');
   mcp('claude');
   which('claude') ? add('PASS', 'Claude Code', 'CLI on PATH') : add('WARN', 'Claude Code', 'CLI not on PATH in this terminal');
 }
@@ -92,6 +93,7 @@ if (selected('codex') && exists(DIR.codex)) {
   has(path.join(DIR.codex, 'config.toml'), /model_reasoning_effort/) ? add('PASS', 'Codex', 'config.toml has the effort setting') : add('WARN', 'Codex', 'no model_reasoning_effort in config.toml', 'askai install --only codex-baseline');
   exists(path.join(HOME, '.agents', 'skills', 'askai-cli', 'SKILL.md')) ? add('PASS', 'Codex', '$askai-cli skill present') : add('FAIL', 'Codex', '$askai-cli skill missing', 'askai install --target all --yes');
   exists(path.join(HOME, '.agents', 'skills', 'askai-plugins', 'SKILL.md')) ? add('PASS', 'Codex', '$askai-plugins skill present') : add('FAIL', 'Codex', '$askai-plugins skill missing', 'askai install --target all --yes');
+  exists(path.join(HOME, '.agents', 'skills', 'askai-gui', 'SKILL.md')) ? add('PASS', 'Codex', '$askai-gui skill present') : add('FAIL', 'Codex', '$askai-gui skill missing', 'askai install --target all --yes');
   mcp('codex'); which('codex') ? add('PASS', 'Codex', 'CLI on PATH') : add('WARN', 'Codex', 'CLI not on PATH in this terminal');
 }
 if (selected('agy') && exists(DIR.agy)) {
@@ -100,11 +102,12 @@ if (selected('agy') && exists(DIR.agy)) {
   set.useG1Credits === true ? add('FAIL', 'Antigravity', 'useG1Credits is true: paid credits can be spent silently', 'set it to false (askai check --fix)') : add('PASS', 'Antigravity', 'paid credits are off');
   exists(path.join(DIR.agy, 'antigravity-cli', 'skills', 'askai-cli', 'SKILL.md')) || exists(path.join(DIR.agy, 'config', 'skills', 'askai-cli', 'SKILL.md')) ? add('PASS', 'Antigravity', 'askai-cli skill present') : add('FAIL', 'Antigravity', 'askai-cli skill missing', 'askai install --target all --yes');
   exists(path.join(DIR.agy, 'antigravity-cli', 'skills', 'askai-plugins', 'SKILL.md')) || exists(path.join(DIR.agy, 'config', 'skills', 'askai-plugins', 'SKILL.md')) ? add('PASS', 'Antigravity', 'askai-plugins skill present') : add('FAIL', 'Antigravity', 'askai-plugins skill missing', 'askai install --target all --yes');
+  exists(path.join(DIR.agy, 'antigravity-cli', 'skills', 'askai-gui', 'SKILL.md')) || exists(path.join(DIR.agy, 'config', 'skills', 'askai-gui', 'SKILL.md')) ? add('PASS', 'Antigravity', 'askai-gui skill present') : add('FAIL', 'Antigravity', 'askai-gui skill missing', 'askai install --target all --yes');
   mcp('agy'); which('agy') ? add('PASS', 'Antigravity', 'CLI (agy) on PATH') : add('WARN', 'Antigravity', 'CLI (agy) not on PATH in this terminal');
 }
 if (selected('cursor') && exists(DIR.cursor)) {
   exists(path.join(DIR.cursor, 'rules', 'askai-tokens.mdc')) ? add('PASS', 'Cursor', 'always-on rules file present') : add('FAIL', 'Cursor', '~/.cursor/rules/askai-tokens.mdc missing', 'askai install --only cursor-rules');
-  for (const name of ['askai-cli', 'askai-plugins']) {
+  for (const name of ['askai-cli', 'askai-plugins', 'askai-gui']) {
     const projectCommand = repo && path.join(repo, '.cursor', 'commands', `${name}.md`);
     const globalCommand = path.join(DIR.cursor, 'commands', `${name}.md`);
     if (projectCommand && exists(projectCommand)) add('PASS', 'Cursor', `/${name} command in project workspace root`);
@@ -144,10 +147,10 @@ function finish() {
   for (const r of rows) console.log(`${r.level.padEnd(4)}  ${r.area.padEnd(11)} ${tilde(r.msg)}${r.level !== 'PASS' && r.fix ? `\n${' '.repeat(18)}fix: ${tilde(r.fix)}` : ''}`);
   console.log(`\n${n('PASS')} pass, ${n('WARN')} warn, ${n('FAIL')} FAIL`);
   const inTool = [];
-  if (selected('claude') && exists(DIR.claude)) inTool.push('Claude Code (new session in the project): /status shows your plan, not API billing; /mcp lists ' + (want.claude.join(', ') || 'no servers') + '; /plugin lists the plugins above; /askai-cli opens the terminal; /askai-plugins does one-time plugin setup.');
-  if (selected('codex') && exists(DIR.codex)) inTool.push('Codex: /mcp lists ' + (want.codex.join(', ') || 'no servers') + '; $askai-cli opens the AskAI terminal; $askai-plugins does one-time plugin setup; /model offers the models on your plan.');
-  if (selected('agy') && exists(DIR.agy)) inTool.push('Antigravity: /mcp lists ' + (want.agy.join(', ') || 'no servers') + '; /skills shows askai-cli and askai-plugins; /model lists available models; app settings: AI Credit Overages = Never.');
-  if (selected('cursor') && exists(DIR.cursor)) inTool.push('Cursor (quit and reopen first): open the project folder as the workspace root; Settings, Rules shows AskAI rules; Settings, MCP lists ' + (want.cursor.join(', ') || 'no servers') + '; type /askai-cli or /askai-plugins in Agent chat; choose an available model in Settings, Models.');
+  if (selected('claude') && exists(DIR.claude)) inTool.push('Claude Code (new session in the project): /status shows your plan, not API billing; /mcp lists ' + (want.claude.join(', ') || 'no servers') + '; /plugin lists the plugins above; /askai-cli opens the terminal; /askai-plugins does one-time plugin setup; /askai-gui opens the desktop app.');
+  if (selected('codex') && exists(DIR.codex)) inTool.push('Codex: /mcp lists ' + (want.codex.join(', ') || 'no servers') + '; $askai-cli opens the AskAI terminal; $askai-plugins does one-time plugin setup; $askai-gui opens the desktop app; /model offers the models on your plan.');
+  if (selected('agy') && exists(DIR.agy)) inTool.push('Antigravity: /mcp lists ' + (want.agy.join(', ') || 'no servers') + '; /skills shows askai-cli, askai-plugins and askai-gui; /model lists available models; app settings: AI Credit Overages = Never.');
+  if (selected('cursor') && exists(DIR.cursor)) inTool.push('Cursor (quit and reopen first): open the project folder as the workspace root; Settings, Rules shows AskAI rules; Settings, MCP lists ' + (want.cursor.join(', ') || 'no servers') + '; type /askai-cli, /askai-plugins or /askai-gui in Agent chat; choose an available model in Settings, Models.');
   if (inTool.length) console.log('\nStill to check by hand, inside each tool:\n' + inTool.map(l => `  - ${l}`).join('\n'));
   console.log('\nDaily flow: askai next; askai go <tool> "task"; askai run -- <command>; askai break; askai handoff "next step"; askai clear; askai resume.\nWeekly: askai savings --week; askai check.\nRead-only previews: askai update --dry-run; askai uninstall --dry-run.');
   process.exit(n('FAIL') ? 1 : 0);

@@ -88,10 +88,10 @@ AskAI configures the hosts you select; it does not sign in to their accounts. Th
 
 | Host | Linux | Windows | In a project chat after restarting |
 | --- | --- | --- | --- |
-| Claude Code | [Native installer](https://code.claude.com/docs/en/setup), then run `claude` and sign in | [Native installer](https://code.claude.com/docs/en/setup), then run `claude` and sign in | `/askai-cli` |
-| Cursor | [Linux download](https://cursor.com/download), open project and sign in | [Windows download](https://cursor.com/download), open project and sign in | `/askai-cli` |
-| Antigravity | [Linux download or `agy` CLI](https://antigravity.google/download), then sign in | [Windows download or `agy` CLI](https://antigravity.google/download), then sign in | `/askai-cli` |
-| Codex CLI | [Install with npm](https://developers.openai.com/cookbook/examples/codex/using_goals_in_codex): `npm install -g @openai/codex`, then `codex` and sign in | Same npm install, then `codex` and sign in | `$askai-cli` |
+| Claude Code | [Native installer](https://code.claude.com/docs/en/setup), then run `claude` and sign in | [Native installer](https://code.claude.com/docs/en/setup), then run `claude` and sign in | `/askai-cli`, `/askai-plugins`, `/askai-gui` |
+| Cursor | [Linux download](https://cursor.com/download), open project and sign in | [Windows download](https://cursor.com/download), open project and sign in | `/askai-cli`, `/askai-plugins`, `/askai-gui` |
+| Antigravity | [Linux download or `agy` CLI](https://antigravity.google/download), then sign in | [Windows download or `agy` CLI](https://antigravity.google/download), then sign in | `/askai-cli`, `/askai-plugins`, `/askai-gui` |
+| Codex CLI | [Install with npm](https://developers.openai.com/cookbook/examples/codex/using_goals_in_codex): `npm install -g @openai/codex`, then `codex` and sign in | Same npm install, then `codex` and sign in | `$askai-cli`, `$askai-plugins`, `$askai-gui` |
 
 With **all four** installed, use `--target all` on Linux or `-Target all` on Windows. With only Cursor, use `--target cursor` or `-Target cursor`. The `coding` profile is the same on both operating systems (`--profile coding` / `-Workflow coding`); choose `max` only after reviewing `askai plugins decisions`. In every host, run `askai setup --project <local-folder>` in a terminal and `/askai-cli` (Codex: `$askai-cli`) in the project chat. AI review uses model tokens; `askai` terminal commands do not.
 
@@ -127,7 +127,7 @@ Detection is advisory. Shared language extensions cover common application, syst
 
 - The `askai` command in every new terminal (`askai check`, `askai ask`, `askai break`, `askai resume`, `askai savings` and the rest; `askai help <command>`).
 - Token-saving settings and short rules in each tool you use: Claude Code, Codex, Antigravity and Cursor.
-- Two entry points inside each tool: `/askai-cli` sets up the project and opens the terminal (Codex: `$askai-cli`). `/askai-plugins` finishes one-time plugin setup and says when each connected tool is called. Write a session handoff by asking your agent to update `.ai-work/HANDOFF.md`.
+- Three entry points inside each tool: `/askai-cli` sets up the project and opens the terminal (Codex: `$askai-cli`). `/askai-plugins` finishes one-time plugin setup and says when each connected tool is called. `/askai-gui` opens the Ask AI desktop app. Write a session handoff by asking your agent to update `.ai-work/HANDOFF.md`.
 - For each repository you choose: shared instruction files, an ignore list for Cursor, and a local `.ai-work/` folder for handoffs and measurements.
 
 Connected MCP servers do not read each prompt. The agent calls Serena, Context7, Headroom, or Context Mode only when the task matches. RTK, when its hook is installed, shortens shell output by itself. Settings you already chose are kept.
@@ -339,10 +339,10 @@ Paths are under your home folder (`%USERPROFILE%` on Windows).
 | Tool | Files |
 | --- | --- |
 | AskAI | `.askai/app/` (the program), `.askai/bin/askai` (the command), `.askai/manifest.json`, `.askai/backups/`, `.askai/sessions/` (status-line snapshots), `.askai/cache/` |
-| Claude Code | `.claude/settings.json` (added keys only), `.claude/CLAUDE.md` (a marked block), `.claude/rules/askai-*.md`, `.claude/commands/askai-cli.md`, `.claude/commands/askai-plugins.md` |
-| Codex | `.codex/config.toml` (added keys only), `.codex/AGENTS.md` (a marked block), `.codex/prompts/askai-cli.md`, `.codex/prompts/askai-plugins.md`, `.agents/skills/askai-cli/`, `.agents/skills/askai-plugins/` |
-| Antigravity | `.gemini/antigravity-cli/settings.json`, `.gemini/GEMINI.md` (a marked block), `.gemini/config/rules/askai-*.md`, the `askai-cli` and `askai-plugins` skills in `.gemini/antigravity-cli/skills/` and `.gemini/config/skills/` |
-| Cursor | `.cursor/rules/askai-*.mdc`, `.cursor/commands/askai-cli.md`, `.cursor/commands/askai-plugins.md` |
+| Claude Code | `.claude/settings.json` (added keys only), `.claude/CLAUDE.md` (a marked block), `.claude/rules/askai-*.md`, `.claude/commands/askai-cli.md`, `.claude/commands/askai-plugins.md`, `.claude/commands/askai-gui.md` |
+| Codex | `.codex/config.toml` (added keys only), `.codex/AGENTS.md` (a marked block), `.codex/prompts/askai-cli.md`, `.codex/prompts/askai-plugins.md`, `.codex/prompts/askai-gui.md`, `.agents/skills/askai-cli/`, `.agents/skills/askai-plugins/`, `.agents/skills/askai-gui/` |
+| Antigravity | `.gemini/antigravity-cli/settings.json`, `.gemini/GEMINI.md` (a marked block), `.gemini/config/rules/askai-*.md`, the `askai-cli`, `askai-plugins` and `askai-gui` skills in `.gemini/antigravity-cli/skills/` and `.gemini/config/skills/` |
+| Cursor | `.cursor/rules/askai-*.mdc`, `.cursor/commands/askai-cli.md`, `.cursor/commands/askai-plugins.md`, `.cursor/commands/askai-gui.md` |
 | Coding profile | Serena as an MCP server in each tool (`.claude.json`, `.cursor/mcp.json`, `.codex/config.toml`, `.gemini/config/mcp_config.json`) |
 
 The full list, with every key and value: `docs/ARCHITECTURE.md`, sections 8 and 9.

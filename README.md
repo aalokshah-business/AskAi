@@ -249,6 +249,7 @@ A rule file without askai's marker line is not askai's: it is skipped unless `--
 | Large-output sandbox (Context Mode) | Supported by Context Mode itself: run its installer (`npx skills add mksglu/context-mode`); askai does not guess its flags | Same |
 | Handoff | Ask the agent to write `.ai-work/HANDOFF.md` | Ask the agent to write `.ai-work/HANDOFF.md` |
 | AskAI-only terminal | `/prompts:askai-cli` or `$askai-cli` | `/askai-cli` (AskAI skill) |
+| Desktop GUI | `$askai-gui` | `/askai-gui` (AskAI skill) |
 | Usage figures | `/status`, `/usage`; not read by askai | `/usage`, `/credits`; not read by askai |
 
 `--target auto` adds Codex when `~/.codex` (or `CODEX_HOME`) exists or `codex` is on PATH, and Antigravity when `~/.gemini/antigravity-cli` or `~/.gemini/config` exists or `agy` is on PATH. Restart those tools after an install.
@@ -513,7 +514,7 @@ Tests use throwaway folders under the OS temp dir with fake process runners: not
 - `lib/session.js`, `lib/scaffold.js`, `lib/tips.js`, `lib/launch.js`, `lib/prompt.js`, `lib/guide.js`: `askai session`, `scaffold`, `tips`/`peak`, `go`, `prompt`, and `guide`/`clear`/`context`/`work`/`etiquette`. `templates/`: the files scaffold and session write.
 - `lib/help.js`: one entry per command; also the source `scripts/gen-docs.js` reads for the command reference in `docs/ARCHITECTURE.md`.
 - `hooks/askai-report.js`: transcript-based spend report used by `askai report`. `lib/hook.js`: the Claude Code reminder hooks (`askai hook`), invoked by Claude Code itself, not typed by you.
-- `commands/`: `/askai-cli` sets up a project and opens the terminal. `/askai-plugins` finishes one-time plugin setup and says when each connected tool is called. Claude Code, Cursor, and Antigravity install both. Codex gets the prompts and the `$askai-cli` and `$askai-plugins` skills. Earlier AskAI command files are retired during installation when AskAI still owns them.
+- `commands/`: `/askai-cli` sets up a project and opens the terminal. `/askai-plugins` finishes one-time plugin setup and says when each connected tool is called. `/askai-gui` opens the Ask AI desktop app. Claude Code, Cursor, and Antigravity install all three. Codex gets the prompts and the `$askai-cli`, `$askai-plugins` and `$askai-gui` skills. Earlier AskAI command files are retired during installation when AskAI still owns them.
 - `legacy/`: the retired self-built hook system and its installer. Not used by anything above.
 - `test/`: the test suite.
 

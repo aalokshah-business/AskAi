@@ -283,6 +283,7 @@ In install order. Evidence labels: measured (a third-party saving), mixed, claim
 | Cursor | `~/.cursor/mcp.json`, `~/.cursor/hooks.json` | Serena; RTK only with --rtk |
 | Cursor | `~/.cursor/commands/askai-cli.md` | AskAI-only terminal |
 | Claude Code, Cursor, Codex, Antigravity | `askai-plugins` command or skill | one-time plugin setup, then call each tool only when the task matches |
+| Claude Code, Cursor, Codex, Antigravity | `askai-gui` command or skill | opens the Ask AI desktop app (`askai gui`, alias for `askai desktop open`) |
 
 ## 9. Files and data AskAI keeps
 
@@ -335,6 +336,7 @@ Where each command is implemented. Written from the `case` list in `askai.js` be
 | `askai plugins` | `lib/plugins.js; lib/plugins-ready.js; lib/usage-guide.js` |
 | `askai savings` | `askai.js cmdSavings; lib/usage.js; lib/savings.js` |
 | `askai convert` | `askai.js cmdConvert` |
+| `askai gui` | `askai.js (alias for desktop open); lib/desktop.js` |
 | `askai desktop` | `lib/desktop.js; standalone/desktop.cs; standalone/desktop.py; standalone/desktop-bridge.js; setup-desktop.ps1; setup-desktop.sh` |
 | `askai clear` | `lib/guide.js` |
 | `askai context` | `lib/guide.js` |
@@ -1554,6 +1556,10 @@ Exit: 0 on success; 1 on unsupported platforms or setup failure
 | Codex | `$askai-plugins` | one-time plugin setup; call each tool only when the task matches |
 | Antigravity | `/askai-plugins` | one-time plugin setup; call each tool only when the task matches |
 | Cursor | `/askai-plugins` | one-time plugin setup; call each tool only when the task matches |
+| Claude Code | `/askai-gui` | opens the Ask AI desktop app |
+| Codex | `$askai-gui` | opens the Ask AI desktop app |
+| Antigravity | `/askai-gui` | opens the Ask AI desktop app |
+| Cursor | `/askai-gui` | opens the Ask AI desktop app |
 
 ## 12. Practices AskAI knows (askai ask)
 

@@ -361,6 +361,7 @@ function installCommands(ctx, hosts = ctx.hostSel) {
   const entries = [
     ...hostEntries('askai-cli.md', 'askai-cli', 'Open the AskAI terminal. AI setup and review are opt-in with --review. Use when the user invokes askai-cli.'),
     ...hostEntries('askai-plugins.md', 'askai-plugins', 'Use the connected token tools in this chat. Use when the user invokes askai-plugins.'),
+    ...hostEntries('askai-gui.md', 'askai-gui', 'Open the Ask AI desktop GUI app. Use when the user invokes askai-gui.'),
   ];
   // Retire only launchers recorded in AskAI's manifest. Keep edited or user-owned files.
   const old = [
@@ -1530,6 +1531,10 @@ function launchWindowsCli(cp, cwd, node, script, caller) {
 }
 function launchCli() {
   const cp = require('child_process');
+  try {
+    const desktop = require('./lib/desktop');
+    if (desktop.environment().supported) desktop.launch(process.cwd()).catch(() => {});
+  } catch (_) { /* GUI is a best-effort extra; the terminal launch below is what matters */ }
   const caller = require('./lib/infra').detectCaller();
   if (caller) process.env.ASKAI_HOST = caller;
   const script = path.join(SRC, 'askai.js');
@@ -1753,8 +1758,9 @@ async function main() {
       return a === 'install' ? plugins.install(ctx, o._[2], o) : plugins.list(ctx); }
     case 'savings': return cmdSavings(o);
     case 'convert': return cmdConvert(o);
+    case 'gui':
     case 'desktop': {
-      const action=o._[1] || 'open';
+      const action = cmd === 'gui' ? 'open' : (o._[1] || 'open');
       if(action==='install'){
         const available=require('./lib/desktop').environment();
         if(!available.supported){console.log(`Ask AI desktop skipped: ${available.reason}; use askai cli.`);return 0;}

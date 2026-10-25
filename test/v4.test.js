@@ -37,7 +37,7 @@ test('check: flags billing traps, Opus default, Antigravity credits and repo gap
   assert.strictEqual(check.run(ctx, repo, { fix: true }, quiet), 1, 'a failing item gives exit 1');
   assert.ok(fs.existsSync(path.join(repo, 'AGENTS.md')) && fs.existsSync(path.join(repo, '.cursorignore')), '--fix scaffolds the repo');
   const left = check.repo(repo).filter(r => r.level === 'warn').map(r => r.msg).sort();
-  assert.deepStrictEqual(left, ['.ai-work/ is not in .git/info/exclude', 'Cursor commands /askai-cli and /askai-plugins are missing in this project', 'HANDOFF.md is the empty template']);
+  assert.deepStrictEqual(left, ['.ai-work/ is not in .git/info/exclude', 'Cursor commands /askai-cli, /askai-plugins and /askai-gui are missing in this project', 'HANDOFF.md is the empty template']);
 }));
 
 test('break and resume: checklist, ledger entry, time away and advice; the prompt is always printed', () => withHome(home => {

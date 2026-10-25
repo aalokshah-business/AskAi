@@ -87,6 +87,7 @@ const COMMAND_SOURCE = {
   savings: 'askai.js cmdSavings; lib/usage.js; lib/savings.js',
   convert: 'askai.js cmdConvert',
   desktop: 'lib/desktop.js; standalone/desktop.cs; standalone/desktop.py; standalone/desktop-bridge.js; setup-desktop.ps1; setup-desktop.sh',
+  gui: 'askai.js (alias for desktop open); lib/desktop.js',
   clear: 'lib/guide.js',
   context: 'lib/guide.js',
   todo: 'lib/todo.js; lib/findings.js',
@@ -366,6 +367,7 @@ ${claudeSettings()}
 | Cursor | ${code('~/.cursor/mcp.json')}, ${code('~/.cursor/hooks.json')} | Serena; RTK only with --rtk |
 | Cursor | ${code('~/.cursor/commands/askai-cli.md')} | AskAI-only terminal |
 | Claude Code, Cursor, Codex, Antigravity | ${code('askai-plugins')} command or skill | one-time plugin setup, then call each tool only when the task matches |
+| Claude Code, Cursor, Codex, Antigravity | ${code('askai-gui')} command or skill | opens the Ask AI desktop app (${code('askai gui')}, alias for ${code('askai desktop open')}) |
 
 ## 9. Files and data AskAI keeps
 
@@ -404,6 +406,10 @@ ${commandRef()}
 | Codex | ${code('$askai-plugins')} | one-time plugin setup; call each tool only when the task matches |
 | Antigravity | ${code('/askai-plugins')} | one-time plugin setup; call each tool only when the task matches |
 | Cursor | ${code('/askai-plugins')} | one-time plugin setup; call each tool only when the task matches |
+| Claude Code | ${code('/askai-gui')} | opens the Ask AI desktop app |
+| Codex | ${code('$askai-gui')} | opens the Ask AI desktop app |
+| Antigravity | ${code('/askai-gui')} | opens the Ask AI desktop app |
+| Cursor | ${code('/askai-gui')} | opens the Ask AI desktop app |
 
 ## 12. Practices AskAI knows (askai ask)
 

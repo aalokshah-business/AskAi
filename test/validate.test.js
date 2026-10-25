@@ -34,7 +34,7 @@ test('validate-install: a good install passes; a broken one names the file and t
     };
     const good = validate(env, repo);
     assert.strictEqual(good.status, 0, good.stdout);
-    for (const s of ['PASS  askai       version', 'askai plugins ready reports', '/askai-cli command present', '/askai-plugins command present', '$askai-cli skill present', '$askai-plugins skill present', 'project files present (router, docs/ai, subagents, skills)', 'AGENTS.md is', 'askai check: no failing items', 'Still to check by hand']) assert.ok(good.stdout.includes(s), s);
+    for (const s of ['PASS  askai       version', 'askai plugins ready reports', '/askai-cli command present', '/askai-plugins command present', '/askai-gui command present', '$askai-cli skill present', '$askai-plugins skill present', '$askai-gui skill present', 'project files present (router, docs/ai, subagents, skills)', 'AGENTS.md is', 'askai check: no failing items', 'Still to check by hand']) assert.ok(good.stdout.includes(s), s);
     assert.ok(!/^FAIL/m.test(good.stdout));
     fs.writeFileSync(path.join(H, '.gemini', 'GEMINI.md'), 'nothing here\n'); fs.rmSync(path.join(repo, '.codex', 'agents', 'runner.toml')); fs.writeFileSync(path.join(repo, '.agents', 'agents', 'builder.md'), '---\nname: builder\nmodel: gemini-3.8-flash\n---\n');
     const bad = validate(env, repo);

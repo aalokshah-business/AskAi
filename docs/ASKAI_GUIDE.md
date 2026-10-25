@@ -245,10 +245,10 @@ All 27 runs exited cleanly and wrote no files. The plans used the right route fo
 
 | Tool | What AskAI adds |
 | --- | --- |
-| Claude Code | `/askai-cli`, `/askai-plugins`; a status line with context and cache figures |
-| Codex | The `askai-cli` and `askai-plugins` skills (`$askai-cli`, `$askai-plugins`) |
-| Antigravity | The `askai-cli` and `askai-plugins` skills |
-| Cursor | `/askai-cli` and `/askai-plugins`, from `<project>/.cursor/commands/`. Type `/` and choose the command after a reload. On SSH or a devcontainer the remote `~/.cursor/commands` is not enough. |
+| Claude Code | `/askai-cli`, `/askai-plugins`, `/askai-gui`; a status line with context and cache figures |
+| Codex | The `askai-cli`, `askai-plugins` and `askai-gui` skills (`$askai-cli`, `$askai-plugins`, `$askai-gui`) |
+| Antigravity | The `askai-cli`, `askai-plugins` and `askai-gui` skills |
+| Cursor | `/askai-cli`, `/askai-plugins` and `/askai-gui`, from `<project>/.cursor/commands/`. Type `/` and choose the command after a reload. On SSH or a devcontainer the remote `~/.cursor/commands` is not enough. |
 
 AskAI is a command-line tool plus these commands, not a Claude Code plugin from a marketplace. That keeps one install working across all four agents.
 
