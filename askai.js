@@ -1239,7 +1239,7 @@ async function cmdInit(o) {
     if (!chosen) { try { chosen = suggestLib.suggest(dir).profile; } catch (_) { chosen = null; } }
     status.rememberProjectProfile(dir, chosen);
   }
-  registerProject({ ...o, name }, dir);
+  if (!o.noRegister) registerProject({ ...o, name }, dir);
   return 0;
 }
 async function cmdSetup(o) {
@@ -1667,16 +1667,28 @@ async function cmdCli(o) {
   if (o.launch) return launchCli();
   // AI host shells can export TERM=dumb, which disables Node readline editing.
   if (process.stdin.isTTY && process.env.TERM === 'dumb') process.env.TERM = 'xterm-256color';
-  const rl = readline.createInterface({ input: process.stdin, output: process.stdout, terminal: !!process.stdin.isTTY });
-  replRl = rl;
-  const keys = () => { if (process.stdin.isTTY && process.stdin.setRawMode) { try { process.stdin.setRawMode(true); } catch (_) { /* a child command released the console */ } } };
   console.log('AskAI CLI. Type a command for Claude Code, Codex, Antigravity or Cursor; exit to leave.');
   console.log(`Project folder: ${process.cwd()}`);
   console.log(require('./lib/runtime').describe(SRC));
   if (!fs.existsSync(path.join(process.cwd(), session.DIR, 'askai-init.json'))) {
-    console.log(`Project setup: askai init --path "${process.cwd()}"`);
-    console.log('Run this command to initialize this folder; nothing is initialized automatically.');
+    // Not set up yet. Ask before writing anything -- askai cli can be opened from any folder,
+    // including one the user has no intention of adopting as a project (a non-interactive
+    // launch, or "no" here, keeps this a no-op: only the message below prints).
+    // Runs before the REPL's own readline interface exists, so a question project.ask() needs
+    // to ask (unclear project type, no inferred "about") happens right here, not in a separate
+    // command the user has to go run themselves.
+    const go = await confirm({}, 'Project setup: not initialized. Run askai init now?');
+    if (go) {
+      try { await cmdInit({ ...o, path: process.cwd(), _: ['init'], noRegister: true }); }
+      catch (e) { console.error(`askai init: ${e.message}`); }
+    } else {
+      console.log(`Project setup: askai init --path "${process.cwd()}"`);
+      console.log('Run this command to initialize this folder; nothing is initialized automatically.');
+    }
   }
+  const rl = readline.createInterface({ input: process.stdin, output: process.stdout, terminal: !!process.stdin.isTTY });
+  replRl = rl;
+  const keys = () => { if (process.stdin.isTTY && process.stdin.setRawMode) { try { process.stdin.setRawMode(true); } catch (_) { /* a child command released the console */ } } };
   rl.setPrompt('askai> '); rl.prompt();
   for await (const line of rl) {
     rl.pause();
