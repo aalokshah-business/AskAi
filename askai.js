@@ -1185,9 +1185,14 @@ async function cmdConvert(o) {
       clearInterval(timer);
       if (isTty) process.stderr.write('\r' + ' '.repeat(80) + '\r');
       const written = code === 0 && fs.existsSync(out) ? fs.readFileSync(out, 'utf8') : null;
-      if (written !== null && written.trim().length > 0) {
+      const cidMatches = written === null ? 0 : (written.match(/\(cid:\d+\)/g) || []).length;
+      if (written !== null && written.trim().length > 0 && cidMatches < 5) {
         console.log(`wrote ${out} (~${Math.ceil(written.length / 4).toLocaleString('en-US')} tokens). Point the agent at the section it needs, not the whole file.`);
         resolve(0);
+      } else if (written !== null && cidMatches >= 5) {
+        try { fs.unlinkSync(out); } catch (_) {}
+        console.error(`markitdown extracted raw glyph IDs (cid:N) instead of text from ${resolvedSrc}: its embedded font has no usable character map, so the result is unreadable garbage, not a conversion. No retry or OCR fixes this; it needs a version of the file with a proper font/ToUnicode map, or OCR on page images instead of text extraction.`);
+        resolve(1);
       } else if (written !== null) {
         try { fs.unlinkSync(out); } catch (_) {}
         console.error(`markitdown found no text in ${resolvedSrc}: it is likely a scanned or image-only PDF with no text layer. AskAI's OCR converts single images (PNG/JPG/BMP/TIFF), not PDFs. Export its pages as images and convert each, or add a text layer first with an OCR tool (for example ocrmypdf) and convert the result.`);

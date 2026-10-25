@@ -93,6 +93,21 @@ test('convert on a source MarkItDown reads as empty reports it instead of a sile
   } finally { rm(home); }
 });
 
+test('convert on a source with a broken font map reports the (cid:N) garbage instead of writing it', { skip: hasMarkitdown ? false : 'markitdown not installed' }, () => {
+  const home = tmpHome();
+  try {
+    const garbled = path.join(home, 'garbled.html');
+    const text = Array.from({ length: 20 }, (_, i) => `word(cid:${i})`).join(' ');
+    fs.writeFileSync(garbled, `<html><body><p>${text}</p></body></html>`);
+    const out = path.join(home, 'garbled.md');
+    const r = cli(['convert', garbled, '--out', out]);
+    assert.strictEqual(r.code, 1);
+    assert.match(r.out + r.err, /raw glyph IDs/);
+    assert.match(r.out + r.err, /no usable character map/);
+    assert.strictEqual(fs.existsSync(out), false, 'no garbled file is left behind');
+  } finally { rm(home); }
+});
+
 test('bootstrap prints the optional askai home mount', () => {
   const home = tmpHome();
   try {
