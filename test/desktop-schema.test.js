@@ -30,8 +30,19 @@ test('result display preserves paragraphs, pretty prints JSON and previews saved
   assert.match(desktop.formatResult({code:0,stdout:'{"one":1,"two":[2,3]}'}).display,/\n  "one": 1,/);
   const {tmpHome,rm,write,path}=require('./helpers'),dir=tmpHome();try{const file=path.join(dir,'converted.md');write(file,'# Title\n\nParagraph one\n\nParagraph two\n');assert.match(desktop.formatResult({code:0,stdout:'Saved',output:file}).display,/Markdown Preview\n# Title\n\nParagraph one\n\nParagraph two/);}finally{rm(dir);}
 });
-test('heading title case preserves commands, paths, inline code and data',()=>{
+test('Markdown Preview shows a converted file verbatim, not re-cased',()=>{
+  // A converted document's own heading (a YouTube title, a PDF's first line, ...) is source content, not an
+  // askai-generated label: re-casing it corrupts data the preview claims to show exactly as written to disk.
+  const {tmpHome,rm,write,path}=require('./helpers'),dir=tmpHome();
+  try{
+    const file=path.join(dir,'converted.md');
+    write(file,"## give me 10 mins and i'll save you tokens\n\nbody text stays as-is\n");
+    assert.match(desktop.formatResult({code:0,stdout:'Saved',output:file}).display,/Markdown Preview\n## give me 10 mins and i'll save you tokens\n\nbody text stays as-is/);
+  }finally{rm(dir);}
+});
+test('heading title case preserves commands, paths, inline code, data and contractions',()=>{
   assert.equal(desktop.titleHeadings('# next steps for `askai cli`\naskai cli --repo /my/path\nrule file | result\n----------+-------\nmodel_id | myModel'), '# Next Steps For `askai cli`\naskai cli --repo /my/path\nRule File | Result\n----------+-------\nmodel_id | myModel');
+  assert.equal(desktop.titleHeadings("# don't break this"), "# Don't Break This");
 });
 test('GUI help uses the complete command help and preserves its command syntax',async()=>{
   const result=await desktop.request({kind:'command',project:require('os').tmpdir(),command:'help',args:'command mcp --advanced'});
