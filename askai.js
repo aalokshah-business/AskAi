@@ -1188,6 +1188,9 @@ async function cmdConvert(o) {
       const cidMatches = written === null ? 0 : (written.match(/\(cid:\d+\)/g) || []).length;
       if (written !== null && written.trim().length > 0 && cidMatches < 5) {
         console.log(`wrote ${out} (~${Math.ceil(written.length / 4).toLocaleString('en-US')} tokens). Point the agent at the section it needs, not the whole file.`);
+        if (isYoutube && !/^###\s+Transcript\s*$/m.test(written)) {
+          console.error('Note: no transcript was captured, only title/description/metadata; the actual spoken content is missing. MarkItDown\'s transcript fetch (youtube_transcript_api) can fail without raising an error. Retry, or check captions are available for this video.');
+        }
         resolve(0);
       } else if (written !== null && cidMatches >= 5) {
         try { fs.unlinkSync(out); } catch (_) {}
