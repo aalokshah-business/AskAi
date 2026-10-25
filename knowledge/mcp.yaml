@@ -7,7 +7,7 @@ tags:
   - cli
   - gh
   - jq
-rule: Disable MCP servers you do not use today; prefer CLIs like gh, rg and jq.
+rule: Disable MCP servers you do not use today; prefer CLIs like gh, rg and jq. A rule of thumb from one creator: keep a server or skill only if it fires in more than about 20% of your sessions.
 why: Each server adds tool names and instructions to every session (Anthropic cost guide).
 how:
   claude: /mcp

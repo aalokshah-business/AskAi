@@ -6,7 +6,7 @@ tags:
   - approve
   - architecture
   - multi-file
-rule: Use plan mode for anything touching more than two files and approve before edits.
+rule: Use plan mode for anything touching more than two files and approve before edits. In the plan itself, do not propose changes below about 95% confidence; ask follow-up questions until you are (two independent creators use this exact threshold; askai writes it into every generated AGENTS.md).
 why: A wrong path costs the work twice (Anthropic, Antigravity, Cursor docs; screenshot page 2).
 how:
   claude: Shift+Tab or /plan

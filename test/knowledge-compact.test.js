@@ -8,8 +8,8 @@ const { cli, tmpHome, rm } = require('./helpers');
 
 const expected = [
   'Compacting is not free',
-  '  Rule: Compact only a chat you must keep, at a natural boundary, with instructions; prefer a handoff plus a fresh chat.',
-  '  Why:  /compact reads the whole conversation to write its summary: a large request itself (Anthropic cost guide).',
+  '  Rule: Compact only a chat you must keep, at a natural boundary, with instructions; prefer a handoff plus a fresh chat. Trigger it yourself around 50-60% context used (three creators converge on this range); do not wait for the built-in auto-compact at 95%.',
+  '  Why:  /compact reads the whole conversation to write its summary: a large request itself (Anthropic cost guide). Waiting for the 95% auto-trigger leaves little room for the summary itself: it can run out of context mid-summary and leave you with an incomplete compact or an error, instead of the large request you were trying to avoid.',
   '  Claude Code  /compact keep: goal, files, failing test',
   '  Codex        /compact',
   '  Antigravity  fresh chat + handoff',

@@ -5,7 +5,7 @@
   },
   {
     "id": "compact",
-    "render": "Compacting is not free\n  Rule: Compact only a chat you must keep, at a natural boundary, with instructions; prefer a handoff plus a fresh chat.\n  Why:  /compact reads the whole conversation to write its summary: a large request itself (Anthropic cost guide).\n  Claude Code  /compact keep: goal, files, failing test\n  Codex        /compact\n  Antigravity  fresh chat + handoff\n  Cursor       /summarize\n  askai:       askai break, then a fresh chat"
+    "render": "Compacting is not free\n  Rule: Compact only a chat you must keep, at a natural boundary, with instructions; prefer a handoff plus a fresh chat. Trigger it yourself around 50-60% context used (three creators converge on this range); do not wait for the built-in auto-compact at 95%.\n  Why:  /compact reads the whole conversation to write its summary: a large request itself (Anthropic cost guide). Waiting for the 95% auto-trigger leaves little room for the summary itself: it can run out of context mid-summary and leave you with an incomplete compact or an error, instead of the large request you were trying to avoid.\n  Claude Code  /compact keep: goal, files, failing test\n  Codex        /compact\n  Antigravity  fresh chat + handoff\n  Cursor       /summarize\n  askai:       askai break, then a fresh chat"
   },
   {
     "id": "one-prompt",
@@ -21,7 +21,7 @@
   },
   {
     "id": "plan",
-    "render": "Plan before multi-file edits\n  Rule: Use plan mode for anything touching more than two files and approve before edits.\n  Why:  A wrong path costs the work twice (Anthropic, Antigravity, Cursor docs; screenshot page 2).\n  Claude Code  Shift+Tab or /plan\n  Codex        /plan\n  Antigravity  /plan, /planning\n  Cursor       /plan, /ask"
+    "render": "Plan before multi-file edits\n  Rule: Use plan mode for anything touching more than two files and approve before edits. In the plan itself, do not propose changes below about 95% confidence; ask follow-up questions until you are (two independent creators use this exact threshold; askai writes it into every generated AGENTS.md).\n  Why:  A wrong path costs the work twice (Anthropic, Antigravity, Cursor docs; screenshot page 2).\n  Claude Code  Shift+Tab or /plan\n  Codex        /plan\n  Antigravity  /plan, /planning\n  Cursor       /plan, /ask"
   },
   {
     "id": "verify",
@@ -61,7 +61,7 @@
   },
   {
     "id": "mcp",
-    "render": "Unused MCP servers off\n  Rule: Disable MCP servers you do not use today; prefer CLIs like gh, rg and jq.\n  Why:  Each server adds tool names and instructions to every session (Anthropic cost guide).\n  Claude Code  /mcp\n  Codex        /mcp\n  Antigravity  /mcp or \"disabled\": true in mcp_config.json\n  Cursor       Settings, MCP\n  askai:       askai check counts servers"
+    "render": "Unused MCP servers off\n  Rule: Disable MCP servers you do not use today; prefer CLIs like gh, rg and jq. A rule of thumb from one creator: keep a server or skill only if it fires in more than about 20% of your sessions.\n  Why:  Each server adds tool names and instructions to every session (Anthropic cost guide).\n  Claude Code  /mcp\n  Codex        /mcp\n  Antigravity  /mcp or \"disabled\": true in mcp_config.json\n  Cursor       Settings, MCP\n  askai:       askai check counts servers"
   },
   {
     "id": "documents",
@@ -69,7 +69,7 @@
   },
   {
     "id": "model-claude",
-    "render": "Claude Code models\n  Rule: Haiku for search and small edits, Sonnet for everyday work, Opus (or Sonnet + /advisor opus) only for the hard step.\n  Why:  A model switch is the only repeated large saving in the benchmarks; Claude Code defaults to Opus since 22 Sep 2026.\n  Claude Code  /model haiku|sonnet|opus\n  askai:       askai install sets a cheap default when none is set"
+    "render": "Claude Code models\n  Rule: Haiku for search and small edits, Sonnet for everyday work, Opus (or Sonnet + /advisor opus) only for the hard step. A plan-with-the-strong-model-then-execute-with-the-cheap-one split (a creator tip: Opus to plan, Sonnet or Haiku to execute) is real, but do it as the advisor, or as two sessions (askai go --tier lead, then --tier build), never as a live switch in the same chat: that switch is the cache-breakers.yaml rebuild, at full price, on the very next message.\n  Why:  Picking the cheapest model that can do a given task is the only repeated large saving in the benchmarks, but a live switch inside one session is a cache-breaker, not a saving (see cache-breakers.yaml); Claude Code defaults to Opus since 22 Sep 2026.\n  Claude Code  /model haiku|sonnet|opus\n  askai:       askai install sets a cheap default when none is set"
   },
   {
     "id": "model-codex",
@@ -133,7 +133,7 @@
   },
   {
     "id": "proxies",
-    "render": "Proxies and routers\n  Rule: Avoid on a subscription. Route to a cheaper model with askai go / the advisor / subagents instead of a third-party proxy.\n  Why:  Proxies can switch billing, break the prompt cache and send code to third parties. OmniRoute specifically points ANTHROPIC_BASE_URL at a local router that relabels free-tier third-party models (OpenRouter, Kiro, Antigravity, Nvidia NIM) as a fake Claude model name and swaps ANTHROPIC_AUTH_TOKEN for its own key. The same pattern exists for Codex: a creator video walks through replacing ~/.codex/config.toml with a base_url pointing at a local proxy (llm7-codex-proxy) in front of a free third-party gateway (llm7.io) to bypass a ChatGPT plan's own Codex limit entirely, labelled as \"free and unlimited.\" Both are likely a terms violation with the vendor and with each free-tier provider, no SLA on model availability, and your code goes through every connected provider, not just the one you pay for.\n  askai:       askai audit flags ANTHROPIC_BASE_URL and a Codex config.toml base_url the same way"
+    "render": "Proxies and routers\n  Rule: Avoid on a subscription. Route to a cheaper model with askai go / the advisor / subagents instead of a third-party proxy.\n  Why:  Proxies can switch billing, break the prompt cache and send code to third parties. OmniRoute (omniroute.online) points ANTHROPIC_BASE_URL at a local router that relabels free-tier third-party models (OpenRouter, Kiro, Antigravity, Nvidia NIM) as a fake Claude model name and swaps ANTHROPIC_AUTH_TOKEN for its own key. The same pattern exists for Codex: a creator video walks through replacing ~/.codex/config.toml with a base_url pointing at a local proxy (llm7-codex-proxy) in front of a free third-party gateway (llm7.io) to bypass a ChatGPT plan's own Codex limit entirely, labelled as \"free and unlimited.\" A third, unrelated open-source repo (diegosouzapw/OmniRoute, also stacking free tiers behind a local endpoint for Claude, Codex, Cursor and Cline) advertises \"1.62 billion free tokens,\" nearly the same large round number the first video used for a different tool -- a marketing figure that recurs across unrelated projects in this category, not evidence any of them measured it. All of this is likely a terms violation with the vendor and with each free-tier provider, no SLA on model availability, and your code goes through every connected provider, not just the one you pay for. The check is for the mechanism (any base_url override), not a denylist of tool names, so a new entrant in this category is still caught. Cursor's own custom-base-URL setting is not checked (no single reliable config path the way Claude and Codex have one); that remains a gap.\n  askai:       askai audit flags ANTHROPIC_BASE_URL and a Codex config.toml base_url the same way"
   },
   {
     "id": "lsp",

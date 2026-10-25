@@ -6,8 +6,8 @@ tags:
   - compress
   - 60%
   - context full
-rule: Compact only a chat you must keep, at a natural boundary, with instructions; prefer a handoff plus a fresh chat.
-why: /compact reads the whole conversation to write its summary: a large request itself (Anthropic cost guide).
+rule: Compact only a chat you must keep, at a natural boundary, with instructions; prefer a handoff plus a fresh chat. Trigger it yourself around 50-60% context used (three creators converge on this range); do not wait for the built-in auto-compact at 95%.
+why: /compact reads the whole conversation to write its summary: a large request itself (Anthropic cost guide). Waiting for the 95% auto-trigger leaves little room for the summary itself: it can run out of context mid-summary and leave you with an incomplete compact or an error, instead of the large request you were trying to avoid.
 how:
   claude: /compact keep: goal, files, failing test
   codex: /compact

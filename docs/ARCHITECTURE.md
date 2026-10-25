@@ -1567,8 +1567,8 @@ Exit: 0 on success; 1 on unsupported platforms or setup failure
 
 - **Fresh chat for each task** (`askai ask clear`): One task per chat; clear between unrelated tasks. Clearing is free.
   Why: Every turn re-sends the whole conversation; calls over 150K context were 75% of one heavy week (dotclaude).
-- **Compacting is not free** (`askai ask compact`): Compact only a chat you must keep, at a natural boundary, with instructions; prefer a handoff plus a fresh chat.
-  Why: /compact reads the whole conversation to write its summary: a large request itself (Anthropic cost guide).
+- **Compacting is not free** (`askai ask compact`): Compact only a chat you must keep, at a natural boundary, with instructions; prefer a handoff plus a fresh chat. Trigger it yourself around 50-60% context used (three creators converge on this range); do not wait for the built-in auto-compact at 95%.
+  Why: /compact reads the whole conversation to write its summary: a large request itself (Anthropic cost guide). Waiting for the 95% auto-trigger leaves little room for the summary itself: it can run out of context mid-summary and leave you with an incomplete compact or an error, instead of the large request you were trying to avoid.
   AskAI: askai break, then a fresh chat
 - **One complete prompt** (`askai ask one-prompt`): Send one prompt with the goal, the files and how to verify; do not drip-feed follow-ups.
   Why: Each extra message is another full re-read of the context (dotclaude; AI LABS; your screenshot page 1).
@@ -1576,7 +1576,7 @@ Exit: 0 on success; 1 on unsupported platforms or setup failure
   Why: Follow-ups stay in history and are re-sent every turn (your screenshot page 1).
 - **Point at files** (`askai ask files`): Name the file and function with @path; avoid "improve the codebase".
   Why: Vague prompts trigger broad scanning (Anthropic); @ targeting minimises token overhead (Antigravity docs).
-- **Plan before multi-file edits** (`askai ask plan`): Use plan mode for anything touching more than two files and approve before edits.
+- **Plan before multi-file edits** (`askai ask plan`): Use plan mode for anything touching more than two files and approve before edits. In the plan itself, do not propose changes below about 95% confidence; ask follow-up questions until you are (two independent creators use this exact threshold; askai writes it into every generated AGENTS.md).
   Why: A wrong path costs the work twice (Anthropic, Antigravity, Cursor docs; screenshot page 2).
 - **Give a verification target** (`askai ask verify`): Give a test, command or expected output that proves the task is done.
   Why: Agents that can check their own work need fewer correction rounds (Anthropic, Antigravity best practices).
@@ -1601,14 +1601,14 @@ Exit: 0 on success; 1 on unsupported platforms or setup failure
 - **Short instruction files** (`askai ask instruction-files`): Keep CLAUDE.md / AGENTS.md / GEMINI.md under 200 lines, as an index; move workflows into skills.
   Why: They load every session and every subagent (Anthropic); Codex caps at 32 KiB; Antigravity always-on rules share 20K tokens.
   AskAI: askai check measures them
-- **Unused MCP servers off** (`askai ask mcp`): Disable MCP servers you do not use today; prefer CLIs like gh, rg and jq.
+- **Unused MCP servers off** (`askai ask mcp`): Disable MCP servers you do not use today; prefer CLIs like gh, rg and jq. A rule of thumb from one creator: keep a server or skill only if it fires in more than about 20% of your sessions.
   Why: Each server adds tool names and instructions to every session (Anthropic cost guide).
   AskAI: askai check counts servers
 - **Convert documents first** (`askai ask documents`): Convert PDFs, Office files and HTML to Markdown before attaching.
   Why: Binary documents cost far more tokens than their text.
   AskAI: askai install --profile docs installs markitdown
-- **Claude Code models** (`askai ask model-claude`): Haiku for search and small edits, Sonnet for everyday work, Opus (or Sonnet + /advisor opus) only for the hard step.
-  Why: A model switch is the only repeated large saving in the benchmarks; Claude Code defaults to Opus since 22 Sep 2026.
+- **Claude Code models** (`askai ask model-claude`): Haiku for search and small edits, Sonnet for everyday work, Opus (or Sonnet + /advisor opus) only for the hard step. A plan-with-the-strong-model-then-execute-with-the-cheap-one split (a creator tip: Opus to plan, Sonnet or Haiku to execute) is real, but do it as the advisor, or as two sessions (askai go --tier lead, then --tier build), never as a live switch in the same chat: that switch is the cache-breakers.yaml rebuild, at full price, on the very next message.
+  Why: Picking the cheapest model that can do a given task is the only repeated large saving in the benchmarks, but a live switch inside one session is a cache-breaker, not a saving (see cache-breakers.yaml); Claude Code defaults to Opus since 22 Sep 2026.
   AskAI: askai install sets a cheap default when none is set
 - **Codex models** (`askai ask model-codex`): A Luna-class model for routine work, Sol for hard tasks; start fresh before 272K input tokens.
   Why: Published Plus estimates: Luna 350-3,000 messages per 5 h, Sol 15-160; inputs past 272K bill input at 2x.
@@ -1650,7 +1650,7 @@ Exit: 0 on success; 1 on unsupported platforms or setup failure
   Why: Vendor reports 47-92% on large tool outputs; four independent studies found a median +32% cost; proxy mode moved Claude Code to API billing in your screenshot.
   AskAI: askai install --headroom; askai infra shows where it is registered
 - **Proxies and routers** (`askai ask proxies`): Avoid on a subscription. Route to a cheaper model with askai go / the advisor / subagents instead of a third-party proxy.
-  Why: Proxies can switch billing, break the prompt cache and send code to third parties. OmniRoute specifically points ANTHROPIC_BASE_URL at a local router that relabels free-tier third-party models (OpenRouter, Kiro, Antigravity, Nvidia NIM) as a fake Claude model name and swaps ANTHROPIC_AUTH_TOKEN for its own key. The same pattern exists for Codex: a creator video walks through replacing ~/.codex/config.toml with a base_url pointing at a local proxy (llm7-codex-proxy) in front of a free third-party gateway (llm7.io) to bypass a ChatGPT plan's own Codex limit entirely, labelled as "free and unlimited." Both are likely a terms violation with the vendor and with each free-tier provider, no SLA on model availability, and your code goes through every connected provider, not just the one you pay for.
+  Why: Proxies can switch billing, break the prompt cache and send code to third parties. OmniRoute (omniroute.online) points ANTHROPIC_BASE_URL at a local router that relabels free-tier third-party models (OpenRouter, Kiro, Antigravity, Nvidia NIM) as a fake Claude model name and swaps ANTHROPIC_AUTH_TOKEN for its own key. The same pattern exists for Codex: a creator video walks through replacing ~/.codex/config.toml with a base_url pointing at a local proxy (llm7-codex-proxy) in front of a free third-party gateway (llm7.io) to bypass a ChatGPT plan's own Codex limit entirely, labelled as "free and unlimited." A third, unrelated open-source repo (diegosouzapw/OmniRoute, also stacking free tiers behind a local endpoint for Claude, Codex, Cursor and Cline) advertises "1.62 billion free tokens," nearly the same large round number the first video used for a different tool -- a marketing figure that recurs across unrelated projects in this category, not evidence any of them measured it. All of this is likely a terms violation with the vendor and with each free-tier provider, no SLA on model availability, and your code goes through every connected provider, not just the one you pay for. The check is for the mechanism (any base_url override), not a denylist of tool names, so a new entrant in this category is still caught. Cursor's own custom-base-URL setting is not checked (no single reliable config path the way Claude and Codex have one); that remains a gap.
   AskAI: askai audit flags ANTHROPIC_BASE_URL and a Codex config.toml base_url the same way
 - **Code navigation plugins** (`askai ask lsp`): Install the official code-intelligence plugin for typed languages.
   Why: LSP navigation measured -13% cost (Marmelab); Anthropic recommends it.

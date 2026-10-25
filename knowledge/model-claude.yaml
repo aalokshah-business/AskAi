@@ -7,8 +7,8 @@ tags:
   - opus
   - claude
   - routing
-rule: Haiku for search and small edits, Sonnet for everyday work, Opus (or Sonnet + /advisor opus) only for the hard step.
-why: A model switch is the only repeated large saving in the benchmarks; Claude Code defaults to Opus since 22 Sep 2026.
+rule: Haiku for search and small edits, Sonnet for everyday work, Opus (or Sonnet + /advisor opus) only for the hard step. A plan-with-the-strong-model-then-execute-with-the-cheap-one split (a creator tip: Opus to plan, Sonnet or Haiku to execute) is real, but do it as the advisor, or as two sessions (askai go --tier lead, then --tier build), never as a live switch in the same chat: that switch is the cache-breakers.yaml rebuild, at full price, on the very next message.
+why: Picking the cheapest model that can do a given task is the only repeated large saving in the benchmarks, but a live switch inside one session is a cache-breaker, not a saving (see cache-breakers.yaml); Claude Code defaults to Opus since 22 Sep 2026.
 how:
   claude: /model haiku|sonnet|opus
 auto: askai install sets a cheap default when none is set
