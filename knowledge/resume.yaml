@@ -7,7 +7,7 @@ tags:
   - continue
   - cache
   - after break
-rule: Within the cache lifetime and with a small context, continue; otherwise start fresh from the handoff.
+rule: Within the cache lifetime and with a small context, continue; otherwise start fresh from the handoff. After 2-3 failed tries at the same issue, stop patching the thread and restart with only the useful facts.
 why: The first message after the cache expires re-processes the whole conversation (Anthropic).
 how:
   claude: claude -c or a fresh chat

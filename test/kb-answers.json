@@ -105,7 +105,11 @@
   },
   {
     "id": "resume",
-    "render": "Coming back\n  Rule: Within the cache lifetime and with a small context, continue; otherwise start fresh from the handoff.\n  Why:  The first message after the cache expires re-processes the whole conversation (Anthropic).\n  Claude Code  claude -c or a fresh chat\n  Codex        codex resume --last\n  Antigravity  /resume\n  Cursor       agent --continue\n  askai:       askai resume (prints the prompt; --copy copies it)"
+    "render": "Coming back\n  Rule: Within the cache lifetime and with a small context, continue; otherwise start fresh from the handoff. After 2-3 failed tries at the same issue, stop patching the thread and restart with only the useful facts.\n  Why:  The first message after the cache expires re-processes the whole conversation (Anthropic).\n  Claude Code  claude -c or a fresh chat\n  Codex        codex resume --last\n  Antigravity  /resume\n  Cursor       agent --continue\n  askai:       askai resume (prints the prompt; --copy copies it)"
+  },
+  {
+    "id": "reuse",
+    "render": "Reuse a solved problem instead of re-deriving it\n  Rule: If an earlier thread already solved a similar problem, link or resume it for the approach and verification path, not as a context dump; do not re-explain it from memory.\n  Why:  Recreating a solved problem from scratch re-spends the tokens already paid once to find it.\n  Claude Code  claude --resume (pick the earlier session), or paste its session id\n  Codex        right-click the earlier thread, Copy deep link, paste into the new thread\n  Antigravity  /resume (pick the earlier thread)\n  Cursor       Cmd/Ctrl+Shift+P, History, reopen the earlier chat"
   },
   {
     "id": "limit",

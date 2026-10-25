@@ -1,0 +1,17 @@
+id: reuse
+title: Reuse a solved problem instead of re-deriving it
+tags:
+  - reuse
+  - deep link
+  - past fix
+  - similar bug
+  - link
+  - previous
+  - history
+rule: If an earlier thread already solved a similar problem, link or resume it for the approach and verification path, not as a context dump; do not re-explain it from memory.
+why: Recreating a solved problem from scratch re-spends the tokens already paid once to find it.
+how:
+  claude: claude --resume (pick the earlier session), or paste its session id
+  codex: right-click the earlier thread, Copy deep link, paste into the new thread
+  agy: /resume (pick the earlier thread)
+  cursor: Cmd/Ctrl+Shift+P, History, reopen the earlier chat

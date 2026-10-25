@@ -1630,9 +1630,11 @@ Exit: 0 on success; 1 on unsupported platforms or setup failure
 - **Before a break** (`askai ask break`): Finish the verified step, commit or stash, ask the agent to write .ai-work/HANDOFF.md, stop loops, goals and background agents.
   Why: Background work keeps spending; the cache expires after 1 h (5 min on usage credits).
   AskAI: askai break
-- **Coming back** (`askai ask resume`): Within the cache lifetime and with a small context, continue; otherwise start fresh from the handoff.
+- **Coming back** (`askai ask resume`): Within the cache lifetime and with a small context, continue; otherwise start fresh from the handoff. After 2-3 failed tries at the same issue, stop patching the thread and restart with only the useful facts.
   Why: The first message after the cache expires re-processes the whole conversation (Anthropic).
   AskAI: askai resume (prints the prompt; --copy copies it)
+- **Reuse a solved problem instead of re-deriving it** (`askai ask reuse`): If an earlier thread already solved a similar problem, link or resume it for the approach and verification path, not as a context dump; do not re-explain it from memory.
+  Why: Recreating a solved problem from scratch re-spends the tokens already paid once to find it.
 - **When you hit a limit** (`askai ask limit`): Wait for the reset, switch model family after a model-specific limit, or switch to a model with its own pool.
   Why: Claude: /model sonnet after an Opus limit; Codex: /usage shows resets; Antigravity: Flash pool; Cursor: Auto.
 - **Billing traps** (`askai ask billing`): Unset ANTHROPIC_API_KEY, ANTHROPIC_BASE_URL and OPENAI_API_KEY unless you mean to pay per token; keep Antigravity credits off.
