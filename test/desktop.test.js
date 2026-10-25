@@ -50,6 +50,21 @@ test('desktop request on a folder converts every supported file into the output 
     assert.ok(!fs.existsSync(path.join(out,'skip.md')));
   }finally{rm(dir);}
 });
+test('desktop request on a folder groups successes before failures, each tagged and naming only the file',{skip:hasMarkitdown?false:'markitdown not installed'},async()=>{
+  const dir=tmpHome();try{
+    const src=path.join(dir,'inputs');fs.mkdirSync(src);
+    write(path.join(src,'good.txt'),'has content');
+    fs.writeFileSync(path.join(src,'blank.html'),'');
+    const out=path.join(dir,'out');fs.mkdirSync(out);
+    const r=await desktop.request({kind:'convert',project:dir,source:src,folder:out});
+    assert.equal(r.code,0);
+    assert.match(r.stdout,/Converted 1 of 2 file\(s\)/);
+    const okIndex=r.stdout.indexOf('OK   good.txt');
+    const failIndex=r.stdout.indexOf('FAIL blank.html:');
+    assert.ok(okIndex>=0 && failIndex>okIndex,'OK lines must precede FAIL lines');
+    assert.ok(!r.stdout.includes(path.join(src,'blank.html')),'failure line should not repeat the full path');
+  }finally{rm(dir);}
+});
 test('desktop process capture enforces deadlines and treats shell text as data',async()=>{
   const dir=tmpHome();try{
     const r=await desktop.execute(['-e','console.log(process.argv[1])','$(untrusted); & echo'],dir);assert.equal(r.code,0);assert.match(r.stdout,/\$\(untrusted\); & echo/);
