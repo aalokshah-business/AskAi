@@ -4,6 +4,7 @@ AskAI follows semantic versioning from 1.0.0 (see [RELEASING.md](RELEASING.md)).
 
 ## Unreleased
 
+- Desktop GUI: the row auto-shown for a command's first optional argument no longer defaults a boolean flag to "true". Selecting `update` (whose first optional flag is `--dry-run`) was silently adding `--dry-run` enabled, so Run Command only ever previewed the update and never actually ran it. The auto-shown row now defaults booleans to "false"; explicitly adding an option via Add Option is unaffected.
 - `convert`: treat MarkItDown output that is mostly raw `(cid:N)` glyph IDs as a failure instead of writing it. This happens when a PDF's embedded font has no usable ToUnicode map; no retry or re-conversion fixes it, so report it like the existing empty-output case instead of leaving an unreadable file.
 - `askai cli --launch` no longer also opens the desktop app. `/askai-cli` and `/askai-gui` are independent again: each opens only what it says.
 - Desktop GUI: show the first optional argument's dropdown as soon as a command is picked instead of only after clicking Add Option, so selecting a command reveals whether it has optional arguments at all. Add Option now disables itself when a command has no optional arguments, or once every one has been added, and re-enables if one is removed. Bold the Command/Action/Environment labels (Commands and Help tabs) and the Input type/File URL/Output Folder labels (Convert tab).

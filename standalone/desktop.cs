@@ -168,15 +168,22 @@ internal sealed class AskWindow : Form {
         foreach (var option in VisibleOptions.Where(Required)) AddOption(TextOf(option, "flag"));
         if (Convert.ToString(commands.SelectedItem) == "status" && VisibleOptions.Any(o => TextOf(o,"flag") == "brief")) AddOption("brief");
         // Show the first optional argument row without waiting for Add Option, so selecting a command alone
-        // reveals whether it has any optional arguments at all.
-        if (optionRows.Count == 0 && VisibleOptions.Any()) AddOption(TextOf(VisibleOptions.First(), "flag"));
+        // reveals whether it has any optional arguments at all. A boolean defaults to false here (not
+        // Input()'s usual "true"): this row appears on its own, not because the user asked to set the
+        // flag, so it must not silently turn a behavior-changing option like --dry-run on.
+        if (optionRows.Count == 0 && VisibleOptions.Any()) {
+            var first = VisibleOptions.First();
+            var added = AddOption(TextOf(first, "flag"));
+            var vb = added == null ? null : added.Value as ComboBox;
+            if (vb != null && TextOf(first, "kind") == "boolean") vb.SelectedItem = "false";
+        }
         UpdateAddOptionEnabled();
         FitTab();if(IsHandleCreated)ApplyTheme();
     }
     private void UpdateAddOptionEnabled() { addOption.Enabled = VisibleOptions.Any(o => !optionRows.Any(r => Convert.ToString(r.Flag.SelectedItem) == TextOf(o, "flag"))); }
-    private void AddOption(string initial = null) {
+    private OptionRow AddOption(string initial = null) {
         var available = VisibleOptions.Where(o => !optionRows.Any(r => Convert.ToString(r.Flag.SelectedItem) == TextOf(o, "flag"))).ToArray();
-        if (available.Length == 0) { status.Text = "All available options already added."; UpdateAddOptionEnabled(); return; }
+        if (available.Length == 0) { status.Text = "All available options already added."; UpdateAddOptionEnabled(); return null; }
         var row = new OptionRow { Panel = ArgumentRow(), Flag = new ComboBox { DropDownStyle = ComboBoxStyle.DropDownList, Dock=DockStyle.Fill }, Remove = Button("Remove", null) };
         foreach (var option in VisibleOptions) row.Flag.Items.Add(TextOf(option, "flag"));
         ((TableLayoutPanel)row.Panel).Controls.Add(row.Flag,0,0);row.Remove.Anchor=AnchorStyles.Right;((TableLayoutPanel)row.Panel).Controls.Add(row.Remove,2,0);
@@ -189,6 +196,7 @@ internal sealed class AskWindow : Form {
         };
         row.Remove.Click += delegate { optionsPanel.Controls.Remove(row.Panel); optionRows.Remove(row); row.Panel.Dispose(); UpdateAddOptionEnabled(); FitTab(); };
         row.Flag.SelectedItem = initial ?? TextOf(available[0], "flag"); optionRows.Add(row); optionsPanel.Controls.Add(row.Panel); UpdateAddOptionEnabled(); FitTab();if(IsHandleCreated)ApplyTheme();
+        return row;
     }
     private Dictionary<string, object> CommandRequest() {
         var values = fields.ToDictionary(item => item.Key, item => (object)item.Value.Text);
@@ -258,5 +266,5 @@ internal sealed class AskWindow : Form {
             Task<string> stdout=job.StandardOutput.ReadToEndAsync(),stderr=job.StandardError.ReadToEndAsync();await Task.WhenAll(stdout,stderr);job.WaitForExit();if(closing)return;if(String.IsNullOrWhiteSpace(stdout.Result))throw new Exception("No result. "+stderr.Result);var result=AskAI.Json.Deserialize<Dictionary<string,object>>(stdout.Result);output.Text=Multiline(result.ContainsKey("display")?Convert.ToString(result["display"]):String.Join("\n",new[]{TextOf(result,"stdout"),TextOf(result,"stderr"),stderr.Result}));status.Text="Finished: exit "+result["code"];if(result.ContainsKey("output")&&result["output"]!=null){lastOutput=Convert.ToString(result["output"]);open.Enabled=openFolder.Enabled=true;}
         }catch(Exception e){if(!closing){output.Text=e.Message;status.Text="Failed";}}finally{if(File.Exists(file))File.Delete(file);if(job!=null)job.Dispose();job=null;if(!closing){run.Enabled=convert.Enabled=help.Enabled=helpCommands.Enabled=true;stop.Enabled=false;}}
     }
-    internal void SelfTest(){int groups=catalog.Select(c=>TextOf(c,"category")).Distinct().Count();if(helpCommands.Items.Count!=catalog.Length+groups||commands.Items.Count!=catalog.Length+groups)throw new Exception("Help Catalog Missing");foreach(var entry in catalog){commands.SelectedItem=entry["name"];for(int index=0;index<variants.Length;index++){actions.SelectedIndex=index;if(fields.Count!=VisibleFields.Count())throw new Exception("Command fields missing: "+entry["name"]);foreach(var required in VisibleOptions.Where(Required))if(!optionRows.Any(row=>Convert.ToString(row.Flag.SelectedItem)==TextOf(required,"flag")))throw new Exception("Required option missing");}}commands.SelectedItem="why";if(fields.Count!=1)throw new Exception("Required command field missing");commands.SelectedItem="start";if(optionRows.Count!=1||!environments.Enabled)throw new Exception("Required options missing");commands.SelectedItem="mcp";actions.SelectedIndex=variants.Select(v=>TextOf(v,"label")).ToList().IndexOf("confirm");if(fields.Count!=1||optionRows.Count!=2)throw new Exception("MCP confirm fields missing");tabs.SelectedIndex=1;FitTab();float commandHeight=tabSize.Height;tabs.SelectedIndex=2;FitTab();if(tabSize.Height>=commandHeight)throw new Exception("Help Tab Wastes Output Space");tabs.SelectedIndex=0;string copied=null;CopyText(Multiline("first\nsecond\n\nthird"),s=>copied=s);if(copied!="first\r\nsecond\r\n\r\nthird")throw new Exception("Multiline copy failed");if(chooseFile.Parent==null||!fileMode.Checked||!source.ReadOnly)throw new Exception("File picker missing");}
+    internal void SelfTest(){int groups=catalog.Select(c=>TextOf(c,"category")).Distinct().Count();if(helpCommands.Items.Count!=catalog.Length+groups||commands.Items.Count!=catalog.Length+groups)throw new Exception("Help Catalog Missing");foreach(var entry in catalog){commands.SelectedItem=entry["name"];for(int index=0;index<variants.Length;index++){actions.SelectedIndex=index;if(fields.Count!=VisibleFields.Count())throw new Exception("Command fields missing: "+entry["name"]);foreach(var required in VisibleOptions.Where(Required))if(!optionRows.Any(row=>Convert.ToString(row.Flag.SelectedItem)==TextOf(required,"flag")))throw new Exception("Required option missing");}}commands.SelectedItem="why";if(fields.Count!=1)throw new Exception("Required command field missing");commands.SelectedItem="start";if(optionRows.Count!=1||!environments.Enabled)throw new Exception("Required options missing");commands.SelectedItem="mcp";actions.SelectedIndex=variants.Select(v=>TextOf(v,"label")).ToList().IndexOf("confirm");if(fields.Count!=1||optionRows.Count!=2)throw new Exception("MCP confirm fields missing");commands.SelectedItem="update";if(optionRows.Count!=1||Convert.ToString(optionRows[0].Flag.SelectedItem)!="dry-run")throw new Exception("Update auto-row missing");if(Convert.ToString(optionRows[0].Value.Text)!="false")throw new Exception("Auto-shown boolean option must default to false, not silently enable --dry-run");tabs.SelectedIndex=1;FitTab();float commandHeight=tabSize.Height;tabs.SelectedIndex=2;FitTab();if(tabSize.Height>=commandHeight)throw new Exception("Help Tab Wastes Output Space");tabs.SelectedIndex=0;string copied=null;CopyText(Multiline("first\nsecond\n\nthird"),s=>copied=s);if(copied!="first\r\nsecond\r\n\r\nthird")throw new Exception("Multiline copy failed");if(chooseFile.Parent==null||!fileMode.Checked||!source.ReadOnly)throw new Exception("File picker missing");}
 }

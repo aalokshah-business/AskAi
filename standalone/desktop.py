@@ -241,6 +241,7 @@ def main():
             option_rows.append(row)
             update_add_option_state()
             fit_controls()
+            return row
 
         def refresh_form(event=None):
             for widget in form_frame.winfo_children():
@@ -265,9 +266,14 @@ def main():
             if command.get() == 'status' and any(row['flag'] == 'brief' for row in visible_options()):
                 add_option('brief')
             # Show the first optional argument row without waiting for Add Option, so selecting a command
-            # alone reveals whether it has any optional arguments at all.
+            # alone reveals whether it has any optional arguments at all. A boolean defaults to false
+            # here (not value_widget()'s usual 'true'): this row appears on its own, not because the
+            # user asked to set the flag, so it must not silently turn on something like --dry-run.
             if not option_rows and visible_options():
-                add_option(visible_options()[0]['flag'])
+                first = visible_options()[0]
+                added = add_option(first['flag'])
+                if added is not None and first.get('kind') == 'boolean' and added['value'] is not None:
+                    added['value'].set('false')
             update_add_option_state()
             fit_controls()
 
@@ -486,6 +492,10 @@ def main():
             action.set('confirm')
             refresh_form()
             assert len(field_widgets) == 1 and len(option_rows) == 2, 'MCP confirm form missing'
+            command.set('update')
+            describe()
+            assert len(option_rows) == 1 and option_rows[0]['flag'].get() == 'dry-run', 'Update auto-row missing'
+            assert option_rows[0]['value'].get() == 'false', 'Auto-shown boolean option must default to false, not silently enable --dry-run'
             copied = []
             copy_text('first\nsecond\n\nthird', copied.append)
             assert copied == ['first\nsecond\n\nthird'], 'Multiline copy failed'
