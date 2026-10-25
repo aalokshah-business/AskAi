@@ -325,12 +325,18 @@ function syncLegacyApp(ctx) {
 
 function writeShim(ctx) {
   const win = process.platform === 'win32';
-  const file = path.join(ctx.paths.bin, win ? 'askai.cmd' : 'askai');
-  const text = win ? '@echo off\r\nnode "%~dp0..\\app\\askai.js" %*\r\n' : '#!/bin/sh\nexec node "$(dirname "$0")/../app/askai.js" "$@"\n';
-  if (ctx.dry) { ctx.log.plan(`write ${file}`); return; }
-  if (fs.existsSync(file) && fs.readFileSync(file, 'utf8') === text) return;
-  cfg.writeAtomic(file, text);
-  if (!win) fs.chmodSync(file, 0o755);
+  const writeOne = (file, text, executable) => {
+    if (ctx.dry) { ctx.log.plan(`write ${file}`); return; }
+    if (fs.existsSync(file) && fs.readFileSync(file, 'utf8') === text) return;
+    cfg.writeAtomic(file, text);
+    if (executable) fs.chmodSync(file, 0o755);
+  };
+  const posix = '#!/bin/sh\nexec node "$(dirname "$0")/../app/askai.js" "$@"\n';
+  writeOne(path.join(ctx.paths.bin, 'askai'), posix, !win);
+  // Windows also needs askai.cmd for cmd.exe/PowerShell, which don't run a shebang script. Git Bash
+  // doesn't do PATHEXT resolution, so an agent's shell tool running bare `askai` non-interactively
+  // (no ~/.bashrc sourced, so the alias below doesn't apply) needs the extensionless file above to resolve.
+  if (win) writeOne(path.join(ctx.paths.bin, 'askai.cmd'), '@echo off\r\nnode "%~dp0..\\app\\askai.js" %*\r\n', false);
 }
 
 function isAskaiLauncher(target, content) {
@@ -1178,10 +1184,14 @@ async function cmdConvert(o) {
     child.on('close', code => {
       clearInterval(timer);
       if (isTty) process.stderr.write('\r' + ' '.repeat(80) + '\r');
-      if (code === 0 && fs.existsSync(out)) {
-        const n = fs.readFileSync(out, 'utf8').length;
-        console.log(`wrote ${out} (~${Math.ceil(n / 4).toLocaleString('en-US')} tokens). Point the agent at the section it needs, not the whole file.`);
+      const written = code === 0 && fs.existsSync(out) ? fs.readFileSync(out, 'utf8') : null;
+      if (written !== null && written.trim().length > 0) {
+        console.log(`wrote ${out} (~${Math.ceil(written.length / 4).toLocaleString('en-US')} tokens). Point the agent at the section it needs, not the whole file.`);
         resolve(0);
+      } else if (written !== null) {
+        try { fs.unlinkSync(out); } catch (_) {}
+        console.error(`markitdown found no text in ${resolvedSrc}: it is likely a scanned or image-only PDF with no text layer. AskAI's OCR converts single images (PNG/JPG/BMP/TIFF), not PDFs. Export its pages as images and convert each, or add a text layer first with an OCR tool (for example ocrmypdf) and convert the result.`);
+        resolve(1);
       } else {
         const raw = (stderrBuf || stdoutBuf).trim();
         const err = raw.split(/\r?\n/).filter(Boolean).pop() || raw;

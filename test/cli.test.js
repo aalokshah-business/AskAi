@@ -339,4 +339,8 @@ test('shim is written for Windows', { skip: !WIN ? 'Windows shim only' : false }
   assert.strictEqual(run(home, 'install', ...SAFE).code, 0);
   const shim = fs.readFileSync(`${home}/askai/bin/askai.cmd`, 'utf8');
   assert.match(shim, /node "%~dp0\.\.\\app\\askai\.js" %\*/);
+  // Git Bash does not do PATHEXT resolution and a non-interactive shell (most agent shell tools) does not
+  // source ~/.bashrc for the alias, so bare `askai` needs this POSIX shim to resolve on Windows too.
+  const posix = fs.readFileSync(`${home}/askai/bin/askai`, 'utf8');
+  assert.match(posix, /^#!\/bin\/sh\nexec node "\$\(dirname "\$0"\)\/\.\.\/app\/askai\.js" "\$@"\n$/);
 }));

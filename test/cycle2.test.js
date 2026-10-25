@@ -78,6 +78,21 @@ test('convert on a missing file is one clean line, not a MarkItDown traceback', 
   } finally { rm(home); }
 });
 
+const hasMarkitdown = require('node:child_process').spawnSync('markitdown', ['--version'], { encoding: 'utf8' }).status === 0;
+test('convert on a source MarkItDown reads as empty reports it instead of a silent empty file', { skip: hasMarkitdown ? false : 'markitdown not installed' }, () => {
+  const home = tmpHome();
+  try {
+    const blank = path.join(home, 'blank.html');
+    fs.writeFileSync(blank, '');
+    const out = path.join(home, 'blank.md');
+    const r = cli(['convert', blank, '--out', out]);
+    assert.strictEqual(r.code, 1);
+    assert.match(r.out + r.err, /found no text in .*blank\.html/);
+    assert.match(r.out + r.err, /scanned or image-only PDF/);
+    assert.strictEqual(fs.existsSync(out), false, 'no empty file is left behind');
+  } finally { rm(home); }
+});
+
 test('bootstrap prints the optional askai home mount', () => {
   const home = tmpHome();
   try {
