@@ -53,7 +53,7 @@
   },
   {
     "id": "subagents",
-    "render": "Few, cheap subagents\n  Rule: Use subagents only for broad searches or logs, on a cheap model; no agent teams for routine work.\n  Why:  Teams use about 7x tokens (Anthropic); each fresh subagent writes ~14K tokens before its first call (dotclaude).\n  Claude Code  CLAUDE_CODE_SUBAGENT_MODEL=haiku\n  Codex        [agents] default_subagent_reasoning_effort = \"medium\"\n  Antigravity  Flash for background subagents\n  askai:       askai install sets the subagent model"
+    "render": "Few, cheap subagents\n  Rule: Delegate only when the output is high-volume, you will not need the detail again, and the session continues for many more turns; otherwise it costs more than doing it inline.\n  Why:  A subagent call runs about 4x the tokens of one chat turn, and a multi-agent run about 15x (Anthropic's multi-agent research post); a separate Anthropic team feature post measured about 7x; each fresh subagent writes ~14K tokens before its first call (dotclaude).\n  Claude Code  CLAUDE_CODE_SUBAGENT_MODEL=haiku\n  Codex        [agents] default_subagent_reasoning_effort = \"medium\"\n  Antigravity  Flash for background subagents\n  askai:       askai install sets the subagent model"
   },
   {
     "id": "instruction-files",
@@ -85,11 +85,11 @@
   },
   {
     "id": "effort",
-    "render": "High effort for Claude, medium elsewhere\n  Rule: Claude Code defaults to high effort. Use max only for the hard step. Codex and Antigravity stay on medium.\n  Why:  Thinking is billed as output (Anthropic); one creator measured max effort at 3.5-4x tokens.\n  Claude Code  /effort high\n  Codex        Alt+, / Alt+.\n  Antigravity  /effort low|medium\n  askai:       askai install sets high effort for Claude Code and medium for Codex"
+    "render": "High effort for Claude, medium elsewhere\n  Rule: Claude Code defaults to high effort. Use max only for the hard step, at the start of a session (or a fresh one) rather than a mid-session bump. Codex and Antigravity stay on medium. Cursor has no separate effort toggle; its model ID is the effort choice, so pick the cheap variant for routine work and only step up to a frontier model for the hard task.\n  Why:  Thinking is billed as output (Anthropic); one creator measured max effort at 3.5-4x tokens.\n  Claude Code  /effort high\n  Codex        Alt+, / Alt+.\n  Antigravity  /effort low|medium\n  Cursor       model picker (Auto or a specific model); Max Mode off\n  askai:       askai install sets high effort for Claude Code and medium for Codex"
   },
   {
     "id": "advisor",
-    "render": "Advisor instead of Opus\n  Rule: For a hard task, keep a Sonnet session and run /advisor opus instead of switching to Opus.\n  Why:  The advisor is consulted at decision points; analyses put it about a third cheaper than Opus throughout.\n  Claude Code  /advisor opus"
+    "render": "Advisor instead of Opus\n  Rule: For a hard task, keep a Sonnet session and run /advisor opus instead of switching to Opus.\n  Why:  The advisor is consulted at decision points; analyses put it about a third cheaper than Opus throughout. Two creators separately describe the same idea across tools (build in Claude Code, review with the official Codex plugin) to save Claude tokens on review passes; neither measures it, so treat it as claims only until it is.\n  Claude Code  /advisor opus"
   },
   {
     "id": "speed-modes",
@@ -97,7 +97,7 @@
   },
   {
     "id": "peak",
-    "render": "Avoid Claude peak hours for big jobs\n  Rule: Run big refactors and long agent runs outside weekdays 08:00-14:00 US Eastern.\n  Why:  Anthropic, March 2026: the 5-hour window drains faster at peak (your screenshot page 9).\n  askai:       askai tips peak"
+    "render": "Avoid Claude peak hours for big jobs\n  Rule: Run big refactors and long agent runs outside weekdays 08:00-14:00 US Eastern. Pace against the reset, not just the clock: with budget left and a reset coming soon, go heavy and spend it rather than let it lapse unused; with little budget left and hours still on the clock, stop and come back with a full window instead of burning the rest on something small.\n  Why:  Anthropic, March 2026: the 5-hour window drains faster at peak (your screenshot page 9). Unused budget in a rolling window does not carry over to the next one.\n  askai:       askai tips peak"
   },
   {
     "id": "break",
@@ -113,7 +113,7 @@
   },
   {
     "id": "limit",
-    "render": "When you hit a limit\n  Rule: Wait for the reset, switch model family after a model-specific limit, or switch to a model with its own pool.\n  Why:  Claude: /model sonnet after an Opus limit; Codex: /usage shows resets; Antigravity: Flash pool; Cursor: Auto."
+    "render": "When you hit a limit\n  Rule: Wait for the reset, switch model family after a model-specific limit, or switch to a model with its own pool. On Claude Pro/Max, Settings > Usage > extra usage is a safety net for a session you cannot afford to lose mid-task: it switches to per-token billing instead of blocking you, under a monthly cap you set. That is a deliberate, capped choice, not the default; it is the opposite of Antigravity's own paid-credits setting, which askai leaves off.\n  Why:  Claude: /model sonnet after an Opus limit; Codex: /usage shows resets; Antigravity: Flash pool; Cursor: Auto."
   },
   {
     "id": "billing",
@@ -133,7 +133,7 @@
   },
   {
     "id": "proxies",
-    "render": "Proxies and routers\n  Rule: Avoid on a subscription.\n  Why:  Proxies can switch billing, break the prompt cache and send code to third parties."
+    "render": "Proxies and routers\n  Rule: Avoid on a subscription. Route to a cheaper model with askai go / the advisor / subagents instead of a third-party proxy.\n  Why:  Proxies can switch billing, break the prompt cache and send code to third parties. OmniRoute specifically points ANTHROPIC_BASE_URL at a local router that relabels free-tier third-party models (OpenRouter, Kiro, Antigravity, Nvidia NIM) as a fake Claude model name and swaps ANTHROPIC_AUTH_TOKEN for its own key: likely a terms violation with Anthropic and with each free-tier provider, no SLA on model availability, and your code goes through every connected provider in the round-robin, not just Anthropic."
   },
   {
     "id": "lsp",
@@ -189,11 +189,11 @@
   },
   {
     "id": "cache-breakers",
-    "render": "What breaks the prompt cache\n  Rule: Choose the model and MCP servers before the session and keep them; compact rarely.\n  Why:  A model switch, connecting or disconnecting an MCP server, a plugin that adds MCP tools, compaction and fast mode rebuild the cache; an effort change keeps it (Anthropic). Legacy env names still seen in the wild, not recommended: ENABLE_PROMPT_CACHING_1H, FORCE_PROMPT_CACHING_5M.\n  Claude Code  askai go claude --tier build\n  askai:       askai go, askai audit (shows switches and cache share)"
+    "render": "What breaks the prompt cache\n  Rule: Choose the model, effort and MCP servers before the session and keep all three; compact rarely.\n  Why:  A model switch, connecting or disconnecting an MCP server, a plugin that adds MCP tools, compaction and fast mode rebuild the cache (Anthropic). Anthropic's docs say an effort change keeps the cache; three independent creator videos say it resets it, one claiming this is \"straight from the Claude Code documentation\" — unresolved against the primary source, so treat an effort change as a cache risk too until it is measured. Legacy env names still seen in the wild, not recommended: ENABLE_PROMPT_CACHING_1H, FORCE_PROMPT_CACHING_5M.\n  Claude Code  askai go claude --tier build\n  Codex        askai go codex --tier build\n  Antigravity  askai go agy --tier build\n  Cursor       askai go cursor --tier build\n  askai:       askai go, askai audit (shows switches and cache share)"
   },
   {
     "id": "tool-output",
-    "render": "Limit tool output\n  Rule: Cap, grep or summarise output before it reaches the chat: quiet flags, tail -n 40, only failing lines.\n  Why:  Bash output above the cap is never read; AskAI sets bashOutputMaxChars to 15,000. Hooks that rewrite commands measured no net saving (RTK).\n  askai:       askai prompt --output-safe \"cmd\""
+    "render": "Limit tool output\n  Rule: Cap, grep or summarise output before it reaches the chat: quiet flags, tail -n 40, only failing lines. For a command you know is noisy and never needed in this project, deny it outright in permissions.deny instead of just capping its output.\n  Why:  Bash output above the cap is never read; AskAI sets bashOutputMaxChars to 15,000. Hooks that rewrite commands measured no net saving (RTK). A denied command spends zero tokens; a capped one still spends up to the cap.\n  askai:       askai prompt --output-safe \"cmd\""
   },
   {
     "id": "modes",
@@ -237,7 +237,7 @@
   },
   {
     "id": "output-size",
-    "render": "Shorter replies\n  Rule: On by default: the terse rule (Caveman-style), the diff-only rule, Codex verbosity low, and the output line in askai prompt. For one task: askai prompt --output diff.\n  Why:  Output tokens cost about five times input on Claude; Caveman-style replies measured about 8% cheaper (median of six studies).\n  askai:       askai prompt --output diff; --caveman ultra for the shortest replies"
+    "render": "Shorter replies\n  Rule: On by default: the terse rule (Caveman-style), the diff-only rule, Codex verbosity low, and the output line in askai prompt. For one task: askai prompt --output diff.\n  Why:  Output tokens cost about five times input on Claude. Caveman itself advertises 65% fewer output tokens; independent measurement across six studies puts the real median at about 8% — use the measured number, not the vendor claim.\n  askai:       askai prompt --output diff; --caveman ultra for the shortest replies"
   },
   {
     "id": "todo",

@@ -6,6 +6,6 @@ tags:
   - fable
   - expensive
 rule: For a hard task, keep a Sonnet session and run /advisor opus instead of switching to Opus.
-why: The advisor is consulted at decision points; analyses put it about a third cheaper than Opus throughout.
+why: The advisor is consulted at decision points; analyses put it about a third cheaper than Opus throughout. Two creators separately describe the same idea across tools (build in Claude Code, review with the official Codex plugin) to save Claude tokens on review passes; neither measures it, so treat it as claims only until it is.
 how:
   claude: /advisor opus

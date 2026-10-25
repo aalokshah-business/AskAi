@@ -7,5 +7,5 @@ tags:
   - reset
   - credits
   - locked out
-rule: Wait for the reset, switch model family after a model-specific limit, or switch to a model with its own pool.
+rule: Wait for the reset, switch model family after a model-specific limit, or switch to a model with its own pool. On Claude Pro/Max, Settings > Usage > extra usage is a safety net for a session you cannot afford to lose mid-task: it switches to per-token billing instead of blocking you, under a monthly cap you set. That is a deliberate, capped choice, not the default; it is the opposite of Antigravity's own paid-credits setting, which askai leaves off.
 why: Claude: /model sonnet after an Opus limit; Codex: /usage shows resets; Antigravity: Flash pool; Cursor: Auto.

@@ -1595,8 +1595,8 @@ Exit: 0 on success; 1 on unsupported platforms or setup failure
 - **Terse replies** (`askai ask terse`): Ask for terse answers: no preamble or narration; exact code and errors.
   Why: Caveman-style rules: median -8% cost over six studies, quality unchanged.
   AskAI: askai install writes the terse block (--caveman lite|full|ultra|off)
-- **Few, cheap subagents** (`askai ask subagents`): Use subagents only for broad searches or logs, on a cheap model; no agent teams for routine work.
-  Why: Teams use about 7x tokens (Anthropic); each fresh subagent writes ~14K tokens before its first call (dotclaude).
+- **Few, cheap subagents** (`askai ask subagents`): Delegate only when the output is high-volume, you will not need the detail again, and the session continues for many more turns; otherwise it costs more than doing it inline.
+  Why: A subagent call runs about 4x the tokens of one chat turn, and a multi-agent run about 15x (Anthropic's multi-agent research post); a separate Anthropic team feature post measured about 7x; each fresh subagent writes ~14K tokens before its first call (dotclaude).
   AskAI: askai install sets the subagent model
 - **Short instruction files** (`askai ask instruction-files`): Keep CLAUDE.md / AGENTS.md / GEMINI.md under 200 lines, as an index; move workflows into skills.
   Why: They load every session and every subagent (Anthropic); Codex caps at 32 KiB; Antigravity always-on rules share 20K tokens.
@@ -1617,15 +1617,15 @@ Exit: 0 on success; 1 on unsupported platforms or setup failure
   Why: Antigravity plans page; Flash has its own pool that refreshes more often.
 - **Cursor models and Auto** (`askai ask model-cursor`): Auto for routine work; a frontier model only for the hard task; Max Mode off.
   Why: Cursor pricing: Auto bills $1.25/M input, $6/M output, $0.25/M cache reads, cheaper than frontier models but not free.
-- **High effort for Claude, medium elsewhere** (`askai ask effort`): Claude Code defaults to high effort. Use max only for the hard step. Codex and Antigravity stay on medium.
+- **High effort for Claude, medium elsewhere** (`askai ask effort`): Claude Code defaults to high effort. Use max only for the hard step, at the start of a session (or a fresh one) rather than a mid-session bump. Codex and Antigravity stay on medium. Cursor has no separate effort toggle; its model ID is the effort choice, so pick the cheap variant for routine work and only step up to a frontier model for the hard task.
   Why: Thinking is billed as output (Anthropic); one creator measured max effort at 3.5-4x tokens.
   AskAI: askai install sets high effort for Claude Code and medium for Codex
 - **Advisor instead of Opus** (`askai ask advisor`): For a hard task, keep a Sonnet session and run /advisor opus instead of switching to Opus.
-  Why: The advisor is consulted at decision points; analyses put it about a third cheaper than Opus throughout.
+  Why: The advisor is consulted at decision points; analyses put it about a third cheaper than Opus throughout. Two creators separately describe the same idea across tools (build in Claude Code, review with the official Codex plugin) to save Claude tokens on review passes; neither measures it, so treat it as claims only until it is.
 - **No speed or big-context modes** (`askai ask speed-modes`): Leave Claude fast mode, Codex Fast/Ultrafast, Cursor Max Mode and Antigravity /boost off unless speed matters more.
   Why: They spend allowance faster: fast mode bills credits at 2x; Codex Fast 2.5x, Ultrafast 8x.
-- **Avoid Claude peak hours for big jobs** (`askai ask peak`): Run big refactors and long agent runs outside weekdays 08:00-14:00 US Eastern.
-  Why: Anthropic, March 2026: the 5-hour window drains faster at peak (your screenshot page 9).
+- **Avoid Claude peak hours for big jobs** (`askai ask peak`): Run big refactors and long agent runs outside weekdays 08:00-14:00 US Eastern. Pace against the reset, not just the clock: with budget left and a reset coming soon, go heavy and spend it rather than let it lapse unused; with little budget left and hours still on the clock, stop and come back with a full window instead of burning the rest on something small.
+  Why: Anthropic, March 2026: the 5-hour window drains faster at peak (your screenshot page 9). Unused budget in a rolling window does not carry over to the next one.
   AskAI: askai tips peak
 - **Before a break** (`askai ask break`): Finish the verified step, commit or stash, ask the agent to write .ai-work/HANDOFF.md, stop loops, goals and background agents.
   Why: Background work keeps spending; the cache expires after 1 h (5 min on usage credits).
@@ -1635,7 +1635,7 @@ Exit: 0 on success; 1 on unsupported platforms or setup failure
   AskAI: askai resume (prints the prompt; --copy copies it)
 - **Reuse a solved problem instead of re-deriving it** (`askai ask reuse`): If an earlier thread already solved a similar problem, link or resume it for the approach and verification path, not as a context dump; do not re-explain it from memory.
   Why: Recreating a solved problem from scratch re-spends the tokens already paid once to find it.
-- **When you hit a limit** (`askai ask limit`): Wait for the reset, switch model family after a model-specific limit, or switch to a model with its own pool.
+- **When you hit a limit** (`askai ask limit`): Wait for the reset, switch model family after a model-specific limit, or switch to a model with its own pool. On Claude Pro/Max, Settings > Usage > extra usage is a safety net for a session you cannot afford to lose mid-task: it switches to per-token billing instead of blocking you, under a monthly cap you set. That is a deliberate, capped choice, not the default; it is the opposite of Antigravity's own paid-credits setting, which askai leaves off.
   Why: Claude: /model sonnet after an Opus limit; Codex: /usage shows resets; Antigravity: Flash pool; Cursor: Auto.
 - **Billing traps** (`askai ask billing`): Unset ANTHROPIC_API_KEY, ANTHROPIC_BASE_URL and OPENAI_API_KEY unless you mean to pay per token; keep Antigravity credits off.
   Why: An API key overrides your plan; Headroom-style proxies showed "API Usage Billing" (your screenshot page 18).
@@ -1649,8 +1649,8 @@ Exit: 0 on success; 1 on unsupported platforms or setup failure
 - **Headroom** (`askai ask headroom`): Installed with --headroom or the max profile in MCP mode: the agent calls headroom_compress on large outputs. Proxy mode (headroom wrap, ANTHROPIC_BASE_URL) is not set up by AskAI.
   Why: Vendor reports 47-92% on large tool outputs; four independent studies found a median +32% cost; proxy mode moved Claude Code to API billing in your screenshot.
   AskAI: askai install --headroom; askai infra shows where it is registered
-- **Proxies and routers** (`askai ask proxies`): Avoid on a subscription.
-  Why: Proxies can switch billing, break the prompt cache and send code to third parties.
+- **Proxies and routers** (`askai ask proxies`): Avoid on a subscription. Route to a cheaper model with askai go / the advisor / subagents instead of a third-party proxy.
+  Why: Proxies can switch billing, break the prompt cache and send code to third parties. OmniRoute specifically points ANTHROPIC_BASE_URL at a local router that relabels free-tier third-party models (OpenRouter, Kiro, Antigravity, Nvidia NIM) as a fake Claude model name and swaps ANTHROPIC_AUTH_TOKEN for its own key: likely a terms violation with Anthropic and with each free-tier provider, no SLA on model availability, and your code goes through every connected provider in the round-robin, not just Anthropic.
 - **Code navigation plugins** (`askai ask lsp`): Install the official code-intelligence plugin for typed languages.
   Why: LSP navigation measured -13% cost (Marmelab); Anthropic recommends it.
   AskAI: askai install --lsp ts,py
@@ -1684,11 +1684,11 @@ Exit: 0 on success; 1 on unsupported platforms or setup failure
 - **Project files instead of chat history** (`askai ask project-files`): Keep a small router (AGENTS.md) pointing to PROJECT_MAP, ARCHITECTURE, FEATURES, WORK_ORDER and the handoff; after /clear the agent reads only what the task needs.
   Why: A cleared session that reads a 40-line handoff and two files costs far less than a long chat re-sent every turn.
   AskAI: askai init, askai map
-- **What breaks the prompt cache** (`askai ask cache-breakers`): Choose the model and MCP servers before the session and keep them; compact rarely.
-  Why: A model switch, connecting or disconnecting an MCP server, a plugin that adds MCP tools, compaction and fast mode rebuild the cache; an effort change keeps it (Anthropic). Legacy env names still seen in the wild, not recommended: ENABLE_PROMPT_CACHING_1H, FORCE_PROMPT_CACHING_5M.
+- **What breaks the prompt cache** (`askai ask cache-breakers`): Choose the model, effort and MCP servers before the session and keep all three; compact rarely.
+  Why: A model switch, connecting or disconnecting an MCP server, a plugin that adds MCP tools, compaction and fast mode rebuild the cache (Anthropic). Anthropic's docs say an effort change keeps the cache; three independent creator videos say it resets it, one claiming this is "straight from the Claude Code documentation" — unresolved against the primary source, so treat an effort change as a cache risk too until it is measured. Legacy env names still seen in the wild, not recommended: ENABLE_PROMPT_CACHING_1H, FORCE_PROMPT_CACHING_5M.
   AskAI: askai go, askai audit (shows switches and cache share)
-- **Limit tool output** (`askai ask tool-output`): Cap, grep or summarise output before it reaches the chat: quiet flags, tail -n 40, only failing lines.
-  Why: Bash output above the cap is never read; AskAI sets bashOutputMaxChars to 15,000. Hooks that rewrite commands measured no net saving (RTK).
+- **Limit tool output** (`askai ask tool-output`): Cap, grep or summarise output before it reaches the chat: quiet flags, tail -n 40, only failing lines. For a command you know is noisy and never needed in this project, deny it outright in permissions.deny instead of just capping its output.
+  Why: Bash output above the cap is never read; AskAI sets bashOutputMaxChars to 15,000. Hooks that rewrite commands measured no net saving (RTK). A denied command spends zero tokens; a capped one still spends up to the cap.
   AskAI: askai prompt --output-safe "cmd"
 - **Prompt modifiers** (`askai ask modes`): Add one modifier line instead of a long instruction: BLUNT, BRUTAL, ASSUME, COUNTER, CONTRAST.
   Why: One line replaces several turns of back-and-forth when you want a direct critique.
@@ -1720,7 +1720,7 @@ Exit: 0 on success; 1 on unsupported platforms or setup failure
   Why: Tools report their own estimates; RTK's counter showed 96M saved during runs that cost more. Compare with askai savings and askai audit.
   AskAI: askai savings 7
 - **Shorter replies** (`askai ask output-size`): On by default: the terse rule (Caveman-style), the diff-only rule, Codex verbosity low, and the output line in askai prompt. For one task: askai prompt --output diff.
-  Why: Output tokens cost about five times input on Claude; Caveman-style replies measured about 8% cheaper (median of six studies).
+  Why: Output tokens cost about five times input on Claude. Caveman itself advertises 65% fewer output tokens; independent measurement across six studies puts the real median at about 8% — use the measured number, not the vendor claim.
   AskAI: askai prompt --output diff; --caveman ultra for the shortest replies
 - **Things only you can do** (`askai ask todo`): askai todo lists every manual step per tool and repository; checkable ones clear themselves.
   Why: A plugin that is installed but never set up costs tokens without saving any.

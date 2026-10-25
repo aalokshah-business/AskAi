@@ -7,5 +7,5 @@ tags:
   - omniroute
   - claudeslim
   - wrap
-rule: Avoid on a subscription.
-why: Proxies can switch billing, break the prompt cache and send code to third parties.
+rule: Avoid on a subscription. Route to a cheaper model with askai go / the advisor / subagents instead of a third-party proxy.
+why: Proxies can switch billing, break the prompt cache and send code to third parties. OmniRoute specifically points ANTHROPIC_BASE_URL at a local router that relabels free-tier third-party models (OpenRouter, Kiro, Antigravity, Nvidia NIM) as a fake Claude model name and swaps ANTHROPIC_AUTH_TOKEN for its own key: likely a terms violation with Anthropic and with each free-tier provider, no SLA on model availability, and your code goes through every connected provider in the round-robin, not just Anthropic.

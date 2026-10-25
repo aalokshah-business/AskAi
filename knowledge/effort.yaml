@@ -5,10 +5,11 @@ tags:
   - thinking
   - reasoning
   - think
-rule: Claude Code defaults to high effort. Use max only for the hard step. Codex and Antigravity stay on medium.
+rule: Claude Code defaults to high effort. Use max only for the hard step, at the start of a session (or a fresh one) rather than a mid-session bump. Codex and Antigravity stay on medium. Cursor has no separate effort toggle; its model ID is the effort choice, so pick the cheap variant for routine work and only step up to a frontier model for the hard task.
 why: Thinking is billed as output (Anthropic); one creator measured max effort at 3.5-4x tokens.
 how:
   claude: /effort high
   codex: Alt+, / Alt+.
   agy: /effort low|medium
+  cursor: model picker (Auto or a specific model); Max Mode off
 auto: askai install sets high effort for Claude Code and medium for Codex

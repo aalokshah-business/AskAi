@@ -9,6 +9,6 @@ tags:
   - cap
   - grep
   - summarize
-rule: Cap, grep or summarise output before it reaches the chat: quiet flags, tail -n 40, only failing lines.
-why: Bash output above the cap is never read; AskAI sets bashOutputMaxChars to 15,000. Hooks that rewrite commands measured no net saving (RTK).
+rule: Cap, grep or summarise output before it reaches the chat: quiet flags, tail -n 40, only failing lines. For a command you know is noisy and never needed in this project, deny it outright in permissions.deny instead of just capping its output.
+why: Bash output above the cap is never read; AskAI sets bashOutputMaxChars to 15,000. Hooks that rewrite commands measured no net saving (RTK). A denied command spends zero tokens; a capped one still spends up to the cap.
 auto: askai prompt --output-safe "cmd"

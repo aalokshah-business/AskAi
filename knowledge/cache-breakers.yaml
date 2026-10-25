@@ -6,8 +6,11 @@ tags:
   - switch model
   - full price
   - rebuild
-rule: Choose the model and MCP servers before the session and keep them; compact rarely.
-why: A model switch, connecting or disconnecting an MCP server, a plugin that adds MCP tools, compaction and fast mode rebuild the cache; an effort change keeps it (Anthropic). Legacy env names still seen in the wild, not recommended: ENABLE_PROMPT_CACHING_1H, FORCE_PROMPT_CACHING_5M.
+rule: Choose the model, effort and MCP servers before the session and keep all three; compact rarely.
+why: A model switch, connecting or disconnecting an MCP server, a plugin that adds MCP tools, compaction and fast mode rebuild the cache (Anthropic). Anthropic's docs say an effort change keeps the cache; three independent creator videos say it resets it, one claiming this is "straight from the Claude Code documentation" — unresolved against the primary source, so treat an effort change as a cache risk too until it is measured. Legacy env names still seen in the wild, not recommended: ENABLE_PROMPT_CACHING_1H, FORCE_PROMPT_CACHING_5M.
 how:
   claude: askai go claude --tier build
+  codex: askai go codex --tier build
+  agy: askai go agy --tier build
+  cursor: askai go cursor --tier build
 auto: askai go, askai audit (shows switches and cache share)

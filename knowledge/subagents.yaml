@@ -7,8 +7,8 @@ tags:
   - parallel
   - fan-out
   - haiku
-rule: Use subagents only for broad searches or logs, on a cheap model; no agent teams for routine work.
-why: Teams use about 7x tokens (Anthropic); each fresh subagent writes ~14K tokens before its first call (dotclaude).
+rule: Delegate only when the output is high-volume, you will not need the detail again, and the session continues for many more turns; otherwise it costs more than doing it inline.
+why: A subagent call runs about 4x the tokens of one chat turn, and a multi-agent run about 15x (Anthropic's multi-agent research post); a separate Anthropic team feature post measured about 7x; each fresh subagent writes ~14K tokens before its first call (dotclaude).
 how:
   claude: CLAUDE_CODE_SUBAGENT_MODEL=haiku
   codex: [agents] default_subagent_reasoning_effort = "medium"

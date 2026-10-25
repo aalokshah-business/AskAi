@@ -6,6 +6,6 @@ tags:
   - time
   - ist
   - schedule
-rule: Run big refactors and long agent runs outside weekdays 08:00-14:00 US Eastern.
-why: Anthropic, March 2026: the 5-hour window drains faster at peak (your screenshot page 9).
+rule: Run big refactors and long agent runs outside weekdays 08:00-14:00 US Eastern. Pace against the reset, not just the clock: with budget left and a reset coming soon, go heavy and spend it rather than let it lapse unused; with little budget left and hours still on the clock, stop and come back with a full window instead of burning the rest on something small.
+why: Anthropic, March 2026: the 5-hour window drains faster at peak (your screenshot page 9). Unused budget in a rolling window does not carry over to the next one.
 auto: askai tips peak
