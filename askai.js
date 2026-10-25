@@ -481,10 +481,10 @@ async function cmdInstall(o) {
   const installing = rows.filter(r => !r.skip);
   const skipping = rows.filter(r => r.skip);
   const skipWhy = r => r.c.id === 'context-mode' && !comps.nodeOk(ctx.nodeVersion) ? 'Node < 22.5' : r.d.detail;
-  console.log(`will install ${installing.length} · will skip ${skipping.length}${skipping.length ? ` (${skipping.slice(0, 6).map(r => `${r.c.id}: ${skipWhy(r)}`).join('; ')})` : ''}`);
+  console.log(`will install ${installing.length} · already set up ${skipping.length}${skipping.length ? ` (${skipping.slice(0, 6).map(r => `${r.c.id}: ${skipWhy(r)}`).join('; ')})` : ''}`);
   const w = Math.max(...rows.map(r => r.c.id.length));
   for (const r of rows) {
-    console.log(`  ${pad(r.c.id, w)}  ${pad(r.d.state, 7)}  ${r.skip ? `skip: ${r.d.detail}` : `will install/wire: ${planText(ctx, r.c.plan)}`}`);
+    console.log(`  ${pad(r.c.id, w)}  ${pad(r.d.state, 7)}  ${r.skip ? `already set up: ${r.d.detail}` : `will install/wire: ${planText(ctx, r.c.plan)}`}`);
   }
   if (rows.some(r => r.c.id === 'token-kit' && !r.skip)) console.log('  note: token-kit runs first; every component after it is checked again and re-applies what the takeover removed');
   console.log(`  ${pad('askai', w)}          copy to ${ctx.paths.app}, shim in ${ctx.paths.bin}${o.noPath || ctx.sandbox ? '' : ' (added to user PATH)'}${S.IS_WIN && !o.noPath && !ctx.sandbox && S.which('bash') ? ', askai alias in ~/.bashrc for Git Bash' : ''}, command entry points in selected hosts`);
@@ -514,7 +514,7 @@ async function cmdInstall(o) {
     // place when the plan was made: check them again once it has run.
     if (takenOver && !o.dry) { r.d = safeDetect(r.c, ctx); r.skip = skipOf(r.c, r.d); }
     if (r.c.id === 'token-kit' && !r.skip) takenOver = true;
-    if (r.skip) { results.push({ id: r.c.id, result: 'skipped', detail: r.d.detail }); continue; }
+    if (r.skip) { results.push({ id: r.c.id, result: 'already set up', detail: r.d.detail }); continue; }
     console.log(`\n[${r.c.id}] ${r.c.title}`);
     try { r.c.install(ctx); results.push({ id: r.c.id, result: o.dry ? 'planned' : 'ok' }); }
     catch (e) { console.error(`  failed: ${e.message}`); results.push({ id: r.c.id, result: 'failed', detail: e.message }); }
@@ -530,7 +530,7 @@ async function cmdInstall(o) {
   console.log('\nSummary');
   for (const r of results) {
     const after = o.dry || r.id === 'askai' || r.id === 'desktop' || r.result === 'failed' ? '' : `  now: ${safeDetect(comps.byId(r.id), ctx).state}`;
-    console.log(`  ${pad(r.id, w)}  ${pad(r.result, 8)}${r.detail ? ` ${r.detail}` : ''}${after}`);
+    console.log(`  ${pad(r.id, w)}  ${pad(r.result, 15)}${r.detail ? ` ${r.detail}` : ''}${after}`);
   }
   if (o.dry) console.log('\nDry-run only. Re-run without --dry-run to apply.');
   else if (failed.length) console.log(`\n${failed.length} component(s) failed. Fix the cause and re-run \`askai install --retry\`: finished components are skipped.`);
