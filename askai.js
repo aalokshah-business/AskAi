@@ -101,6 +101,40 @@ function projectDir(o, positional, fallback = true) {
   const found = registry.resolve(registryHome(o), o.project || o.repo || positional);
   return found ? found.path : fallback ? process.cwd() : null;
 }
+// A terminal or the desktop app opens only for a selected project. Whatever it still needs -- the
+// guidance pack (askai init) and the global tools, MCP servers and plugins (askai install) -- is set
+// up first, then it opens. With no project selected nothing can be set up, so nothing opens.
+async function launchTarget(o) {
+  let found;
+  try { found = registry.resolve(registryHome(o), o.project || o.repo || o.path); } catch (e) { console.error(`askai: ${e.message}`); return null; }
+  if (!found) {
+    console.error('No project selected. Run askai project list, then askai set project NAME or askai init <folder>. Nothing was opened.');
+    return null;
+  }
+  const ctx = buildCtx(o, true);
+  const needInit = !fs.existsSync(path.join(found.path, session.DIR, 'askai-init.json'));
+  const needInstall = !(fs.existsSync(ctx.paths.manifest) && ctx.manifest.profile);
+  if (o.dry) {
+    if (needInstall) console.log('would run: askai install --profile max --yes');
+    if (needInit) console.log(`would run: askai init --path "${found.path}" --yes`);
+    return found;
+  }
+  const out = console.log;
+  try {
+    if (needInstall) {
+      console.error('AskAI is not installed on this machine yet. Installing profile max (tools, MCP servers, plugins).');
+      const done = await installMaxFromCli({ ...o, project: undefined, repo: undefined });
+      if (done.code) { console.error('askai: install failed; fix the error above and run again. Nothing was opened.'); return null; }
+    }
+    if (needInit) {
+      console.error(`Project ${found.name || found.path} is not set up yet. Running askai init.`);
+      console.log = console.error;
+      await cmdInit({ ...o, yes: true, project: undefined, repo: undefined, path: found.path, _: ['init'] });
+    }
+  } catch (e) { console.error(`askai: setup failed: ${e.message}. Nothing was opened.`); return null; }
+  finally { console.log = out; }
+  return found;
+}
 function registerProject(o, dir) {
   if (o.dry) return;
   const data = registry.read(registryHome(o));
@@ -674,7 +708,7 @@ function cmdSet(o) {
 async function cmdProjectRegistry(o) {
   const dir = registryHome(o); const action = o._[1];
   if (action === 'show') {
-    const found = registry.resolve(dir, o.project || o._[2]);
+    const found = registry.resolve(dir, o.project || o.repo || o._[2]);
     console.log(found ? `${found.name || '(unregistered folder)'} -> ${found.path}` : 'No project selected. Run askai project list or askai init <folder>.');
     return found ? 0 : 1;
   }
@@ -1552,8 +1586,9 @@ function launchWindowsCli(cp, cwd, node, script, caller) {
   const encoded = Buffer.from(ps, 'utf16le').toString('base64');
   return cp.spawnSync('powershell.exe', ['-NoProfile', '-NonInteractive', '-Command', `$ErrorActionPreference='Stop'; Start-Process powershell.exe -WindowStyle Normal -WorkingDirectory ${quote(cwd)} -ArgumentList '-NoExit','-NoProfile','-ExecutionPolicy','Bypass','-EncodedCommand','${encoded}' -ErrorAction Stop`], { encoding: 'utf8' });
 }
-function launchCli() {
+function launchCli(dir) {
   const cp = require('child_process');
+  process.chdir(dir);
   const caller = require('./lib/infra').detectCaller();
   if (caller) process.env.ASKAI_HOST = caller;
   const script = path.join(SRC, 'askai.js');
@@ -1664,7 +1699,7 @@ async function cmdPrepare(o) {
 }
 async function cmdCli(o) {
   if (o.prepare) return cmdPrepare(o);
-  if (o.launch) return launchCli();
+  if (o.launch) { const target = await launchTarget(o); return target ? launchCli(target.path) : 1; }
   // AI host shells can export TERM=dumb, which disables Node readline editing.
   if (process.stdin.isTTY && process.env.TERM === 'dumb') process.env.TERM = 'xterm-256color';
   console.log('AskAI CLI. Type a command for Claude Code, Codex, Antigravity or Cursor; exit to leave.');
@@ -1801,8 +1836,9 @@ async function main() {
       if(action==='catalog'){console.log(JSON.stringify(require('./lib/desktop').catalog(),null,2));return 0;}
       if(action==='remove'){console.log(require('./lib/desktop').install(buildCtx(o,true),true));return 0;}
       if(action!=='open')throw Error('askai desktop [open|install|remove|catalog]');
-      if(o.dry){console.log(`Open Ask AI desktop for ${projectDir(o)}`);return 0;}
-      await require('./lib/desktop').launch(projectDir(o));console.log('Ask AI window reported ready (startup check passed).');return 0;
+      const target=await launchTarget(o);if(!target)return 1;
+      if(o.dry){console.log(`Open Ask AI desktop for ${target.path}`);return 0;}
+      await require('./lib/desktop').launch(target.path);console.log('Ask AI window reported ready (startup check passed).');return 0;
     }
     case 'clear': {
       const dir = projectDir(o);
@@ -1885,7 +1921,7 @@ async function main() {
   }
 }
 
-module.exports = { parseArgs, buildCtx, select, main, launchPlan, launchWindowsCli, sessionTerminalPlan, cliInstallPlan, diagramOpenable, suggestCommand, syncLegacyApp, cliArgs, emitNodeNotice, VERSION, optionTypes:Object.fromEntries([...Object.keys(BOOL).map(k=>[k,'boolean']),...Object.keys(VAL).map(k=>[k,'value'])]) };
+module.exports = { parseArgs, buildCtx, select, main, launchPlan, launchWindowsCli, sessionTerminalPlan, cliInstallPlan, diagramOpenable, suggestCommand, syncLegacyApp, cliArgs, emitNodeNotice, launchTarget, VERSION, optionTypes:Object.fromEntries([...Object.keys(BOOL).map(k=>[k,'boolean']),...Object.keys(VAL).map(k=>[k,'value'])]) };
 if (require.main === module) {
   main().then(code => { process.exitCode = code || 0; }, e => { console.error(`askai: ${e.message}`); process.exitCode = 1; });
 }
