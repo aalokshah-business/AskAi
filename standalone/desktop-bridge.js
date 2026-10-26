@@ -5,8 +5,13 @@ const fs=require('fs'),desktop=require('../lib/desktop');
   if(process.argv[2]==='--catalog'){console.log(JSON.stringify(desktop.catalog()));return;}
   if(process.argv[2]==='--mode'){
     const cfg=require('../lib/claude-config');
+    // Sandboxed (--claude-home / CLAUDE_CONFIG_DIR) keeps the manifest under that home; a real install's
+    // manifest lives under ~/.askai (or the legacy ~/.claude/askai) instead -- the same distinction buildCtx
+    // makes in askai.js. Hardcoding sandbox here (as the first version did) reads the wrong file on a real
+    // machine and silently falls back to convertOnly:false.
+    const sandbox=!!process.env.CLAUDE_CONFIG_DIR;
     let manifest={};
-    try{manifest=cfg.loadManifest(cfg.claudePaths(cfg.defaultClaudeHome(),true));}catch(_){/* no manifest yet: every tab stays enabled */}
+    try{manifest=cfg.loadManifest(cfg.claudePaths(cfg.defaultClaudeHome(),sandbox));}catch(_){/* no manifest yet: every tab stays enabled */}
     console.log(JSON.stringify(desktop.mode({manifest})));return;
   }
   const file=process.argv[2];

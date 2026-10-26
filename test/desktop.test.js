@@ -27,6 +27,30 @@ test('install --convert-only previews opening Ask AI under --dry-run, without --
     assert.match(r.out,/\[dry-run\] would open Ask AI after install/);
   }finally{rm(home);}
 });
+test('desktop-bridge.js --mode resolves the manifest the same way a sandboxed and a real install each actually store it',()=>{
+  // The GUI (desktop.cs, desktop.py) calls this script directly, with no --claude-home of its own: it must
+  // compute the same sandbox flag buildCtx does (CLAUDE_CONFIG_DIR set => sandboxed, manifest under that home;
+  // otherwise a real install, manifest under ASKAI_HOME/~/.askai). A version that always assumed one or the
+  // other read the wrong file on whichever install kind it did not assume, and silently reported convertOnly:false.
+  const bridge=path.join(__dirname,'..','standalone','desktop-bridge.js');
+  const run=env=>{const r=cp.spawnSync(process.execPath,[bridge,'--mode'],{encoding:'utf8',env:{...process.env,...env}});assert.equal(r.status,0,r.stderr);return JSON.parse(r.stdout);};
+  const cfg=require('../lib/claude-config');
+  // Sandboxed: CLAUDE_CONFIG_DIR set, manifest lives under <home>/askai/manifest.json.
+  const sandboxHome=tmpHome();
+  try{
+    const sandboxPaths=cfg.claudePaths(sandboxHome,true);
+    fs.mkdirSync(path.dirname(sandboxPaths.manifest),{recursive:true});
+    write(sandboxPaths.manifest,JSON.stringify({convertOnly:true}));
+    assert.deepEqual(run({CLAUDE_CONFIG_DIR:sandboxHome}),{convertOnly:true});
+  }finally{rm(sandboxHome);}
+  // Real install: no CLAUDE_CONFIG_DIR, manifest lives under ASKAI_HOME/manifest.json instead.
+  const realHome=tmpHome();
+  try{
+    const manifestPath=path.join(realHome,'manifest.json');
+    write(manifestPath,JSON.stringify({convertOnly:true}));
+    assert.deepEqual(run({CLAUDE_CONFIG_DIR:'',ASKAI_HOME:realHome}),{convertOnly:true});
+  }finally{rm(realHome);}
+});
 test('desktop output paths preserve existing files, reject deceptive URLs and normalize names',()=>{
   const dir=tmpHome();try{
     write(path.join(dir,'spec.md'),'original');

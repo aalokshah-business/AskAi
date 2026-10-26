@@ -122,7 +122,10 @@ def main():
         modes = ttk.Frame(conversion)
         modes.grid(row=0, column=0, columnspan=2, sticky='w')
         ttk.Radiobutton(modes, text='Local File', variable=source_mode, value='file', command=lambda: mode_changed()).pack(side='left')
-        ttk.Radiobutton(modes, text='YouTube / Web URL', variable=source_mode, value='url', command=lambda: mode_changed()).pack(side='left', padx=15)
+        url_mode_btn = ttk.Radiobutton(modes, text='YouTube / Web URL', variable=source_mode, value='url', command=lambda: mode_changed())
+        url_mode_btn.pack(side='left', padx=15)
+        if convert_only:
+            url_mode_btn.state(['disabled'])
         ttk.Radiobutton(modes, text='Local Folder', variable=source_mode, value='folder', command=lambda: mode_changed()).pack(side='left')
         source_entry = ttk.Entry(conversion, textvariable=source, state='readonly')
         source_entry.grid(row=1, column=0, sticky='ew', pady=(4, 12))
@@ -535,14 +538,16 @@ def main():
             source_mode.set('folder')
             mode_changed()
             assert str(source_entry.cget('state')) == 'readonly' and str(file_button.cget('state')) == 'normal' and file_button.cget('text') == 'Choose Folder...', 'Folder picker missing'
-            source_mode.set('url')
-            mode_changed()
-            assert str(source_entry.cget('state')) == 'normal' and str(file_button.cget('state')) == 'disabled', 'URL mode should allow typing and disable the picker'
+            if not convert_only:
+                source_mode.set('url')
+                mode_changed()
+                assert str(source_entry.cget('state')) == 'normal' and str(file_button.cget('state')) == 'disabled', 'URL mode should allow typing and disable the picker'
             source_mode.set('file')
             mode_changed()
             assert (str(tabs.tab(commands, 'state')) == 'disabled') == convert_only and (str(tabs.tab(help_tab, 'state')) == 'disabled') == convert_only, 'Commands/Help enabled state does not match detected convert-only mode'
             if convert_only:
                 assert tabs.index(tabs.select()) == tabs.index(conversion), 'Convert-only mode should open on Convert To Markdown'
+            assert ('disabled' in url_mode_btn.state()) == convert_only, 'YouTube/Web URL enabled state does not match detected convert-only mode'
             root.after(300, root.destroy)
         root.mainloop()
     except Exception as error:
