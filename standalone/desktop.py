@@ -200,6 +200,10 @@ def main():
                 widget.set('true')
             elif field.get('choices'):
                 widget = ttk.Combobox(parent, values=field['choices'], state='readonly')
+            elif field.get('suggestions'):
+                # Unlike 'choices' above, this field also accepts free text (e.g. ask's fuzzy
+                # search query): default (editable) state, not readonly.
+                widget = ttk.Combobox(parent, values=field['suggestions'])
             else:
                 widget = ttk.Entry(parent)
             return widget
@@ -503,6 +507,13 @@ def main():
             describe()
             assert len(option_rows) == 1 and option_rows[0]['flag'].get() == 'dry-run', 'Update auto-row missing'
             assert option_rows[0]['value'].get() == 'false', 'Auto-shown boolean option must default to false, not silently enable --dry-run'
+            command.set('ask')
+            describe()
+            assert len(field_widgets) == 1, 'Ask field missing'
+            ask_field = next(iter(field_widgets.values()))
+            assert isinstance(ask_field, ttk.Combobox) and str(ask_field.cget('state')) != 'readonly' and len(ask_field['values']) > 0, 'Ask suggestions dropdown missing or locked to exact matches'
+            ask_field.set('free text search, not in the list')
+            assert ask_field.get() == 'free text search, not in the list', 'Ask field must still accept free text'
             copied = []
             copy_text('first\nsecond\n\nthird', copied.append)
             assert copied == ['first\nsecond\n\nthird'], 'Multiline copy failed'
