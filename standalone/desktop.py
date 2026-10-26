@@ -66,6 +66,15 @@ def main():
         style.configure('TNotebook.Tab', padding=(14, 7), background=theme['secondary'])
         style.map('TNotebook.Tab', background=[('selected', theme['surface'])], foreground=[('selected', theme['accent'])])
         root.title('Ask AI')
+        try:
+            icon_path = Path(options.app_root) / 'standalone' / 'askai.png'
+            if icon_path.exists():
+                # A local is enough to keep this alive: this function does not return until the window
+                # closes, so its locals (unlike a short-lived helper's) outlive the running mainloop.
+                icon_image = tk.PhotoImage(file=str(icon_path))
+                root.iconphoto(True, icon_image)
+        except Exception:
+            pass  # keep the window manager's default icon
         root.geometry('1000x760')
         root.minsize(850, 660)
         root.columnconfigure(0, weight=1)

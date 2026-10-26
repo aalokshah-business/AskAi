@@ -213,6 +213,9 @@ internal sealed class AskWindow : Form {
     }
     internal AskWindow(string appRoot, string nodePath, string projectPath) {
         root = appRoot; node = nodePath; Text = "Ask AI"; Size = new Size(1040, Math.Min(920, Screen.PrimaryScreen.WorkingArea.Height - 30)); MinimumSize = new Size(900, 650); StartPosition = FormStartPosition.CenterScreen; Font = new Font("Segoe UI", 10);
+        // /win32icon on the compiled exe already sets Explorer/taskbar/Alt-Tab; this also covers a titlebar that
+        // for any reason falls back to the process default instead of the exe's own icon.
+        try { var iconPath = Path.Combine(root, "standalone", "askai.ico"); if (File.Exists(iconPath)) Icon = new Icon(iconPath); } catch { /* keep the default icon */ }
         using (var process = Process.Start(AskAI.StartInfo(node, AskAI.Quote(Path.Combine(root,"standalone","desktop-bridge.js")) + " --catalog"))) {
             string json = process.StandardOutput.ReadToEnd(), error = process.StandardError.ReadToEnd(); process.WaitForExit(); if (process.ExitCode != 0) throw new Exception(error); catalog = AskAI.Json.Deserialize<Dictionary<string, object>[]>(json);
         }
