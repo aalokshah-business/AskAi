@@ -125,7 +125,6 @@ def main():
         tabs.add(help_tab, text='Ask AI Help')
         if convert_only:
             tabs.tab(commands, state='disabled')
-            tabs.tab(help_tab, state='disabled')
             tabs.select(conversion)
         conversion.columnconfigure(0, weight=1)
         modes = ttk.Frame(conversion)
@@ -498,7 +497,9 @@ def main():
         if options.smoke_test:
             assert len(tabs.tabs()) == 3 and list(help_picker['values']) == grouped_values(catalog) == list(picker['values']), 'Help Tab Missing'
             if not convert_only:
-                # Commands/Help are disabled in convert-only mode (asserted below) and cannot be switched to.
+                # Commands is disabled in convert-only mode (asserted below) and cannot be switched to.
+                # Help stays enabled there (it only reads static text, see below), so this comparison
+                # against Commands' height only runs where Commands is actually reachable.
                 tabs.select(commands)
                 tab_changed()
                 command_height = int(tabs.cget('height'))
@@ -553,7 +554,8 @@ def main():
                 assert str(source_entry.cget('state')) == 'normal' and str(file_button.cget('state')) == 'disabled', 'URL mode should allow typing and disable the picker'
             source_mode.set('file')
             mode_changed()
-            assert (str(tabs.tab(commands, 'state')) == 'disabled') == convert_only and (str(tabs.tab(help_tab, 'state')) == 'disabled') == convert_only, 'Commands/Help enabled state does not match detected convert-only mode'
+            assert (str(tabs.tab(commands, 'state')) == 'disabled') == convert_only, 'Commands enabled state does not match detected convert-only mode'
+            assert str(tabs.tab(help_tab, 'state')) != 'disabled', 'Help must stay enabled in convert-only mode: it only reads static help text, nothing project-specific'
             if convert_only:
                 assert tabs.index(tabs.select()) == tabs.index(conversion), 'Convert-only mode should open on Convert To Markdown'
             assert ('disabled' in url_mode_btn.state()) == convert_only, 'YouTube/Web URL enabled state does not match detected convert-only mode'

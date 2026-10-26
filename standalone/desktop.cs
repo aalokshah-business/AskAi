@@ -243,7 +243,7 @@ internal sealed class AskWindow : Form {
         layout.Controls.Add(header,0,0);
         var projectRow = Table(3); projectRow.ColumnStyles.Add(new ColumnStyle(SizeType.AutoSize)); projectRow.ColumnStyles.Add(new ColumnStyle(SizeType.Percent,100)); projectRow.ColumnStyles.Add(new ColumnStyle(SizeType.AutoSize)); Label(projectRow,"Project Folder",0,0); project.Dock=DockStyle.Fill; project.Text=Directory.Exists(projectPath)?projectPath:Environment.GetFolderPath(Environment.SpecialFolder.UserProfile); projectRow.Controls.Add(project,1,0); projectRow.Controls.Add(Button("Browse...",delegate{Browse(project,true);}),2,0); layout.Controls.Add(projectRow,0,1);
         tabs = new TabControl { Dock=DockStyle.Fill, Padding=new Point(22,8) }; var conversion = new TabPage("Convert To Markdown"); var command = new TabPage("Ask AI Commands"); var helpTab = new TabPage("Ask AI Help"); tabs.TabPages.Add(conversion); tabs.TabPages.Add(command); tabs.TabPages.Add(helpTab); layout.Controls.Add(tabs,0,2);
-        if (convertOnly) { command.Enabled = false; helpTab.Enabled = false; tabs.SelectedTab = conversion; }
+        if (convertOnly) { command.Enabled = false; tabs.SelectedTab = conversion; }
         var conversionLayout=Table(3);conversionContent=conversionLayout; conversionLayout.Dock=DockStyle.Fill; conversionLayout.ColumnStyles.Add(new ColumnStyle(SizeType.Absolute,170)); conversionLayout.ColumnStyles.Add(new ColumnStyle(SizeType.Percent,100)); conversionLayout.ColumnStyles.Add(new ColumnStyle(SizeType.AutoSize)); conversion.Controls.Add(conversionLayout);
         var modes=new FlowLayoutPanel{AutoSize=true,Dock=DockStyle.Fill}; fileMode.Text="Local File";urlMode.Text="YouTube / Web URL";folderMode.Text="Local Folder";fileMode.AutoSize=urlMode.AutoSize=folderMode.AutoSize=true;modes.Controls.Add(fileMode);modes.Controls.Add(urlMode);modes.Controls.Add(folderMode);conversionLayout.Controls.Add(modes,1,0);Label(conversionLayout,"Input type",0,0,true);
         Label(conversionLayout,"File / URL / Folder *",0,1,true);source.Dock=DockStyle.Fill;conversionLayout.Controls.Add(source,1,1);chooseFile.Text="Choose File...";chooseFile.AutoSize=true;chooseFile.Click+=delegate{if(folderMode.Checked){Browse(source,true);}else using(var dialog=new OpenFileDialog{Filter="Documents and images|*.pdf;*.docx;*.pptx;*.xlsx;*.xls;*.png;*.jpg;*.jpeg;*.bmp;*.tif;*.tiff;*.html;*.csv;*.txt;*.md|All files|*.*"})if(dialog.ShowDialog(this)==DialogResult.OK){source.Text=dialog.FileName;folder.Text=Path.GetDirectoryName(dialog.FileName);}};conversionLayout.Controls.Add(chooseFile,2,1);
@@ -291,10 +291,10 @@ internal sealed class AskWindow : Form {
     internal void SelfTest(){
         int groups=catalog.Select(c=>TextOf(c,"category")).Distinct().Count();if(helpCommands.Items.Count!=catalog.Length+groups||commands.Items.Count!=catalog.Length+groups)throw new Exception("Help Catalog Missing");
         if(!convertOnly){
-            // Commands/Help are disabled in convert-only mode (asserted below), which in WinForms disables every
+            // Commands is disabled in convert-only mode (asserted below), which in WinForms disables every
             // control inside that TabPage too -- Control.Enabled reads false once any ancestor is disabled, even
             // though the control's own flag is still true. None of this section is reachable by a user then, so
-            // none of it is meaningful to exercise.
+            // none of it is meaningful to exercise. Help stays enabled (it only reads static text, see below).
             foreach(var entry in catalog){commands.SelectedItem=entry["name"];for(int index=0;index<variants.Length;index++){actions.SelectedIndex=index;if(fields.Count!=VisibleFields.Count())throw new Exception("Command fields missing: "+entry["name"]);foreach(var required in VisibleOptions.Where(Required))if(!optionRows.Any(row=>Convert.ToString(row.Flag.SelectedItem)==TextOf(required,"flag")))throw new Exception("Required option missing");}}
             commands.SelectedItem="why";if(fields.Count!=1)throw new Exception("Required command field missing");
             commands.SelectedItem="start";if(optionRows.Count!=1||!environments.Enabled)throw new Exception("Required options missing");
@@ -307,7 +307,8 @@ internal sealed class AskWindow : Form {
         folderMode.Checked=true;if(!source.ReadOnly||chooseFile.Text!="Choose Folder...")throw new Exception("Folder picker missing");
         if(!convertOnly){urlMode.Checked=true;if(source.ReadOnly)throw new Exception("URL mode should allow typing");}
         fileMode.Checked=true;
-        if(tabs.TabPages[1].Enabled==convertOnly||tabs.TabPages[2].Enabled==convertOnly)throw new Exception("Commands/Help enabled state does not match detected convert-only mode");
+        if(tabs.TabPages[1].Enabled==convertOnly)throw new Exception("Commands enabled state does not match detected convert-only mode");
+        if(!tabs.TabPages[2].Enabled)throw new Exception("Help must stay enabled in convert-only mode: it only reads static help text, nothing project-specific");
         if(convertOnly&&tabs.SelectedTab!=tabs.TabPages[0])throw new Exception("Convert-only mode should open on Convert To Markdown");
         if(urlMode.Enabled==convertOnly)throw new Exception("YouTube/Web URL enabled state does not match detected convert-only mode");
         }
