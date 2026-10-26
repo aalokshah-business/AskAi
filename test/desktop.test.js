@@ -71,6 +71,15 @@ test('desktop request uses the selected project and rejects unknown commands or 
     const bad=await desktop.request({kind:'command',project:dir,command:'help',args:'"unclosed'}).catch(e=>e);assert.match(bad.message,/unclosed quote/);
   }finally{rm(dir);}
 });
+test('desktop request on a file that is already Markdown just says so, with no conversion and no Markdown Preview',async()=>{
+  const dir=tmpHome();try{
+    const src=path.join(dir,'already.md');write(src,'# Already Markdown');
+    const r=await desktop.request({kind:'convert',project:dir,source:src});
+    assert.equal(r.code,0);
+    assert.equal(r.display,'already.md is already Markdown.');
+    assert.equal(r.output,null);
+  }finally{rm(dir);}
+});
 test('desktop request rejects a folder with nothing convertible in it',async()=>{
   const dir=tmpHome();try{
     write(path.join(dir,'notes.json'),'{}');

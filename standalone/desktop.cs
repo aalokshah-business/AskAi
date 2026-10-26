@@ -232,8 +232,8 @@ internal sealed class AskWindow : Form {
         var header = new Panel { Dock = DockStyle.Fill, Height = 64, Margin = new Padding(0,0,0,10) };
         header.Paint += delegate (object s, PaintEventArgs e) {
             var t = ReadTheme(); e.Graphics.SmoothingMode = System.Drawing.Drawing2D.SmoothingMode.AntiAlias;
-            using (var navy = new SolidBrush(ColorTranslator.FromHtml(t["navy"]))) e.Graphics.FillRectangle(navy, header.ClientRectangle);
-            using (var accent = new SolidBrush(ColorTranslator.FromHtml(t["accent"]))) e.Graphics.FillEllipse(accent, 14, 12, 40, 40);
+            using (var navy = new System.Drawing.Drawing2D.LinearGradientBrush(header.ClientRectangle, ColorTranslator.FromHtml(t["navy"]), ColorTranslator.FromHtml(t["teal"]), 20f)) e.Graphics.FillRectangle(navy, header.ClientRectangle);
+            using (var accent = new SolidBrush(ColorTranslator.FromHtml(t["teal"]))) e.Graphics.FillEllipse(accent, 14, 12, 40, 40);
             using (var white = new SolidBrush(Color.White)) {
                 e.Graphics.DrawString("AI", new Font("Segoe UI", 13, FontStyle.Bold), white, new RectangleF(14, 12, 40, 40), new StringFormat { Alignment = StringAlignment.Center, LineAlignment = StringAlignment.Center });
                 e.Graphics.DrawString("Ask AI", new Font("Segoe UI", 20, FontStyle.Bold), white, new PointF(66, 8));

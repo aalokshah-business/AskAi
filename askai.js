@@ -1178,6 +1178,7 @@ async function cmdConvert(o) {
     }
   }
   if (!isUrl && !fs.existsSync(resolvedSrc)) { console.log(`${resolvedSrc} not found.`); return 1; }
+  if (!isUrl && /\.md$/i.test(resolvedSrc)) { console.log(`${resolvedSrc} is already Markdown.`); return 0; }
   const out = o.out || path.join(projectDir(o), 'docs', 'ai', 'inputs', `${(isUrl ? resolvedSrc.replace(/^https?:\/\//, '').replace(/[^\w.-]+/g, '_') : path.basename(resolvedSrc, path.extname(resolvedSrc))).slice(0, 80)}.md`);
   if (fs.existsSync(out)) { console.log(`${out} exists; choose another --out`); return 1; }
   fs.mkdirSync(path.dirname(out), { recursive: true });

@@ -104,7 +104,7 @@ def main():
         banner.grid_propagate(False)
         chip = tk.Canvas(banner, width=56, height=56, background=theme['navy'], highlightthickness=0)
         chip.place(x=8, y=4)
-        chip.create_oval(4, 4, 44, 44, fill=theme['accent'], outline='')
+        chip.create_oval(4, 4, 44, 44, fill=theme['teal'], outline='')
         chip.create_text(24, 24, text='AI', fill='white', font=(theme['font'], 13, 'bold'))
         tk.Label(banner, text='Ask AI', font=(theme['font'], 22, 'bold'), background=theme['navy'], foreground='white').place(x=64, y=2)
         tk.Label(banner, text='Convert documents once. Run AskAI commands without sending output through chat.', font=(theme['font'], 9), background=theme['navy'], foreground=theme['secondary']).place(x=64, y=38)
