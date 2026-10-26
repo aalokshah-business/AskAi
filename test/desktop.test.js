@@ -19,6 +19,14 @@ test('desktop mode reports convertOnly from the manifest, honouring --claude-hom
     assert.deepEqual(JSON.parse(cli(['desktop','mode','--claude-home',home]).out),{convertOnly:true});
   }finally{rm(home);}
 });
+test('install --convert-only previews opening Ask AI under --dry-run, without --no-desktop',()=>{
+  const home=tmpHome();
+  try{
+    const r=cli(['install','--convert-only','--dry-run','--yes','--claude-home',home]);
+    assert.equal(r.code,0,r.err);
+    assert.match(r.out,/\[dry-run\] would open Ask AI after install/);
+  }finally{rm(home);}
+});
 test('desktop output paths preserve existing files, reject deceptive URLs and normalize names',()=>{
   const dir=tmpHome();try{
     write(path.join(dir,'spec.md'),'original');

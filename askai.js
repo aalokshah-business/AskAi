@@ -580,6 +580,14 @@ async function cmdInstall(o) {
   if (o.project) { console.log(''); const dir = projectDir(o, o.project); const name = registrationName(o, dir); const references = await project.research(dir, { offline: o.offline, dry: o.dry }); project.init(dir, { yes: true, dry: o.dry, about: o.about, type: o.type, references }, ctx); registerProject({ ...o, name }, dir); }
   ensureSessionTerminal(o, false, ctx.sandbox);
   if (!o.dry) { console.log('Check this machine: askai setup' + (o.project ? ` ${o.project}` : ' <repo>') + '.'); console.log('In a new chat: /askai-cli opens the terminal without source analysis (Codex: $askai-cli). /askai-plugins finishes one-time plugin setup and says when each tool is called.'); try { const dir = o.project ? projectDir(o, o.project) : null; const list = todo.items(ctx, dir); const n = todo.open(list).length; if (n && dir) console.log(`\nRemaining setup and review steps (${n}); askai todo ${dir} shows them again:\n${todo.render(list)}`); else if (n) console.log(`Next: askai todo lists ${n} remaining setup and review steps.`); } catch (_) { /* best effort */ } }
+  if (o.convertOnly && !o.noDesktop && !failed.some(r => r.id === 'desktop')) {
+    if (o.dry) console.log('[dry-run] would open Ask AI after install');
+    else {
+      console.log('\nOpening Ask AI...');
+      try { await require('./lib/desktop').launch(o.project ? projectDir(o, o.project) : process.cwd()); }
+      catch (e) { console.error(`Could not open Ask AI automatically: ${e.message}. Open it from the Desktop/Start Menu shortcut, or run: askai gui`); }
+    }
+  }
   if (o.dry) return 0;
   const optional = new Set(['rtk', 'context-mode', 'caveman-plugin', 'headroom', 'graphify', 'context7', 'repomix', 'codebase-memory', 'claude-mem']);
   const requiredFail = failed.filter(r => !optional.has(r.id));

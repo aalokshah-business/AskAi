@@ -28,8 +28,9 @@
 .PARAMETER NoPath         Do not add the askai command to the user PATH.
 .PARAMETER NoDesktop      Skip the Windows Ask AI app shortcuts and its additional document/YouTube dependencies.
 .PARAMETER ConvertOnly    Just the Ask AI desktop app and markitdown (document/YouTube to Markdown): no Claude Code, Codex,
-                          Antigravity or Cursor settings, rules, MCP servers or plugins. Keeps the desktop shortcuts
-                          (use -NoDesktop too for a CLI-only install instead). Implies -Only markitdown.
+                          Antigravity or Cursor settings, rules, MCP servers or plugins. Keeps the desktop shortcuts and
+                          opens the app itself once the install finishes -- no second command. Implies -Only markitdown.
+                          -NoDesktop too for a CLI-only install that does not open anything.
 .PARAMETER Caveman        Terse-reply level: lite | full | ultra | off (default full).
 .PARAMETER ClaudeHome     Use this folder instead of ~\.claude (testing).
 .PARAMETER CursorHome     Use this folder instead of ~\.cursor (testing).

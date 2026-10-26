@@ -75,6 +75,18 @@ Reply with what was installed, anything that failed, the plugin-ready report, an
 
 **Keeping it current.** `askai update` fetches the latest AskAI from GitHub and re-applies your profile; `askai tools update` upgrades the tools it installed. `askai upgrade --agents` opens Claude Code, Cursor and Codex in sequence for reviews and verified improvements; it uses model tokens and needs all three CLIs on PATH. Before running a script from the internet you can read it first: [get.sh](get.sh), [get.ps1](get.ps1), and [SECURITY.md](SECURITY.md) for what the installer changes.
 
+**Just the desktop app for Markdown conversion, no coding setup.** For a machine that only needs to turn PDFs, Office files, web pages or YouTube videos into Markdown -- an office laptop, say -- `--convert-only` installs just the Ask AI desktop app and `markitdown`: no Claude Code, Codex, Antigravity or Cursor settings, rules, MCP servers or plugins. One command, and the app opens itself when it finishes:
+
+```powershell
+& ([scriptblock]::Create((irm https://raw.githubusercontent.com/aalokshah-business/AskAi/main/get.ps1))) -ConvertOnly -Yes
+```
+
+```bash
+curl -fsSL https://raw.githubusercontent.com/aalokshah-business/AskAi/main/get.sh | bash -s -- --convert-only --yes
+```
+
+It opens straight to the **Convert To Markdown** tab, with **Ask AI Commands** and **Ask AI Help** greyed out -- there is no coding setup for them to act on. This is the same app a full install gets, not a separate build: running plain `askai install` on any other machine still gets every tab working. Add `-NoDesktop` / `--no-desktop` too for a CLI-only install (`askai convert <file-or-URL>`) that opens nothing.
+
 ## Platforms
 
 AskAI runs on Windows 11, Ubuntu, and a Debian-based devcontainer (Tier 1). macOS, Alpine, and WSL2 are Tier 2. `askai version --all` prints the same matrix. Node 22 and 24 are the CI versions. Node 20 still runs and prints one end-of-life line. Context Mode needs Node 22.5 or newer.

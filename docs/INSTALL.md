@@ -82,6 +82,24 @@ Then run, from the repository: askai setup .
 Reply with what was installed, anything that failed, the plugin-ready report, and my to-do list. Change no other files. Remind me to restart this session, then run /askai-plugins once.
 ```
 
+### Just the desktop app, for Markdown conversion only
+
+For a machine that only ever needs to turn a PDF, Office file, web page or YouTube video into Markdown -- an office laptop that will never run Claude Code, Codex, Antigravity or Cursor -- use `-ConvertOnly` / `--convert-only` instead of `-Target` / `--target`. It installs just the Ask AI desktop app and `markitdown`; nothing is written to any AI tool's settings, rules, MCP servers or plugins.
+
+Windows (PowerShell):
+
+```powershell
+& ([scriptblock]::Create((irm https://raw.githubusercontent.com/aalokshah-business/AskAi/main/get.ps1))) -ConvertOnly -Yes
+```
+
+macOS, Linux or WSL:
+
+```bash
+curl -fsSL https://raw.githubusercontent.com/aalokshah-business/AskAi/main/get.sh | bash -s -- --convert-only --yes
+```
+
+One command: the app opens itself once the install finishes, straight to the **Convert To Markdown** tab, with **Ask AI Commands** and **Ask AI Help** greyed out. That is a state of the same app, not a separate build -- a plain `askai install` on any other machine gets every tab working, and `askai desktop mode` reports which state a given machine is in. Add `-NoDesktop` / `--no-desktop` as well for a CLI-only install that does not open anything; convert from the terminal with `askai convert <file-or-URL> [--out file.md]`.
+
 ### Linux and Windows host checklist
 
 AskAI configures the hosts you select; it does not sign in to their accounts. These are the official host install sources and AskAI chat entries. Linux instructions refer to native Linux, not the Windows app running through WSL.
