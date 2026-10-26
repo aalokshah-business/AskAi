@@ -73,6 +73,14 @@ def main():
         bridge = str(Path(options.app_root) / 'standalone' / 'desktop-bridge.js')
         loaded = subprocess.run([options.node, bridge, '--catalog'], capture_output=True, text=True, encoding='utf-8', timeout=15, check=True)
         catalog = {row['name']: row for row in json.loads(loaded.stdout)}
+        # askai install --convert-only (just the desktop app and markitdown): open straight to Convert To Markdown
+        # and grey out Commands/Help, since there is no Claude Code/Codex/Antigravity/Cursor setup for them to touch.
+        convert_only = False
+        try:
+            mode_result = subprocess.run([options.node, bridge, '--mode'], capture_output=True, text=True, encoding='utf-8', timeout=15, check=True)
+            convert_only = bool(json.loads(mode_result.stdout).get('convertOnly'))
+        except Exception:
+            pass  # best-effort: a failed check just leaves every tab enabled
         project = tk.StringVar(value=options.project)
         source, folder = tk.StringVar(), tk.StringVar()
         source_mode = tk.StringVar(value='file')
@@ -106,6 +114,10 @@ def main():
         tabs.add(conversion, text='Convert To Markdown')
         tabs.add(commands, text='Ask AI Commands')
         tabs.add(help_tab, text='Ask AI Help')
+        if convert_only:
+            tabs.tab(commands, state='disabled')
+            tabs.tab(help_tab, state='disabled')
+            tabs.select(conversion)
         conversion.columnconfigure(0, weight=1)
         modes = ttk.Frame(conversion)
         modes.grid(row=0, column=0, columnspan=2, sticky='w')
@@ -473,15 +485,17 @@ def main():
         poll()
         if options.smoke_test:
             assert len(tabs.tabs()) == 3 and list(help_picker['values']) == grouped_values(catalog) == list(picker['values']), 'Help Tab Missing'
-            tabs.select(commands)
-            tab_changed()
-            command_height = int(tabs.cget('height'))
-            assert not open_button.winfo_manager() and not folder_button.winfo_manager(), 'Markdown Controls Visible Outside Conversion'
-            tabs.select(help_tab)
-            fit_controls()
-            assert int(tabs.cget('height')) < command_height, 'Help Tab Wastes Output Space'
-            tabs.select(conversion)
-            tab_changed()
+            if not convert_only:
+                # Commands/Help are disabled in convert-only mode (asserted below) and cannot be switched to.
+                tabs.select(commands)
+                tab_changed()
+                command_height = int(tabs.cget('height'))
+                assert not open_button.winfo_manager() and not folder_button.winfo_manager(), 'Markdown Controls Visible Outside Conversion'
+                tabs.select(help_tab)
+                fit_controls()
+                assert int(tabs.cget('height')) < command_height, 'Help Tab Wastes Output Space'
+                tabs.select(conversion)
+                tab_changed()
             assert open_button.winfo_manager() == 'grid', 'Markdown Controls Missing In Conversion'
             for name in catalog:
                 command.set(name)
@@ -526,6 +540,9 @@ def main():
             assert str(source_entry.cget('state')) == 'normal' and str(file_button.cget('state')) == 'disabled', 'URL mode should allow typing and disable the picker'
             source_mode.set('file')
             mode_changed()
+            assert (str(tabs.tab(commands, 'state')) == 'disabled') == convert_only and (str(tabs.tab(help_tab, 'state')) == 'disabled') == convert_only, 'Commands/Help enabled state does not match detected convert-only mode'
+            if convert_only:
+                assert tabs.index(tabs.select()) == tabs.index(conversion), 'Convert-only mode should open on Convert To Markdown'
             root.after(300, root.destroy)
         root.mainloop()
     except Exception as error:

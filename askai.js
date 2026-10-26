@@ -70,6 +70,7 @@ const VAL = { output: 'output', kind: 'kind', about: 'about', type: 'type', tier
 Object.assign(VAL, {'window-id':'windowId', variant:'variant', python:'python', timeout:'timeout', budget:'budget', phase:'phase', acceptance:'acceptance', 'account-label':'accountLabel'});
 Object.assign(BOOL,{record:'record',isolated:'isolated'});
 Object.assign(BOOL,{'no-desktop':'noDesktop'});
+Object.assign(BOOL,{'convert-only':'convertOnly'});
 Object.assign(VAL,{'test-tool':'testTool'});
 const has = (o, k) => Object.prototype.hasOwnProperty.call(o, k);
 
@@ -489,6 +490,7 @@ async function cmdInstall(o) {
     o.desktopExtras=true;
     if(!list(o.only).length)o.markitdown=true;
   }
+  if (o.convertOnly && !list(o.only).length) o.only = 'markitdown';
   if (o.seedOnly && (!o.target || o.target === 'auto')) o.target = 'claude';
   if (o.profile === 'max' && !o.lsp) o.lsp = 'ts,py'; // the max profile includes Claude Code's TypeScript and Python code intelligence
   if (o.project) registrationName(o, projectDir(o, o.project));
@@ -558,6 +560,7 @@ async function cmdInstall(o) {
   // The profile is remembered so later runs (install, status, doctor) judge the machine against it; --only is a partial run.
   if (!o.dry && !list(o.only).length) ctx.manifest.profile = prof.name;
   if (!o.dry && !list(o.only).length && o.target) ctx.manifest.target = o.target;
+  if (!o.dry && o.convertOnly) ctx.manifest.convertOnly = true;
   try { comps.refreshDerived(ctx); } catch (e) { ctx.log.warn(`could not refresh derived files: ${e.message}`); }
   try { saveManifest(ctx, 'install', results); } catch (e) { console.error(`could not save manifest: ${e.message}`); }
 
@@ -1834,8 +1837,9 @@ async function main() {
         return cmdInstall({...o,only:'markitdown',desktopRequired:true,_:['install']});
       }
       if(action==='catalog'){console.log(JSON.stringify(require('./lib/desktop').catalog(),null,2));return 0;}
+      if(action==='mode'){console.log(JSON.stringify(require('./lib/desktop').mode(buildCtx(o,true)),null,2));return 0;}
       if(action==='remove'){console.log(require('./lib/desktop').install(buildCtx(o,true),true));return 0;}
-      if(action!=='open')throw Error('askai desktop [open|install|remove|catalog]');
+      if(action!=='open')throw Error('askai desktop [open|install|remove|catalog|mode]');
       const target=await launchTarget(o);if(!target)return 1;
       if(o.dry){console.log(`Open Ask AI desktop for ${target.path}`);return 0;}
       await require('./lib/desktop').launch(target.path);console.log('Ask AI window reported ready (startup check passed).');return 0;

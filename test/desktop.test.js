@@ -8,6 +8,17 @@ test('desktop command catalog covers every public command and routes help withou
   const r=cli(['desktop','catalog']);assert.equal(r.code,0,r.err);assert.ok(JSON.parse(r.out).some(r=>r.name==='mcp'));
   assert.equal(cli(['desktop','--help']).code,0);
 });
+test('desktop mode reports convertOnly from the manifest, honouring --claude-home',()=>{
+  assert.deepEqual(desktop.mode(undefined),{convertOnly:false});
+  assert.deepEqual(desktop.mode({manifest:{}}),{convertOnly:false});
+  assert.deepEqual(desktop.mode({manifest:{convertOnly:true}}),{convertOnly:true});
+  const home=tmpHome();
+  try{
+    assert.deepEqual(JSON.parse(cli(['desktop','mode','--claude-home',home]).out),{convertOnly:false});
+    assert.equal(cli(['install','--only','markitdown','--convert-only','--yes','--claude-home',home,'--no-desktop']).code,0);
+    assert.deepEqual(JSON.parse(cli(['desktop','mode','--claude-home',home]).out),{convertOnly:true});
+  }finally{rm(home);}
+});
 test('desktop output paths preserve existing files, reject deceptive URLs and normalize names',()=>{
   const dir=tmpHome();try{
     write(path.join(dir,'spec.md'),'original');
