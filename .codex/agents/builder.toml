@@ -1,7 +1,7 @@
 name = "builder"
 description = "Features, enhancements and bug fixes within the existing design."
 model = "gpt-6.1-sol"
-model_reasoning_effort = "medium"
+model_reasoning_effort = "high"
 sandbox_mode = "workspace-write"
 developer_instructions = """
 You implement features and fixes within the existing design.

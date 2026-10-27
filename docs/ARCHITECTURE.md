@@ -144,9 +144,9 @@ The installed `askai-cli` entry point runs `askai cli --prepare`: select a proje
 
 | Tier | Agent | Use for | Claude Code | Codex | Cursor (Grok / Sonnet) | Antigravity |
 | --- | --- | --- | --- | --- | --- | --- |
-| lead | `architect` | Architecture and design, ambiguous debugging, security, cross-module integration | sonnet, high | gpt-6.1-sol, high | grok-4.7, xhigh / claude-sonnet-5, max | flash, high (model: flash in the file; /effort per session) |
-| build | `builder` | Features, enhancements and bug fixes within the existing design | sonnet, high | gpt-6.1-sol, medium | grok-4.7, high / claude-sonnet-5, high | flash, high (model: flash in the file; /effort per session) |
-| chore | `runner` | Cleanup, running scripts and tests, git, search, small docs edits | haiku, medium | gpt-6-luna, medium | grok-4.7, medium / claude-sonnet-5, medium | flash, high (model: flash in the file; /effort per session) |
+| lead | `architect` | Architecture and design, ambiguous debugging, security, cross-module integration | sonnet, xhigh | gpt-6.1-sol, xhigh | grok-4.7, xhigh / claude-sonnet-5-5, xhigh | flash, high (model: flash in the file; /effort per session) |
+| build | `builder` | Features, enhancements and bug fixes within the existing design | sonnet, high | gpt-6.1-sol, high | grok-4.7, high / claude-sonnet-5-5, high | flash, high (model: flash in the file; /effort per session) |
+| chore | `runner` | Cleanup, running scripts and tests, git, search, small docs edits | haiku, max | gpt-6.1-terra, xhigh | grok-4.7, medium / claude-haiku-5-5, max | flash, high (model: flash in the file; /effort per session) |
 
 Change one with `askai models set <tool>.<tier> <model>[:<effort>]`; `askai init --refresh` rewrites the agent files. Antigravity agent files accept only a tier (`flash`, `pro`, `flash_lite`, `inherit`); any other value makes Antigravity skip the file silently.
 
@@ -161,13 +161,13 @@ In install order. Evidence labels: measured (a third-party saving), mixed, claim
 - **`baseline`** · Claude Code · in its profiles · evidence: none.
   Settings baseline. settings.json: add (never override) model=claude-haiku-5-5 (Claude Code otherwise starts on Opus; --main-model), CLAUDE_CODE_SUBAGENT_MODEL=haiku, effortLevel=medium, name-only skillOverrides; replace the retired haiku, high effort on Haiku, and autoCompactWindow 150000 defaults; remove leftover self-built askai hook registrations
 - **`rtk`** · Claude Code · opt-in (--rtk) · evidence: reported.
-  RTK (Bash output compression; opt-in, see README for the benchmarks). winget install rtk-ai.rtk on Windows, brew install rtk on macOS, cargo install --git https://github.com/rtk-ai/rtk (needs Rust from rustup.rs, or Homebrew) on Linux; check `rtk gain` works; winget install BurntSushi.ripgrep.MSVC on Windows, brew install ripgrep on macOS, manual: sudo apt-get install ripgrep  (or dnf install ripgrep) on Linux if rg is missing; `rtk init -g --auto-patch` (registers a PreToolUse hook on Bash)
+  RTK (Bash output compression; opt-in, see README for the benchmarks). winget install rtk-ai.rtk on Windows, brew install rtk on macOS, cargo install --git https://github.com/rtk-ai/rtk (installs Rust via rustup first if missing, user-level, no root) on Linux; check `rtk gain` works; winget install BurntSushi.ripgrep.MSVC on Windows, brew install ripgrep on macOS, manual: sudo apt-get install ripgrep  (or dnf install ripgrep) on Linux if rg is missing; `rtk init -g --auto-patch` (registers a PreToolUse hook on Bash)
 - **`context-mode`** · Claude Code · opt-in (--context-mode) · evidence: reported.
   Context Mode (sandboxed tool output + session memory; opt-in). claude plugin marketplace add mksglu/context-mode; claude plugin install context-mode@context-mode (plugin hooks + ctx_* MCP tools; needs Node >= 22.5)
 - **`serena`** · Claude Code · in its profiles · evidence: unmeasured.
   Serena (symbol-level code navigation). winget install astral-sh.uv on Windows, brew install uv on macOS, curl -fsSL https://astral.sh/uv/install.sh | sh; if that host is blocked, python3 -m pip install --user uv on Linux if missing; uv tool install -p 3.13 serena-agent (a stale uv python link is repaired if it blocks this); serena init; add its bin dir to the user PATH; claude mcp add --scope user serena (dashboard auto-open off)
 - **`cursor-rtk`** · Cursor · in its profiles · evidence: reported · mirrors `rtk`.
-  RTK for Cursor (shell output compression hook). winget install rtk-ai.rtk on Windows, brew install rtk on macOS, cargo install --git https://github.com/rtk-ai/rtk (needs Rust from rustup.rs, or Homebrew) on Linux if missing; rtk init -g --agent cursor --auto-patch (registers RTK's shell hook in ~/.cursor/hooks.json); backup first
+  RTK for Cursor (shell output compression hook). winget install rtk-ai.rtk on Windows, brew install rtk on macOS, cargo install --git https://github.com/rtk-ai/rtk (installs Rust via rustup first if missing, user-level, no root) on Linux if missing; rtk init -g --agent cursor --auto-patch (registers RTK's shell hook in ~/.cursor/hooks.json); backup first
 - **`cursor-context-mode`** · Cursor · in its profiles · evidence: reported · mirrors `context-mode`.
   Context Mode for Cursor (MCP server). npm install -g context-mode@1.0.169 if missing (needs Node >= 22.5; if this machine's own Node is older, nvm installs a second, pinned Node 22 just for this, leaving the default node alone); add a "context-mode" entry to ~/.cursor/mcp.json (MCP tools only; Cursor does not run its hooks)
 - **`cursor-serena`** · Cursor · in its profiles · evidence: unmeasured · mirrors `serena`.

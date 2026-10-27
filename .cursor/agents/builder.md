@@ -1,7 +1,7 @@
 ---
 name: builder
 description: Features, enhancements and bug fixes within the existing design. (effort: high; pick the matching model variant from `agent models`)
-model: grok-4.7
+model: claude-sonnet-5-5
 readonly: false
 is_background: false
 ---

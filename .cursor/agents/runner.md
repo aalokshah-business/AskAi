@@ -1,7 +1,7 @@
 ---
 name: runner
-description: Cleanup, running scripts and tests, git operations, file search, small docs edits. (effort: medium; pick the matching model variant from `agent models`)
-model: grok-4.7
+description: Cleanup, running scripts and tests, git operations, file search, small docs edits. (effort: max; pick the matching model variant from `agent models`)
+model: claude-haiku-5-5
 readonly: false
 is_background: false
 ---

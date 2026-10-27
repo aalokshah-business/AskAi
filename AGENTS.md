@@ -8,7 +8,7 @@
 
 <!-- askai:begin router (askai init --refresh updates this block; write your own notes outside it) -->
 ## Project
-Make AI coding subscriptions last longer: installs and wires up existing token-saving tools (RTK, Context Mode, Serena, markitdown, Caveman-style rules) for Claude Code, Cursor, OpenAI Codex and Google Antigravity on Windows, macOS, Linux and WSL, with a hook-free session ledger, handoff and cheat sheet. Type: other. Languages: JavaScript 89%, PowerShell 4%, Python 4%, Shell 3%.
+Make AI coding subscriptions last longer: installs and wires up existing token-saving tools (RTK, Context Mode, Serena, markitdown, Caveman-style rules) for Claude Code, Cursor, OpenAI Codex and Google Antigravity on Windows, macOS, Linux and WSL, with a hook-free session ledger, handoff and cheat sheet. Type: other. Languages: JavaScript 87%, PowerShell 5%, Python 4%, Shell 3%.
 
 ## Read only what the task needs
 | Need | File |
@@ -33,16 +33,17 @@ Make AI coding subscriptions last longer: installs and wires up existing token-s
 - Security constraints are in docs/ai/ARCHITECTURE.md. Keep them intact.
 - Empty fields in WORK_ORDER.md and HANDOFF.md are unknown. Leave them until a person or a verified session fills them.
 - Make the smallest change that solves the task; keep error handling, tests and security; no unrequested refactors or new dependencies.
+- In plan mode, do not propose changes below about 95% confidence in what to build; ask follow-up questions until you are. A wrong plan executed costs the work twice.
 - Quote only failing lines of tool output. Reply tersely: changed files, check run and result, blockers, next step. Show code changes as a diff, never whole files.
 
 ## Sessions
-- One task per session. Keep the model chosen at the start (a switch rebuilds the prompt cache); raise effort for one hard step only.
+- One task per session. Keep the model and effort chosen at the start (a switch rebuilds the prompt cache; effort is disputed the same way, so treat it as a reset too); for one hard step, start a fresh session at a higher effort instead.
 - Before /clear or a break: ask the agent to write .ai-work/HANDOFF.md. After /clear: read the handoff, then only the files it names.
 - Compact only to keep working on the same large feature; otherwise hand off and clear.
 - When a feature or the structure changes, update one line in FEATURES.md or ARCHITECTURE.md.
 
 ## Delegation
-- Tiers: lead `architect` (architecture, design, hard bugs, security), build `builder` (features and fixes within the design), chore `runner` (cleanup, scripts, git, test runs, search). Claude Code: sonnet/xhigh, sonnet/high, haiku/xhigh; other tools: docs/ai/MODELS.md.
+- Tiers: lead `architect` (architecture, design, hard bugs, security), build `builder` (features and fixes within the design), chore `runner` (cleanup, scripts, git, test runs, search). Claude Code: sonnet/xhigh, sonnet/high, haiku/max; other tools: docs/ai/MODELS.md.
 - Routine work: no subagents. Give a subagent one bounded task, the files it owns, and a limit (15 tool calls, 1,500 characters).
 - After two failed attempts: stop, report the cause, escalate one tier. Never relax a test to make it pass; verify results yourself.
 <!-- askai:end -->

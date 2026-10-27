@@ -1,7 +1,7 @@
 ---
 name: architect
 description: Architecture and design, ambiguous debugging, security, cross-module integration. Use for decisions, not routine edits. (effort: xhigh; pick the matching model variant from `agent models`)
-model: grok-4.7
+model: claude-sonnet-5-5
 readonly: true
 is_background: false
 ---

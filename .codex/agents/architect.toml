@@ -1,7 +1,7 @@
 name = "architect"
 description = "Architecture and design, ambiguous debugging, security, cross-module integration. Use for decisions, not routine edits."
 model = "gpt-6.1-sol"
-model_reasoning_effort = "high"
+model_reasoning_effort = "xhigh"
 sandbox_mode = "read-only"
 developer_instructions = """
 You are the lead for architecture and design decisions.

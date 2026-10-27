@@ -193,6 +193,32 @@ test('pkg: off Windows it prefers Homebrew, then the vendor script, then cargo, 
   assert.match(pkg.describe(mk({ curl: '/u/curl' }), 'Anthropic.ClaudeCode'), /claude\.ai\/install\.sh/);
 }));
 
+test('pkg: rtk\'s cargo install provisions Rust via rustup first when cargo is missing, using its absolute path, without touching the real cargo', { skip: process.platform === 'win32' ? 'Unix package-manager routing only' : false }, () => withHome(home => {
+  const savedHome = process.env.HOME;
+  process.env.HOME = '/home/dev';
+  try {
+    const cargoBin = '/home/dev/.cargo/bin/cargo';
+    let installed = false;
+    const ctx = makeCtx(home);
+    ctx.which = n => ({ curl: '/usr/bin/curl' }[n] || null);
+    ctx.probe = (cmd, args) => {
+      ctx.calls.push(['probe', cmd, ...args].join(' '));
+      if (cmd === 'test' && args[1] === cargoBin) return installed ? { ok: true, status: 0, stdout: '', stderr: '', error: null } : { ok: false, status: 1, stdout: '', stderr: '', error: null };
+      return { ok: false, status: 1, stdout: '', stderr: '', error: null };
+    };
+    ctx.act = (label, cmd, args) => {
+      ctx.calls.push(['act', cmd, ...(args || [])].join(' '));
+      if (cmd === 'sh' && String(args[1]).includes('sh.rustup.rs')) installed = true;
+      return { ok: true, status: 0, stdout: '', stderr: '', error: null };
+    };
+    // Still fails in this same process -- refreshPath is a no-op on Unix, so ~/.cargo/bin never reaches this
+    // process's PATH without a new shell -- but the cargo install itself must actually have run.
+    assert.throws(() => pkg.install(ctx, 'rtk-ai.rtk', () => false), /not on PATH yet/);
+    assert.ok(ctx.calls.some(x => x.includes('sh.rustup.rs')), 'installs Rust via rustup when cargo is missing');
+    assert.ok(ctx.calls.includes(`act ${cargoBin} install --git https://github.com/rtk-ai/rtk`), 'runs cargo install with the freshly-provisioned absolute path, not the unresolvable bare "cargo"');
+  } finally { process.env.HOME = savedHome; }
+}));
+
 test('pkg: uv falls back to pip when its installer host is blocked', () => withHome(home => {
   const ctx = makeCtx(home);
   const win = process.platform === 'win32';
