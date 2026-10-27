@@ -186,6 +186,10 @@ test('pkg: off Windows it prefers Homebrew, then the vendor script, then cargo, 
   pkg.install(cargo, 'rtk-ai.rtk', () => true);
   assert.ok(cargo.calls.includes('act cargo install --git https://github.com/rtk-ai/rtk'), 'git install, not the unrelated crate');
   assert.throws(() => pkg.install(mk({}), 'rtk-ai.rtk', () => false), /rustup|brew\.sh/);
+  // The error must name the tool ("rtk"), never the winget id ("rtk-ai.rtk") used only as pkg.js's internal lookup key.
+  assert.throws(() => pkg.install(mk({}), 'rtk-ai.rtk', () => false), err => !/rtk-ai\.rtk/.test(err.message) && /\brtk\b/.test(err.message));
+  assert.throws(() => pkg.install(mk({}), 'BurntSushi.ripgrep.MSVC', () => false), err => !/BurntSushi/.test(err.message) && /\bripgrep\b/.test(err.message));
+  if (process.platform === 'linux') assert.throws(() => pkg.install(mk({}), 'rtk-ai.rtk', () => false), /Rust.*rustup\.rs.*Homebrew/s, 'Linux should lead with Rust, not Homebrew');
   assert.match(pkg.describe(mk({ curl: '/u/curl' }), 'Anthropic.ClaudeCode'), /claude\.ai\/install\.sh/);
 }));
 

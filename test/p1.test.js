@@ -28,6 +28,21 @@ test('check always names four hosts, including passing and unchecked hosts', () 
     assert.ok(subset.includes('  Claude Code: not selected for installation'));
   } finally { findings.collectFindings = previous; }
 }));
+test('check reports real findings for a host even when the recorded target does not include it', () => withHome(home => {
+  // A tool can be genuinely configured on a machine (or inside the very host askai is running in) without
+  // being part of this machine's recorded install target; live evidence must win over that stale target.
+  const ctx = makeCtx(home);
+  ctx.manifest.target = 'cursor';
+  const previous = findings.collectFindings;
+  findings.collectFindings = () => [{host:'claude', group:'claude', severity:'ok', message:'config checked'}];
+  try {
+    const output = [];
+    check.run(ctx, null, {}, line => output.push(line));
+    const text = output.join('\n');
+    assert.match(text, /Claude Code: 1 ok, 0 to improve, 0 failing/);
+    assert.doesNotMatch(text, /Claude Code: not selected for installation/);
+  } finally { findings.collectFindings = previous; }
+}));
 function withoutBilling(fn) {
   const saved = {};
   for (const k of KEYS) { saved[k] = process.env[k]; delete process.env[k]; }
