@@ -4,6 +4,8 @@ AskAI follows semantic versioning from 1.0.0 (see [RELEASING.md](RELEASING.md)).
 
 ## Unreleased
 
+- `uv tool` upgrades and installs now repair themselves on Windows when uv cannot replace a tool's folder ("failed to remove directory ... Access is denied", or a reparse-point error): AskAI stops that tool's own running processes (for example a Serena MCP server), takes back ownership of just that one folder under `uv tool dir`, clears it and reinstalls. Applies to Serena, MarkItDown and Graphify updates and to any `uv tool install` AskAI runs. It is skipped inside the Claude desktop app's sandbox, where the folder is a private copy.
+
 - Less to run by hand after `askai update`:
   - `update` now also refreshes the agent files and tier text of every registered project to the current model tiers (new `askai project sync`, run by the freshly installed code), so `askai init --refresh` in each repository is no longer a manual step. An agent file that differs from the new text only in its `model`/`effort` lines is rewritten even when its recorded hash drifted; a file with a real hand edit is still kept.
   - It ends with a highlighted block (reverse video; ruled lines without colour) telling you to exit and reopen `askai cli`: the open shell keeps running the old modules.

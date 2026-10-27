@@ -49,6 +49,26 @@ test('base-tools: every missing tool is tried and one combined command is report
   assert.throws(() => comps.byId('base-tools').install(ctx), err => /sudo apt-get install -y ripgrep jq gh/.test(err.message) && !/BurntSushi|jqlang|GitHub\.cli/.test(err.message));
 }));
 
+test('uv tool upgrade that cannot replace its folder: stop the tool\'s processes, clear that one folder, reinstall (Windows)', { skip: process.platform === 'win32' ? false : 'Windows file-lock repair' }, () => withHome(h => {
+  const root = path.join(h, 'uvtools'); fs.mkdirSync(path.join(root, 'serena-agent', 'Scripts'), { recursive: true }); write(path.join(root, 'serena-agent', 'Scripts', 'python.exe'), 'x');
+  fs.mkdirSync(path.join(root, 'other-tool'));
+  const ctx = makeCtx(h, {}, { tools: { uv: 'uv' } });
+  ctx.probe = (cmd, args) => { ctx.calls.push(['probe', cmd, ...args].join(' ')); return { ok: true, status: 0, stdout: cmd === 'uv' ? `${root}\n` : '', stderr: '', error: null }; };
+  const fail = { ok: false, status: 2, stdout: '', stderr: 'error: failed to remove directory `serena-agent\\Scripts`: Access is denied. (os error 5)', error: null };
+  ctx.act = (label, cmd, args) => { ctx.calls.push(['act', cmd, ...args].join(' ')); return cmd === 'uv' && args[1] === 'upgrade' ? fail : { ok: true, status: 0, stdout: '', stderr: '', error: null }; };
+  const saved = process.env.CLAUDE_CODE_ENTRYPOINT, savedAppData = process.env.APPDATA; process.env.CLAUDE_CODE_ENTRYPOINT = ''; process.env.APPDATA = path.join(h, 'AppData', 'Roaming');
+  try {
+    const r = comps.uvToolUpgrade(ctx, 'serena-agent');
+    assert.ok(r.ok, 'ends with a successful reinstall');
+    assert.ok(!fs.existsSync(path.join(root, 'serena-agent')), 'that tool\'s folder was cleared');
+    assert.ok(fs.existsSync(path.join(root, 'other-tool')), 'other tools are untouched');
+    assert.ok(ctx.calls.some(c => c.startsWith('probe powershell') && c.includes('Stop-Process')), 'its running processes were stopped first');
+    assert.ok(ctx.calls.some(c => c.startsWith('act uv tool install') && c.includes('serena-agent') && c.includes('--force')), ctx.calls.join(' | '));
+    const sandboxed = makeCtx(h, {}, { tools: { uv: 'uv' } }); sandboxed.probe = ctx.probe; process.env.CLAUDE_CODE_ENTRYPOINT = 'claude-desktop';
+    assert.strictEqual(comps.repairUvToolDir(sandboxed, 'serena-agent'), false, 'never repairs inside the Claude desktop sandbox');
+  } finally { process.env.CLAUDE_CODE_ENTRYPOINT = saved === undefined ? '' : saved; process.env.APPDATA = savedAppData; }
+}));
+
 test('infra lists every plugin and third-party tool with its state, plus project MCP servers and hooks', () => withHome(h => {
   const ctx = makeCtx(h, { codexHome: path.join(h, 'codex'), agyHome: path.join(h, 'gemini'), cursorHome: path.join(h, 'cursor') });
   write(path.join(h, 'repo', '.mcp.json'), JSON.stringify({ mcpServers: { playwright: { command: 'npx' } } }));
