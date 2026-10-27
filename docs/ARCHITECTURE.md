@@ -169,7 +169,7 @@ In install order. Evidence labels: measured (a third-party saving), mixed, claim
 - **`cursor-rtk`** · Cursor · in its profiles · evidence: reported · mirrors `rtk`.
   RTK for Cursor (shell output compression hook). winget install rtk-ai.rtk on Windows, brew install rtk on macOS, cargo install --git https://github.com/rtk-ai/rtk (needs Rust from rustup.rs, or Homebrew) on Linux if missing; rtk init -g --agent cursor --auto-patch (registers RTK's shell hook in ~/.cursor/hooks.json); backup first
 - **`cursor-context-mode`** · Cursor · in its profiles · evidence: reported · mirrors `context-mode`.
-  Context Mode for Cursor (MCP server). npm install -g context-mode@1.0.169 if missing (needs Node >= 22.5); add a "context-mode" entry to ~/.cursor/mcp.json (MCP tools only; Cursor does not run its hooks)
+  Context Mode for Cursor (MCP server). npm install -g context-mode@1.0.169 if missing (needs Node >= 22.5; if this machine's own Node is older, nvm installs a second, pinned Node 22 just for this, leaving the default node alone); add a "context-mode" entry to ~/.cursor/mcp.json (MCP tools only; Cursor does not run its hooks)
 - **`cursor-serena`** · Cursor · in its profiles · evidence: unmeasured · mirrors `serena`.
   Serena for Cursor (MCP server). winget install astral-sh.uv on Windows, brew install uv on macOS, curl -fsSL https://astral.sh/uv/install.sh | sh; if that host is blocked, python3 -m pip install --user uv on Linux if missing; uv tool install -p 3.13 serena-agent; serena init; add a "serena" entry (--context ide, project from the working directory) to ~/.cursor/mcp.json
 - **`markitdown`** · all hosts · opt-in (--markitdown) · evidence: unmeasured.

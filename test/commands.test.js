@@ -259,6 +259,23 @@ test('cursor-context-mode: refuses old Node, needs npm, and a failed npm install
   assert.throws(() => c('cursor-context-mode').install(lie), /not on PATH yet/);
 }));
 
+test('cursor-context-mode: old Node gets a pinned Node 22 via nvm instead of refusing, without touching the system node', { skip: process.platform === 'win32' ? 'nvm pinning is wired up for macOS/Linux only' : false }, () => withDirs(a => {
+  const pinnedNode = '/home/dev/.nvm/versions/node/v22.11.0/bin/node';
+  const probe = (cmd, args) => {
+    const script = String((args || [])[1] || '');
+    if (script.includes('command -v nvm')) return { ok: true, status: 0, stdout: 'yes\n', stderr: '', error: null };
+    if (script.includes('nvm which 22')) return { ok: true, status: 0, stdout: `${pinnedNode}\n`, stderr: '', error: null };
+    return { ok: false, status: 1, stdout: '', stderr: '', error: null };
+  };
+  const ctx = cctx(a, {}, { nodeVersion: '20.11.0', tools: { bash: '/bin/bash' }, probe, act: () => OK });
+  assert.strictEqual(c('cursor-context-mode').detect(ctx).state, 'missing');
+  c('cursor-context-mode').install(ctx);
+  assert.ok(ctx.calls.some(x => x.includes('nvm install 22')), 'provisions a pinned Node 22, not the system default');
+  assert.ok(!ctx.calls.some(x => /nvm alias default|nvm use --default/.test(x)), 'never changes this machine\'s default node');
+  assert.deepStrictEqual(mcpOf(a.cursorHome).mcpServers['context-mode'], { command: pinnedNode, args: [path.join(path.dirname(pinnedNode), 'context-mode')] });
+  assert.strictEqual(c('cursor-context-mode').detect(ctx).state, 'ok');
+}));
+
 test('cursor-context-mode: an entry the user already has is left as it is, is not askai\'s to remove, and --force removes it', () => withDirs(a => {
   write(`${a.cursorHome}/mcp.json`, JSON.stringify({ mcpServers: { 'context-mode': { command: 'node', args: ['mine.js'] }, other: { command: 'x' } } }));
   const tools = { npm: '/bin/npm', 'context-mode': '/bin/context-mode' };
