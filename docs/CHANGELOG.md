@@ -4,6 +4,8 @@ AskAI follows semantic versioning from 1.0.0 (see [RELEASING.md](RELEASING.md)).
 
 ## Unreleased
 
+- Setup guide and setup script brought up to date with the self-healing installs. `askai bootstrap --repo` now writes a complete, idempotent `.devcontainer/askai-postcreate.sh` (installs `curl`/`git` if missing, installs AskAI or runs `askai update`, `askai install --retry`, `askai project sync`, `askai project refresh`, `askai check --all`; sudo only when it needs no password). `docs/INSTALL.md` gains a "new machine or devcontainer" section with prerequisites and the update-and-verify steps, states what AskAI installs for you on Linux/macOS/WSL and where to run on Windows, and the troubleshooting table covers the uv "Access is denied" repair, Serena "Failed to connect", Application Control blocks, stale `askai models` and the `*` override marker. README, `askai guide install` and `askai help bootstrap` point to it.
+
 - `uv tool` upgrades and installs now repair themselves on Windows when uv cannot replace a tool's folder ("failed to remove directory ... Access is denied", or a reparse-point error): AskAI stops that tool's own running processes (for example a Serena MCP server), takes back ownership of just that one folder under `uv tool dir`, clears it and reinstalls. Applies to Serena, MarkItDown and Graphify updates and to any `uv tool install` AskAI runs. It is skipped inside the Claude desktop app's sandbox, where the folder is a private copy.
 
 - Less to run by hand after `askai update`:

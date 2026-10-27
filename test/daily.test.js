@@ -105,7 +105,13 @@ test('bootstrap writes the devcontainer script once', () => {
     assert.match(daily.bootstrap(home, 'coding'), /Personal Dev Containers dotfiles/);
     assert.ok(!fs.existsSync(file));
     assert.match(daily.bootstrap(home, 'coding', { repo: true }), /wrote/);
-    assert.match(fs.readFileSync(file, 'utf8'), /askai install --yes --profile coding/);
+    const script = fs.readFileSync(file, 'utf8');
+    assert.match(script, /^#!\/bin\/sh\n/);
+    assert.match(script, /get\.sh \| bash -s -- --yes --profile coding/, 'first run downloads AskAI with the profile');
+    for (const step of ['askai update', 'askai install --retry --yes', 'askai project sync', 'askai project refresh', 'askai check --all']) assert.ok(script.includes(step), step);
+    assert.match(script, /sudo -n true/, 'uses sudo only when it needs no password');
+    const syntax = require('child_process').spawnSync('sh', ['-n', file], { encoding: 'utf8' });
+    if (!syntax.error) assert.strictEqual(syntax.status, 0, syntax.stderr);
     assert.match(daily.bootstrap(home, 'coding', { repo: true }), /already/);
   } finally { rm(home); }
 });

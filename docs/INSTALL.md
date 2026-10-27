@@ -82,6 +82,33 @@ Then run, from the repository: askai setup .
 Reply with what was installed, anything that failed, the plugin-ready report, and my to-do list. Change no other files. Remind me to restart this session, then run /askai-plugins once.
 ```
 
+### A new machine or a devcontainer: one setup script
+
+Needs `bash`, `curl` or `git`, internet access to github.com, astral.sh or pypi.org, registry.npmjs.org and sh.rustup.rs, and ideally root or passwordless sudo (the script installs `curl` and `git` itself when it can). Nothing else has to be installed first, and no command has to be typed afterwards.
+
+```bash
+askai bootstrap --repo --profile max   # writes .devcontainer/askai-postcreate.sh
+```
+
+Then add `"postCreateCommand": "bash .devcontainer/askai-postcreate.sh"` to `devcontainer.json`. Without a repository, run the same thing by hand, once:
+
+```bash
+curl -fsSL https://raw.githubusercontent.com/aalokshah-business/AskAi/main/get.sh | bash -s -- --yes --profile max
+```
+
+The generated script is safe to run again. It installs `curl` and `git` if they are missing, installs AskAI (or runs `askai update` when it is already there, which pulls the latest and re-applies your profile), runs `askai install --retry` to finish anything that needed a new shell (Rust's PATH, for example), runs `askai project sync` and `askai project refresh`, and ends with `askai check --all`.
+
+**Updating a machine that already has AskAI.** `askai update` does all of this in one command: it fetches the latest AskAI, re-applies your profile, installs what is missing, checks which Cursor models the account offers (Sonnet 5.5 and Haiku 5.5, or Grok 4.7 as the fallback), and refreshes every registered project's agent files to the current model tiers. It ends with a highlighted reminder: type `exit` and reopen `askai cli`, because the open shell still runs the old version. Then verify:
+
+```bash
+askai models        # tiers per tool; a row ending in * is your own override of the defaults
+askai infra         # tools, MCP servers, tiers and project files per host
+askai check --all   # expect 0 failing
+askai status        # per-tool wiring
+```
+
+If a component still shows failed after the first run (Rust and the new PATH, or a package that needed a password), run `askai install --retry`. Finished components are skipped.
+
 ### Just the desktop app, for Markdown conversion only
 
 For a machine that only ever needs to turn a PDF, Office file, web page or YouTube video into Markdown -- an office laptop that will never run Claude Code, Codex, Antigravity or Cursor -- use `-ConvertOnly` / `--convert-only` instead of `-Target` / `--target`. It installs just the Ask AI desktop app and `markitdown`; nothing is written to any AI tool's settings, rules, MCP servers or plugins.
@@ -162,7 +189,11 @@ Connected MCP servers do not read each prompt. The agent calls Serena, Context7,
 
 Install the AI tools you use first, or let AskAI install Claude Code. Codex: `npm i -g @openai/codex`. Antigravity: its installer from antigravity.google. Cursor: cursor.com/download. AskAI sets up every one it finds. Context Mode needs Node 22.5 or newer. Leave the Node already in a project image when other software depends on it; Context Mode stays off until that Node is new enough. RTK stays off without Homebrew or Rust. `gh` without Homebrew is `sudo apt-get install -y gh`.
 
-AskAI never prompts for a password or an administrator dialog. Settings go into your user folders. The one package install is `tmux` on a headless Linux machine, and only when the user is already root or `sudo -n` works.
+AskAI never prompts for a password or an administrator dialog. Settings go into your user folders.
+
+**What it installs for you on macOS, Linux and WSL, with no extra commands.** Only when the user is already root, or `sudo -n` works without a password (the normal devcontainer user), AskAI installs the system packages it needs through apt, dnf, apk or pacman: ripgrep, jq, gh, a C compiler (`build-essential`, `gcc`, `build-base` or `base-devel`, needed to build RTK) and `tmux` on a headless machine. Rust comes from rustup into `~/.cargo` (no root). When your Node is older than 22.5, Context Mode gets a second, private Node 22 through nvm (a read-only shared nvm is skipped and `~/.nvm` is used); your default `node` and your shell profile are not touched. Without passwordless sudo it prints the one command that is left and carries on. On Windows, winget does the equivalent; Node must be upgraded by you.
+
+**Windows: where to run it.** Run `install`, `update` and `tools update` from a normal PowerShell or Windows Terminal window, not one opened from the Claude desktop app. That app redirects some AppData writes into its own private storage, which can leave uv tools (Serena, MarkItDown) half-upgraded; AskAI prints a warning when it detects this. If Windows Application Control blocks a freshly downloaded program (`rtk.exe`, the desktop app's `.exe`), AskAI does not change that policy: allow the file or sign it, or skip the tool.
 
 ## 3. Environment setup
 
@@ -393,6 +424,13 @@ askai restore                 # list backups; askai restore <file> puts one back
 | `askai` not recognised | Open a new terminal; on macOS and Linux accept the PATH line, or add `~/.askai/bin` to PATH |
 | A component failed | Read its line in the summary, fix the cause, re-run; components already done are skipped |
 | Permission denied | AskAI writes only in your home folder: check who owns it; never run it with sudo |
+| `uv` says "failed to remove directory ... Access is denied" (or a reparse-point error) on Windows | AskAI stops that tool's own processes, clears that one folder and reinstalls by itself; run it from a normal PowerShell window, not one opened from the Claude desktop app |
+| Serena shows "Failed to connect" in `claude mcp list` after an update | Its uv tool folder was half-replaced: `askai tools update` repairs it; otherwise `uv tool install --force -p 3.13 serena-agent` from a normal window |
+| `rtk.exe` or the desktop app's `.exe` "blocked by an Application Control policy" (Windows) | A policy on the machine; AskAI does not change it. Allow or sign the file, or `askai uninstall --only rtk` |
+| `multiple packages with binaries found: rtk, rtk-proxy` | Fixed in the current version (the command names the `rtk` package): `askai update` |
+| `askai models` still shows old tiers after an update | The shell still runs the old code: `exit`, reopen `askai cli`. A row ending in `*` comes from your own `models.json`, which wins over the defaults |
+| Context Mode "needs Node 22.5" | On macOS and Linux AskAI installs a private Node 22 through nvm; on Windows upgrade Node |
+| ripgrep, jq, gh or a compiler missing on Linux | AskAI installs them when it is root or `sudo -n` works; otherwise it prints one combined command |
 | `/status` in Claude Code shows API billing | Remove the billing variables (section 3), restart the terminal |
 | Antigravity spent paid credits | `askai check`; in the app set AI Credit Overages to Never |
 
