@@ -44,6 +44,11 @@ test('base-tools: opt-in, detects missing tools, plans winget, Homebrew or manua
   assert.strictEqual(r.code, 0, r.out); assert.match(r.out, /base-tools/);
 }));
 
+test('base-tools: every missing tool is tried and one combined command is reported, not just the first failure', { skip: process.platform === 'win32' ? 'apt/dnf hint is Unix-only' : false }, () => withHome(h => {
+  const ctx = makeCtx(h, {}, { tools: {} });
+  assert.throws(() => comps.byId('base-tools').install(ctx), err => /sudo apt-get install -y ripgrep jq gh/.test(err.message) && !/BurntSushi|jqlang|GitHub\.cli/.test(err.message));
+}));
+
 test('infra lists every plugin and third-party tool with its state, plus project MCP servers and hooks', () => withHome(h => {
   const ctx = makeCtx(h, { codexHome: path.join(h, 'codex'), agyHome: path.join(h, 'gemini'), cursorHome: path.join(h, 'cursor') });
   write(path.join(h, 'repo', '.mcp.json'), JSON.stringify({ mcpServers: { playwright: { command: 'npx' } } }));

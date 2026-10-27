@@ -24,18 +24,69 @@ const ctxFor = h => makeCtx(h, { codexHome: path.join(h, 'codex'), agyHome: path
 
 test('models: the user tiers by default, overridable, Antigravity limited to tiers, tier guessing ignores file names', () => withHome(h => {
   const ctx = ctxFor(h); const p = models.load(ctx);
-  assert.deepStrictEqual(models.pick(p, 'claude', 'lead'), { tier: 'lead', agent: 'architect', model: 'sonnet', effort: 'xhigh' });
+  assert.deepStrictEqual(models.pick(p, 'claude', 'lead'), { tier: 'lead', agent: 'architect', model: 'claude-sonnet-5-5', effort: 'xhigh' });
   assert.strictEqual(models.pick(p, 'codex', 'chore').model, 'gpt-6.1-terra');
   assert.match(models.set(ctx, 'codex.lead', 'gpt-6.1-luna:high').warning, /not a known Codex model ID/);
   assert.strictEqual(models.set(ctx, 'codex.lead', 'gpt-6.1-sol:high').warning, undefined);
-  assert.strictEqual(models.pick(p, 'cursor', 'lead').model, 'grok-4.7');
-  models.set(ctx, 'cursor.useSonnet', 'true'); assert.strictEqual(models.pick(models.load(ctx), 'cursor', 'build').model, 'claude-sonnet-5-5');
+  assert.strictEqual(models.pick(p, 'cursor', 'lead').model, 'claude-sonnet-5-5', 'Cursor defaults to the Sonnet tiers');
+  assert.strictEqual(models.pick(p, 'cursor', 'chore').model, 'claude-haiku-5-5');
+  assert.ok(!/ \*$/m.test(models.render(p)), 'untouched defaults carry no marker');
+  assert.match(models.render(p), /Opus 5\.5 \(claude-opus-5-5\) at Extra High effort/, 'the Opus line closes the askai models output');
+  models.set(ctx, 'cursor.useSonnet', 'false'); assert.strictEqual(models.pick(models.load(ctx), 'cursor', 'build').model, 'grok-4.7');
+  assert.match(models.render(models.load(ctx)), / \*\n/, 'a row that differs from the shipped defaults is marked');
+  models.set(ctx, 'cursor.useSonnet', 'true');
   models.set(ctx, 'codex.build', 'gpt-6-luna:low'); assert.deepStrictEqual(models.pick(models.load(ctx), 'codex', 'build'), { tier: 'build', agent: 'builder', model: 'gpt-6-luna', effort: 'low' });
   assert.throws(() => models.set(ctx, 'agy.lead', 'gemini-3.8-flash-high'), /accept only/);
   assert.strictEqual(models.guessTier('fix the login bug in src/auth.ts'), 'build');
   assert.strictEqual(models.guessTier('redesign the checkout architecture'), 'lead');
   assert.strictEqual(models.guessTier('clean up git branches'), 'chore');
   assert.match(models.markdown(models.load(ctx)), /\| lead \(`architect`\) \|/);
+}));
+
+test('Cursor models: the account\'s own Sonnet 5.5 / Haiku 5.5 IDs are used when offered, Grok when not, and your models.json still wins', () => withHome(h => {
+  const ids = models.cursorModelsFrom('auto - Auto\nclaude-sonnet-5-5-thinking - x\nclaude-sonnet-5-5 - Sonnet 5.5\nclaude-haiku-5-5 - Haiku\ngrok-4.7 - Grok');
+  assert.deepStrictEqual(ids, { sonnetId: 'claude-sonnet-5-5', haikuId: 'claude-haiku-5-5' });
+  assert.strictEqual(models.cursorModelsFrom('5.5-sonnet-high').sonnetId, '5.5-sonnet-high', 'version-first IDs count too');
+  assert.deepStrictEqual(models.cursorModelsFrom('grok-4.7\ncomposer-2\nsonnet-4'), { sonnetId: null, haikuId: null });
+  const ctx = ctxFor(h);
+  ctx.which = n => (n === 'agent' ? 'agent' : null);
+  ctx.probe = () => ({ ok: true, status: 0, stdout: 'grok-4.7 - Grok\ncomposer-2 - Composer\n', stderr: '', error: null });
+  const none = models.detectCursor(ctx); assert.strictEqual(none.useSonnet, false);
+  assert.ok(models.saveCursorDetection(ctx, none));
+  assert.strictEqual(models.pick(models.load(ctx), 'cursor', 'lead').model, 'grok-4.7', 'falls back to Grok when Sonnet 5.5 is not offered');
+  ctx.probe = () => ({ ok: true, status: 0, stdout: 'cursor-sonnet-5.5-x - Sonnet\nhaiku-5.5 - Haiku\n', stderr: '', error: null });
+  const yes = models.detectCursor(ctx); assert.strictEqual(yes.useSonnet, true);
+  models.saveCursorDetection(ctx, yes);
+  const p = models.load(ctx); assert.strictEqual(models.pick(p, 'cursor', 'lead').model, 'cursor-sonnet-5.5-x'); assert.strictEqual(models.pick(p, 'cursor', 'chore').model, 'haiku-5.5');
+  models.set(ctx, 'cursor.useSonnet', 'false');
+  assert.strictEqual(models.pick(models.load(ctx), 'cursor', 'lead').model, 'grok-4.7', 'an explicit setting beats the check');
+  ctx.probe = () => ({ ok: false, status: 1, stdout: '', stderr: 'Not logged in', error: null });
+  const unknown = models.detectCursor(ctx); assert.strictEqual(unknown.useSonnet, null); assert.match(unknown.reason, /not signed in/); assert.strictEqual(models.saveCursorDetection(ctx, unknown), false);
+}));
+
+test('init --refresh rewrites an agent file that differs only in its model/effort lines, even with a drifted hash', () => withHome(h => {
+  const repo = path.join(h, 'drift'); fs.mkdirSync(path.join(repo, 'src'), { recursive: true });
+  write(path.join(repo, 'package.json'), JSON.stringify({ name: 'drift', scripts: { test: 'vitest' } })); write(path.join(repo, 'src', 'a.ts'), 'x');
+  const ctx = ctxFor(h); project.init(repo, { yes: true }, ctx, quiet);
+  const file = path.join(repo, '.claude', 'agents', 'builder.md');
+  write(file, read(file).replace(/^model: .*$/m, 'model: sonnet').replace(/^effort: .*$/m, 'effort: low'));
+  const stateFile = path.join(repo, '.ai-work', 'askai-init.json'); const state = JSON.parse(read(stateFile)); state.files['.claude/agents/builder.md'] = 'stale'; write(stateFile, JSON.stringify(state));
+  project.init(repo, { yes: true, refresh: true }, ctx, quiet);
+  assert.match(read(file), /model: claude-sonnet-5-5\neffort: high/);
+  write(file, read(file) + '\nMy own extra rule.\n'); state.files['.claude/agents/builder.md'] = 'stale'; write(stateFile, JSON.stringify(state));
+  project.init(repo, { yes: true, refresh: true }, ctx, quiet);
+  assert.match(read(file), /My own extra rule\./, 'a real hand edit is still kept');
+}));
+
+test('project sync refreshes every registered project and a dry run touches nothing', () => withHome(h => {
+  const repo = path.join(h, 'shop'); fs.mkdirSync(path.join(repo, 'src'), { recursive: true });
+  write(path.join(repo, 'package.json'), JSON.stringify({ name: 'shop' })); write(path.join(repo, 'src', 'a.ts'), 'x');
+  const home = path.join(h, 'c');
+  assert.strictEqual(cli(['init', repo, '--yes', '--offline', '--claude-home', home]).code, 0);
+  const file = path.join(repo, '.claude', 'agents', 'runner.md');
+  write(file, read(file).replace(/^effort: .*$/m, 'effort: low'));
+  const dry = cli(['project', 'sync', '--dry-run', '--claude-home', home]); assert.strictEqual(dry.code, 0); assert.match(dry.out, /Would refresh/); assert.match(read(file), /effort: low/);
+  const real = cli(['project', 'sync', '--claude-home', home]); assert.strictEqual(real.code, 0, real.out); assert.match(real.out, /Refreshed agent files and tier text in \d+ registered project/);
 }));
 
 test('prompt: dictation is cleaned, files found, tier and modes applied; output-safe template', () => {
@@ -90,13 +141,14 @@ test('init: router under 333 lines, adapters, docs/ai, subagents in each tool fo
   assert.ok(read(f('CLAUDE.md')).startsWith('@AGENTS.md'));
   assert.match(read(f('GEMINI.md')), /AGENTS\.md/);
   for (const d of ['PROJECT_MAP', 'ARCHITECTURE', 'FEATURES', 'WORK_ORDER', 'MODELS']) assert.ok(fs.existsSync(f(`docs/ai/${d}.md`)), d);
-    assert.match(read(f('.claude/agents/architect.md')), /model: sonnet\neffort: xhigh/);
+    assert.match(read(f('.claude/agents/architect.md')), /model: claude-sonnet-5-5\neffort: xhigh/);
   const toml = read(f('.codex/agents/runner.toml'));
   for (const k of ['name = "runner"', 'description =', 'developer_instructions = """', 'model = "gpt-6.1-terra"']) assert.ok(toml.includes(k), k);
-  assert.match(read(f('.cursor/agents/builder.md')), /model: grok-4\.7/);
+  assert.match(read(f('.cursor/agents/builder.md')), /model: claude-sonnet-5-5/);
   const agy = read(f('.agents/agents/architect.md')); assert.match(agy, /\nmodel: flash\n/); assert.ok(models.AGY_TIERS.includes(/\nmodel: (\S+)/.exec(agy)[1]));
   assert.ok(fs.existsSync(f('.claude/skills/prompt-refiner/SKILL.md')) && fs.existsSync(f('.agents/skills/investigate-bug/SKILL.md')));
   assert.ok(fs.existsSync(f('.cursorignore')) && fs.existsSync(f('.ai-work')));
+  for (const n of ['askai-cli', 'askai-gui', 'askai-plugins']) assert.ok(fs.existsSync(f(`.cursor/commands/${n}.md`)), `${n} Cursor command is written into the project`);
   const out = []; project.init(repo, { yes: true }, ctx, m => out.push(m));
   assert.ok(!out.some(l => /^\s+(create|update)/.test(l)), 'second run writes nothing');
   const r2 = path.join(h, 'other'); fs.mkdirSync(r2); write(path.join(r2, 'AGENTS.md'), '# Mine\nkeep this\n');
@@ -178,10 +230,10 @@ test('guide, clear gate and context advice', () => withHome(h => {
 test('go: the tier model and effort per tool, fixed for the session', () => withHome(h => {
   const ctx = ctxFor(h);
   const c = launch.plan(ctx, 'claude', { tier: 'lead', ask: 'design the sync engine' });
-  assert.deepStrictEqual(c.args.slice(0, 2), ['--model', 'sonnet']); assert.strictEqual(c.env.CLAUDE_CODE_EFFORT_LEVEL, 'xhigh');
+  assert.deepStrictEqual(c.args.slice(0, 2), ['--model', 'claude-sonnet-5-5']); assert.strictEqual(c.env.CLAUDE_CODE_EFFORT_LEVEL, 'xhigh');
   const x = launch.plan(ctx, 'codex', { ask: 'clean up unused imports' });
   assert.strictEqual(x.tier, 'chore'); assert.deepStrictEqual(x.args.slice(0, 4), ['-m', 'gpt-6.1-terra', '-c', 'model_reasoning_effort="xhigh"']);
-  assert.deepStrictEqual(launch.plan(ctx, 'cursor', {}).args, ['--model', 'grok-4.7']);
+  assert.deepStrictEqual(launch.plan(ctx, 'cursor', {}).args, ['--model', 'claude-sonnet-5-5']);
   const g = launch.plan(ctx, 'antigravity', { ask: 'fix the parser' }); assert.strictEqual(g.cmd, 'agy'); assert.ok(g.notes.some(n => /\/effort high/.test(n)));
   assert.throws(() => launch.plan(ctx, 'vim', {}), /which tool/);
   assert.strictEqual(cli(['go', 'codex', '--dry-run', '--claude-home', path.join(h, 'c')]).code, 0);

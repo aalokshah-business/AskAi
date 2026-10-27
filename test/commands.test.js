@@ -272,6 +272,7 @@ test('cursor-context-mode: old Node gets a pinned Node 22 via nvm instead of ref
   c('cursor-context-mode').install(ctx);
   assert.ok(ctx.calls.some(x => x.includes('nvm install 22')), 'provisions a pinned Node 22, not the system default');
   assert.ok(!ctx.calls.some(x => /nvm alias default|nvm use --default/.test(x)), 'never changes this machine\'s default node');
+  assert.ok(ctx.calls.filter(x => x.includes('nvm install 22')).every(x => x.includes('/usr/local/share/nvm') && x.includes('NVM_DIR:-')), 'finds nvm where a devcontainer feature puts it, not only in ~/.nvm');
   assert.deepStrictEqual(mcpOf(a.cursorHome).mcpServers['context-mode'], { command: pinnedNode, args: [path.join(path.dirname(pinnedNode), 'context-mode')] });
   assert.strictEqual(c('cursor-context-mode').detect(ctx).state, 'ok');
 }));

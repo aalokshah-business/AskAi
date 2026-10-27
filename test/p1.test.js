@@ -28,6 +28,24 @@ test('check always names four hosts, including passing and unchecked hosts', () 
     assert.ok(subset.includes('  Claude Code: not selected for installation'));
   } finally { findings.collectFindings = previous; }
 }));
+test('callout is reverse-video on a colour terminal and ruled lines otherwise; the Claude desktop sandbox is recognised on Windows only', () => {
+  const { callout, inClaudeDesktopSandbox: sandboxed } = require('../lib/platform');
+  assert.match(callout(['RESTART'], {}, true), /^\x1b\[1;30;43m RESTART \x1b\[0m$/);
+  assert.match(callout(['RESTART'], { NO_COLOR: '1' }, true), /^=+\n  RESTART\n=+$/);
+  assert.match(callout(['RESTART', 'now'], {}, false), /^=+\n  RESTART\n  now\n=+$/);
+  assert.strictEqual(sandboxed({ CLAUDE_CODE_ENTRYPOINT: 'claude-desktop' }, 'win32'), true);
+  assert.strictEqual(sandboxed({ APPDATA: 'C:\\Users\\a\\AppData\\Local\\Packages\\Claude_pzs8\\LocalCache\\Roaming' }, 'win32'), true);
+  assert.strictEqual(sandboxed({ CLAUDE_CODE_ENTRYPOINT: 'claude-desktop' }, 'linux'), false);
+  assert.strictEqual(sandboxed({ APPDATA: 'C:\\Users\\a\\AppData\\Roaming' }, 'win32'), false);
+});
+test('ANTHROPIC_BASE_URL set to Anthropic\'s own endpoint is not reported as a proxy; any other host is', () => {
+  const { customAnthropicBaseUrl: custom } = require('../lib/platform');
+  assert.strictEqual(custom({ ANTHROPIC_BASE_URL: 'https://api.anthropic.com' }), '');
+  assert.strictEqual(custom({ ANTHROPIC_BASE_URL: 'https://API.Anthropic.com/' }), '');
+  assert.strictEqual(custom({}), '');
+  assert.strictEqual(custom({ ANTHROPIC_BASE_URL: 'https://proxy.corp:8080' }), 'https://proxy.corp:8080');
+  assert.strictEqual(custom({ ANTHROPIC_BASE_URL: 'not a url' }), 'not a url');
+});
 test('check reports real findings for a host even when the recorded target does not include it', () => withHome(home => {
   // A tool can be genuinely configured on a machine (or inside the very host askai is running in) without
   // being part of this machine's recorded install target; live evidence must win over that stale target.

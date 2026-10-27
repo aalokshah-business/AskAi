@@ -563,6 +563,14 @@ async function cmdInstall(o) {
   if (!o.dry && o.convertOnly) ctx.manifest.convertOnly = true;
   try { comps.refreshDerived(ctx); } catch (e) { ctx.log.warn(`could not refresh derived files: ${e.message}`); }
   try { saveManifest(ctx, 'install', results); } catch (e) { console.error(`could not save manifest: ${e.message}`); }
+  if (!o.dry && ctx.cursorPaths) {
+    // Use Sonnet 5.5 for Cursor when this account is offered it; otherwise fall back to Grok 4.7. Re-checked on every install and update.
+    try {
+      const seen = models.detectCursor(ctx);
+      if (models.saveCursorDetection(ctx, seen)) console.log(seen.useSonnet ? `\nCursor: ${seen.reason}; Cursor tiers use Sonnet 5.5 and Haiku 5.5.` : `\nCursor: ${seen.reason}; Cursor tiers fall back to Grok 4.7.`);
+      else console.log(`\nCursor: could not check which models this account offers (${seen.reason}); using the default Sonnet tiers. It is checked again at the next install or update.`);
+    } catch (e) { console.error(`Cursor model check skipped: ${e.message}`); }
+  }
 
   console.log('\nSummary');
   for (const r of results) {
@@ -780,6 +788,21 @@ function cmdProject(o) {
     return 0;
   }
   if (!o._[1] && !o.print && !o.remove && !o.profile && !o.force) return cmdProjectRegistry({ ...o, _: ['project', 'show'] });
+  if (o._[1] === 'sync') {
+    // Every registered project: rewrite its generated agent files and tier text from the current models, keeping hand edits.
+    const registry = require('./lib/project-registry'); const ctx = buildCtx(o, true);
+    const entries = Object.entries(registry.read(registry.folder(o)).projects);
+    let done = 0; const skipped = [];
+    for (const [name, dir] of entries) {
+      try {
+        if (!fs.statSync(dir).isDirectory()) throw new Error('not a folder');
+        if (!o.dry) require('./lib/project').init(dir, { yes: true, refresh: true, offline: true }, ctx, () => {});
+        done++;
+      } catch (e) { skipped.push(`${name} (${e.message})`); }
+    }
+    console.log(`${o.dry ? 'Would refresh' : 'Refreshed'} agent files and tier text in ${done} registered project(s) to match the current model tiers${skipped.length ? `; skipped: ${skipped.join(', ')}` : ''}.`);
+    return 0;
+  }
   if (o._[1] === 'refresh') {
     const dir = projectDir(o, o._[2]);
     let isDir = false;
@@ -1004,6 +1027,12 @@ function cmdUpdateSelf(o, rest) {
   if (ctx.manifest.target && !fwd.includes('--target')) args.push('--target', ctx.manifest.target);
   const r = cp.spawnSync(process.execPath, [...args, ...fwd], { stdio: 'inherit' });
   if (r.status === null || r.status) return r.status === null ? 1 : r.status;
+  // Bring every registered project's agent files and tier text up to the new version, using the new code, so nobody has to
+  // run `askai init --refresh` in each repository by hand.
+  const syncArgs = [path.join(src, 'askai.js'), 'project', 'sync'];
+  if (o.claudeHome) syncArgs.push('--claude-home', o.claudeHome);
+  cp.spawnSync(process.execPath, syncArgs, { stdio: 'inherit' });
+  console.log(require('./lib/platform').callout(['UPDATED. If askai cli is open, type exit and reopen it with: askai cli', 'This shell still runs the old version until you do.']));
   if (!o.agents) return 0;
   const agentCtx = buildCtx(o, true);
   const agents = [
@@ -1737,6 +1766,8 @@ async function cmdCli(o) {
   replRl = rl;
   const keys = () => { if (process.stdin.isTTY && process.stdin.setRawMode) { try { process.stdin.setRawMode(true); } catch (_) { /* a child command released the console */ } } };
   rl.setPrompt('askai> '); rl.prompt();
+  const runtimeHash = () => { try { return require('./lib/runtime').identity(SRC).contentHash; } catch (_) { return null; } };
+  const loadedHash = runtimeHash();
   for await (const line of rl) {
     rl.pause();
     try {
@@ -1747,6 +1778,12 @@ async function cmdCli(o) {
       if (args[0] !== 'cli') {
         const previous = process.argv; process.argv = [previous[0], previous[1], ...args];
         try { await main(); } finally { process.argv = previous; }
+        // `update` replaces the files on disk, but this process keeps the modules it already loaded: help, tiers and checks
+        // here would still come from the old version while the install above ran the new one.
+        if (['upgrade', 'install'].includes(args[0]) && !args.includes('--check') && !args.includes('--dry-run')) {
+          const now = runtimeHash();
+          if (loadedHash && now && now !== loadedHash) console.log(require('./lib/platform').callout(['AskAI was updated on disk, but this shell still runs the version it started with.', 'Type exit, then reopen it with: askai cli']));
+        }
       } else console.log('Already in AskAI CLI.');
     } catch (e) { console.error(`askai: ${e.message}`); }
     keys(); rl.resume(); rl.prompt();
@@ -1754,6 +1791,13 @@ async function cmdCli(o) {
   rl.close(); replRl = null; return 0;
 }
 const nodeNoticesSeen = new Set();
+let sandboxNoticeShown = false;
+function emitSandboxNotice(o, cmd) {
+  if (sandboxNoticeShown || o.json || o.quiet || process.env.ASKAI_QUIET || o.dry || !['install', 'update', 'upgrade', 'tools', 'setup'].includes(cmd)) return;
+  if (!require('./lib/platform').inClaudeDesktopSandbox()) return;
+  sandboxNoticeShown = true;
+  console.error('Heads-up: this terminal was started from the Claude desktop app. Windows redirects some of its AppData writes into the app\'s private storage, so uv tool upgrades done here (serena, markitdown, headroom, graphify) can land in a private copy and leave the real tool broken. Run this command from a normal Windows Terminal or PowerShell window instead.');
+}
 function emitNodeNotice(o, cmd) {
   const platform = require('./lib/platform');
   const line = platform.nodeNotice();
@@ -1784,6 +1828,7 @@ async function main() {
   if (o.noColor) process.env.NO_COLOR = '1';
   if (o.quiet) process.env.ASKAI_QUIET = '1';
   emitNodeNotice(o, cmd);
+  emitSandboxNotice(o, cmd);
   o._.unshift(cmd);
   if (cmd === 'doctor') return cmdDoctor(o);
   if (cmd === 'report') return cmdReport(o);

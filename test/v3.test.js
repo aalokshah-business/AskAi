@@ -184,7 +184,7 @@ test('pkg: off Windows it prefers Homebrew, then the vendor script, then cargo, 
   assert.ok(!script.calls.some(x => x.includes('pip install')), 'a present uv does not also install from PyPI');
   const cargo = mk({ cargo: '/c/cargo' });
   pkg.install(cargo, 'rtk-ai.rtk', () => true);
-  assert.ok(cargo.calls.includes('act cargo install --git https://github.com/rtk-ai/rtk'), 'git install, not the unrelated crate');
+  assert.ok(cargo.calls.includes('act cargo install --git https://github.com/rtk-ai/rtk rtk'), 'git install naming the rtk package (the repo also holds rtk-proxy), not the unrelated crate');
   assert.throws(() => pkg.install(mk({}), 'rtk-ai.rtk', () => false), /rustup|brew\.sh/);
   // The error must name the tool ("rtk"), never the winget id ("rtk-ai.rtk") used only as pkg.js's internal lookup key.
   assert.throws(() => pkg.install(mk({}), 'rtk-ai.rtk', () => false), err => !/rtk-ai\.rtk/.test(err.message) && /\brtk\b/.test(err.message));
@@ -215,8 +215,28 @@ test('pkg: rtk\'s cargo install provisions Rust via rustup first when cargo is m
     // process's PATH without a new shell -- but the cargo install itself must actually have run.
     assert.throws(() => pkg.install(ctx, 'rtk-ai.rtk', () => false), /not on PATH yet/);
     assert.ok(ctx.calls.some(x => x.includes('sh.rustup.rs')), 'installs Rust via rustup when cargo is missing');
-    assert.ok(ctx.calls.includes(`act ${cargoBin} install --git https://github.com/rtk-ai/rtk`), 'runs cargo install with the freshly-provisioned absolute path, not the unresolvable bare "cargo"');
+    assert.ok(ctx.calls.includes(`act ${cargoBin} install --git https://github.com/rtk-ai/rtk rtk`), 'runs cargo install with the freshly-provisioned absolute path, not the unresolvable bare "cargo"');
   } finally { process.env.HOME = savedHome; }
+}));
+
+test('pkg: a missing system package is installed by askai itself when sudo works without a password, never by prompting', { skip: process.platform === 'win32' ? 'Unix package managers only' : false }, () => withHome(home => {
+  const mk = (tools, sudoWorks) => {
+    const ctx = makeCtx(home); ctx.which = n => tools[n] || null;
+    ctx.probe = (cmd, args) => { ctx.calls.push(['probe', cmd, ...args].join(' ')); return { ok: cmd === 'sudo' && sudoWorks, status: 0, stdout: '', stderr: '', error: null }; };
+    return ctx;
+  };
+  const savedUid = process.getuid; process.getuid = () => 1000;
+  try {
+    const yes = mk({ 'apt-get': '/usr/bin/apt-get', sudo: '/usr/bin/sudo' }, true);
+    assert.throws(() => pkg.install(yes, 'BurntSushi.ripgrep.MSVC', () => false), /not on PATH yet/, 'it ran the install; the tool is simply not visible to this fake PATH');
+    assert.ok(yes.calls.includes('act sudo -n apt-get install -y ripgrep'), yes.calls.join(' | '));
+    assert.ok(yes.calls.some(c => c === 'probe sudo -n true'), 'asks sudo non-interactively first');
+    const gh = mk({ 'apt-get': '/usr/bin/apt-get', sudo: '/usr/bin/sudo' }, true);
+    assert.throws(() => pkg.install(gh, 'GitHub.cli', () => false), /not on PATH yet/); assert.ok(gh.calls.includes('act sudo -n apt-get install -y gh'));
+    const no = mk({ 'apt-get': '/usr/bin/apt-get', sudo: '/usr/bin/sudo' }, false);
+    assert.throws(() => pkg.install(no, 'jqlang.jq', () => false), /jq: no Homebrew found; sudo apt-get install jq/);
+    assert.ok(!no.calls.some(c => c.startsWith('act ')), 'without passwordless sudo nothing privileged is attempted');
+  } finally { process.getuid = savedUid; }
 }));
 
 test('pkg: uv falls back to pip when its installer host is blocked', () => withHome(home => {
