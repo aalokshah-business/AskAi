@@ -473,6 +473,8 @@ The installer bundles these commands with AskAI. No extra diagnostic daemon, mod
 
 ## Ask AI desktop (Windows and Linux)
 
+**Same as the CLI.** The window runs every command through the same `askai` program, so a command run in it always uses the code on disk. `update` works from the Commands tab (or `askai update` in a terminal): it fetches the latest AskAI, installs what is missing, refreshes your projects, rebuilds the desktop program and ends with a highlighted reminder. The window itself loads its tabs and command list when it starts, so after an update **close the Ask AI window and open it again**; nothing else differs between the GUI and the CLI. Steps that need a terminal (for example `agent login`) are listed in the output and in `askai todo`.
+
 Normal Windows and graphical Linux installation also installs the **Ask AI** desktop application and Microsoft MarkItDown document/YouTube dependencies. Windows creates managed Desktop and Start Menu shortcuts without administrator rights. Its native Ask AI executable is compiled using the installed .NET Framework compiler and uses Windows Forms/Windows OCR; no SDK or PowerShell GUI launcher is required. Linux desktops use Python 3/Tkinter and local Tesseract OCR, with an application-menu launcher and a shortcut in an existing Desktop folder. Docker/Podman/devcontainers are skipped even with forwarded display variables; headless Linux is skipped too. A graphical session requires DISPLAY or WAYLAND_DISPLAY. macOS keeps the CLI. No Electron runtime, local web server, AI background service or execution-policy change is installed.
 
 Open the **Ask AI** shortcut or run `askai desktop`. For separate setup from a Git checkout/download:

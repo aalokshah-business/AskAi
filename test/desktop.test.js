@@ -80,6 +80,12 @@ test('desktop request on a file that is already Markdown just says so, with no c
     assert.equal(r.output,null);
   }finally{rm(dir);}
 });
+test('commands run from the GUI know they are in the GUI, so update says to reopen the window and the form list has project sync',async()=>{
+  const r=await desktop.execute(['-e','process.stdout.write(String(process.env.ASKAI_FRONTEND))'],process.cwd());
+  assert.strictEqual(r.stdout,'gui');
+  const forms=JSON.stringify(desktop.catalog().find(c=>c.name==='project'));
+  assert.match(forms,/sync/);
+});
 test('desktop request rejects a folder with nothing convertible in it',async()=>{
   const dir=tmpHome();try{
     write(path.join(dir,'notes.json'),'{}');

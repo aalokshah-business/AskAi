@@ -4,6 +4,8 @@ AskAI follows semantic versioning from 1.0.0 (see [RELEASING.md](RELEASING.md)).
 
 ## Unreleased
 
+- The desktop GUI follows the CLI after an update: commands it runs are marked (`ASKAI_FRONTEND=gui`) so `update` ends with "close the Ask AI window and open it again" instead of the `askai cli` wording; the Commands tab gains a `project sync` form; the Cursor sign-in to-do no longer talks about the `askai>` prompt only. Every command the window runs starts a fresh `askai`, so only the window itself (tabs, command list) needs the restart.
+
 - AskAI now tells you what is left, in the place you are looking, instead of relying on someone explaining it:
   - `install` and `update` end with a highlighted **STILL TO DO** block listing the first open steps with their commands (it was one count line when no project was given).
   - `askai todo` gains two self-clearing items: **Sign in to the Cursor CLI** (shown while the CLI is installed but the model check has no answer; says to exit the prompt, run `agent login` in the terminal, reopen `askai cli`, then `askai install --retry`) and **The max profile is now called experimental** (`askai profiles migrate`). The stale Cursor-models item now describes the automatic Sonnet 5.5 / Grok 4.7 fallback.

@@ -1035,7 +1035,9 @@ function cmdUpdateSelf(o, rest) {
   const syncArgs = [path.join(src, 'askai.js'), 'project', 'sync'];
   if (o.claudeHome) syncArgs.push('--claude-home', o.claudeHome);
   cp.spawnSync(process.execPath, syncArgs, { stdio: 'inherit' });
-  console.log(require('./lib/platform').callout(['UPDATED. If askai cli is open, type exit and reopen it with: askai cli', 'This shell still runs the old version until you do.']));
+  console.log(require('./lib/platform').callout(process.env.ASKAI_FRONTEND === 'gui'
+    ? ['UPDATED. Close the Ask AI window and open it again.', 'Its tabs and command list are loaded when it starts, so this window still shows the old version until you do.']
+    : ['UPDATED. If askai cli is open, type exit and reopen it with: askai cli', 'This shell still runs the old version until you do.']));
   if (!o.agents) return 0;
   const agentCtx = buildCtx(o, true);
   const agents = [
