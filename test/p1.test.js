@@ -38,6 +38,15 @@ test('callout is reverse-video on a colour terminal and ruled lines otherwise; t
   assert.strictEqual(sandboxed({ CLAUDE_CODE_ENTRYPOINT: 'claude-desktop' }, 'linux'), false);
   assert.strictEqual(sandboxed({ APPDATA: 'C:\\Users\\a\\AppData\\Roaming' }, 'win32'), false);
 });
+test('check treats a host that is installed here as selected even when the recorded target omits it; absent hosts stay "not selected"', () => withHome(home => {
+  const ctx = makeCtx(home, {}, { tools: { claude: '/bin/claude' } });
+  ctx.manifest.target = 'cursor';
+  const text = []; check.run(ctx, null, {}, line => text.push(line));
+  const joined = text.join('\n');
+  assert.doesNotMatch(joined, /Claude Code: not selected/, 'Claude Code is installed, so it is checked');
+  assert.match(joined, /Claude Code: \d+ ok, \d+ to improve, \d+ failing/);
+  assert.match(joined, /Codex: not selected for installation/, 'a host that is not installed stays out');
+}));
 test('ANTHROPIC_BASE_URL set to Anthropic\'s own endpoint is not reported as a proxy; any other host is', () => {
   const { customAnthropicBaseUrl: custom } = require('../lib/platform');
   assert.strictEqual(custom({ ANTHROPIC_BASE_URL: 'https://api.anthropic.com' }), '');

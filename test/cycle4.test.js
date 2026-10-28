@@ -164,6 +164,7 @@ test('a stale agent file is agents.drift and plugins use the short columns', () 
     require('../lib/check').run(ctx, dir, {}, s => text.push(String(s)));
     assert.match(text.join('\n'), /generated agent files differ from the current tiers/);
     assert.match(text.join('\n'), /askai project refresh --agents/);
+    assert.match(text.join('\n'), /\(\.claude\/agents\/architect\.md\)/, 'names the stale file once, by path, not a repeated tier name');
     const lines = [];
     require('../lib/plugins').list(ctx, s => lines.push(s));
     assert.match(lines[0], /id\s+interfaces\s+state\s+verdict\s+recommendation/);

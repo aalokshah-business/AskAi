@@ -792,6 +792,9 @@ function cmdProject(o) {
     // Every registered project: rewrite its generated agent files and tier text from the current models, keeping hand edits.
     const registry = require('./lib/project-registry'); const ctx = buildCtx(o, true);
     const entries = Object.entries(registry.read(registry.folder(o)).projects);
+    // The folder you are in counts too when AskAI set it up, registered or not (a devcontainer workspace often is not).
+    const here = path.resolve(o._[2] || process.cwd());
+    if (fs.existsSync(path.join(here, session.DIR, 'askai-init.json')) && !entries.some(([, dir]) => path.resolve(dir).toLowerCase() === here.toLowerCase())) entries.push([path.basename(here), here]);
     let done = 0; const skipped = [];
     for (const [name, dir] of entries) {
       try {

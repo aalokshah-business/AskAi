@@ -69,6 +69,25 @@ test('uv tool upgrade that cannot replace its folder: stop the tool\'s processes
   } finally { process.env.CLAUDE_CODE_ENTRYPOINT = saved === undefined ? '' : saved; process.env.APPDATA = savedAppData; }
 }));
 
+test('code-intel follows the recorded max profile (ts, py) when this run names no --lsp, instead of failing every update', () => withHome(h => {
+  const ctx = makeCtx(h, { dry: true }, { tools: { claude: '/bin/claude' } });
+  ctx.manifest.profile = 'max';
+  assert.doesNotThrow(() => comps.byId('code-intel').install(ctx));
+  const lean = makeCtx(h, { dry: true }, { tools: { claude: '/bin/claude' } }); lean.manifest.profile = 'lean';
+  assert.throws(() => comps.byId('code-intel').install(lean), /name the languages/, 'other profiles still ask which languages');
+}));
+
+test('project sync also refreshes the folder you are in when AskAI set it up, registered or not', () => withHome(h => {
+  const repo = path.join(h, 'unregistered'); fs.mkdirSync(path.join(repo, 'src'), { recursive: true });
+  write(path.join(repo, 'package.json'), JSON.stringify({ name: 'u' })); write(path.join(repo, 'src', 'a.ts'), 'x');
+  const ctx = makeCtx(h); require('../lib/project').init(repo, { yes: true }, ctx, () => {});
+  const file = path.join(repo, '.claude', 'agents', 'runner.md');
+  fs.writeFileSync(file, fs.readFileSync(file, 'utf8').replace(/^effort: .*$/m, 'effort: low'));
+  const r = cli(['project', 'sync', '--claude-home', path.join(h, 'c')], { cwd: repo });
+  assert.strictEqual(r.code, 0, r.out + r.err); assert.match(r.out, /in 1 registered project/);
+  assert.match(fs.readFileSync(file, 'utf8'), /effort: max/);
+}));
+
 test('infra lists every plugin and third-party tool with its state, plus project MCP servers and hooks', () => withHome(h => {
   const ctx = makeCtx(h, { codexHome: path.join(h, 'codex'), agyHome: path.join(h, 'gemini'), cursorHome: path.join(h, 'cursor') });
   write(path.join(h, 'repo', '.mcp.json'), JSON.stringify({ mcpServers: { playwright: { command: 'npx' } } }));

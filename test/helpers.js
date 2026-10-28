@@ -50,7 +50,7 @@ function cli(args, o = {}) {
   if (!o.env || !('ANTHROPIC_BASE_URL' in o.env)) delete env.ANTHROPIC_BASE_URL;
   if (!o.env || !('OPENAI_API_KEY' in o.env)) delete env.OPENAI_API_KEY;
   if (!o.env || !('CODEX_HOME' in o.env)) delete env.CODEX_HOME;
-  const r = cp.spawnSync(process.execPath, [o.script || ASKAI, ...args], { encoding: 'utf8', env, input: '' });
+  const r = cp.spawnSync(process.execPath, [o.script || ASKAI, ...args], { encoding: 'utf8', env, input: '', cwd: o.cwd });
   return { code: r.status, out: r.stdout, err: r.stderr };
 }
 

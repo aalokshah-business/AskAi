@@ -4,6 +4,14 @@ AskAI follows semantic versioning from 1.0.0 (see [RELEASING.md](RELEASING.md)).
 
 ## Unreleased
 
+- Container review fixes (found on a Cursor devcontainer after `askai update`):
+  - `code-intel` failed on every update ("name the languages") because it only looked at `--profile` for this run, not the recorded profile. The recorded `max` profile now gives its advertised `ts,py`; other profiles still need `--lsp`.
+  - `askai check` skipped every Claude Code check ("not selected for installation") when the recorded target was Cursor-only, although `install` auto-detects hosts and Claude Code was installed. An installed host is now checked.
+  - `askai project sync` (run by `askai update`) also covers the folder you are in when AskAI set it up, registered or not, so a devcontainer workspace is brought up to the current tiers and Cursor commands too.
+  - The agent-file drift message listed tier names three times; it now names each stale file once, by path.
+  - `askai status` no longer reports a per-host tool (headroom, context7, graphify) as "missing" for Codex or Antigravity when those hosts are not installed. `askai check` no longer treats the search-only `docs/ai/SOURCE_INDEX.md` as a large-file finding.
+  - When the Cursor CLI is not signed in, the model check says to run `agent login`.
+
 - Setup guide and setup script brought up to date with the self-healing installs. `askai bootstrap --repo` now writes a complete, idempotent `.devcontainer/askai-postcreate.sh` (installs `curl`/`git` if missing, installs AskAI or runs `askai update`, `askai install --retry`, `askai project sync`, `askai project refresh`, `askai check --all`; sudo only when it needs no password). `docs/INSTALL.md` gains a "new machine or devcontainer" section with prerequisites and the update-and-verify steps, states what AskAI installs for you on Linux/macOS/WSL and where to run on Windows, and the troubleshooting table covers the uv "Access is denied" repair, Serena "Failed to connect", Application Control blocks, stale `askai models` and the `*` override marker. README, `askai guide install` and `askai help bootstrap` point to it.
 
 - `uv tool` upgrades and installs now repair themselves on Windows when uv cannot replace a tool's folder ("failed to remove directory ... Access is denied", or a reparse-point error): AskAI stops that tool's own running processes (for example a Serena MCP server), takes back ownership of just that one folder under `uv tool dir`, clears it and reinstalls. Applies to Serena, MarkItDown and Graphify updates and to any `uv tool install` AskAI runs. It is skipped inside the Claude desktop app's sandbox, where the folder is a private copy.
