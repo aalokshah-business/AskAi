@@ -4,6 +4,11 @@ AskAI follows semantic versioning from 1.0.0 (see [RELEASING.md](RELEASING.md)).
 
 ## Unreleased
 
+- AskAI now tells you what is left, in the place you are looking, instead of relying on someone explaining it:
+  - `install` and `update` end with a highlighted **STILL TO DO** block listing the first open steps with their commands (it was one count line when no project was given).
+  - `askai todo` gains two self-clearing items: **Sign in to the Cursor CLI** (shown while the CLI is installed but the model check has no answer; says to exit the prompt, run `agent login` in the terminal, reopen `askai cli`, then `askai install --retry`) and **The max profile is now called experimental** (`askai profiles migrate`). The stale Cursor-models item now describes the automatic Sonnet 5.5 / Grok 4.7 fallback.
+  - Typing a shell command such as `agent login`, `git status` or `claude` at the `askai>` prompt no longer prints "Unknown command": a highlighted note says it belongs to the terminal and what to do next.
+
 - Container review fixes (found on a Cursor devcontainer after `askai update`):
   - `code-intel` failed on every update ("name the languages") because it only looked at `--profile` for this run, not the recorded profile. The recorded `max` profile now gives its advertised `ts,py`; other profiles still need `--lsp`.
   - `askai check` skipped every Claude Code check ("not selected for installation") when the recorded target was Cursor-only, although `install` auto-detects hosts and Claude Code was installed. An installed host is now checked.

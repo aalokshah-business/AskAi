@@ -77,6 +77,29 @@ test('code-intel follows the recorded max profile (ts, py) when this run names n
   assert.throws(() => comps.byId('code-intel').install(lean), /name the languages/, 'other profiles still ask which languages');
 }));
 
+test('todo asks for the Cursor CLI sign-in until the model check has an answer, and for the max rename while the profile is max', () => withHome(h => {
+  const todo = require('../lib/todo');
+  const ctx = makeCtx(h, { cursorHome: path.join(h, 'cursor') }, { tools: { agent: '/usr/bin/agent' } });
+  fs.mkdirSync(path.join(h, 'cursor'), { recursive: true }); ctx.manifest.profile = 'max';
+  const ids = () => todo.collectItems(ctx, null).map(i => i.id);
+  assert.ok(ids().includes('cursor-signin') && ids().includes('profile-migrate'));
+  const item = todo.collectItems(ctx, null).find(i => i.id === 'cursor-signin');
+  assert.match(item.how, /agent login.*not at the askai> prompt.*askai install --retry/s); assert.strictEqual(item.auto, true);
+  require('../lib/models').saveCursorDetection(ctx, { useSonnet: false });
+  ctx.manifest.profile = 'experimental';
+  assert.ok(!ids().includes('cursor-signin') && !ids().includes('profile-migrate'), 'both disappear once done');
+}));
+
+test('a shell command typed at the askai> prompt gets a pointer to the terminal instead of "Unknown command"', () => withHome(h => {
+  const repo = path.join(h, 'repl'); fs.mkdirSync(path.join(repo, 'src'), { recursive: true });
+  write(path.join(repo, 'package.json'), JSON.stringify({ name: 'r' })); write(path.join(repo, 'src', 'a.ts'), 'x');
+  require('../lib/project').init(repo, { yes: true }, makeCtx(h), () => {});
+  const r = require('child_process').spawnSync(process.execPath, [path.join(__dirname, '..', 'askai.js'), 'cli', '--claude-home', path.join(h, 'c')], { cwd: repo, input: 'agent login\nexit\n', encoding: 'utf8', timeout: 60000 });
+  assert.match(r.stdout, /"agent login" is a shell command, not an AskAI command/);
+  assert.match(r.stdout, /askai install --retry/);
+  assert.doesNotMatch(`${r.stdout}${r.stderr}`, /Unknown command/);
+}));
+
 test('project sync also refreshes the folder you are in when AskAI set it up, registered or not', () => withHome(h => {
   const repo = path.join(h, 'unregistered'); fs.mkdirSync(path.join(repo, 'src'), { recursive: true });
   write(path.join(repo, 'package.json'), JSON.stringify({ name: 'u' })); write(path.join(repo, 'src', 'a.ts'), 'x');

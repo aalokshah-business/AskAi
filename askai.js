@@ -587,7 +587,7 @@ async function cmdInstall(o) {
   }
   if (o.project) { console.log(''); const dir = projectDir(o, o.project); const name = registrationName(o, dir); const references = await project.research(dir, { offline: o.offline, dry: o.dry }); project.init(dir, { yes: true, dry: o.dry, about: o.about, type: o.type, references }, ctx); registerProject({ ...o, name }, dir); }
   ensureSessionTerminal(o, false, ctx.sandbox);
-  if (!o.dry) { console.log('Check this machine: askai setup' + (o.project ? ` ${o.project}` : ' <repo>') + '.'); console.log('In a new chat: /askai-cli opens the terminal without source analysis (Codex: $askai-cli). /askai-plugins finishes one-time plugin setup and says when each tool is called.'); try { const dir = o.project ? projectDir(o, o.project) : null; const list = todo.items(ctx, dir); const n = todo.open(list).length; if (n && dir) console.log(`\nRemaining setup and review steps (${n}); askai todo ${dir} shows them again:\n${todo.render(list)}`); else if (n) console.log(`Next: askai todo lists ${n} remaining setup and review steps.`); } catch (_) { /* best effort */ } }
+  if (!o.dry) { console.log('Check this machine: askai setup' + (o.project ? ` ${o.project}` : ' <repo>') + '.'); console.log('In a new chat: /askai-cli opens the terminal without source analysis (Codex: $askai-cli). /askai-plugins finishes one-time plugin setup and says when each tool is called.'); try { const dir = o.project ? projectDir(o, o.project) : null; const list = todo.items(ctx, dir); const n = todo.open(list).length; if (n && dir) console.log(`\n${require('./lib/platform').callout(`STILL TO DO (${n}), only you can do these. askai todo ${dir} shows them again:`)}\n${todo.render(list)}`); else if (n) console.log(`\n${require('./lib/platform').callout([`STILL TO DO (${n}), only you can do these. askai todo shows them again:`, ...todo.open(list).slice(0, 6).map((i, k) => `${k + 1}. ${i.text} -> ${i.how}`)])}`); } catch (_) { /* best effort */ } }
   if (o.convertOnly && !o.noDesktop && !failed.some(r => r.id === 'desktop')) {
     if (o.dry) console.log('[dry-run] would open Ask AI after install');
     else {
@@ -1778,6 +1778,13 @@ async function cmdCli(o) {
       if (args[0] === 'askai') args.shift();
       if (!args.length) { keys(); rl.resume(); rl.prompt(); continue; }
       if (args[0] === 'exit' || args[0] === 'quit') break;
+      // `agent login`, `git status`, ... belong to the shell around this prompt, not to AskAI: say so instead of "Unknown command".
+      const SHELL_TOOLS = new Set(['agent', 'cursor-agent', 'cursor', 'claude', 'codex', 'agy', 'git', 'npm', 'npx', 'node', 'uv', 'curl', 'sudo', 'apt', 'apt-get', 'gh', 'rg', 'jq', 'python', 'python3', 'pip', 'docker', 'code', 'ls', 'cd', 'cat']);
+      if (SHELL_TOOLS.has(args[0]) && !require('./lib/help').has(args[0])) {
+        const login = args[0] === 'agent' || args[0] === 'cursor-agent';
+        console.log(require('./lib/platform').callout([`"${args.join(' ')}" is a shell command, not an AskAI command.`, `Type exit to leave this prompt, run it in the terminal, then reopen: askai cli${login && /login/.test(args.join(' ')) ? ' and run: askai install --retry (so AskAI can check which Cursor models the account offers)' : ''}`]));
+        keys(); rl.resume(); rl.prompt(); continue;
+      }
       if (args[0] !== 'cli') {
         const previous = process.argv; process.argv = [previous[0], previous[1], ...args];
         try { await main(); } finally { process.argv = previous; }

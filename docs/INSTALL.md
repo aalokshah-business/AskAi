@@ -107,6 +107,8 @@ askai check --all   # expect 0 failing
 askai status        # per-tool wiring
 ```
 
+Whatever only you can do is listed by AskAI itself: `install` and `update` end with a highlighted **STILL TO DO** block (the first open steps and their commands), and `askai todo` shows the full list and clears each item once it is done. Typical items: sign in to the Cursor CLI (`agent login` in the terminal, not at the `askai>` prompt, then `askai install --retry`), restart Claude Code and reload the Cursor window, `/plugin` and `/caveman` in Claude Code, confirm each MCP server in the client, and `askai profiles migrate`. A shell command typed at the `askai>` prompt gets a pointer to the terminal instead of an error.
+
 If a component still shows failed after the first run (Rust and the new PATH, or a package that needed a password), run `askai install --retry`. Finished components are skipped.
 
 ### Just the desktop app, for Markdown conversion only
