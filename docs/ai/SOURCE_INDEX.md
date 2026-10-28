@@ -86,10 +86,6 @@ Recognized extensions only. Symbol and import extraction uses limited heuristics
 | `lib/validate-files.js` | validateFiles |
 | `lib/winpath.js` | script, encoded, editUserPath |
 | `scripts/assert-skips.js` | — |
-| `scripts/build-cheat-pdf.py` | clean, wrap, new_page, space |
-| `scripts/build-commands-a3.py` | font_set, wrap, pieces, head_rest |
-| `scripts/build-commands-card.py` | load_sections, wrap, pieces, highlight |
-| `scripts/build-commands-pdf.py` | load_sections, font, wrap, pieces |
 | `scripts/build-overview-pptx.py` | set_run, add_text, add_rect, build |
 | `scripts/fake-platform.cjs` | — |
 | `scripts/gen-docs.js` | osPlan, components, profileTable, claudeSettings |

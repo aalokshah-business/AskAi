@@ -31,7 +31,7 @@ flowchart LR
 ## Data flow
 - Start at `askai.js` (`package.json` bin `askai`). There is no build script.
 - `askai.js` loads modules from `lib/` (`require('./lib/...')` in `askai.js`).
-- `lib/surface.js` defines the compact command surface and generates `docs/CHEAT_SHEET.md`; `scripts/build-cheat-pdf.py` renders its PDF. `scripts/gen-docs.js --check` checks generated Markdown and the PDF source hash.
+- `lib/surface.js` defines the compact command surface and generates `docs/CHEAT_SHEET.md`; `scripts/build-cheatsheets.py` renders the two A3 cheat-sheet images and the one PDF from `lib/help.js`. `scripts/gen-docs.js --check` checks the generated Markdown.
 - `lib/project-registry.js` resolves short project names to folders. `lib/project.js` and `lib/project-source.js` scan eligible source and manage the project knowledge pack; `.ai-work/` holds local review and handoff state.
 - `lib/plugins-ready.js` recommends a source-only Graphify build for the first run; full document/image extraction is an explicit, model-using Graphify operation.
 - Existing recorded profiles skip tool installation during `cli --prepare`; first setup and explicit refresh still configure tools. `lib/usage.js` separates uncached input from cached input and distinguishes raw totals from weekly plan usage. Installer runtime synchronization refreshes an existing managed legacy app without replacing its surrounding state files.

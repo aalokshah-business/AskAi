@@ -6,7 +6,7 @@
 
 askai makes AI coding subscriptions last longer. It installs and wires up existing token-saving tools for **Claude Code, Cursor, OpenAI Codex and Google Antigravity** on **Windows, macOS, Linux and WSL**, chooses the set by the kind of work (coding, documents, both, or minimal), sets each tool's own cheap defaults, and shows the savings those tools measure. It keeps a session ledger so any of the four agents can pick a task up again after a break, and prints an offline cheat sheet. The only hooks it registers are a couple of in-session reminders (`prompt-hooks`); it does not run a proxy, router or background process.
 
-The full guide (why tokens run out, setup per tool, daily habits, session breaks, measurement, the research behind every choice) is [`docs/ASKAI_GUIDE.md`](docs/ASKAI_GUIDE.md). The [complete command sheet](docs/CHEAT_SHEET.md) and its [PDF](docs/CHEAT_SHEET.pdf) show the framework, working loop, and every supported command.
+The full guide (why tokens run out, setup per tool, daily habits, session breaks, measurement, the research behind every choice) is [`docs/ASKAI_GUIDE.md`](docs/ASKAI_GUIDE.md). The [command sheet](docs/CHEAT_SHEET.md) and the printable [cheat sheets (PDF)](docs/AskAI-cheatsheet.pdf) show the one-time sequence, the working loop and every command by category.
 
 Background: the earlier self-built askai hook system was measured net negative over 7 days (it cost 26.38M units against 248.6K computed savings, NET -26.14M, -2.60% of the 940.15M spent). Its files are kept in `legacy/` for reference only. This version installs tools other people maintain and registers them once, globally, so they work in every project without any per-prompt step.
 
@@ -113,9 +113,9 @@ Troubleshooting: a `#!/bin/bash` script with a trailing CR fails in Linux (`*.sh
 | [docs/INSTALL.md](docs/INSTALL.md) | Step-by-step install for Windows, macOS, Linux and WSL, every option, every file AskAI creates, troubleshooting |
 | [docs/ASKAI_GUIDE.md](docs/ASKAI_GUIDE.md) | The guide: AskAI, working etiquette, and the research behind every choice (also as .pdf and .docx) |
 | [docs/ARCHITECTURE.md](docs/ARCHITECTURE.md) | Architecture, components, settings and the full command reference, generated from the code |
-| [docs/CHEAT_SHEET.md](docs/CHEAT_SHEET.md), [PDF](docs/CHEAT_SHEET.pdf) | Framework, working loop, command choice, and the full command index |
-| [Setup poster](docs/AskAI-setup-A3.png) ([PDF](docs/AskAI-setup.pdf)) | Start here plus install/maintenance/shell commands, in one printable page: look at it once per setup, not while coding |
-| [Working poster](docs/AskAI-working-A3.png) ([PDF](docs/AskAI-working.pdf)) | Session/work, project, health, cost and learn commands, in one printable page: the day-to-day quick reference |
+| [docs/CHEAT_SHEET.md](docs/CHEAT_SHEET.md) | Framework, working loop, command choice, and the full command index grouped like `askai help` |
+| [Cheat sheet: setup & health](docs/AskAI-setup-A3.png) | One printable A3 image: the one-time sequence (/askai-cli, /askai-plugins), then the setup, health and system commands |
+| [Cheat sheet: while you work](docs/AskAI-working-A3.png) | One printable A3 image: the working loop, then the work, project, cost and learn commands. Both sheets as one PDF: [docs/AskAI-cheatsheet.pdf](docs/AskAI-cheatsheet.pdf) |
 | [docs/CHANGELOG.md](docs/CHANGELOG.md) | What changed in each version |
 | [docs/PREVIEW_MATRIX.md](docs/PREVIEW_MATRIX.md) | Install previews on every OS for every tool |
 | [docs/research/TOOLS_CATALOG.md](docs/research/TOOLS_CATALOG.md) | Every token-saving tool: claimed versus measured, and what AskAI does with it |

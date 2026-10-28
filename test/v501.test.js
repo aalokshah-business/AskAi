@@ -111,6 +111,22 @@ test('project sync also refreshes the folder you are in when AskAI set it up, re
   assert.match(fs.readFileSync(file, 'utf8'), /effort: max/);
 }));
 
+test('the Claude desktop app\'s private copy of a uv tool is removed once the real tool exists, and only then (Windows)', { skip: process.platform === 'win32' ? false : 'Windows package storage' }, () => withHome(h => {
+  const local = path.join(h, 'Local'); const shadowRoot = path.join(local, 'Packages', 'Claude_abc', 'LocalCache', 'Roaming', 'uv', 'tools');
+  const real = path.join(h, 'uvtools'); for (const d of [path.join(shadowRoot, 'serena-agent'), path.join(shadowRoot, 'markitdown'), path.join(real, 'serena-agent')]) { fs.mkdirSync(d, { recursive: true }); write(path.join(d, 'x'), '1'); }
+  const ctx = makeCtx(h); ctx.probe = () => ({ ok: true, status: 0, stdout: `${real}\n`, stderr: '', error: null });
+  const saved = { l: process.env.LOCALAPPDATA, e: process.env.CLAUDE_CODE_ENTRYPOINT, a: process.env.APPDATA };
+  process.env.LOCALAPPDATA = local; process.env.CLAUDE_CODE_ENTRYPOINT = ''; process.env.APPDATA = path.join(h, 'Roaming');
+  try {
+    comps.clearSandboxShadow(ctx, 'serena-agent'); comps.clearSandboxShadow(ctx, 'markitdown');
+    assert.ok(!fs.existsSync(path.join(shadowRoot, 'serena-agent')), 'the shadow of a tool whose real copy exists is removed');
+    assert.ok(fs.existsSync(path.join(real, 'serena-agent')), 'the real tool is untouched');
+    assert.ok(fs.existsSync(path.join(shadowRoot, 'markitdown')), 'with no real copy the private one is kept');
+    process.env.CLAUDE_CODE_ENTRYPOINT = 'claude-desktop'; fs.mkdirSync(path.join(shadowRoot, 'serena-agent')); comps.clearSandboxShadow(ctx, 'serena-agent');
+    assert.ok(fs.existsSync(path.join(shadowRoot, 'serena-agent')), 'never inside the sandbox itself');
+  } finally { process.env.LOCALAPPDATA = saved.l; process.env.CLAUDE_CODE_ENTRYPOINT = saved.e === undefined ? '' : saved.e; process.env.APPDATA = saved.a; }
+}));
+
 test('infra lists every plugin and third-party tool with its state, plus project MCP servers and hooks', () => withHome(h => {
   const ctx = makeCtx(h, { codexHome: path.join(h, 'codex'), agyHome: path.join(h, 'gemini'), cursorHome: path.join(h, 'cursor') });
   write(path.join(h, 'repo', '.mcp.json'), JSON.stringify({ mcpServers: { playwright: { command: 'npx' } } }));

@@ -460,11 +460,6 @@ if (process.argv.includes('--check')) {
   if (cur !== text) { console.error('docs/ARCHITECTURE.md is out of date: run node scripts/gen-docs.js'); process.exit(1); }
   const curCheat = fs.existsSync(cheatOut) ? fs.readFileSync(cheatOut, 'utf8').replace(/\r\n/g, '\n') : '';
   if (curCheat !== cheat) { console.error('docs/CHEAT_SHEET.md is out of date: run node scripts/gen-docs.js'); process.exit(1); }
-  const pdf = path.join(ROOT, 'docs', 'CHEAT_SHEET.pdf');
-  const digest = crypto.createHash('sha256').update(fs.readFileSync(cheatOut)).digest('hex');
-  if (!fs.existsSync(pdf) || !fs.readFileSync(pdf).includes(Buffer.from(`askai-md-sha256:${digest}`))) {
-    console.error('docs/CHEAT_SHEET.pdf is out of date: run python scripts/build-cheat-pdf.py'); process.exit(1);
-  }
   console.log('generated documents are up to date');
 } else {
   fs.writeFileSync(out, text);

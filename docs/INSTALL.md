@@ -82,6 +82,15 @@ Then run, from the repository: askai setup .
 Reply with what was installed, anything that failed, the plugin-ready report, and my to-do list. Change no other files. Remind me to restart this session, then run /askai-plugins once.
 ```
 
+### Starting a new project (the machine is already set up)
+
+Two steps. The machine-level setup is a one-time job; a project needs only this:
+
+1. **In the project folder, run `askai init`** (add `--yes` to skip the questions, or `askai init <folder>` from anywhere). It scans the code and registers the project, then writes `AGENTS.md`, `CLAUDE.md`, `GEMINI.md`, `docs/ai/*`, the architect, builder and runner agents for all four tools, the four skills, the Cursor `/askai-cli`, `/askai-gui` and `/askai-plugins` commands, `.cursorignore` and `.ai-work/` (kept out of git). It uses no model, so it costs no tokens. Detection can miss an unusual toolchain; then pass `--type other --build "cmd" --test "cmd"`.
+2. **In Cursor or Claude Code, reload the window and start a new session in that folder, then type `/askai-cli`** (Codex: `$askai-cli`). It opens the AskAI terminal for the project. Add `--review` (`/askai-cli --review`) only when you want the agent to fill gaps in the generated documents; that is the one step that uses model tokens, and it is optional.
+
+`init` ends with a highlighted **PROJECT READY** block that repeats these two steps. `askai todo` then lists the few items left (describe the project in two sentences, add the test and build commands). Start work with `askai go <tool> --tier build "task"` (`--tier lead` for design work). On a brand-new machine the one-line installer in the next section sets up the machine and the first project together (`--project <folder>`).
+
 ### A new machine or a devcontainer: one setup script
 
 Needs `bash`, `curl` or `git`, internet access to github.com, astral.sh or pypi.org, registry.npmjs.org and sh.rustup.rs, and ideally root or passwordless sudo (the script installs `curl` and `git` itself when it can). Nothing else has to be installed first, and no command has to be typed afterwards.
@@ -96,7 +105,7 @@ Then add `"postCreateCommand": "bash .devcontainer/askai-postcreate.sh"` to `dev
 curl -fsSL https://raw.githubusercontent.com/aalokshah-business/AskAi/main/get.sh | bash -s -- --yes --profile max
 ```
 
-The generated script is safe to run again. It installs `curl` and `git` if they are missing, installs AskAI (or runs `askai update` when it is already there, which pulls the latest and re-applies your profile), runs `askai install --retry` to finish anything that needed a new shell (Rust's PATH, for example), runs `askai project sync` and `askai project refresh`, and ends with `askai check --all`.
+The generated script is safe to run again and also runs `askai init` for the workspace folder (`askai init --refresh` once it is set up). It installs `curl` and `git` if they are missing, installs AskAI (or runs `askai update` when it is already there, which pulls the latest and re-applies your profile), runs `askai install --retry` to finish anything that needed a new shell (Rust's PATH, for example), runs `askai project sync` and `askai project refresh`, and ends with `askai check --all`.
 
 **Updating a machine that already has AskAI.** `askai update` does all of this in one command: it fetches the latest AskAI, re-applies your profile, installs what is missing, checks which Cursor models the account offers (Sonnet 5.5 and Haiku 5.5, or Grok 4.7 as the fallback), and refreshes every registered project's agent files to the current model tiers. It ends with a highlighted reminder: type `exit` and reopen `askai cli`, because the open shell still runs the old version. Then verify:
 
@@ -427,6 +436,7 @@ askai restore                 # list backups; askai restore <file> puts one back
 | A component failed | Read its line in the summary, fix the cause, re-run; components already done are skipped |
 | Permission denied | AskAI writes only in your home folder: check who owns it; never run it with sudo |
 | `uv` says "failed to remove directory ... Access is denied" (or a reparse-point error) on Windows | AskAI stops that tool's own processes, clears that one folder and reinstalls by itself; run it from a normal PowerShell window, not one opened from the Claude desktop app |
+| Serena or MarkItDown works in a normal terminal but is broken inside the Claude desktop app (Windows) | The app keeps a private copy of the uv tool that hides the real one. `askai tools update` from a normal terminal removes it; or close the app and delete `%LOCALAPPDATA%\Packages\Claude_*\LocalCache\Roaming\uv\tools` |
 | Serena shows "Failed to connect" in `claude mcp list` after an update | Its uv tool folder was half-replaced: `askai tools update` repairs it; otherwise `uv tool install --force -p 3.13 serena-agent` from a normal window |
 | `rtk.exe` or the desktop app's `.exe` "blocked by an Application Control policy" (Windows) | A policy on the machine; AskAI does not change it. Allow or sign the file, or `askai uninstall --only rtk` |
 | `multiple packages with binaries found: rtk, rtk-proxy` | Fixed in the current version (the command names the `rtk` package): `askai update` |

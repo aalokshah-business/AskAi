@@ -108,7 +108,7 @@ test('bootstrap writes the devcontainer script once', () => {
     const script = fs.readFileSync(file, 'utf8');
     assert.match(script, /^#!\/bin\/sh\n/);
     assert.match(script, /get\.sh \| bash -s -- --yes --profile coding/, 'first run downloads AskAI with the profile');
-    for (const step of ['askai update', 'askai install --retry --yes', 'askai project sync', 'askai project refresh', 'askai check --all']) assert.ok(script.includes(step), step);
+    for (const step of ['askai update', 'askai install --retry --yes', 'askai project sync', 'askai init --yes', 'askai init --refresh --yes', 'askai project refresh', 'askai check --all']) assert.ok(script.includes(step), step);
     assert.match(script, /sudo -n true/, 'uses sudo only when it needs no password');
     const syntax = require('child_process').spawnSync('sh', ['-n', file], { encoding: 'utf8' });
     if (!syntax.error) assert.strictEqual(syntax.status, 0, syntax.stderr);
