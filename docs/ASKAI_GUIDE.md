@@ -317,16 +317,20 @@ AskAI can set defaults and remind you, but these choices happen while you type. 
 | Before you type | One task per chat; clear between unrelated tasks. Clearing is free, compacting is a large request | Anthropic cost guide; screenshot page 19 |
 |  | One complete prompt with the goal, the files and how to check it; no drip-fed follow-ups | Each turn re-reads everything (dotclaude); page 1 |
 |  | Name files and functions with `@path`, never "improve the codebase" | Anthropic; Antigravity best practices |
-|  | Plan first for anything touching more than two files; approve before edits | All four vendors; page 2 |
+|  | Plan first for anything touching more than two files; approve before edits. In the plan, do not propose changes below about 95% confidence. Ask every missing question in one round, then proceed | All four vendors; page 2 |
 |  | Give a test, command or expected output that proves it is done | Anthropic and Antigravity best practices |
 |  | One round of clarifying questions, then proceed | Page 2's rule, kept to one round |
 | While it works | Press `Esc` as soon as it drifts, then rewind instead of arguing | All four vendors |
 |  | If an answer is slightly wrong, edit and regenerate instead of correcting | Page 1 |
 |  | Paste the failing function or the last 10–40 log lines, never the whole log | Page 5 |
 |  | Ask for the smallest change that works; no unrequested refactors | Ponytail, −10.3% cost (JetBrains) |
+|  | After 2–3 failed tries at the same issue, stop and start fresh with only the useful facts | A long failing thread re-sends every wrong turn |
+|  | If an earlier thread already solved a similar problem, resume it for the approach and the check, not as a paste of the whole chat | Recreating a solved problem spends the tokens already paid once |
 | Context | Disable MCP servers you do not need today; prefer `gh`, `rg`, `jq` | Anthropic; page 20 |
+|  | Deny a command that is always noisy and never needed. A denied command spends nothing; a capped one still spends up to the cap | Bash output above the cap is never read |
+|  | Few subagents. Moving reads into one shrinks the main chat, not the bill: delegate only when the output is large, you will not need the detail again, and the session continues | Each fresh subagent writes about 14K tokens before its first call |
 |  | Convert PDFs and HTML to Markdown before attaching | The slide series' public posts |
-|  | At a natural boundary, hand off and clear rather than compacting again | Page 7 |
+|  | Around 50–60% context, compact yourself with keep-instructions, or hand off and clear. Do not wait for the 95% auto-compact: it can run out of room mid-summary | `/compact` reads the whole chat |
 
 **Commands for these habits**
 
@@ -366,9 +370,9 @@ AskAI sets a cheap default, but which model a task deserves is your call. Start 
 | Everyday features and fixes | Sonnet (Haiku when it copes), medium | Sol, medium | Flash, or Pro if Flash struggles | Auto, or a mid-tier model |
 | Hard debugging, architecture, security | Sonnet with `/advisor opus`, or Opus, high | Sol, high | Pro or Claude, high | A frontier model, without Max Mode |
 
-Leave the speed and big-context modes off unless speed matters more than usage: Claude fast mode (credits at 2x), Codex Fast (2.5x) and Ultrafast (8x), Cursor Max Mode, Antigravity `/boost`. Run big jobs outside Claude's peak hours, weekdays 08:00–14:00 US Eastern; `askai tips peak` shows them in your time zone.
+Leave the speed and big-context modes off unless speed matters more than usage: Claude fast mode (credits at 2x), Codex Fast (2.5x) and Ultrafast (8x), Cursor Max Mode, Antigravity `/boost`. Run big jobs outside Claude's peak hours, weekdays 08:00–14:00 US Eastern; `askai tips peak` shows them in your time zone. Pace against the reset: budget left and a reset soon, spend it on the big job; little budget left and hours still on the clock, stop and come back with a full window.
 
-**Breaks: the steps only you can take.** `askai break` reminds you, but you stop the work: finish the verified step, commit or stash, and end any `/loop`, `/goal`, agent team or background agent. Coming back, decide with `askai resume`'s advice: within the cache lifetime and with a small context, continue; otherwise start fresh from the handoff.
+**Breaks: the steps only you can take.** `askai break` reminds you, but you stop the work: finish the verified step, commit or stash, and end any `/loop`, `/goal`, agent team or background agent. Coming back, decide with `askai resume`'s advice: within the cache lifetime and with a small context, continue; otherwise start fresh from the handoff. After 2–3 failed tries at the same issue, stop and start fresh with only the useful facts.
 
 | When you hit a limit | Cheapest options first |
 | --- | --- |

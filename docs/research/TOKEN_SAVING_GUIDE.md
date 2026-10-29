@@ -136,7 +136,7 @@ The habits matter more than any tool, because every turn re-reads the context an
 | Before you type | One task per chat; `/clear` between unrelated tasks. `/clear` is free; `/compact` is itself a large request | Anthropic cost guide; your screenshot page 19 |
 |  | Send one complete prompt: goal, the files, and how to check it is done. Do not drip-feed follow-ups | Each turn re-reads everything (dotclaude); page 1; AI LABS video |
 |  | Name files and functions with `@path`: "add validation to `login()` in `auth.ts`", not "improve the codebase" | Anthropic; Antigravity best practices; agentpedia |
-|  | Plan first for anything touching more than two files, and approve before edits | Anthropic, Antigravity, Cursor docs; page 2 |
+|  | Plan first for anything touching more than two files, and approve before edits. In the plan, do not propose changes below about 95% confidence. Ask every missing question in one round, then proceed | Anthropic, Antigravity, Cursor docs; page 2; one round so the 95% bar does not add turns |
 |  | Give a verification target: a test, a command, an expected output | Anthropic and Antigravity best practices |
 |  | Ask for one round of clarifying questions, not open-ended "95% confidence" loops | Page 2's rule, kept to one round so it does not add turns |
 | While it works | Stop wrong turns early with `Esc`, then rewind instead of arguing | All four vendors' docs |
@@ -144,15 +144,18 @@ The habits matter more than any tool, because every turn re-reads the context an
 |  | Paste only the failing function or the last 10–40 log lines | Page 5; Anthropic's hook example filters test output to failures |
 |  | Search, then read line ranges; batch independent reads in one message | Reads are about 90% of tool tokens (Marmelab); parallel calls cost one turn (dotclaude) |
 |  | Ask for the smallest change that solves the task, with no unrequested refactors | Ponytail's idea, −10.3% cost (JetBrains); Karpathy guidelines, page 13 |
+|  | After 2–3 failed tries at the same issue, stop and start fresh with only the useful facts | A long failing thread re-sends every wrong turn |
+|  | If an earlier thread already solved a similar problem, resume it for the approach and the check, not as a paste of the whole chat | Recreating a solved problem spends the tokens already paid once |
 | Context and tools | Keep `CLAUDE.md` / `AGENTS.md` / `GEMINI.md` under 200 lines, as an index that points to detail | Anthropic; page 6; Codex caps at 32 KiB; Antigravity rule budget |
 |  | Disable MCP servers you do not use today; prefer `gh`, `rg`, `jq` | Anthropic cost guide; page 20 (its 17,600-tokens figure predates tool deferral) |
+|  | Deny a command that is always noisy and never needed. A denied command spends nothing; a capped one still spends up to the cap | Bash output above the cap is never read |
 |  | Convert PDFs and HTML to Markdown before attaching (for example with `markitdown`) | The slide series' public posts; about 90% fewer tokens claimed |
-|  | Check `/context`; at a natural boundary either compact with instructions or, better, hand off and `/clear` | Page 7 says compact at \~60% and clear after 3–4 compacts |
+|  | Check `/context`. Around 50–60% used, compact yourself with keep-instructions, or hand off and `/clear`. Do not wait for the 95% auto-compact: it can run out of room mid-summary | `/compact` reads the whole chat; the 95% auto-trigger can fail mid-summary |
 | Models and agents | Cheapest model that can do the job; escalate after a failure, then go back down | The only repeated large saving in the benchmarks |
-|  | Few subagents, on a cheap model; no agent teams for routine work | Teams \~7x (Anthropic); page 8; each subagent writes \~14K tokens first |
+|  | Few subagents, on a cheap model; no agent teams for routine work. Moving reads into a subagent shrinks the main chat, not the bill: delegate only when the output is large, you will not need the detail again, and the session continues | Teams \~7x (Anthropic); page 8; each fresh subagent writes \~14K tokens first |
 |  | Instead of switching the whole session to Opus, try Sonnet with `/advisor opus` | Advisor is consulted only at decision points |
 | Money traps | Leave speed and big-context modes off: Claude fast mode (credits at 2x), Codex Fast and Ultrafast, Cursor Max Mode | Each vendor's pricing docs |
-|  | Run big jobs outside Claude's peak hours: weekdays 08:00–14:00 US Eastern, which is 17:30–23:30 IST until early November and 18:30–00:30 IST after | Anthropic, March 2026; page 9 |
+|  | Run big jobs outside Claude's peak hours: weekdays 08:00–14:00 US Eastern, which is 17:30–23:30 IST until early November and 18:30–00:30 IST after. Pace against the reset: budget left and a reset soon, spend it on the big job; little budget left and hours still on the clock, stop and come back with a full window | Anthropic, March 2026; page 9. Unused budget in a rolling window does not carry over |
 |  | If usage jumps while idle, compare `/stats` in the CLI with claude.ai's usage bar | Reported counter-desync bug (GitHub issues #38335, #39507) |
 |  | Judge any tool by accepted, tested tasks per subscription, not by its own savings counter | RTK reported 96M tokens saved in runs that cost 7.6% more (JetBrains) |
 
@@ -178,6 +181,7 @@ Nothing should be running. Claude Code compacts idle conversations over 200K tok
 | --- | --- |
 | Back within the cache lifetime (1 hour on a Claude subscription, 5 minutes on usage credits) and the context is small | Continue in the same chat |
 | Longer break, or the context is past \~100K tokens | Fresh chat, then paste the resume prompt below |
+| 2–3 failed tries at the same issue | Stop and start fresh with only the useful facts |
 | Switching to another of the four tools | The same handoff file and prompt work in any of them |
 | Several breaks in one long session | Hand off and clear instead of compacting a third or fourth time |
 

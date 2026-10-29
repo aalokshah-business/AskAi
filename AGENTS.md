@@ -8,7 +8,7 @@
 
 <!-- askai:begin router (askai init --refresh updates this block; write your own notes outside it) -->
 ## Project
-Make AI coding subscriptions last longer: installs and wires up existing token-saving tools (RTK, Context Mode, Serena, markitdown, Caveman-style rules) for Claude Code, Cursor, OpenAI Codex and Google Antigravity on Windows, macOS, Linux and WSL, with a hook-free session ledger, handoff and cheat sheet. Type: other. Languages: JavaScript 87%, PowerShell 5%, Python 4%, Shell 3%.
+Make AI coding subscriptions last longer: installs and wires up existing token-saving tools (RTK, Context Mode, Serena, markitdown, Caveman-style rules) for Claude Code, Cursor, OpenAI Codex and Google Antigravity on Windows, macOS, Linux and WSL, with a hook-free session ledger, handoff and cheat sheet. Type: other. Languages: JavaScript 89%, PowerShell 5%, Shell 3%, Python 2%.
 
 ## Read only what the task needs
 | Need | File |
@@ -33,7 +33,7 @@ Make AI coding subscriptions last longer: installs and wires up existing token-s
 - Security constraints are in docs/ai/ARCHITECTURE.md. Keep them intact.
 - Empty fields in WORK_ORDER.md and HANDOFF.md are unknown. Leave them until a person or a verified session fills them.
 - Make the smallest change that solves the task; keep error handling, tests and security; no unrequested refactors or new dependencies.
-- In plan mode, do not propose changes below about 95% confidence in what to build; ask follow-up questions until you are. A wrong plan executed costs the work twice.
+- In plan mode, do not propose changes below about 95% confidence in what to build. Ask every missing question in one round, then proceed. A wrong plan executed costs the work twice.
 - Quote only failing lines of tool output. Reply tersely: changed files, check run and result, blockers, next step. Show code changes as a diff, never whole files.
 
 ## Sessions

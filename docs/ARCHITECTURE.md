@@ -1576,7 +1576,7 @@ Exit: 0 on success; 1 on unsupported platforms or setup failure
   Why: Follow-ups stay in history and are re-sent every turn (your screenshot page 1).
 - **Point at files** (`askai ask files`): Name the file and function with @path; avoid "improve the codebase".
   Why: Vague prompts trigger broad scanning (Anthropic); @ targeting minimises token overhead (Antigravity docs).
-- **Plan before multi-file edits** (`askai ask plan`): Use plan mode for anything touching more than two files and approve before edits. In the plan itself, do not propose changes below about 95% confidence; ask follow-up questions until you are (two independent creators use this exact threshold; askai writes it into every generated AGENTS.md).
+- **Plan before multi-file edits** (`askai ask plan`): Use plan mode for anything touching more than two files and approve before edits. In the plan, do not propose changes below about 95% confidence. Ask every missing question in one round, then proceed.
   Why: A wrong path costs the work twice (Anthropic, Antigravity, Cursor docs; screenshot page 2).
 - **Give a verification target** (`askai ask verify`): Give a test, command or expected output that proves the task is done.
   Why: Agents that can check their own work need fewer correction rounds (Anthropic, Antigravity best practices).

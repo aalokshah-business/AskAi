@@ -21,7 +21,7 @@
   },
   {
     "id": "plan",
-    "render": "Plan before multi-file edits\n  Rule: Use plan mode for anything touching more than two files and approve before edits. In the plan itself, do not propose changes below about 95% confidence; ask follow-up questions until you are (two independent creators use this exact threshold; askai writes it into every generated AGENTS.md).\n  Why:  A wrong path costs the work twice (Anthropic, Antigravity, Cursor docs; screenshot page 2).\n  Claude Code  Shift+Tab or /plan\n  Codex        /plan\n  Antigravity  /plan, /planning\n  Cursor       /plan, /ask"
+    "render": "Plan before multi-file edits\n  Rule: Use plan mode for anything touching more than two files and approve before edits. In the plan, do not propose changes below about 95% confidence. Ask every missing question in one round, then proceed.\n  Why:  A wrong path costs the work twice (Anthropic, Antigravity, Cursor docs; screenshot page 2).\n  Claude Code  Shift+Tab or /plan\n  Codex        /plan\n  Antigravity  /plan, /planning\n  Cursor       /plan, /ask"
   },
   {
     "id": "verify",
