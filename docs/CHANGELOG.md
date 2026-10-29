@@ -6,6 +6,8 @@ AskAI follows semantic versioning from 1.0.0 (see [RELEASING.md](RELEASING.md)).
 
 - Ask AI desktop: Run on `update` was sending `--dry-run` because a closed dropdown kept the text `true` after the selection was `false`, so the command only printed the preview. The switch now starts off, and the run reads the selection.
 
+After MarkItDown is reinstalled onto a Python that can start, the same run forgets the earlier blocked result, so the summary does not keep saying it is only partly installed.
+
 - MarkItDown on Windows: when Application Control blocks uv's Python (exit 101), `askai update` and `askai install` reinstall MarkItDown on a Python this PC is allowed to run. `askai convert` names that command instead of launching the blocked interpreter.
 
 - Working etiquette that was only in the knowledge base now also shows in `askai guide` and the two guides. A plan still refuses changes below about 95% confidence, and it asks every missing question in one round, then proceeds. `askai guide` also covers restarting after 2–3 failed tries, resuming a solved thread for the approach only, denying a command that is always noisy, compacting yourself around 50–60% context, delegating reads only when that actually cuts the bill, and pacing a big job against the usage reset.
