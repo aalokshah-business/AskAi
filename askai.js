@@ -1221,6 +1221,12 @@ async function cmdConvert(o) {
   // platform the trampoline reliably drops the YouTube transcript (exits 0, no error) on a call that
   // succeeds through the venv python directly, same markitdown version, same arguments.
   const uvPython = comps.uvToolPython(ctx, 'markitdown');
+  if (uvPython && !comps.pythonStarts(ctx, uvPython)) {
+    console.error(`MarkItDown's Python cannot start: Windows Application Control blocked it (${uvPython}).`);
+    console.error('Run: askai update --yes');
+    console.error('Then close the Ask AI window and open it again.');
+    return 1;
+  }
   const bin = uvPython || converter;
   const baseArgs = uvPython ? ['-m', 'markitdown'] : [];
   if (isYoutube) {

@@ -604,6 +604,31 @@ test('markitdown and serena share uv\'s bin dir: the PATH entry is handed over, 
   assert.deepStrictEqual(e2, [['/bin', false]], 'the last tool removes the entry');
 }));
 
+test('markitdown: a Python blocked by Application Control is reinstalled on one that can start', () => withDirs(a => {
+  const toolDir = path.join(a.home, 'uvtools');
+  const pyName = process.platform === 'win32' ? path.join('Scripts', 'python.exe') : path.join('bin', 'python');
+  const blocked = path.join(toolDir, 'markitdown', pyName);
+  const alt = path.join(a.home, 'python');
+  write(blocked, '');
+  write(alt, '');
+  const ctx = cctx(a, {}, {
+    tools: { uv: '/bin/uv', markitdown: '/bin/markitdown', python: alt },
+    probe(cmd, args) {
+      if (cmd === '/bin/uv' && args[0] === 'tool' && args[1] === 'dir') return { ok: true, status: 0, stdout: `${toolDir}\n`, stderr: '', error: null };
+      if (cmd === blocked) return { ok: false, status: 101, stdout: '', stderr: 'An Application Control policy has blocked this file.', error: null };
+      if (cmd === alt && args[0] === '-c') return { ok: true, status: 0, stdout: '1\n', stderr: '', error: null };
+      return NO();
+    },
+  });
+  const logs = capture(ctx);
+  assert.strictEqual(c('markitdown').detect(ctx).state, 'partial');
+  c('markitdown').install(ctx);
+  assert.ok(ctx.calls.includes(`act uv tool install -p ${alt} ${MD_SPEC} --force`), ctx.calls.filter(x => x.includes('tool install')).join('\n'));
+  assert.ok(logs.some(l => /reinstalling it on/.test(l)));
+  c('markitdown').update(ctx);
+  assert.ok(ctx.calls.filter(x => x.includes(`-p ${alt}`)).length >= 2, 'update repairs the same blocked interpreter');
+}));
+
 test('markitdown: update needs uv; dry-run installs nothing', () => withDirs(a => {
   assert.throws(() => c('markitdown').update(cctx(a, {}, { tools: {} })), /uv not found/);
   const up = cctx(a, {}, { tools: { uv: '/bin/uv' } });

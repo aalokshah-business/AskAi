@@ -439,6 +439,7 @@ askai restore                 # list backups; askai restore <file> puts one back
 | Serena or MarkItDown works in a normal terminal but is broken inside the Claude desktop app (Windows) | The app keeps a private copy of the uv tool that hides the real one. `askai tools update` from a normal terminal removes it; or close the app and delete `%LOCALAPPDATA%\Packages\Claude_*\LocalCache\Roaming\uv\tools` |
 | Serena shows "Failed to connect" in `claude mcp list` after an update | Its uv tool folder was half-replaced: `askai tools update` repairs it; otherwise `uv tool install --force -p 3.13 serena-agent` from a normal window |
 | `rtk.exe` or the desktop app's `.exe` "blocked by an Application Control policy" (Windows) | A policy on the machine; AskAI does not change it. Allow or sign the file, or `askai uninstall --only rtk` |
+| MarkItDown exits 101, "Application Control policy has blocked this file" | uv's own Python was blocked. `askai update --yes` reinstalls MarkItDown on a Python this PC can run (Python 3.10 or newer). Then close the Ask AI window and open it again |
 | `multiple packages with binaries found: rtk, rtk-proxy` | Fixed in the current version (the command names the `rtk` package): `askai update` |
 | `askai models` still shows old tiers after an update | The shell still runs the old code: `exit`, reopen `askai cli`. A row ending in `*` comes from your own `models.json`, which wins over the defaults |
 | Context Mode "needs Node 22.5" | On macOS and Linux AskAI installs a private Node 22 through nvm; on Windows upgrade Node |

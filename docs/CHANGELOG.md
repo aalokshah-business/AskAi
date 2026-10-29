@@ -4,6 +4,8 @@ AskAI follows semantic versioning from 1.0.0 (see [RELEASING.md](RELEASING.md)).
 
 ## Unreleased
 
+- MarkItDown on Windows: when Application Control blocks uv's Python (exit 101), `askai update` and `askai install` reinstall MarkItDown on a Python this PC is allowed to run. `askai convert` names that command instead of launching the blocked interpreter.
+
 - Working etiquette that was only in the knowledge base now also shows in `askai guide` and the two guides. A plan still refuses changes below about 95% confidence, and it asks every missing question in one round, then proceeds. `askai guide` also covers restarting after 2–3 failed tries, resuming a solved thread for the approach only, denying a command that is always noisy, compacting yourself around 50–60% context, delegating reads only when that actually cuts the bill, and pacing a big job against the usage reset.
 
 - Cheat sheets rebuilt from `askai help` and reduced to three files. `scripts/build-cheatsheets.py` reads the commands and their categories from `lib/help.js` (so it cannot drift) and writes `docs/AskAI-setup-A3.png` (START HERE one-time sequence with `/askai-cli` and `/askai-plugins`, then the Setup, Health and System categories, plus "when something looks wrong"), `docs/AskAI-working-A3.png` (the working loop and the Opus note, then Work, Project, Cost and Learn) and both as one searchable PDF, `docs/AskAI-cheatsheet.pdf`. Removed: `docs/CHEAT_SHEET.pdf`, `docs/AskAI-setup.pdf`, `docs/AskAI-working.pdf` and the four older builder scripts; `gen-docs.js --check` no longer tracks a PDF. `docs/CHEAT_SHEET.md` (the text version behind `askai docs cheatsheet`) now has the same one-time sequence section and its complete command index is grouped by the `askai help` categories.
