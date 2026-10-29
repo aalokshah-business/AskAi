@@ -220,7 +220,7 @@ def main():
         def value_widget(parent, field):
             if field.get('kind') == 'boolean':
                 widget = ttk.Combobox(parent, values=['true', 'false'], state='readonly')
-                widget.set('true')
+                widget.set('false')
             elif field.get('choices'):
                 widget = ttk.Combobox(parent, values=field['choices'], state='readonly')
             elif field.get('suggestions'):

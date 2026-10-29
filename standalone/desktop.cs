@@ -152,7 +152,7 @@ internal sealed class AskWindow : Form {
         else using (var dialog = new OpenFileDialog { Filter = "All files|*.*" }) if (dialog.ShowDialog(this) == DialogResult.OK) target.Text = dialog.FileName;
     }
     private Control Input(Dictionary<string, object> definition) {
-        if (TextOf(definition, "kind") == "boolean") { var boolean = new ComboBox { DropDownStyle = ComboBoxStyle.DropDownList }; boolean.Items.AddRange(new object[] { "true", "false" }); boolean.SelectedIndex = 0; return boolean; }
+        if (TextOf(definition, "kind") == "boolean") { var boolean = new ComboBox { DropDownStyle = ComboBoxStyle.DropDownList }; boolean.Items.AddRange(new object[] { "true", "false" }); boolean.SelectedIndex = 1; return boolean; }
         if (definition.ContainsKey("choices")) { var combo = new ComboBox { DropDownStyle = ComboBoxStyle.DropDownList }; foreach (object value in (System.Collections.IEnumerable)definition["choices"]) combo.Items.Add(value); return combo; }
         if (definition.ContainsKey("suggestions")) {
             // Unlike "choices" above, this field also accepts free text (e.g. ask's fuzzy search
@@ -206,9 +206,12 @@ internal sealed class AskWindow : Form {
         row.Flag.SelectedItem = initial ?? TextOf(available[0], "flag"); optionRows.Add(row); optionsPanel.Controls.Add(row.Panel); UpdateAddOptionEnabled(); FitTab();if(IsHandleCreated)ApplyTheme();
         return row;
     }
+    // DropDownList .Text can stay on the first item ("true") after SelectedItem is set, which turned
+    // update's dry-run row on and printed the preview instead of updating.
+    private static string ControlValue(Control control) { var box = control as ComboBox; if (box != null && box.DropDownStyle == ComboBoxStyle.DropDownList) return Convert.ToString(box.SelectedItem ?? box.Text); return control.Text; }
     private Dictionary<string, object> CommandRequest() {
-        var values = fields.ToDictionary(item => item.Key, item => (object)item.Value.Text);
-        var options = optionRows.Select(row => new Dictionary<string, object> { { "flag", Convert.ToString(row.Flag.SelectedItem) }, { "value", row.Value.Text } }).ToArray();
+        var values = fields.ToDictionary(item => item.Key, item => (object)ControlValue(item.Value));
+        var options = optionRows.Select(row => new Dictionary<string, object> { { "flag", Convert.ToString(row.Flag.SelectedItem) }, { "value", ControlValue(row.Value) } }).ToArray();
         return new Dictionary<string, object> { { "kind", "command" }, { "command", Convert.ToString(commands.SelectedItem) }, { "variant", SelectedVariant["id"] }, { "environment",EnvironmentValue() }, { "fields", values }, { "options", options } };
     }
     internal AskWindow(string appRoot, string nodePath, string projectPath) {
