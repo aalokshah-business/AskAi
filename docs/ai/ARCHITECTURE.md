@@ -57,3 +57,5 @@ Add a row after a decision is made: date, decision, why.
 
 ## Sensitive boundaries
 - Never paste API keys, tokens, private keys or confidential data here.
+
+Project layout and native path mappings: [Shared Project Layout](../PROJECT_STRUCTURE.md).
