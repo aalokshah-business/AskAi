@@ -130,6 +130,21 @@ test('desktop process capture enforces deadlines and treats shell text as data',
     const large=await desktop.execute(['-e','process.stdout.write("x".repeat(3*1024*1024))'],dir);assert.equal(large.code,1);assert.match(large.stderr,/2 MiB/);
   }finally{rm(dir);}
 });
+test('a blocked Windows window installs the shortcut through Python',{skip:process.platform!=='win32'?'Windows shortcut fallback only':false},()=>{
+  const dir=tmpHome();try{
+    const folder=path.join(dir,'links');fs.mkdirSync(folder);
+    const ctx=makeCtx(dir,{},{act:()=>({ok:false,status:null,error:'spawn UNKNOWN',stderr:''})});
+    ctx.sandbox=false;
+    ctx.paths.app=path.join(__dirname,'..');
+    ctx.shortcutFolders=[folder];
+    ctx.desktopBuild=()=>path.join(dir,'blocked.exe');
+    const text=desktop.install(ctx);
+    assert.match(text,/shortcuts installed/);
+    assert.equal(fs.existsSync(path.join(folder,'Ask AI.lnk')),true);
+    assert.equal(desktop.blockedStart({message:'spawn UNKNOWN'}),true);
+    assert.equal(desktop.blockedStart({message:'compiler missing'}),false);
+  }finally{rm(dir);}
+});
 test('desktop setup respects dry runs and isolated configuration homes',()=>{
   const dir=tmpHome();try{
     const ctx=makeCtx(dir);assert.match(desktop.install(ctx),/skipped|not needed/);assert.equal(ctx.calls.length,0);
@@ -167,11 +182,14 @@ test('Linux desktop launchers quote paths and preserve unrelated files',()=>{
     assert.match(desktop.linuxEntry('/path/100%','node','python3'),/100%%/);
   }finally{rm(home);}
 });
-test('native Windows shortcut installation is repeatable and removal preserves unrelated files',{skip:process.platform!=='win32'?'Windows native shortcuts only':false},()=>{
+test('native Windows shortcut installation is repeatable and removal preserves unrelated files',{skip:process.platform!=='win32'?'Windows native shortcuts only':false},t=>{
   const dir=tmpHome();try{
     const exe=desktop.build(),root=path.join(__dirname,'..'),args=[root,process.execPath,dir];
     const run=mode=>cp.spawnSync(exe,[mode,...args],{encoding:'utf8',windowsHide:true,timeout:30000});
-    for(let i=0;i<2;i++){const result=run('--install-shortcuts');assert.equal(result.status,0,result.stderr);assert.ok(fs.existsSync(path.join(dir,'Ask AI.lnk')));}
+    const first=run('--install-shortcuts');
+    if(first.error && first.error.code==='UNKNOWN'){t.skip('Smart App Control blocked the new unsigned window file');return;}
+    assert.equal(first.status,0,first.stderr);assert.ok(fs.existsSync(path.join(dir,'Ask AI.lnk')));
+    for(let i=0;i<1;i++){const result=run('--install-shortcuts');assert.equal(result.status,0,result.stderr);assert.ok(fs.existsSync(path.join(dir,'Ask AI.lnk')));}
     assert.equal(run('--remove-shortcuts').status,0);assert.equal(fs.existsSync(path.join(dir,'Ask AI.lnk')),false);
     write(path.join(dir,'Ask AI.lnk'),'unrelated file');assert.notEqual(run('--install-shortcuts').status,0);assert.equal(fs.readFileSync(path.join(dir,'Ask AI.lnk'),'utf8'),'unrelated file');
     assert.notEqual(run('--remove-shortcuts').status,0);assert.ok(fs.existsSync(path.join(dir,'Ask AI.lnk')));

@@ -331,6 +331,10 @@ def main():
         help_button.pack(side='left', padx=10)
 
         def terminal():
+            script = str(Path(options.app_root) / 'askai.js')
+            if os.name == 'nt':
+                subprocess.Popen(['cmd', '/c', 'start', 'Ask AI', options.node, script, 'cli'], cwd=project.get())
+                return
             candidates = [('x-terminal-emulator', ['-e']), ('gnome-terminal', ['--']), ('konsole', ['-e']), ('xfce4-terminal', ['-x']), ('xterm', ['-e'])]
             for executable, flags in candidates:
                 if shutil.which(executable):
@@ -401,7 +405,10 @@ def main():
         def stop():
             process = state['process']
             if process and process.poll() is None:
-                os.killpg(process.pid, signal.SIGTERM)
+                if os.name == 'nt':
+                    process.terminate()
+                else:
+                    os.killpg(process.pid, signal.SIGTERM)
 
         stop_button = ttk.Button(footer, text='Stop', command=stop, state='disabled')
         stop_button.grid(row=0, column=2, padx=6)
@@ -409,7 +416,11 @@ def main():
         def open_result(directory=False):
             if state['output']:
                 path = Path(state['output'])
-                subprocess.Popen(['xdg-open', str(path.parent if directory else path)], stdout=subprocess.DEVNULL, stderr=subprocess.DEVNULL, start_new_session=True)
+                target = path.parent if directory else path
+                if os.name == 'nt':
+                    os.startfile(str(target))
+                else:
+                    subprocess.Popen(['xdg-open', str(target)], stdout=subprocess.DEVNULL, stderr=subprocess.DEVNULL, start_new_session=True)
 
         open_button = ttk.Button(footer, text='Open Markdown', command=open_result, state='disabled')
         open_button.grid(row=0, column=3, padx=6)
