@@ -4,6 +4,8 @@ AskAI follows semantic versioning from 1.0.0 (see [RELEASING.md](RELEASING.md)).
 
 ## Unreleased
 
+- `askai howto <category>` (System) walks that category in run order and shows each command's usage. Categories and aliases match `askai help`: setup, cost, learn, project, work, health, system.
+
 - Ask AI desktop: while Smart App Control is on, the window opens through Python, which Windows already allows, and the shortcut icon is taken from the Ask AI program file. AskAI does not turn Smart App Control off.
 
 - Ask AI desktop: the command summary sits under the output, above the exit line. A short option such as JSON stays beside its name, and a longer option stays at the bottom of the list.

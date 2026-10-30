@@ -1973,6 +1973,7 @@ async function main() {
     case 'chat': return cmdChat(o);
     case 'tips': return cmdTips(o);
     case 'direction': console.log(require('./lib/surface').direction()); return 0;
+    case 'howto': { const name = o._[1] === 'category' ? o._[2] : o._[1]; if (!name) { console.log(help.howtoIndex()); return 0; } const text = help.howto(name); console.log(text || `No How to for "${name}". Categories: ${Object.keys(help.CATEGORIES).join(', ')}`); return text ? 0 : 1; }
     case 'version': case '--version': {
       if(o.json || o.all){
         const ctx=buildCtx(o,true), runtime=require('./lib/runtime');

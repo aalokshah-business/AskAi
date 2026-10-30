@@ -166,6 +166,7 @@ The commands below are also implemented, grouped by the same categories as `aska
 | `askai set` | Select a project for this terminal or set a persistent fallback. | `askai set project NAME \| project --clear \| default NAME \| default --clear` |
 | `askai statusline` | Claude Code's status line command (reads the session JSON on stdin): model, context, cache; records snapshots for askai savings. | `askai statusline [--demo]` |
 | `askai version` | Print the AskAI version. | `askai version [--all] [--json]` |
+| `askai howto` | Show one category in the order to run it, with the arguments each command takes. | `askai howto [category] \| category NAME` |
 
 Legacy spellings `continue`, `etiquette`, `checkpoint`, `work`, `peak`, `projects`, and `cheat` still route to their current commands. Prefer `resume`, `guide`, `session pause`, `guide work`, `tips peak`, `project list`, and `direction` in new scripts.
 

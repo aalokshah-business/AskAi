@@ -116,6 +116,7 @@ const COMMAND_SOURCE = {
   tips: 'lib/tips.js',
   cheat: 'lib/surface.js',
   direction: 'lib/surface.js',
+  howto: 'askai.js; lib/help.js',
   version: 'askai.js; lib/runtime.js',
   '--version': 'askai.js',
 };

@@ -367,6 +367,7 @@ Where each command is implemented. Written from the `case` list in `askai.js` be
 | `askai chat` | `lib/chat.js` |
 | `askai tips` | `lib/tips.js` |
 | `askai direction` | `lib/surface.js` |
+| `askai howto` | `askai.js; lib/help.js` |
 | `askai version` | `askai.js; lib/runtime.js` |
 | `askai --version` | `askai.js` |
 
@@ -1544,6 +1545,23 @@ Usage: askai desktop
 Use when: convert files or run commands in a window
 
 Exit: 0 on success; 1 on unsupported platforms or setup failure
+```
+
+#### `askai howto`
+
+```text
+askai howto: Show one category in the order to run it, with the arguments each command takes.
+
+Usage: askai howto
+
+Summary:
+  Walks the commands in one AskAI category from first to last and shows the usage and one example for each. Use it when
+  you know the job, such as setup or cost, and need the sequence rather than one command's manual. It stays local: the
+  order is the category list, and the arguments come from each command's help.
+
+Use when: Show one category in the order to run it, with the arguments each command takes.
+
+Exit: 0 when the category is known; 1 when it is not
 ```
 
 ## 11. Inside the agents

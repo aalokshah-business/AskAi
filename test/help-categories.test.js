@@ -27,6 +27,20 @@ test('every explicit category name and alias resolves, including system', () => 
   }
 });
 
+test('howto walks a category in run order with each command usage', () => {
+  const setup = cli(['howto', 'setup']);
+  assert.equal(setup.code, 0);
+  help.CATEGORIES.setup.commands.forEach(([name], index) => assert.ok(setup.out.includes(`${index + 1}. askai ${name}`), name));
+  assert.match(setup.out, /askai install/);
+  assert.equal(cli(['howto', 'category', 'spend']).out, cli(['howto', 'cost']).out);
+  assert.match(cli(['howto', 'learn']).out, /1\. askai ask/);
+  assert.match(cli(['howto', 'project']).out, /1\. askai project/);
+  assert.match(cli(['howto', 'work']).out, /1\. askai next/);
+  assert.equal(cli(['howto', 'nope']).code, 1);
+  assert.match(cli(['howto']).out, /askai howto setup/);
+  assert.equal(help.groupOf('howto').group, 'system');
+});
+
 test('command help includes detailed options and disambiguates category names', () => {
   assert.match(cli(['help', 'check']).out, /Usage: askai check \[dir\]/);
   assert.match(cli(['help', 'command', 'setup']).out, /Usage: askai setup/);
