@@ -163,26 +163,38 @@ def main():
         convert = ttk.Button(conversion, text='Convert', style='Primary.TButton', command=lambda: start({'kind': 'convert', 'source': source.get().strip(), 'folder': folder.get().strip()}))
         convert.grid(row=4, column=0, sticky='w')
         ttk.Label(conversion, text='Local extraction / OCR. YouTube needs captions + network. Existing Markdown stays intact.\nLocal Folder converts every supported file directly inside it (not subfolders) into the output folder.').grid(row=5, column=0, columnspan=2, sticky='w', pady=(8, 0))
+        commands.rowconfigure(0, weight=1)
+        commands.columnconfigure(0, weight=1)
+        split = ttk.Panedwindow(commands, orient='horizontal')
+        split.grid(row=0, column=0, sticky='nsew')
+        left = ttk.Frame(split, padding=(0, 0, 8, 0))
+        command_output = ttk.Frame(split)
+        split.add(left, weight=2)
+        split.add(command_output, weight=3)
         for column in range(3):
-            commands.columnconfigure(column, weight=1, uniform='command-columns')
-        picker = ttk.Combobox(commands, textvariable=command, values=grouped_values(catalog), state='readonly', width=22)
-        ttk.Label(commands, text='Command', font=(theme['font'], theme['fontSize'], 'bold')).grid(row=0, column=0, sticky='w')
-        ttk.Label(commands, text='Action', font=(theme['font'], theme['fontSize'], 'bold')).grid(row=0, column=1, sticky='w')
+            left.columnconfigure(column, weight=1, uniform='command-columns')
+        picker = ttk.Combobox(left, textvariable=command, values=grouped_values(catalog), state='readonly', width=22)
+        ttk.Label(left, text='Command', font=(theme['font'], theme['fontSize'], 'bold')).grid(row=0, column=0, sticky='w')
+        ttk.Label(left, text='Action', font=(theme['font'], theme['fontSize'], 'bold')).grid(row=0, column=1, sticky='w')
         picker.grid(row=1, column=0, sticky='ew', padx=(0, 8))
         action = tk.StringVar()
-        action_picker = ttk.Combobox(commands, textvariable=action, state='readonly')
+        action_picker = ttk.Combobox(left, textvariable=action, state='readonly')
         action_picker.grid(row=1, column=1, sticky='ew', padx=(0, 8))
         environment = tk.StringVar()
-        ttk.Label(commands, text='Environment', font=(theme['font'], theme['fontSize'], 'bold')).grid(row=0, column=2, sticky='w')
-        environment_picker = ttk.Combobox(commands, textvariable=environment, state='readonly')
+        ttk.Label(left, text='Environment', font=(theme['font'], theme['fontSize'], 'bold')).grid(row=0, column=2, sticky='w')
+        environment_picker = ttk.Combobox(left, textvariable=environment, state='readonly')
         environment_picker.grid(row=1, column=2, sticky='ew')
         environment_values = {}
         field_widgets, option_rows, definitions = {}, [], []
-        ttk.Label(commands, text='Arguments', font=(theme['font'], theme['fontSize'], 'bold')).grid(row=2, column=0, columnspan=3, sticky='w', pady=(10, 2))
-        form_canvas = tk.Canvas(commands, height=45, highlightthickness=0, background=theme['surface'])
-        form_canvas.grid(row=3, column=0, columnspan=3, sticky='ew')
-        form_scroll = ttk.Scrollbar(commands, orient='vertical', command=form_canvas.yview)
-        form_scroll.grid(row=3, column=3, sticky='ns')
+        summary = ttk.Label(left, textvariable=info, wraplength=440)
+        summary.grid(row=2, column=0, columnspan=3, sticky='ew', pady=(8, 0))
+        ttk.Label(left, text='Arguments', font=(theme['font'], theme['fontSize'], 'bold')).grid(row=3, column=0, columnspan=3, sticky='w', pady=(10, 2))
+        left.rowconfigure(3, weight=0)
+        left.rowconfigure(5, weight=1)
+        form_canvas = tk.Canvas(left, highlightthickness=0, background=theme['surface'])
+        form_canvas.grid(row=5, column=0, columnspan=3, sticky='nsew')
+        form_scroll = ttk.Scrollbar(left, orient='vertical', command=form_canvas.yview)
+        form_scroll.grid(row=5, column=3, sticky='ns')
         form_canvas.configure(yscrollcommand=form_scroll.set)
         form_frame = ttk.Frame(form_canvas)
         form_window = form_canvas.create_window((0, 0), window=form_frame, anchor='nw')
@@ -202,15 +214,19 @@ def main():
             return [row for row in definition()['options'] if row['flag'] != definition()['environment']['flag']]
 
         fitting = [False]
+        output_place = [None]
         def fit_controls():
             if fitting[0]:
                 return
             fitting[0] = True
             selected = tabs.index(tabs.select())
             try:
-                if selected == 1:
-                    rows = len(field_widgets) + len(option_rows)
-                    form_canvas.configure(height=max(1, min(170, rows * 36)))
+                place = output_place[0]
+                if place and selected == 1 and not convert_only:
+                    place()
+                    return
+                if place:
+                    place()
                 root.update_idletasks()
                 page = [conversion, commands, help_tab][selected]
                 tabs.configure(height=page.winfo_reqheight())
@@ -231,52 +247,6 @@ def main():
                 widget = ttk.Entry(parent)
             return widget
 
-        def update_add_option_state():
-            used = [item['flag'].get() for item in option_rows]
-            has_more = any(row['flag'] not in used for row in visible_options())
-            add_option_btn.configure(state='normal' if has_more else 'disabled')
-
-        def add_option(initial=None):
-            available = [row for row in visible_options() if row['flag'] not in [item['flag'].get() for item in option_rows]]
-            if not available:
-                status.set('All available options already added.')
-                update_add_option_state()
-                return
-            panel = ttk.Frame(form_frame)
-            panel.grid(row=100 + len(option_rows), column=0, columnspan=3, sticky='ew', pady=3)
-            for column in range(3):
-                panel.columnconfigure(column, weight=1, uniform='option-columns')
-            flag = ttk.Combobox(panel, values=[row['flag'] for row in visible_options()], state='readonly')
-            flag.grid(row=0, column=0, sticky='ew', padx=(0, 8))
-            row = {'panel': panel, 'flag': flag, 'value': None}
-
-            def configure_value(event=None):
-                selected = next(item for item in definition()['options'] if item['flag'] == flag.get())
-                if row['value']:
-                    row['value'].destroy()
-                row['value'] = value_widget(panel, selected)
-                row['value'].grid(row=0, column=1, sticky='ew', padx=(0, 8))
-                flag.configure(state='disabled' if selected['required'] else 'readonly')
-                remove.configure(text='Required *' if selected['required'] else 'Remove', state='disabled' if selected['required'] else 'normal')
-
-            def remove_option():
-                panel.destroy()
-                option_rows.remove(row)
-                for index, item in enumerate(option_rows):
-                    item['panel'].grid_configure(row=100 + index)
-                update_add_option_state()
-                fit_controls()
-
-            remove = ttk.Button(panel, text='Remove', command=remove_option)
-            remove.grid(row=0, column=2, sticky='e')
-            flag.bind('<<ComboboxSelected>>', configure_value)
-            flag.set(initial or available[0]['flag'])
-            configure_value()
-            option_rows.append(row)
-            update_add_option_state()
-            fit_controls()
-            return row
-
         def refresh_form(event=None):
             for widget in form_frame.winfo_children():
                 widget.destroy()
@@ -294,21 +264,12 @@ def main():
                 widget = value_widget(form_frame, field)
                 widget.grid(row=index, column=1, sticky='ew', padx=(0, 8), pady=4)
                 field_widgets[field['name']] = widget
-            for field in visible_options():
-                if field['required']:
-                    add_option(field['flag'])
-            if command.get() == 'status' and any(row['flag'] == 'brief' for row in visible_options()):
-                add_option('brief')
-            # Show the first optional argument row without waiting for Add Option, so selecting a command
-            # alone reveals whether it has any optional arguments at all. A boolean defaults to false
-            # here (not value_widget()'s usual 'true'): this row appears on its own, not because the
-            # user asked to set the flag, so it must not silently turn on something like --dry-run.
-            if not option_rows and visible_options():
-                first = visible_options()[0]
-                added = add_option(first['flag'])
-                if added is not None and first.get('kind') == 'boolean' and added['value'] is not None:
-                    added['value'].set('false')
-            update_add_option_state()
+            start_row = len(visible_fields())
+            for index, field in enumerate(visible_options()):
+                ttk.Label(form_frame, text='--' + field['flag'] + (' *' if field['required'] else '')).grid(row=start_row + index, column=0, sticky='w', padx=(0, 8), pady=4)
+                widget = value_widget(form_frame, field)
+                widget.grid(row=start_row + index, column=1, sticky='ew', padx=(0, 8), pady=4)
+                option_rows.append({'flag': field['flag'], 'value': widget})
             fit_controls()
 
         def describe(event=None):
@@ -326,13 +287,24 @@ def main():
 
         picker.bind('<<ComboboxSelected>>', describe)
         action_picker.bind('<<ComboboxSelected>>', refresh_form)
-        buttons = ttk.Frame(commands)
-        buttons.grid(row=4, column=0, columnspan=3, sticky='w', pady=(4, 0))
-        add_option_btn = ttk.Button(buttons, text='Add Option', command=add_option)
-        add_option_btn.pack(side='left', padx=(0, 8))
+        buttons = ttk.Frame(left)
+        buttons.grid(row=6, column=0, columnspan=3, sticky='w', pady=(4, 0))
         describe()
+        def include_option(spec, widget):
+            value = widget.get()
+            if spec.get('kind') == 'boolean':
+                return value == 'true'
+            if spec.get('required'):
+                return True
+            return bool(str(value).strip())
+
         def command_request():
-            return {'kind': 'command', 'command': command.get(), 'variant': definition()['id'], 'environment': environment_values.get(environment.get(), ''), 'fields': {name: widget.get() for name, widget in field_widgets.items()}, 'options': [{'flag': row['flag'].get(), 'value': row['value'].get()} for row in option_rows]}
+            options = []
+            for row in option_rows:
+                spec = next(item for item in visible_options() if item['flag'] == row['flag'])
+                if include_option(spec, row['value']):
+                    options.append({'flag': row['flag'], 'value': row['value'].get()})
+            return {'kind': 'command', 'command': command.get(), 'variant': definition()['id'], 'environment': environment_values.get(environment.get(), ''), 'fields': {name: widget.get() for name, widget in field_widgets.items()}, 'options': options}
 
         run = ttk.Button(buttons, text='Run Command', style='Primary.TButton', command=lambda: start(command_request()))
         run.pack(side='left')
@@ -364,7 +336,8 @@ def main():
 
         help_picker.bind('<<ComboboxSelected>>', show_help)
         ttk.Button(help_tab, text='Show Detailed Help', command=show_help).grid(row=0, column=2, sticky='w')
-        tk.Label(root, text='OUTPUT', font=(theme['font'], 11, 'bold'), background=theme['background'], foreground=theme['teal']).grid(row=2, column=0, sticky='w', padx=20, pady=(14, 5))
+        output_label = tk.Label(root, text='OUTPUT', font=(theme['font'], 11, 'bold'), background=theme['background'], foreground=theme['teal'])
+        output_label.grid(row=2, column=0, sticky='w', padx=20, pady=(14, 5))
         frame = ttk.Frame(root)
         frame.grid(row=3, column=0, sticky='nsew', padx=20)
         frame.rowconfigure(0, weight=1)
@@ -375,12 +348,20 @@ def main():
         vertical.grid(row=0, column=1, sticky='ns')
         horizontal.grid(row=1, column=0, sticky='ew')
         output.configure(yscrollcommand=vertical.set, xscrollcommand=horizontal.set)
+        command_output.rowconfigure(0, weight=1)
+        command_output.columnconfigure(0, weight=1)
+        side = tk.Text(command_output, wrap='word', font=(theme['monospace'], theme['fontSize']), background=theme['surface'], foreground=theme['text'], selectbackground=theme['accent'], selectforeground=theme['surface'], relief='solid', borderwidth=1)
+        side.grid(row=0, column=0, sticky='nsew')
+        side_scroll = ttk.Scrollbar(command_output, command=side.yview)
+        side_scroll.grid(row=0, column=1, sticky='ns')
+        side.configure(yscrollcommand=side_scroll.set)
 
         def show(text):
-            output.configure(state='normal')
-            output.delete('1.0', 'end')
-            output.insert('1.0', text)
-            output.configure(state='disabled')
+            for widget in (output, side):
+                widget.configure(state='normal')
+                widget.delete('1.0', 'end')
+                widget.insert('1.0', text)
+                widget.configure(state='disabled')
 
         show('Ready. Conversion does not launch AI. Commands that launch AI can use your subscription.\nSelect output text and press Ctrl+C to copy.')
         footer = ttk.Frame(root, padding=20)
@@ -415,6 +396,24 @@ def main():
         open_button.grid(row=0, column=3, padx=6)
         folder_button = ttk.Button(footer, text='Open Folder', command=lambda: open_result(True), state='disabled')
         folder_button.grid(row=0, column=4)
+        def place_output():
+            selected = tabs.index(tabs.select())
+            if selected == 1 and not convert_only:
+                output_label.grid_remove()
+                frame.grid_remove()
+                tabs.grid_configure(sticky='nsew')
+                root.rowconfigure(1, weight=1)
+                root.rowconfigure(3, weight=0)
+                tabs.configure(height=max(480, root.winfo_height() - 240))
+            else:
+                output_label.grid()
+                frame.grid(row=3, column=0, sticky='nsew', padx=20)
+                tabs.grid_configure(sticky='ew')
+                root.rowconfigure(1, weight=0)
+                root.rowconfigure(3, weight=1)
+
+        output_place[0] = place_output
+
         def tab_changed(event=None):
             fit_controls()
             conversion_selected = tabs.index(tabs.select()) == 0
@@ -503,9 +502,11 @@ def main():
                 tabs.select(commands)
                 tab_changed()
                 command_height = int(tabs.cget('height'))
+                assert side.master == command_output and not frame.winfo_manager(), 'Command output is not on the right'
                 assert not open_button.winfo_manager() and not folder_button.winfo_manager(), 'Markdown Controls Visible Outside Conversion'
                 tabs.select(help_tab)
                 fit_controls()
+                assert frame.winfo_manager() == 'grid', 'Help output left the shared pane'
                 assert int(tabs.cget('height')) < command_height, 'Help Tab Wastes Output Space'
                 tabs.select(conversion)
                 tab_changed()
@@ -517,23 +518,25 @@ def main():
                     action.set(form['label'])
                     refresh_form()
                     assert len(field_widgets) == len(visible_fields()), 'Command fields missing: ' + name
-                    selected = [row['flag'].get() for row in option_rows]
+                    selected = [row['flag'] for row in option_rows]
+                    assert len(option_rows) == len(visible_options()), 'Command arguments missing: ' + name
                     assert all(row['flag'] in selected for row in visible_options() if row['required']), 'Required option missing: ' + name
             command.set('why')
             describe()
             assert len(field_widgets) == 1, 'Required positional field missing'
             command.set('start')
             describe()
-            assert len(option_rows) == 1 and str(environment_picker.cget('state')) == 'readonly', 'Required options missing'
+            assert len(option_rows) == len(visible_options()) and str(environment_picker.cget('state')) == 'readonly', 'Required options missing'
             command.set('mcp')
             describe()
             action.set('confirm')
             refresh_form()
-            assert len(field_widgets) == 1 and len(option_rows) == 2, 'MCP confirm form missing'
+            assert len(field_widgets) == 1 and len(option_rows) == len(visible_options()), 'MCP confirm form missing'
             command.set('update')
             describe()
-            assert len(option_rows) == 1 and option_rows[0]['flag'].get() == 'dry-run', 'Update auto-row missing'
-            assert option_rows[0]['value'].get() == 'false', 'Auto-shown boolean option must default to false, not silently enable --dry-run'
+            dry = next(row for row in option_rows if row['flag'] == 'dry-run')
+            assert dry['value'].get() == 'false', 'Auto-shown boolean option must default to false, not silently enable --dry-run'
+            assert all(item['flag'] != 'dry-run' for item in command_request()['options']), 'Dry-run must stay off until chosen'
             command.set('ask')
             describe()
             assert len(field_widgets) == 1, 'Ask field missing'
