@@ -52,8 +52,8 @@ def main():
         root.configure(background=theme['background'])
         root.option_add('*Font', (theme['font'], theme['fontSize']))
         style.configure('.', font=(theme['font'], theme['fontSize']), foreground=theme['text'])
-        style.configure('TFrame', background=theme['surface'])
-        style.configure('TLabel', background=theme['surface'])
+        style.configure('TFrame', background=theme['background'])
+        style.configure('TLabel', background=theme['background'])
         style.configure('TButton', background=theme['secondary'], foreground=theme['accent'], padding=(10, 6), borderwidth=1)
         style.map('TButton', background=[('active', theme['accent'])], foreground=[('active', theme['surface'])])
         style.configure('Primary.TButton', background=theme['accent'], foreground=theme['surface'])
@@ -64,7 +64,7 @@ def main():
         style.map('TCombobox', fieldbackground=[('readonly', theme['surface'])])
         style.configure('TNotebook', background=theme['background'], borderwidth=0)
         style.configure('TNotebook.Tab', padding=(14, 7), background=theme['secondary'])
-        style.map('TNotebook.Tab', background=[('selected', theme['surface'])], foreground=[('selected', theme['accent'])])
+        style.map('TNotebook.Tab', background=[('selected', theme['background'])], foreground=[('selected', theme['accent'])])
         root.title('Ask AI')
         try:
             icon_path = Path(options.app_root) / 'standalone' / 'askai.png'
@@ -121,8 +121,8 @@ def main():
         tabs.grid(row=1, column=0, sticky='ew', padx=20)
         conversion, commands, help_tab = ttk.Frame(tabs, padding=15), ttk.Frame(tabs, padding=15), ttk.Frame(tabs, padding=15)
         tabs.add(conversion, text='Convert To Markdown')
-        tabs.add(commands, text='Ask AI Commands')
-        tabs.add(help_tab, text='Ask AI Help')
+        tabs.add(commands, text='Command')
+        tabs.add(help_tab, text='Help')
         if convert_only:
             tabs.tab(commands, state='disabled')
             tabs.select(conversion)
@@ -191,7 +191,7 @@ def main():
         ttk.Label(left, text='Arguments', font=(theme['font'], theme['fontSize'], 'bold')).grid(row=3, column=0, columnspan=3, sticky='w', pady=(10, 2))
         left.rowconfigure(3, weight=0)
         left.rowconfigure(5, weight=1)
-        form_canvas = tk.Canvas(left, highlightthickness=0, background=theme['surface'])
+        form_canvas = tk.Canvas(left, highlightthickness=0, background=theme['background'])
         form_canvas.grid(row=5, column=0, columnspan=3, sticky='nsew')
         form_scroll = ttk.Scrollbar(left, orient='vertical', command=form_canvas.yview)
         form_scroll.grid(row=5, column=3, sticky='ns')
@@ -247,6 +247,18 @@ def main():
                 widget = ttk.Entry(parent)
             return widget
 
+        def choose_path(widget, kind):
+            selected = filedialog.askdirectory(initialdir=widget.get() or project.get()) if kind == 'folder' else filedialog.askopenfilename()
+            if selected:
+                widget.delete(0, 'end')
+                widget.insert(0, selected)
+
+        def add_picker(field, widget, row):
+            kind = field.get('picker')
+            if kind not in ('folder', 'file'):
+                return
+            ttk.Button(form_frame, text='Choose Folder' if kind == 'folder' else 'Choose File', command=lambda w=widget, k=kind: choose_path(w, k)).grid(row=row, column=2, sticky='e', padx=(0, 4), pady=4)
+
         def refresh_form(event=None):
             for widget in form_frame.winfo_children():
                 widget.destroy()
@@ -264,12 +276,14 @@ def main():
                 widget = value_widget(form_frame, field)
                 widget.grid(row=index, column=1, sticky='ew', padx=(0, 8), pady=4)
                 field_widgets[field['name']] = widget
+                add_picker(field, widget, index)
             start_row = len(visible_fields())
             for index, field in enumerate(visible_options()):
                 ttk.Label(form_frame, text='--' + field['flag'] + (' *' if field['required'] else '')).grid(row=start_row + index, column=0, sticky='w', padx=(0, 8), pady=4)
                 widget = value_widget(form_frame, field)
                 widget.grid(row=start_row + index, column=1, sticky='ew', padx=(0, 8), pady=4)
                 option_rows.append({'flag': field['flag'], 'value': widget})
+                add_picker(field, widget, start_row + index)
             fit_controls()
 
         def describe(event=None):
@@ -537,6 +551,12 @@ def main():
             dry = next(row for row in option_rows if row['flag'] == 'dry-run')
             assert dry['value'].get() == 'false', 'Auto-shown boolean option must default to false, not silently enable --dry-run'
             assert all(item['flag'] != 'dry-run' for item in command_request()['options']), 'Dry-run must stay off until chosen'
+            command.set('project')
+            describe()
+            assert any(isinstance(widget, ttk.Button) and widget.cget('text') == 'Choose Folder' for widget in form_frame.winfo_children()), 'Directory argument has no folder picker'
+            command.set('start')
+            describe()
+            assert any(isinstance(widget, ttk.Button) and widget.cget('text') == 'Choose Folder' for widget in form_frame.winfo_children()), 'Repo argument has no folder picker'
             command.set('ask')
             describe()
             assert len(field_widgets) == 1, 'Ask field missing'

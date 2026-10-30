@@ -87,7 +87,7 @@ Reply with what was installed, anything that failed, the plugin-ready report, an
 curl -fsSL https://raw.githubusercontent.com/aalokshah-business/AskAi/main/get.sh | bash -s -- --convert-only --yes
 ```
 
-It opens straight to the **Convert To Markdown** tab, with **Ask AI Commands** and **Ask AI Help** greyed out -- there is no coding setup for them to act on. This is the same app a full install gets, not a separate build: running plain `askai install` on any other machine still gets every tab working. Add `-NoDesktop` / `--no-desktop` too for a CLI-only install (`askai convert <file-or-URL>`) that opens nothing.
+It opens straight to the **Convert To Markdown** tab, with **Command** and **Help** greyed out -- there is no coding setup for them to act on. This is the same app a full install gets, not a separate build: running plain `askai install` on any other machine still gets every tab working. Add `-NoDesktop` / `--no-desktop` too for a CLI-only install (`askai convert <file-or-URL>`) that opens nothing.
 
 ## Platforms
 

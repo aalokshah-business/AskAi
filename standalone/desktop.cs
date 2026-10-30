@@ -125,7 +125,7 @@ internal sealed class AskWindow : Form {
             foreach (var entry in inCat) box.Items.Add(entry["name"]);
         }
     }
-    private TableLayoutPanel ArgumentRow(){var row=Table(3);row.AutoSize=false;row.Dock=DockStyle.None;row.Height=42;row.Margin=Padding.Empty;row.ColumnStyles.Add(new ColumnStyle(SizeType.Percent,33.33f));row.ColumnStyles.Add(new ColumnStyle(SizeType.Percent,33.33f));row.ColumnStyles.Add(new ColumnStyle(SizeType.Percent,33.34f));return row;}
+    private TableLayoutPanel ArgumentRow(){var row=Table(3);row.AutoSize=false;row.Dock=DockStyle.None;row.Height=42;row.Margin=Padding.Empty;row.ColumnStyles.Add(new ColumnStyle(SizeType.Absolute,148));row.ColumnStyles.Add(new ColumnStyle(SizeType.Percent,100));row.ColumnStyles.Add(new ColumnStyle(SizeType.AutoSize));return row;}
     private readonly Label commandInfo = new Label(), status = new Label();
     private readonly FlowLayoutPanel fieldsPanel = new FlowLayoutPanel(), optionsPanel = new FlowLayoutPanel();
     private readonly Dictionary<string, Control> fields = new Dictionary<string, Control>();
@@ -175,6 +175,11 @@ internal sealed class AskWindow : Form {
         if (directory) { using (var dialog = new FolderBrowserDialog { SelectedPath = project.Text }) if (dialog.ShowDialog(this) == DialogResult.OK) target.Text = dialog.SelectedPath; }
         else using (var dialog = new OpenFileDialog { Filter = "All files|*.*" }) if (dialog.ShowDialog(this) == DialogResult.OK) target.Text = dialog.FileName;
     }
+    private void AddPicker(TableLayoutPanel row, Control target, Dictionary<string, object> definition) {
+        string picker = TextOf(definition, "picker");
+        if (picker != "folder" && picker != "file") return;
+        row.Controls.Add(Button(picker == "folder" ? "Choose Folder" : "Choose File", delegate { Browse(target, picker == "folder"); }), 2, 0);
+    }
     private Control Input(Dictionary<string, object> definition) {
         if (TextOf(definition, "kind") == "boolean") { var boolean = new ComboBox { DropDownStyle = ComboBoxStyle.DropDownList }; boolean.Items.AddRange(new object[] { "true", "false" }); boolean.SelectedIndex = 1; return boolean; }
         if (definition.ContainsKey("choices")) { var combo = new ComboBox { DropDownStyle = ComboBoxStyle.DropDownList }; foreach (object value in (System.Collections.IEnumerable)definition["choices"]) combo.Items.Add(value); return combo; }
@@ -194,7 +199,7 @@ internal sealed class AskWindow : Form {
             var row = ArgumentRow();
             Label(row, TextOf(field, "label") + (Required(field) ? " *" : " (Optional)"), 0, 0);
             var control = Input(field); control.Dock = DockStyle.Fill; row.Controls.Add(control, 1, 0); fields[TextOf(field, "name")] = control;
-            string name = TextOf(field, "name"); if (name.Contains("path") || name.Contains("directory") || name.Contains("file")) row.Controls.Add(Button("Browse...", delegate { Browse(control, name.Contains("directory") || name.Contains("path")); }), 2, 0);
+            AddPicker(row, control, field);
             fieldsPanel.Controls.Add(row);
         }
         foreach (var option in VisibleOptions) {
@@ -202,8 +207,7 @@ internal sealed class AskWindow : Form {
             var table = (TableLayoutPanel)row.Panel;
             Label(table, "--" + row.Flag + (Required(option) ? " *" : ""), 0, 0);
             row.Value.Dock = DockStyle.Fill; table.Controls.Add(row.Value, 1, 0);
-            string flag = row.Flag;
-            if (flag.Contains("path") || flag.Contains("directory") || flag.Contains("file") || flag.Contains("folder")) table.Controls.Add(Button("Browse...", delegate { Browse(row.Value, flag.Contains("directory") || flag.Contains("path") || flag.Contains("folder")); }), 2, 0);
+            AddPicker(table, row.Value, option);
             optionRows.Add(row); optionsPanel.Controls.Add(row.Panel);
         }
         FitTab();if(IsHandleCreated)ApplyTheme();
@@ -256,7 +260,7 @@ internal sealed class AskWindow : Form {
         };
         layout.Controls.Add(header,0,0);
         var projectRow = Table(3); projectRow.ColumnStyles.Add(new ColumnStyle(SizeType.AutoSize)); projectRow.ColumnStyles.Add(new ColumnStyle(SizeType.Percent,100)); projectRow.ColumnStyles.Add(new ColumnStyle(SizeType.AutoSize)); Label(projectRow,"Project Folder",0,0); project.Dock=DockStyle.Fill; project.Text=Directory.Exists(projectPath)?projectPath:Environment.GetFolderPath(Environment.SpecialFolder.UserProfile); projectRow.Controls.Add(project,1,0); projectRow.Controls.Add(Button("Browse...",delegate{Browse(project,true);}),2,0); layout.Controls.Add(projectRow,0,1);
-        tabs = new TabControl { Dock=DockStyle.Fill, Padding=new Point(22,8) }; var conversion = new TabPage("Convert To Markdown"); var command = new TabPage("Ask AI Commands"); var helpTab = new TabPage("Ask AI Help"); tabs.TabPages.Add(conversion); tabs.TabPages.Add(command); tabs.TabPages.Add(helpTab); layout.Controls.Add(tabs,0,2);
+        tabs = new TabControl { Dock=DockStyle.Fill, Padding=new Point(22,8) }; var conversion = new TabPage("Convert To Markdown"); var command = new TabPage("Command"); var helpTab = new TabPage("Help"); tabs.TabPages.Add(conversion); tabs.TabPages.Add(command); tabs.TabPages.Add(helpTab); layout.Controls.Add(tabs,0,2);
         if (convertOnly) { command.Enabled = false; tabs.SelectedTab = conversion; }
         var conversionLayout=Table(3);conversionContent=conversionLayout; conversionLayout.Dock=DockStyle.Fill; conversionLayout.ColumnStyles.Add(new ColumnStyle(SizeType.Absolute,170)); conversionLayout.ColumnStyles.Add(new ColumnStyle(SizeType.Percent,100)); conversionLayout.ColumnStyles.Add(new ColumnStyle(SizeType.AutoSize)); conversion.Controls.Add(conversionLayout);
         var modes=new FlowLayoutPanel{AutoSize=true,Dock=DockStyle.Fill}; fileMode.Text="Local File";urlMode.Text="YouTube / Web URL";folderMode.Text="Local Folder";fileMode.AutoSize=urlMode.AutoSize=folderMode.AutoSize=true;modes.Controls.Add(fileMode);modes.Controls.Add(urlMode);modes.Controls.Add(folderMode);conversionLayout.Controls.Add(modes,1,0);Label(conversionLayout,"Input type",0,0,true);
@@ -287,7 +291,7 @@ internal sealed class AskWindow : Form {
         var theme=AskAI.Json.Deserialize<Dictionary<string,string>>(File.ReadAllText(Path.Combine(root,"standalone","desktop-theme.json")));
         Func<string,Color> color=key=>ColorTranslator.FromHtml(theme[key]);
         Action<Control> apply=null;apply=control=>{
-            control.ForeColor=color("text");control.BackColor=color("surface");
+            bool input=control is TextBox||control is ComboBox;control.ForeColor=color("text");control.BackColor=input?color("surface"):color("background");
             if(control!=output&&control.Font.FontFamily.Name!=theme["font"])control.Font=new Font(theme["font"],control.Font.Size,control.Font.Style);
             var button=control as Button;if(button!=null){button.FlatStyle=FlatStyle.Flat;button.FlatAppearance.BorderColor=color("border");button.BackColor=color("secondary");button.ForeColor=color("accent");if(button==run||button==convert){button.BackColor=color("accent");button.ForeColor=color("surface");}}
             var combo=control as ComboBox;if(combo!=null)combo.FlatStyle=FlatStyle.Flat;
@@ -295,7 +299,7 @@ internal sealed class AskWindow : Form {
             if(control==status)control.ForeColor=color("teal");
             foreach(Control child in control.Controls)apply(child);
         };apply(this);BackColor=color("background");if(output.Font.FontFamily.Name!=theme["monospace"])output.Font=new Font(theme["monospace"],10);output.BackColor=color("surface");
-        if(tabs.DrawMode!=TabDrawMode.OwnerDrawFixed){tabs.DrawMode=TabDrawMode.OwnerDrawFixed;tabs.DrawItem+=delegate(object sender,DrawItemEventArgs e){bool active=e.Index==tabs.SelectedIndex;using(var brush=new SolidBrush(color(active?"surface":"secondary")))e.Graphics.FillRectangle(brush,e.Bounds);TextRenderer.DrawText(e.Graphics,tabs.TabPages[e.Index].Text,tabs.Font,e.Bounds,color(active?"accent":"text"),TextFormatFlags.HorizontalCenter|TextFormatFlags.VerticalCenter);};}
+        if(tabs.DrawMode!=TabDrawMode.OwnerDrawFixed){tabs.DrawMode=TabDrawMode.OwnerDrawFixed;tabs.DrawItem+=delegate(object sender,DrawItemEventArgs e){bool active=e.Index==tabs.SelectedIndex;using(var brush=new SolidBrush(color(active?"background":"secondary")))e.Graphics.FillRectangle(brush,e.Bounds);TextRenderer.DrawText(e.Graphics,tabs.TabPages[e.Index].Text,tabs.Font,e.Bounds,color(active?"accent":"text"),TextFormatFlags.HorizontalCenter|TextFormatFlags.VerticalCenter);};}
     }
     private void StopJob(){try{if(job!=null&&!job.HasExited)Process.Start(new ProcessStartInfo("taskkill.exe","/pid "+job.Id+" /t /f"){UseShellExecute=false,CreateNoWindow=true});}catch(Exception e){status.Text=e.Message;}}
     private async Task Work(Dictionary<string,object> request){
@@ -316,6 +320,8 @@ internal sealed class AskWindow : Form {
             commands.SelectedItem="start";if(optionRows.Count!=VisibleOptions.Count()||!environments.Enabled)throw new Exception("Required options missing");
             commands.SelectedItem="mcp";actions.SelectedIndex=variants.Select(v=>TextOf(v,"label")).ToList().IndexOf("confirm");if(fields.Count!=1||optionRows.Count!=VisibleOptions.Count())throw new Exception("MCP confirm fields missing");
             commands.SelectedItem="update";var dry=optionRows.First(row=>row.Flag=="dry-run");if(ControlValue(dry.Value)!="false")throw new Exception("Auto-shown boolean option must default to false, not silently enable --dry-run");if(((System.Collections.IEnumerable)CommandRequest()["options"]).Cast<Dictionary<string,object>>().Any(row=>TextOf(row,"flag")=="dry-run"))throw new Exception("Dry-run must stay off until chosen");
+            commands.SelectedItem="project";if(!fieldsPanel.Controls.Cast<Control>().SelectMany(row=>row.Controls.OfType<Button>()).Any(button=>button.Text=="Choose Folder"))throw new Exception("Directory argument has no folder picker");
+            commands.SelectedItem="start";if(!optionsPanel.Controls.Cast<Control>().SelectMany(row=>row.Controls.OfType<Button>()).Any(button=>button.Text=="Choose Folder"))throw new Exception("Repo argument has no folder picker");
             commands.SelectedItem="ask";if(fields.Count!=1)throw new Exception("Ask field missing");var askField=fields.Values.First() as ComboBox;if(askField==null||askField.DropDownStyle!=ComboBoxStyle.DropDown||askField.Items.Count==0)throw new Exception("Ask suggestions dropdown missing or locked to exact matches");askField.Text="free text search, not in the list";if(askField.Text!="free text search, not in the list")throw new Exception("Ask field must still accept free text");
             tabs.SelectedIndex=1;FitTab();if(outputGroup.Parent!=commandOutput||tabSize.SizeType!=SizeType.Percent)throw new Exception("Command output is not on the right");tabs.SelectedIndex=2;FitTab();if(outputGroup.Parent!=windowLayout||tabSize.SizeType!=SizeType.Absolute||tabSize.Height>200)throw new Exception("Help Tab Wastes Output Space");tabs.SelectedIndex=0;FitTab();if(outputGroup.Parent!=windowLayout)throw new Exception("Convert output left the shared pane");
         }

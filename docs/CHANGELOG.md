@@ -4,6 +4,10 @@ AskAI follows semantic versioning from 1.0.0 (see [RELEASING.md](RELEASING.md)).
 
 ## Unreleased
 
+- Ask AI desktop: a directory, path, or repo argument has Choose Folder, and a file argument has Choose File, so the path does not have to be pasted.
+
+- Ask AI desktop: the command tab is named Command and the help tab is named Help. The window fill is a very light peacock, in the same role as DLabs Work's very light orange. Text fields and output stay a lighter surface.
+
 - Ask AI desktop: the Commands tab lists every argument for the selected command on the left, and shows the command output on the right. Blank optional arguments are left off the command. A boolean stays off until it is set to true.
 
 - Ask AI desktop: Run on `update` was sending `--dry-run` because a closed dropdown kept the text `true` after the selection was `false`, so the command only printed the preview. The switch now starts off, and the run reads the selection.

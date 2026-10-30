@@ -15,6 +15,9 @@ test('forms identify mandatory fields and options before invoking a process',()=
   const confirm=schema('mcp',optionTypes).find(row=>row.label==='confirm');
   assert.equal(confirm.options.filter(row=>row.required).length,3);
   assert.throws(()=>buildArgs('mcp',{variant:confirm.id,fields:{server:'serena'}},optionTypes),/Required: Tool/);
+  assert.equal(schema('project',optionTypes)[0].positionals.find(row=>row.name==='directory').picker,'folder');
+  assert.equal(schema('start',optionTypes)[0].options.find(row=>row.flag==='repo').picker,'folder');
+  assert.equal(schema('install',optionTypes)[0].options.find(row=>row.flag==='no-path').picker,undefined);
 });
 test('typed options, branches and paths reach the CLI without shell quoting',()=>{
   const options=[{flag:'host',value:'codex'},{flag:'json',value:'true'}];
