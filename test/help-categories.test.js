@@ -41,6 +41,15 @@ test('howto walks a category in run order with each command usage', () => {
   assert.equal(help.groupOf('howto').group, 'system');
 });
 
+test('AI CLI category lists the three chat commands by slash name', () => {
+  const r = cli(['help', 'ai-cli']);
+  assert.equal(r.code, 0);
+  for (const name of ['/askai-cli', '/askai-gui', '/askai-plugins']) assert.match(r.out, new RegExp('^  ' + name.replace(/[|\\{}()[\]^$+*?.]/g, '\\$&') + '\\s+', 'm'), name);
+  assert.equal(cli(['help', 'category', 'ai cli']).out, r.out);
+  assert.match(cli(['help']).out, /ai-cli\s+3 commands · AI CLI/);
+  assert.match(cli(['howto', 'ai-cli']).out, /1\. \/askai-cli/);
+});
+
 test('command help includes detailed options and disambiguates category names', () => {
   assert.match(cli(['help', 'check']).out, /Usage: askai check \[dir\]/);
   assert.match(cli(['help', 'command', 'setup']).out, /Usage: askai setup/);

@@ -89,7 +89,7 @@ test('ask with no topic lists groups, and a topic prints one answer', () => {
 
 test('the short banner names seven categories and no flags', () => {
   const out = cli(['help']).out;
-  for (const name of ['work', 'project', 'setup', 'health', 'cost', 'learn', 'system']) assert.match(out, new RegExp('^  ' + name + '\\s+\\d+ commands', 'm'));
+  for (const name of ['work', 'project', 'setup', 'health', 'cost', 'learn', 'system', 'ai-cli']) assert.match(out, new RegExp('^  ' + name + '\\s+\\d+ commands', 'm'));
   assert.doesNotMatch(out, /--[a-z]/);
   assert.strictEqual(cli([]).code, 0);
 });

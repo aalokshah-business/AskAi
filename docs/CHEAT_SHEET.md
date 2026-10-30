@@ -100,7 +100,7 @@ Global flags, on any command: `--yes` `--dry-run` `--json` `--project`. A comman
 
 ## Complete command index
 
-The commands below are also implemented, grouped by the same categories as `askai help` (work, project, setup, health, cost, learn, system). With the twelve and the additional commands above they cover every name in `askai help --list`. Use `askai help <command> --advanced` for less common flags. Printable versions: `docs/AskAI-setup-A3.png` (one-time setup, setup, health, system), `docs/AskAI-working-A3.png` (working loop, work, project, cost, learn) and both as `docs/AskAI-cheatsheet.pdf`.
+The commands below are also implemented, grouped by the same categories as `askai help` (work, project, setup, health, cost, learn, system, ai-cli). With the twelve and the additional commands above they cover every name in `askai help --list`. Use `askai help <command> --advanced` for less common flags. Printable versions: `docs/AskAI-setup-A3.png` (one-time setup, setup, health, system), `docs/AskAI-working-A3.png` (working loop, work, project, cost, learn) and both as `docs/AskAI-cheatsheet.pdf`.
 
 ### Work (active coding & session flow)
 
@@ -167,6 +167,14 @@ The commands below are also implemented, grouped by the same categories as `aska
 | `askai statusline` | Claude Code's status line command (reads the session JSON on stdin): model, context, cache; records snapshots for askai savings. | `askai statusline [--demo]` |
 | `askai version` | Print the AskAI version. | `askai version [--all] [--json]` |
 | `askai howto` | Show one category in the order to run it, with the arguments each command takes. | `askai howto [category] \| category NAME` |
+
+### AI CLI
+
+| Command | Purpose | Form |
+|---|---|---|
+| `/askai-cli` | open the AskAI terminal | `/askai-cli` |
+| `/askai-gui` | open the Ask AI desktop | `/askai-gui` |
+| `/askai-plugins` | one-time plugin setup | `/askai-plugins` |
 
 Legacy spellings `continue`, `etiquette`, `checkpoint`, `work`, `peak`, `projects`, and `cheat` still route to their current commands. Prefer `resume`, `guide`, `session pause`, `guide work`, `tips peak`, `project list`, and `direction` in new scripts.
 
