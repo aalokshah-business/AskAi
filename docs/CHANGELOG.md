@@ -4,6 +4,8 @@ AskAI follows semantic versioning from 1.0.0 (see [RELEASING.md](RELEASING.md)).
 
 ## Unreleased
 
+- The first run of `/askai-cli` and `/askai-gui` reads the project and writes the profile once the folder is known. It asks a person only afterwards, and only for a description or a type the files do not show, one question at a time.
+
 - `askai help` adds the AI CLI category. It lists `/askai-cli`, `/askai-gui`, and `/askai-plugins`.
 
 - `askai howto <category>` (System) walks that category in run order and shows each command's usage. Categories and aliases match `askai help`: setup, cost, learn, project, work, health, system.

@@ -56,17 +56,16 @@ test('default prepare launches without analysis, initialization, or review-marke
   const args = ['cli', '--prepare', '--json', '--path', proj];
   const env = { ASKAI_HOME: process.env.ASKAI_HOME };
   const fresh = cli(args, { env });
-  assert.strictEqual(fresh.code, 0, fresh.err);
+  assert.strictEqual(fresh.code, 2, fresh.err + fresh.out);
   const body = JSON.parse(fresh.out);
-  assert.strictEqual(body.action, 'launch');
-  assert.strictEqual(body.setup, 'not-initialized');
-  assert.strictEqual(body.review.skipped, true);
-  assert.strictEqual(body.install.skipped, true);
-  assert.deepStrictEqual(fs.readdirSync(proj), ['package.json']);
-  assert.ok(!fs.existsSync(process.env.ASKAI_HOME), 'no registration or install writes');
+  assert.strictEqual(body.need, 'about');
+  assert.ok(!body.action);
+  assert.ok(fs.existsSync(path.join(proj, 'AGENTS.md')), 'the profile is prepared from the project before the question');
+  const skipped = cli([...args, '--yes'], { env });
+  assert.strictEqual(JSON.parse(skipped.out).need, 'about', '--yes must not skip the first question');
 
   const work = path.join(proj, '.ai-work');
-  fs.mkdirSync(work);
+  fs.mkdirSync(work, { recursive: true });
   fs.writeFileSync(path.join(work, 'askai-init.json'), '{}');
   const marker = path.join(work, 'ai-review.json');
   fs.writeFileSync(marker, 'intentionally unreadable review marker');
@@ -79,7 +78,6 @@ test('default prepare launches without analysis, initialization, or review-marke
   assert.strictEqual(next.init, 'skipped');
   assert.strictEqual(fs.readFileSync(marker, 'utf8'), 'intentionally unreadable review marker');
   assert.strictEqual(fs.readFileSync(path.join(proj, 'AGENTS.md'), 'utf8'), 'Keep this text.');
-  assert.ok(!fs.existsSync(path.join(proj, 'docs')));
 }));
 
 test('explicit --review initializes a named folder offline and launches only after review done', () => withHome(root => {
@@ -158,9 +156,29 @@ test('cli --prepare requires a description before a review', () => withHome(root
   assert.match(fs.readFileSync(path.join(proj, 'AGENTS.md'), 'utf8'), /A shop for members/);
 }));
 
-test('cli --prepare --for gui points the launch instruction at askai gui, not the terminal', () => withHome(root => {
+test('a first run asks the next setup question only, then initializes and launches', () => withHome(root => {
   const proj = path.join(root, 'shop');
   fs.mkdirSync(proj);
+  fs.writeFileSync(path.join(proj, 'package.json'), JSON.stringify({ name: 'shop', scripts: { test: 'node --test', build: 'node build.js' } }));
+  const env = { ASKAI_HOME: process.env.ASKAI_HOME, ASKAI_CLI_INSTALL: '0' };
+  const args = ['cli', '--prepare', '--json', '--offline', '--path', proj];
+  const about = JSON.parse(cli(args, { env }).out);
+  assert.strictEqual(about.need, 'about');
+  assert.ok(fs.existsSync(path.join(proj, 'AGENTS.md')), 'profile is written before the description question');
+  const type = JSON.parse(cli([...args, '--about', 'A shop for members'], { env }).out);
+  assert.strictEqual(type.need, 'type');
+  const ready = cli([...args, '--about', 'A shop for members', '--type', 'library'], { env });
+  assert.strictEqual(ready.code, 0, ready.err + ready.out);
+  const body = JSON.parse(ready.out);
+  assert.strictEqual(body.action, 'launch');
+  assert.strictEqual(body.setup, 'initialized');
+  assert.match(fs.readFileSync(path.join(proj, 'AGENTS.md'), 'utf8'), /A shop for members/);
+}));
+
+test('cli --prepare --for gui points the launch instruction at askai gui, not the terminal', () => withHome(root => {
+  const proj = path.join(root, 'shop');
+  fs.mkdirSync(path.join(proj, '.ai-work'), { recursive: true });
+  fs.writeFileSync(path.join(proj, '.ai-work', 'askai-init.json'), '{}');
   const env = { ASKAI_HOME: process.env.ASKAI_HOME, ASKAI_CLI_INSTALL: '0' };
   const term = cli(['cli', '--prepare', '--json', '--path', proj], { env });
   assert.strictEqual(term.code, 0, term.err + term.out);

@@ -1697,9 +1697,50 @@ async function cmdPrepare(o) {
     if (picked.need) return emit(2, picked);
     const dir = picked.path;
     if (!o.review) {
+      const stateFile = path.join(dir, session.DIR, 'askai-init.json');
+      const readState = () => { try { return JSON.parse(fs.readFileSync(stateFile, 'utf8')); } catch { return null; } };
+      const savePending = pending => {
+        const current = readState() || { version: 1, files: {}, overrides: {} };
+        if (pending.length) current.setupPending = pending; else delete current.setupPending;
+        fs.mkdirSync(path.dirname(stateFile), { recursive: true });
+        fs.writeFileSync(stateFile, JSON.stringify(current, null, 2));
+      };
+      let state = readState();
+      let prepared = 'skipped';
+      if (!state && !o.dry) {
+        const name = registrationName({ ...o, name: o.name || picked.project }, dir);
+        picked.project = name;
+        project.init(dir, { yes: true, about: o.about, type: o.type }, buildCtx({ ...o, yes: true }, true));
+        registerProject({ ...o, name }, dir);
+        state = readState() || { version: 1, files: {}, overrides: {} };
+        const pending = cliPrepare.profileQuestions(project.detect(dir), o).map(item => item.id);
+        savePending(pending);
+        state = readState();
+        prepared = 'ran';
+      }
+      if (state && Array.isArray(state.setupPending)) {
+        let pending = state.setupPending.filter(id => id === 'about' || id === 'type');
+        const given = { about: String(o.about || '').trim(), type: String(o.type || '').trim() };
+        if (pending.length && given[pending[0]]) {
+          pending = pending.slice(1);
+          if (!o.dry) {
+            project.init(dir, { yes: true, refresh: true, about: o.about, type: o.type }, buildCtx({ ...o, yes: true }, true));
+            savePending(pending);
+            prepared = 'ran';
+          }
+        }
+        if (pending.length) {
+          const next = cliPrepare.profileQuestions({ about: pending[0] === 'about' ? '' : 'known', type: pending[0] === 'type' ? 'other' : 'library', commands: { test: 'x', build: 'x' } })[0];
+          return emit(2, {
+            need: pending[0], question: next.ask, default: '',
+            project: picked.project || path.basename(dir), path: dir, how: picked.how,
+            instruction: `The project profile is already prepared from the files. Ask this one question and stop. When they answer, run prepare again for this same folder with --${pending[0]}. Do not ask the next question in this turn, and do not launch while prepare exits 2.`,
+          });
+        }
+      }
       return emit(0, {
         action: 'launch', project: picked.project || path.basename(dir), path: dir, how: picked.how,
-        init: 'skipped', install: { skipped: true },
+        init: prepared, install: { skipped: true },
         review: { skipped: true, state: 'not-checked' },
         setup: fs.existsSync(path.join(dir, session.DIR, 'askai-init.json')) ? 'initialized' : 'not-initialized',
         instruction: `Open ${launch.noun} with ${launch.cmd} in this project folder. No source analysis or AI review was run. Request --review explicitly for setup and review.`,
