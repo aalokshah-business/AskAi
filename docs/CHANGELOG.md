@@ -4,6 +4,8 @@ AskAI follows semantic versioning from 1.0.0 (see [RELEASING.md](RELEASING.md)).
 
 ## Unreleased
 
+- Ask AI desktop: the command summary sits under the output, above the exit line. A short option such as JSON stays beside its name, and a longer option stays at the bottom of the list.
+
 - Ask AI desktop: the window background is a lighter peacock, and text fields stay white.
 
 - Ask AI desktop: running a command no longer flashes a command window. Argument names and Choose Folder stay fully visible, and a number or other value box says what to type underneath. The note above the arguments is smaller, and Run, Help, and Open Terminal sit on one line. Convert To Markdown is unchanged.

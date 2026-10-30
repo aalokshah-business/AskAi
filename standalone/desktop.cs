@@ -110,7 +110,7 @@ internal sealed class AskWindow : Form {
     private Panel commandOutput;
     private GroupBox outputGroup;
     private TableLayoutPanel windowLayout;
-    private RowStyle outputSize;
+    private RowStyle outputSize, summarySize;
     private TableLayoutPanel selector;
     private Label actionCaption;
     private RowStyle actionRow;
@@ -155,17 +155,20 @@ internal sealed class AskWindow : Form {
             if (outputGroup.Parent != commandOutput) { windowLayout.Controls.Remove(outputGroup); commandOutput.Controls.Add(outputGroup); outputGroup.Dock = DockStyle.Fill; }
             tabSize.SizeType = SizeType.Percent; tabSize.Height = 100;
             outputSize.SizeType = SizeType.Absolute; outputSize.Height = 0;
+            if (summarySize != null) { summarySize.SizeType = SizeType.AutoSize; commandInfo.Visible = true; }
         } else if (outputGroup != null && windowLayout != null) {
             if (outputGroup.Parent != windowLayout) { commandOutput.Controls.Remove(outputGroup); windowLayout.Controls.Add(outputGroup, 0, 3); }
             tabSize.SizeType = SizeType.Absolute;
             Control content = tabs.SelectedIndex == 2 ? helpContent : tabs.SelectedIndex == 0 ? conversionContent : null;
             tabSize.Height = content != null ? content.GetPreferredSize(new Size(Math.Max(300, tabs.ClientSize.Width - 8), 0)).Height + 32 : (tabs.SelectedIndex == 2 ? 112 : 218);
             outputSize.SizeType = SizeType.Percent; outputSize.Height = 100;
+            if (summarySize != null) { summarySize.SizeType = SizeType.Absolute; summarySize.Height = 0; commandInfo.Visible = false; }
         }
         if (selector != null) {
             int width = selector.ClientSize.Width > 40 ? selector.ClientSize.Width - SystemInformation.VerticalScrollBarWidth : 440;
             fieldsPanel.Width = optionsPanel.Width = width;
-            foreach (Control row in fieldsPanel.Controls.Cast<Control>().Concat(optionsPanel.Controls.Cast<Control>())) { row.Width = width; row.MaximumSize = new Size(width, 0); foreach (Label label in row.Controls.OfType<Label>()) label.MaximumSize = new Size(Math.Max(80, width - 16), 0); }
+            foreach (Control row in fieldsPanel.Controls.Cast<Control>().Concat(optionsPanel.Controls.Cast<Control>())) { row.Width = width; row.MaximumSize = new Size(width, 0); if ((row.Tag as string) == "beside") continue; foreach (Label label in row.Controls.OfType<Label>()) label.MaximumSize = new Size(Math.Max(80, width - 16), 0); }
+            if (commandInfo != null) commandInfo.MaximumSize = new Size(Math.Max(200, ClientSize.Width - 48), 0);
         }
     }
     private string EnvironmentValue(){if(environments.SelectedIndex<=0)return "";return TextOf(Objects(EnvironmentForm["choices"]).ElementAt(environments.SelectedIndex-1),"value");}
@@ -178,6 +181,8 @@ internal sealed class AskWindow : Form {
         if (directory) { using (var dialog = new FolderBrowserDialog { SelectedPath = project.Text }) if (dialog.ShowDialog(this) == DialogResult.OK) target.Text = dialog.SelectedPath; }
         else using (var dialog = new OpenFileDialog { Filter = "All files|*.*" }) if (dialog.ShowDialog(this) == DialogResult.OK) target.Text = dialog.FileName;
     }
+    private static bool Beside(Dictionary<string, object> definition) { return TextOf(definition, "picker").Length == 0 && TextOf(definition, "hint").Length == 0 && !definition.ContainsKey("suggestions") && (TextOf(definition, "kind") == "boolean" || definition.ContainsKey("choices")); }
+    private TableLayoutPanel BesideRow() { var row = new TableLayoutPanel { AutoSize = true, AutoSizeMode = AutoSizeMode.GrowAndShrink, Dock = DockStyle.None, ColumnCount = 2, Margin = Padding.Empty, Padding = new Padding(4, 1, 4, 1), Tag = "beside" }; row.ColumnStyles.Add(new ColumnStyle(SizeType.AutoSize)); row.ColumnStyles.Add(new ColumnStyle(SizeType.Percent, 100)); row.RowStyles.Add(new RowStyle(SizeType.AutoSize)); return row; }
     private void AddPicker(TableLayoutPanel row, Control target, Dictionary<string, object> definition) {
         string picker = TextOf(definition, "picker");
         if (picker != "folder" && picker != "file") return;
@@ -198,23 +203,20 @@ internal sealed class AskWindow : Form {
     private void RefreshForm() {
         fieldsPanel.Controls.Clear(); fields.Clear(); optionsPanel.Controls.Clear(); optionRows.Clear();
         string previous=environments.Text;environments.Items.Clear();environments.Items.Add(TextOf(EnvironmentForm,"defaultLabel"));foreach(var choice in Objects(EnvironmentForm["choices"]))environments.Items.Add(choice["label"]);environments.Enabled=Convert.ToBoolean(EnvironmentForm["supported"]);environments.SelectedIndex=environments.Items.Contains(previous)?environments.Items.IndexOf(previous):0;
-        foreach (var field in VisibleFields) {
-            var row = ArgumentRow();
-            SetCaption(row, TextOf(field, "label") + (Required(field) ? " *" : " (Optional)"));
-            var control = Input(field); control.Dock = DockStyle.Fill; control.Margin = new Padding(4, 2, 4, 2); row.Controls.Add(control, 0, 1); fields[TextOf(field, "name")] = control;
-            AddPicker(row, control, field);
-            SetHint(row, TextOf(field, "hint"));
-            fieldsPanel.Controls.Add(row);
-        }
-        foreach (var option in VisibleOptions) {
-            var row = new OptionRow { Panel = ArgumentRow(), Flag = TextOf(option, "flag"), Value = Input(option) };
-            var table = (TableLayoutPanel)row.Panel;
-            SetCaption(table, "--" + row.Flag + (Required(option) ? " *" : ""));
-            row.Value.Dock = DockStyle.Fill; row.Value.Margin = new Padding(4, 2, 4, 2); table.Controls.Add(row.Value, 0, 1);
-            AddPicker(table, row.Value, option);
-            SetHint(table, TextOf(option, "hint"));
-            optionRows.Add(row); optionsPanel.Controls.Add(row.Panel);
-        }
+        Action<Dictionary<string, object>, string, bool, FlowLayoutPanel> add = (definition, caption, option, panel) => {
+            bool beside = Beside(definition);
+            var row = beside ? BesideRow() : ArgumentRow();
+            var control = Input(definition); control.Dock = DockStyle.Fill; control.Margin = new Padding(4, 2, 4, 2);
+            if (beside) { var label = new Label { Text = caption, AutoSize = true, Anchor = AnchorStyles.Left, Margin = new Padding(4, 6, 8, 4) }; row.Controls.Add(label, 0, 0); row.Controls.Add(control, 1, 0); }
+            else { SetCaption(row, caption); row.Controls.Add(control, 0, 1); AddPicker(row, control, definition); SetHint(row, TextOf(definition, "hint")); }
+            if (option) optionRows.Add(new OptionRow { Panel = row, Flag = TextOf(definition, "flag"), Value = control });
+            else fields[TextOf(definition, "name")] = control;
+            panel.Controls.Add(row);
+        };
+        foreach (var field in VisibleFields.Where(Beside)) add(field, TextOf(field, "label") + (Required(field) ? " *" : " (Optional)"), false, fieldsPanel);
+        foreach (var option in VisibleOptions.Where(Beside)) add(option, "--" + TextOf(option, "flag") + (Required(option) ? " *" : ""), true, fieldsPanel);
+        foreach (var field in VisibleFields.Where(field => !Beside(field))) add(field, TextOf(field, "label") + (Required(field) ? " *" : " (Optional)"), false, optionsPanel);
+        foreach (var option in VisibleOptions.Where(option => !Beside(option))) add(option, "--" + TextOf(option, "flag") + (Required(option) ? " *" : ""), true, optionsPanel);
         FitTab();if(IsHandleCreated)ApplyTheme();
     }
     // A blank optional argument is not sent. A boolean is sent only when it is true, so a listed
@@ -249,9 +251,9 @@ internal sealed class AskWindow : Form {
                 if (modeProcess.ExitCode == 0) convertOnly = Convert.ToBoolean(AskAI.Json.Deserialize<Dictionary<string, object>>(modeJson)["convertOnly"]);
             }
         } catch { /* best-effort: a failed check just leaves every tab enabled */ }
-        var layout = new TableLayoutPanel { Dock = DockStyle.Fill, ColumnCount = 1, RowCount = 5, Padding = new Padding(14) }; windowLayout = layout; Controls.Add(layout); layout.ColumnStyles.Add(new ColumnStyle(SizeType.Percent,100));
-        outputSize = new RowStyle(SizeType.Percent, 100);
-        layout.RowStyles.Add(new RowStyle(SizeType.AutoSize)); layout.RowStyles.Add(new RowStyle(SizeType.AutoSize)); layout.RowStyles.Add(tabSize); layout.RowStyles.Add(outputSize); layout.RowStyles.Add(new RowStyle(SizeType.AutoSize));
+        var layout = new TableLayoutPanel { Dock = DockStyle.Fill, ColumnCount = 1, RowCount = 6, Padding = new Padding(14) }; windowLayout = layout; Controls.Add(layout); layout.ColumnStyles.Add(new ColumnStyle(SizeType.Percent,100));
+        outputSize = new RowStyle(SizeType.Percent, 100); summarySize = new RowStyle(SizeType.Absolute, 0);
+        layout.RowStyles.Add(new RowStyle(SizeType.AutoSize)); layout.RowStyles.Add(new RowStyle(SizeType.AutoSize)); layout.RowStyles.Add(tabSize); layout.RowStyles.Add(outputSize); layout.RowStyles.Add(summarySize); layout.RowStyles.Add(new RowStyle(SizeType.AutoSize));
         var header = new Panel { Dock = DockStyle.Fill, Height = 64, Margin = new Padding(0,0,0,10) };
         header.Paint += delegate (object s, PaintEventArgs e) {
             var t = ReadTheme(); e.Graphics.SmoothingMode = System.Drawing.Drawing2D.SmoothingMode.AntiAlias;
@@ -277,17 +279,17 @@ internal sealed class AskWindow : Form {
         convert.Text="Convert";convert.AutoSize=true;convert.Click+=async delegate{await Work(new Dictionary<string,object>{{"kind","convert"},{"source",source.Text.Trim()},{"folder",folder.Text.Trim()}});};conversionLayout.Controls.Add(convert,1,3);
         var note=new Label{Text="Local extraction/OCR. A blank output folder uses the file's folder, or the project for a URL. Existing files stay.\nYouTube needs captions. A folder converts the files inside it only, not subfolders.",AutoSize=true,Dock=DockStyle.Top,Font=new Font(Font.FontFamily,8.25f)};conversionLayout.Controls.Add(note,1,4);conversionLayout.SetColumnSpan(note,2);
         var commandSplit=new TableLayoutPanel{Dock=DockStyle.Fill,ColumnCount=2,RowCount=1};commandSplit.ColumnStyles.Add(new ColumnStyle(SizeType.Absolute,340));commandSplit.ColumnStyles.Add(new ColumnStyle(SizeType.Percent,100));commandSplit.RowStyles.Add(new RowStyle(SizeType.Percent,100));command.Controls.Add(commandSplit);
-        var commandLayout=new TableLayoutPanel{Dock=DockStyle.Fill,ColumnCount=1,RowCount=4};commandLayout.ColumnStyles.Add(new ColumnStyle(SizeType.Percent,100));commandLayout.RowStyles.Add(new RowStyle(SizeType.AutoSize));commandLayout.RowStyles.Add(new RowStyle(SizeType.AutoSize));commandLayout.RowStyles.Add(new RowStyle(SizeType.Percent,100));commandLayout.RowStyles.Add(new RowStyle(SizeType.AutoSize));commandSplit.Controls.Add(commandLayout,0,0);
+        var commandLayout=new TableLayoutPanel{Dock=DockStyle.Fill,ColumnCount=1,RowCount=3};commandLayout.ColumnStyles.Add(new ColumnStyle(SizeType.Percent,100));commandLayout.RowStyles.Add(new RowStyle(SizeType.AutoSize));commandLayout.RowStyles.Add(new RowStyle(SizeType.Percent,100));commandLayout.RowStyles.Add(new RowStyle(SizeType.AutoSize));commandSplit.Controls.Add(commandLayout,0,0);
         commandOutput=new Panel{Dock=DockStyle.Fill};commandSplit.Controls.Add(commandOutput,1,0);
-        var selection=new TableLayoutPanel{AutoSize=true,Dock=DockStyle.Top,ColumnCount=2,Padding=new Padding(6)};selector=selection;selection.ColumnStyles.Add(new ColumnStyle(SizeType.Absolute,110));selection.ColumnStyles.Add(new ColumnStyle(SizeType.Percent,100));selection.RowStyles.Add(new RowStyle(SizeType.AutoSize));actionRow=new RowStyle(SizeType.AutoSize);selection.RowStyles.Add(actionRow);selection.RowStyles.Add(new RowStyle(SizeType.AutoSize));commands.DropDownStyle=actions.DropDownStyle=environments.DropDownStyle=ComboBoxStyle.DropDownList;commands.Dock=actions.Dock=environments.Dock=DockStyle.Fill;Label(selection,"Command",0,0,true);commands.AccessibleName="Command";selection.Controls.Add(commands,1,0);actionCaption=new Label{Text="Action",AutoSize=true,Anchor=AnchorStyles.Left,Margin=new Padding(4,8,8,8)};actionCaption.Font=new Font(actionCaption.Font,FontStyle.Bold);selection.Controls.Add(actionCaption,0,1);actions.AccessibleName="Action";selection.Controls.Add(actions,1,1);Label(selection,"Environment",0,2,true);environments.AccessibleName="Environment";selection.Controls.Add(environments,1,2);commandInfo.AutoSize=true;commandInfo.Font=new Font(Font.FontFamily,8f);commandInfo.Margin=new Padding(8,0,8,0);commandInfo.MaximumSize=new Size(320,0);commandInfo.Dock=DockStyle.Top;commandLayout.Controls.Add(selection,0,0);
-        var scroll=new Panel{AutoScroll=true,Dock=DockStyle.Fill};var formStack=new FlowLayoutPanel{FlowDirection=FlowDirection.TopDown,WrapContents=false,AutoSize=true,Dock=DockStyle.Top};scroll.Controls.Add(formStack);fieldsPanel.FlowDirection=optionsPanel.FlowDirection=FlowDirection.TopDown;fieldsPanel.WrapContents=optionsPanel.WrapContents=false;fieldsPanel.AutoSize=optionsPanel.AutoSize=true;fieldsPanel.Margin=optionsPanel.Margin=Padding.Empty;formStack.Margin=Padding.Empty;formStack.Controls.Add(new Label{Text="Arguments",AutoSize=true,Font=new Font(Font,FontStyle.Bold),Margin=new Padding(8,0,0,2)});formStack.Controls.Add(fieldsPanel);formStack.Controls.Add(optionsPanel);commandLayout.Controls.Add(commandInfo,0,1);commandLayout.Controls.Add(scroll,0,2);
-        var commandButtons=new FlowLayoutPanel{AutoSize=true,AutoSizeMode=AutoSizeMode.GrowAndShrink,Dock=DockStyle.Top,WrapContents=false,FlowDirection=FlowDirection.LeftToRight,Padding=new Padding(2,0,2,2)};run.Text="Run";help.Text="Help";run.AutoSize=help.AutoSize=true;run.MinimumSize=help.MinimumSize=new Size(0,26);run.Margin=help.Margin=new Padding(2);run.Padding=help.Padding=new Padding(10,2,10,2);run.Click+=async delegate{await Work(CommandRequest());};help.Click+=async delegate{await Work(new Dictionary<string,object>{{"kind","command"},{"command","help"},{"args","command "+commands.SelectedItem}});};var openTerminal=Button("Open Terminal",delegate{try{Process.Start(new ProcessStartInfo(node,AskAI.Quote(Path.Combine(root,"askai.js"))+" cli"){WorkingDirectory=project.Text,UseShellExecute=true});}catch(Exception e){status.Text=e.Message;}});openTerminal.MinimumSize=new Size(0,26);openTerminal.Margin=new Padding(2);openTerminal.Padding=new Padding(8,2,8,2);commandButtons.Controls.Add(run);commandButtons.Controls.Add(help);commandButtons.Controls.Add(openTerminal);commandLayout.Controls.Add(commandButtons,0,3);
+        var selection=new TableLayoutPanel{AutoSize=true,Dock=DockStyle.Top,ColumnCount=2,Padding=new Padding(6)};selector=selection;selection.ColumnStyles.Add(new ColumnStyle(SizeType.Absolute,110));selection.ColumnStyles.Add(new ColumnStyle(SizeType.Percent,100));selection.RowStyles.Add(new RowStyle(SizeType.AutoSize));actionRow=new RowStyle(SizeType.AutoSize);selection.RowStyles.Add(actionRow);selection.RowStyles.Add(new RowStyle(SizeType.AutoSize));commands.DropDownStyle=actions.DropDownStyle=environments.DropDownStyle=ComboBoxStyle.DropDownList;commands.Dock=actions.Dock=environments.Dock=DockStyle.Fill;Label(selection,"Command",0,0,true);commands.AccessibleName="Command";selection.Controls.Add(commands,1,0);actionCaption=new Label{Text="Action",AutoSize=true,Anchor=AnchorStyles.Left,Margin=new Padding(4,8,8,8)};actionCaption.Font=new Font(actionCaption.Font,FontStyle.Bold);selection.Controls.Add(actionCaption,0,1);actions.AccessibleName="Action";selection.Controls.Add(actions,1,1);Label(selection,"Environment",0,2,true);environments.AccessibleName="Environment";selection.Controls.Add(environments,1,2);commandInfo.AutoSize=true;commandInfo.Font=new Font(Font.FontFamily,8f);commandInfo.Margin=new Padding(0,2,0,0);commandInfo.Dock=DockStyle.Top;commandInfo.Visible=false;commandLayout.Controls.Add(selection,0,0);
+        var scroll=new Panel{AutoScroll=true,Dock=DockStyle.Fill};var formStack=new FlowLayoutPanel{FlowDirection=FlowDirection.TopDown,WrapContents=false,AutoSize=true,Dock=DockStyle.Top};scroll.Controls.Add(formStack);fieldsPanel.FlowDirection=optionsPanel.FlowDirection=FlowDirection.TopDown;fieldsPanel.WrapContents=optionsPanel.WrapContents=false;fieldsPanel.AutoSize=optionsPanel.AutoSize=true;fieldsPanel.Margin=optionsPanel.Margin=Padding.Empty;formStack.Margin=Padding.Empty;formStack.Controls.Add(new Label{Text="Arguments",AutoSize=true,Font=new Font(Font,FontStyle.Bold),Margin=new Padding(8,8,0,2)});formStack.Controls.Add(fieldsPanel);formStack.Controls.Add(optionsPanel);commandLayout.Controls.Add(scroll,0,1);
+        var commandButtons=new FlowLayoutPanel{AutoSize=true,AutoSizeMode=AutoSizeMode.GrowAndShrink,Dock=DockStyle.Top,WrapContents=false,FlowDirection=FlowDirection.LeftToRight,Padding=new Padding(2,0,2,2)};run.Text="Run";help.Text="Help";run.AutoSize=help.AutoSize=true;run.MinimumSize=help.MinimumSize=new Size(0,26);run.Margin=help.Margin=new Padding(2);run.Padding=help.Padding=new Padding(10,2,10,2);run.Click+=async delegate{await Work(CommandRequest());};help.Click+=async delegate{await Work(new Dictionary<string,object>{{"kind","command"},{"command","help"},{"args","command "+commands.SelectedItem}});};var openTerminal=Button("Open Terminal",delegate{try{Process.Start(new ProcessStartInfo(node,AskAI.Quote(Path.Combine(root,"askai.js"))+" cli"){WorkingDirectory=project.Text,UseShellExecute=true});}catch(Exception e){status.Text=e.Message;}});openTerminal.MinimumSize=new Size(0,26);openTerminal.Margin=new Padding(2);openTerminal.Padding=new Padding(8,2,8,2);commandButtons.Controls.Add(run);commandButtons.Controls.Add(help);commandButtons.Controls.Add(openTerminal);commandLayout.Controls.Add(commandButtons,0,2);
         commands.SelectedIndexChanged+=delegate{var name=Convert.ToString(commands.SelectedItem);var entry=catalog.FirstOrDefault(c=>TextOf(c,"name")==name);if(entry==null){commands.SelectedItem=lastCommand;return;}lastCommand=name;commandInfo.Text=TextOf(entry,"summary");variants=Objects(entry["variants"]).ToArray();actions.Items.Clear();foreach(var definition in variants)actions.Items.Add(TextOf(definition,"label"));actions.SelectedIndex=0;bool many=variants.Length>1;actionCaption.Visible=actions.Visible=many;actionRow.SizeType=many?SizeType.AutoSize:SizeType.Absolute;if(!many)actionRow.Height=0;};actions.SelectedIndexChanged+=delegate{if(actions.SelectedIndex>=0)RefreshForm();};FillCombo(commands,catalog);commands.SelectedItem="status";
         var helpLayout=Table(3);helpContent=helpLayout;helpLayout.ColumnStyles.Add(new ColumnStyle(SizeType.AutoSize));helpLayout.ColumnStyles.Add(new ColumnStyle(SizeType.Percent,100));helpLayout.ColumnStyles.Add(new ColumnStyle(SizeType.AutoSize));helpTab.Controls.Add(helpLayout);Label(helpLayout,"Command",0,0,true);helpCommands.DropDownStyle=ComboBoxStyle.DropDownList;helpCommands.Dock=DockStyle.Fill;helpCommands.AccessibleName="Help Command";FillCombo(helpCommands,catalog);helpCommands.SelectedItem="status";helpLayout.Controls.Add(helpCommands,1,0);EventHandler showHelp=async delegate{await Work(new Dictionary<string,object>{{"kind","command"},{"command","help"},{"args","command "+helpCommands.SelectedItem+" --advanced"}});};helpLayout.Controls.Add(Button("Show Detailed Help",showHelp),2,0);helpCommands.SelectedIndexChanged+=delegate{var name=Convert.ToString(helpCommands.SelectedItem);if(!catalog.Any(c=>TextOf(c,"name")==name)){helpCommands.SelectedItem=lastHelpCommand;return;}lastHelpCommand=name;if(tabs.SelectedTab==helpTab)showHelp(null,EventArgs.Empty);};tabs.SelectedIndexChanged+=delegate{open.Visible=openFolder.Visible=tabs.SelectedTab==conversion;FitTab();if(tabs.SelectedTab==helpTab && Visible)showHelp(null,EventArgs.Empty);};
         output.AccessibleName="Output";output.Multiline=true;output.ReadOnly=true;output.WordWrap=true;output.ScrollBars=ScrollBars.Vertical;output.Font=new Font("Consolas",10);output.Dock=DockStyle.Fill;output.Text="Ready. Choose a file or URL, or select a command.\r\nNo command or source analysis runs on startup.";outputGroup=new GroupBox{Text="Output",Dock=DockStyle.Fill};outputGroup.Controls.Add(output);layout.Controls.Add(outputGroup,0,3);
         var resultRow=new TableLayoutPanel{Dock=DockStyle.Fill,ColumnCount=2,RowCount=1,Margin=new Padding(0,10,0,0)};resultRow.ColumnStyles.Add(new ColumnStyle(SizeType.AutoSize));resultRow.ColumnStyles.Add(new ColumnStyle(SizeType.Percent,100));
         var resultButtons=new FlowLayoutPanel{AutoSize=true,AutoSizeMode=AutoSizeMode.GrowAndShrink,WrapContents=false,FlowDirection=FlowDirection.LeftToRight,Anchor=AnchorStyles.Left};resultButtons.Controls.Add(Button("Copy Output",delegate{try{CopyText(output.Text,Clipboard.SetText);status.Text="Output copied.";}catch(Exception e){status.Text="Clipboard unavailable: "+e.Message;}}));stop.Text="Stop";open.Text="Open Markdown";openFolder.Text="Open Folder";stop.AutoSize=open.AutoSize=openFolder.AutoSize=true;stop.Enabled=open.Enabled=openFolder.Enabled=false;stop.Click+=delegate{StopJob();};open.Click+=delegate{if(lastOutput!=null)Process.Start("notepad.exe",AskAI.Quote(lastOutput));};openFolder.Click+=delegate{if(lastOutput!=null)Process.Start("explorer.exe",AskAI.Quote(Path.GetDirectoryName(lastOutput)));};resultButtons.Controls.Add(stop);resultButtons.Controls.Add(open);resultButtons.Controls.Add(openFolder);resultRow.Controls.Add(resultButtons,0,0);
-        status.AutoSize=true;status.Text="Ready";status.Dock=DockStyle.Fill;status.TextAlign=ContentAlignment.MiddleRight;status.Margin=new Padding(12,10,4,4);resultRow.Controls.Add(status,1,0);layout.Controls.Add(resultRow,0,4);
+        status.AutoSize=true;status.Text="Ready";status.Dock=DockStyle.Fill;status.TextAlign=ContentAlignment.MiddleRight;status.Margin=new Padding(12,10,4,4);resultRow.Controls.Add(status,1,0);layout.Controls.Add(commandInfo,0,4);layout.Controls.Add(resultRow,0,5);
         ApplyTheme();Resize+=delegate{FitTab();};FitTab();
         FormClosing+=delegate(object sender,FormClosingEventArgs e){if(job!=null&&!job.HasExited){if(MessageBox.Show(this,"Stop the running operation and close Ask AI?","Ask AI",MessageBoxButtons.YesNo)!=DialogResult.Yes){e.Cancel=true;return;}closing=true;StopJob();}};
     }
@@ -301,6 +303,7 @@ internal sealed class AskWindow : Form {
             var combo=control as ComboBox;if(combo!=null)combo.FlatStyle=FlatStyle.Flat;
             var group=control as GroupBox;if(group!=null){group.ForeColor=color("teal");group.Font=new Font(theme["font"],10,FontStyle.Bold);}
             if(control==status)control.ForeColor=color("teal");
+            if(control==commandInfo)control.ForeColor=color("muted");
             foreach(Control child in control.Controls)apply(child);
         };apply(this);BackColor=color("background");if(output.Font.FontFamily.Name!=theme["monospace"])output.Font=new Font(theme["monospace"],10);output.BackColor=color("surface");
         if(tabs.DrawMode!=TabDrawMode.OwnerDrawFixed){tabs.DrawMode=TabDrawMode.OwnerDrawFixed;tabs.DrawItem+=delegate(object sender,DrawItemEventArgs e){bool active=e.Index==tabs.SelectedIndex;int top=e.Bounds.Y;for(int i=0;i<tabs.TabCount;i++)top=Math.Min(top,tabs.GetTabRect(i).Y);var rect=new Rectangle(e.Bounds.X,top,e.Bounds.Width,Math.Max(16,e.Bounds.Height-(e.Bounds.Y-top)));using(var clear=new SolidBrush(color("background")))e.Graphics.FillRectangle(clear,e.Bounds);using(var brush=new SolidBrush(color(active?"background":"secondary")))e.Graphics.FillRectangle(brush,rect);TextRenderer.DrawText(e.Graphics,tabs.TabPages[e.Index].Text,tabs.Font,rect,color(active?"accent":"text"),TextFormatFlags.HorizontalCenter|TextFormatFlags.VerticalCenter);};}

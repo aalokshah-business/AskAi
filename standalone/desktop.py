@@ -213,14 +213,12 @@ def main():
         environment_picker.grid(row=2, column=1, sticky='ew', padx=(8, 0), pady=(6, 0))
         environment_values = {}
         field_widgets, option_rows, definitions = {}, [], []
-        summary = ttk.Label(left, textvariable=info, wraplength=320, font=(theme['font'], 8), foreground=theme['muted'])
-        summary.grid(row=3, column=0, columnspan=2, sticky='ew', pady=(2, 0))
-        ttk.Label(left, text='Arguments', font=(theme['font'], theme['fontSize'], 'bold')).grid(row=4, column=0, columnspan=2, sticky='w', pady=(2, 0))
-        left.rowconfigure(6, weight=1)
+        ttk.Label(left, text='Arguments', font=(theme['font'], theme['fontSize'], 'bold')).grid(row=3, column=0, columnspan=2, sticky='w', pady=(8, 0))
+        left.rowconfigure(4, weight=1)
         form_canvas = tk.Canvas(left, highlightthickness=0, background=theme['background'])
-        form_canvas.grid(row=6, column=0, columnspan=2, sticky='nsew')
+        form_canvas.grid(row=4, column=0, columnspan=2, sticky='nsew')
         form_scroll = ttk.Scrollbar(left, orient='vertical', command=form_canvas.yview)
-        form_scroll.grid(row=6, column=2, sticky='ns')
+        form_scroll.grid(row=4, column=2, sticky='ns')
         form_canvas.configure(yscrollcommand=form_scroll.set)
         form_frame = ttk.Frame(form_canvas)
         form_window = form_canvas.create_window((0, 0), window=form_frame, anchor='nw')
@@ -285,9 +283,17 @@ def main():
                 return
             ttk.Button(form_frame, text='Choose Folder' if kind == 'folder' else 'Choose File', command=lambda w=widget, k=kind: choose_path(w, k)).grid(row=row, column=1, sticky='e', padx=(8, 0), pady=2)
 
+        def compact(field):
+            return not field.get('picker') and not field.get('hint') and not field.get('suggestions') and (field.get('kind') == 'boolean' or field.get('choices'))
+
         def add_argument(row, caption, field, store):
-            ttk.Label(form_frame, text=caption).grid(row=row, column=0, columnspan=2, sticky='w', pady=(6, 0))
             widget = value_widget(form_frame, field)
+            if compact(field):
+                ttk.Label(form_frame, text=caption).grid(row=row, column=0, sticky='w', padx=(0, 8), pady=2)
+                widget.grid(row=row, column=1, sticky='ew', pady=2)
+                store(widget)
+                return row + 1
+            ttk.Label(form_frame, text=caption).grid(row=row, column=0, columnspan=2, sticky='w', pady=(6, 0))
             widget.grid(row=row + 1, column=0, sticky='ew', pady=2)
             add_picker(field, widget, row + 1)
             store(widget)
@@ -310,14 +316,18 @@ def main():
             environment_picker.configure(values=list(environment_values), state='readonly' if spec['supported'] else 'disabled')
             environment.set(previous if previous in environment_values else spec['defaultLabel'])
             row = 0
-            for field in visible_fields():
-                def keep_field(widget, name=field['name']):
-                    field_widgets[name] = widget
-                row = add_argument(row, field['label'] + (' *' if field['required'] else ' (Optional)'), field, keep_field)
-            for field in visible_options():
-                def keep_option(widget, flag=field['flag']):
-                    option_rows.append({'flag': flag, 'value': widget})
-                row = add_argument(row, '--' + field['flag'] + (' *' if field['required'] else ''), field, keep_option)
+            ordered = [(field, False) for field in visible_fields() if compact(field)] + [(field, True) for field in visible_options() if compact(field)]
+            ordered += [(field, False) for field in visible_fields() if not compact(field)] + [(field, True) for field in visible_options() if not compact(field)]
+            for field, option in ordered:
+                if option:
+                    def keep(widget, flag=field['flag']):
+                        option_rows.append({'flag': flag, 'value': widget})
+                    caption = '--' + field['flag'] + (' *' if field['required'] else '')
+                else:
+                    def keep(widget, name=field['name']):
+                        field_widgets[name] = widget
+                    caption = field['label'] + (' *' if field['required'] else ' (Optional)')
+                row = add_argument(row, caption, field, keep)
             fit_controls()
 
         def describe(event=None):
@@ -342,7 +352,7 @@ def main():
         picker.bind('<<ComboboxSelected>>', describe)
         action_picker.bind('<<ComboboxSelected>>', refresh_form)
         buttons = ttk.Frame(left)
-        buttons.grid(row=7, column=0, columnspan=2, sticky='w', pady=(4, 0))
+        buttons.grid(row=5, column=0, columnspan=2, sticky='w', pady=(4, 0))
         describe()
         def include_option(spec, widget):
             value = widget.get()
@@ -425,7 +435,10 @@ def main():
         footer = ttk.Frame(root, padding=20)
         footer.grid(row=4, column=0, sticky='ew')
         footer.columnconfigure(0, weight=1)
-        ttk.Label(footer, textvariable=status).grid(row=0, column=0, sticky='w')
+        summary = ttk.Label(footer, textvariable=info, font=(theme['font'], 8), foreground=theme['muted'], wraplength=760)
+        summary.grid(row=0, column=0, columnspan=5, sticky='ew', pady=(0, 2))
+        summary.grid_remove()
+        ttk.Label(footer, textvariable=status).grid(row=1, column=0, sticky='e')
 
         def copy_output():
             try:
@@ -435,7 +448,7 @@ def main():
             except tk.TclError as error:
                 status.set('Clipboard unavailable: ' + str(error))
 
-        ttk.Button(footer, text='Copy Output', command=copy_output).grid(row=0, column=1, padx=6)
+        ttk.Button(footer, text='Copy Output', command=copy_output).grid(row=1, column=1, padx=6)
 
         def stop():
             process = state['process']
@@ -446,7 +459,7 @@ def main():
                     os.killpg(process.pid, signal.SIGTERM)
 
         stop_button = ttk.Button(footer, text='Stop', command=stop, state='disabled')
-        stop_button.grid(row=0, column=2, padx=6)
+        stop_button.grid(row=1, column=2, padx=6)
 
         def open_result(directory=False):
             if state['output']:
@@ -458,9 +471,9 @@ def main():
                     subprocess.Popen(['xdg-open', str(target)], stdout=subprocess.DEVNULL, stderr=subprocess.DEVNULL, start_new_session=True)
 
         open_button = ttk.Button(footer, text='Open Markdown', command=open_result, state='disabled')
-        open_button.grid(row=0, column=3, padx=6)
+        open_button.grid(row=1, column=3, padx=6)
         folder_button = ttk.Button(footer, text='Open Folder', command=lambda: open_result(True), state='disabled')
-        folder_button.grid(row=0, column=4)
+        folder_button.grid(row=1, column=4)
         def place_output():
             selected = tabs.index(tabs.select())
             if selected == 1 and not convert_only:
@@ -485,6 +498,10 @@ def main():
 
         def tab_changed(event=None):
             paint_tabs()
+            if tabs.index(tabs.select()) == 1 and not convert_only:
+                summary.grid()
+            else:
+                summary.grid_remove()
             fit_controls()
             conversion_selected = tabs.index(tabs.select()) == 0
             if conversion_selected:
@@ -623,6 +640,9 @@ def main():
             assert any(isinstance(widget, ttk.Button) and widget.cget('text') == 'Choose Folder' for widget in form_frame.winfo_children()), 'Repo argument has no folder picker'
             command.set('status')
             describe()
+            json_label = next(widget for widget in form_frame.winfo_children() if isinstance(widget, ttk.Label) and widget.cget('text').startswith('--json'))
+            json_box = next(row['value'] for row in option_rows if row['flag'] == 'json')
+            assert int(json_label.grid_info()['row']) == int(json_box.grid_info()['row']), 'JSON option is not beside its name'
             assert not action_picker.grid_info(), 'Single-action command still shows Action'
             command.set('mcp')
             describe()
