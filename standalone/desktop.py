@@ -62,9 +62,8 @@ def main():
         style.map('TEntry', fieldbackground=[('readonly', theme['surface'])])
         style.configure('TCombobox', fieldbackground=theme['surface'], padding=4)
         style.map('TCombobox', fieldbackground=[('readonly', theme['surface'])])
-        style.configure('TNotebook', background=theme['background'], borderwidth=0)
-        style.configure('TNotebook.Tab', padding=(14, 7), background=theme['secondary'])
-        style.map('TNotebook.Tab', background=[('selected', theme['background'])], foreground=[('selected', theme['accent'])])
+        style.layout('Ask.TNotebook.Tab', [])
+        style.configure('Ask.TNotebook', background=theme['background'], borderwidth=0, tabmargins=(0, 0, 0, 0))
         root.title('Ask AI')
         try:
             icon_path = Path(options.app_root) / 'standalone' / 'askai.png'
@@ -80,13 +79,14 @@ def main():
         root.columnconfigure(0, weight=1)
         root.rowconfigure(3, weight=1)
         bridge = str(Path(options.app_root) / 'standalone' / 'desktop-bridge.js')
-        loaded = subprocess.run([options.node, bridge, '--catalog'], capture_output=True, text=True, encoding='utf-8', timeout=15, check=True)
+        hidden = {'creationflags': subprocess.CREATE_NO_WINDOW} if os.name == 'nt' else {}
+        loaded = subprocess.run([options.node, bridge, '--catalog'], capture_output=True, text=True, encoding='utf-8', timeout=15, check=True, **hidden)
         catalog = {row['name']: row for row in json.loads(loaded.stdout)}
         # askai install --convert-only (just the desktop app and markitdown): open straight to Convert To Markdown
         # and grey out Commands/Help, since there is no Claude Code/Codex/Antigravity/Cursor setup for them to touch.
         convert_only = False
         try:
-            mode_result = subprocess.run([options.node, bridge, '--mode'], capture_output=True, text=True, encoding='utf-8', timeout=15, check=True)
+            mode_result = subprocess.run([options.node, bridge, '--mode'], capture_output=True, text=True, encoding='utf-8', timeout=15, check=True, **hidden)
             convert_only = bool(json.loads(mode_result.stdout).get('convertOnly'))
         except Exception:
             pass  # best-effort: a failed check just leaves every tab enabled
@@ -117,15 +117,42 @@ def main():
         ttk.Label(header, text='Project Folder').grid(row=2, column=0, padx=(0, 15))
         ttk.Entry(header, textvariable=project).grid(row=2, column=1, sticky='ew')
         ttk.Button(header, text='Browse...', command=lambda: browse_folder(project)).grid(row=2, column=2, padx=(12, 0))
-        tabs = ttk.Notebook(root)
-        tabs.grid(row=1, column=0, sticky='ew', padx=20)
+        tab_host = tk.Frame(root, background=theme['background'])
+        tab_host.grid(row=1, column=0, sticky='nsew', padx=20)
+        tab_host.columnconfigure(0, weight=1)
+        tab_host.rowconfigure(1, weight=1)
+        tab_bar = tk.Frame(tab_host, background=theme['background'])
+        tab_bar.grid(row=0, column=0, sticky='w', pady=(0, 2))
+        tabs = ttk.Notebook(tab_host, style='Ask.TNotebook')
+        tabs.grid(row=1, column=0, sticky='nsew')
         conversion, commands, help_tab = ttk.Frame(tabs, padding=15), ttk.Frame(tabs, padding=15), ttk.Frame(tabs, padding=15)
         tabs.add(conversion, text='Convert To Markdown')
         tabs.add(commands, text='Command')
         tabs.add(help_tab, text='Help')
+        tab_marks = []
+
+        def paint_tabs(event=None):
+            current = str(tabs.select())
+            for button, page in tab_marks:
+                selected = str(page) == current
+                enabled = str(tabs.tab(page, 'state')) != 'disabled'
+                button.configure(bg=theme['background'] if selected else theme['secondary'], fg=theme['accent'] if selected else theme['text'], state='normal' if enabled else 'disabled')
+
+        def add_tab(text, page):
+            cell = tk.Frame(tab_bar, background=theme['background'])
+            cell.pack(side='left', padx=(0, 6))
+            button = tk.Button(cell, text=text, relief='flat', bd=0, highlightthickness=0, padx=14, pady=6, cursor='hand2', font=(theme['font'], 10), activebackground=theme['background'], activeforeground=theme['accent'], command=lambda p=page: tabs.select(p))
+            button.pack(side='top', fill='x')
+            tab_marks.append((button, page))
+
+        add_tab('Convert To Markdown', conversion)
+        add_tab('Command', commands)
+        add_tab('Help', help_tab)
+        paint_tabs()
         if convert_only:
             tabs.tab(commands, state='disabled')
             tabs.select(conversion)
+            paint_tabs()
         conversion.columnconfigure(0, weight=1)
         modes = ttk.Frame(conversion)
         modes.grid(row=0, column=0, columnspan=2, sticky='w')
@@ -186,9 +213,9 @@ def main():
         environment_picker.grid(row=2, column=1, sticky='ew', padx=(8, 0), pady=(6, 0))
         environment_values = {}
         field_widgets, option_rows, definitions = {}, [], []
-        summary = ttk.Label(left, textvariable=info, wraplength=320)
-        summary.grid(row=3, column=0, columnspan=2, sticky='ew', pady=(8, 0))
-        ttk.Label(left, text='Arguments', font=(theme['font'], theme['fontSize'], 'bold')).grid(row=4, column=0, columnspan=2, sticky='w', pady=(10, 2))
+        summary = ttk.Label(left, textvariable=info, wraplength=320, font=(theme['font'], 8), foreground=theme['muted'])
+        summary.grid(row=3, column=0, columnspan=2, sticky='ew', pady=(2, 0))
+        ttk.Label(left, text='Arguments', font=(theme['font'], theme['fontSize'], 'bold')).grid(row=4, column=0, columnspan=2, sticky='w', pady=(2, 0))
         left.rowconfigure(6, weight=1)
         form_canvas = tk.Canvas(left, highlightthickness=0, background=theme['background'])
         form_canvas.grid(row=6, column=0, columnspan=2, sticky='nsew')
@@ -199,8 +226,8 @@ def main():
         form_window = form_canvas.create_window((0, 0), window=form_frame, anchor='nw')
         form_frame.bind('<Configure>', lambda event: form_canvas.configure(scrollregion=form_canvas.bbox('all')))
         form_canvas.bind('<Configure>', lambda event: form_canvas.itemconfigure(form_window, width=event.width))
-        for column in range(3):
-            form_frame.columnconfigure(column, weight=1, uniform='argument-columns')
+        form_frame.columnconfigure(0, weight=1)
+        form_frame.columnconfigure(1, weight=0)
 
         def definition():
             return next(row for row in definitions if row['label'] == action.get())
@@ -256,7 +283,19 @@ def main():
             kind = field.get('picker')
             if kind not in ('folder', 'file'):
                 return
-            ttk.Button(form_frame, text='Choose Folder' if kind == 'folder' else 'Choose File', command=lambda w=widget, k=kind: choose_path(w, k)).grid(row=row, column=2, sticky='e', padx=(0, 4), pady=4)
+            ttk.Button(form_frame, text='Choose Folder' if kind == 'folder' else 'Choose File', command=lambda w=widget, k=kind: choose_path(w, k)).grid(row=row, column=1, sticky='e', padx=(8, 0), pady=2)
+
+        def add_argument(row, caption, field, store):
+            ttk.Label(form_frame, text=caption).grid(row=row, column=0, columnspan=2, sticky='w', pady=(6, 0))
+            widget = value_widget(form_frame, field)
+            widget.grid(row=row + 1, column=0, sticky='ew', pady=2)
+            add_picker(field, widget, row + 1)
+            store(widget)
+            hint = field.get('hint')
+            if hint:
+                ttk.Label(form_frame, text=hint, font=(theme['font'], 8), foreground=theme['muted']).grid(row=row + 2, column=0, columnspan=2, sticky='w')
+                return row + 3
+            return row + 2
 
         def refresh_form(event=None):
             for widget in form_frame.winfo_children():
@@ -270,19 +309,15 @@ def main():
             environment_values.update({choice['label']: choice['value'] for choice in spec['choices']})
             environment_picker.configure(values=list(environment_values), state='readonly' if spec['supported'] else 'disabled')
             environment.set(previous if previous in environment_values else spec['defaultLabel'])
-            for index, field in enumerate(visible_fields()):
-                ttk.Label(form_frame, text=field['label'] + (' *' if field['required'] else ' (Optional)')).grid(row=index, column=0, sticky='w', padx=(0, 8), pady=4)
-                widget = value_widget(form_frame, field)
-                widget.grid(row=index, column=1, sticky='ew', padx=(0, 8), pady=4)
-                field_widgets[field['name']] = widget
-                add_picker(field, widget, index)
-            start_row = len(visible_fields())
-            for index, field in enumerate(visible_options()):
-                ttk.Label(form_frame, text='--' + field['flag'] + (' *' if field['required'] else '')).grid(row=start_row + index, column=0, sticky='w', padx=(0, 8), pady=4)
-                widget = value_widget(form_frame, field)
-                widget.grid(row=start_row + index, column=1, sticky='ew', padx=(0, 8), pady=4)
-                option_rows.append({'flag': field['flag'], 'value': widget})
-                add_picker(field, widget, start_row + index)
+            row = 0
+            for field in visible_fields():
+                def keep_field(widget, name=field['name']):
+                    field_widgets[name] = widget
+                row = add_argument(row, field['label'] + (' *' if field['required'] else ' (Optional)'), field, keep_field)
+            for field in visible_options():
+                def keep_option(widget, flag=field['flag']):
+                    option_rows.append({'flag': flag, 'value': widget})
+                row = add_argument(row, '--' + field['flag'] + (' *' if field['required'] else ''), field, keep_option)
             fit_controls()
 
         def describe(event=None):
@@ -325,10 +360,10 @@ def main():
                     options.append({'flag': row['flag'], 'value': row['value'].get()})
             return {'kind': 'command', 'command': command.get(), 'variant': definition()['id'], 'environment': environment_values.get(environment.get(), ''), 'fields': {name: widget.get() for name, widget in field_widgets.items()}, 'options': options}
 
-        run = ttk.Button(buttons, text='Run Command', style='Primary.TButton', command=lambda: start(command_request()))
-        run.pack(side='left')
-        help_button = ttk.Button(buttons, text='Command Help', command=lambda: start({'kind': 'command', 'command': 'help', 'args': 'command ' + command.get()}))
-        help_button.pack(side='left', padx=10)
+        run = ttk.Button(buttons, text='Run', style='Primary.TButton', command=lambda: start(command_request()))
+        run.grid(row=0, column=0, sticky='w', padx=(0, 4))
+        help_button = ttk.Button(buttons, text='Help', command=lambda: start({'kind': 'command', 'command': 'help', 'args': 'command ' + command.get()}))
+        help_button.grid(row=0, column=1, sticky='w', padx=(0, 4))
 
         def terminal():
             script = str(Path(options.app_root) / 'askai.js')
@@ -342,7 +377,7 @@ def main():
                     return
             messagebox.showinfo('Ask AI', 'No supported terminal found. Open your terminal and run askai cli.')
 
-        ttk.Button(buttons, text='Open Terminal', command=terminal).pack(side='left')
+        ttk.Button(buttons, text='Open Terminal', command=terminal).grid(row=0, column=2, sticky='w')
         help_command = tk.StringVar(value='status')
         help_tab.columnconfigure(1, weight=1)
         ttk.Label(help_tab, text='Command', font=(theme['font'], theme['fontSize'], 'bold')).grid(row=0, column=0, sticky='w', padx=(0, 12))
@@ -449,6 +484,7 @@ def main():
         output_place[0] = place_output
 
         def tab_changed(event=None):
+            paint_tabs()
             fit_controls()
             conversion_selected = tabs.index(tabs.select()) == 0
             if conversion_selected:
@@ -473,7 +509,7 @@ def main():
             with os.fdopen(descriptor, 'w', encoding='utf-8') as stream:
                 json.dump(request, stream)
             try:
-                process = subprocess.Popen([options.node, bridge, file], cwd=project.get(), stdin=subprocess.DEVNULL, stdout=subprocess.PIPE, stderr=subprocess.PIPE, text=True, encoding='utf-8', start_new_session=True)
+                process = subprocess.Popen([options.node, bridge, file], cwd=project.get(), stdin=subprocess.DEVNULL, stdout=subprocess.PIPE, stderr=subprocess.PIPE, text=True, encoding='utf-8', start_new_session=True, **hidden)
             except Exception as error:
                 Path(file).unlink(missing_ok=True)
                 show(str(error))
@@ -528,6 +564,8 @@ def main():
         poll()
         if options.smoke_test:
             assert len(tabs.tabs()) == 3 and list(help_picker['values']) == grouped_values(catalog) == list(picker['values']), 'Help Tab Missing'
+            root.update_idletasks()
+            assert max(button.winfo_rooty() for button, page in tab_marks) - min(button.winfo_rooty() for button, page in tab_marks) <= 1, 'Selected tab sits lower than the others'
             if not convert_only:
                 # Commands is disabled in convert-only mode (asserted below) and cannot be switched to.
                 # Help stays enabled there (it only reads static text, see below), so this comparison
@@ -573,6 +611,13 @@ def main():
             command.set('project')
             describe()
             assert any(isinstance(widget, ttk.Button) and widget.cget('text') == 'Choose Folder' for widget in form_frame.winfo_children()), 'Directory argument has no folder picker'
+            caption = next(widget for widget in form_frame.winfo_children() if isinstance(widget, ttk.Label) and widget.cget('text').startswith('Directory'))
+            choose = next(widget for widget in form_frame.winfo_children() if isinstance(widget, ttk.Button) and widget.cget('text') == 'Choose Folder')
+            assert int(caption.grid_info()['row']) < int(choose.grid_info()['row']), 'Directory name shares a row with Choose Folder'
+            command.set('weigh')
+            describe()
+            assert any(isinstance(widget, ttk.Label) and widget.cget('text') == 'Number' for widget in form_frame.winfo_children()), 'Numeric argument has no cue'
+            assert int(run.grid_info()['row']) == int(help_button.grid_info()['row']) == 0, 'Run and Help are not on one line'
             command.set('start')
             describe()
             assert any(isinstance(widget, ttk.Button) and widget.cget('text') == 'Choose Folder' for widget in form_frame.winfo_children()), 'Repo argument has no folder picker'

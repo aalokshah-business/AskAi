@@ -1,10 +1,10 @@
 {
-  "background": "#E7F6F4",
-  "surface": "#F7FCFB",
+  "background": "#F8FDFC",
+  "surface": "#FFFFFF",
   "text": "#121A3A",
   "muted": "#56608A",
   "accent": "#4F46E5",
-  "secondary": "#D7F0EE",
+  "secondary": "#E7F6F4",
   "border": "#B7DDD8",
   "navy": "#0E1B3D",
   "teal": "#0EA5A3",

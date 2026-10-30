@@ -4,6 +4,12 @@ AskAI follows semantic versioning from 1.0.0 (see [RELEASING.md](RELEASING.md)).
 
 ## Unreleased
 
+- Ask AI desktop: the window background is a lighter peacock, and text fields stay white.
+
+- Ask AI desktop: running a command no longer flashes a command window. Argument names and Choose Folder stay fully visible, and a number or other value box says what to type underneath. The note above the arguments is smaller, and Run, Help, and Open Terminal sit on one line. Convert To Markdown is unchanged.
+
+- Ask AI desktop: the selected tab stays on the same line as the others. Selection is the accent color.
+
 - Ask AI desktop on Windows: Smart App Control blocks each new unsigned window file and has no per-file allow list. Ask AI does not turn that off. When the compiled window cannot start, the same window opens through a Python this PC is already allowed to run, and the Desktop and Start Menu shortcuts point there.
 
 - Ask AI desktop: the Convert note is two smaller lines, including local extraction/OCR, and the line under the buttons is gone so the output and those buttons sit lower.

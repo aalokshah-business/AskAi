@@ -18,6 +18,8 @@ test('forms identify mandatory fields and options before invoking a process',()=
   assert.equal(schema('project',optionTypes)[0].positionals.find(row=>row.name==='directory').picker,'folder');
   assert.equal(schema('start',optionTypes)[0].options.find(row=>row.flag==='repo').picker,'folder');
   assert.equal(schema('install',optionTypes)[0].options.find(row=>row.flag==='no-path').picker,undefined);
+  assert.equal(schema('weigh',optionTypes)[0].options.find(row=>row.flag==='threshold').hint,'Number');
+  assert.equal(schema('context',optionTypes).find(row=>row.label==='percent').positionals[0].hint,'Number');
 });
 test('typed options, branches and paths reach the CLI without shell quoting',()=>{
   const options=[{flag:'host',value:'codex'},{flag:'json',value:'true'}];
