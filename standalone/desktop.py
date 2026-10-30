@@ -66,11 +66,13 @@ def main():
         style.configure('Ask.TNotebook', background=theme['background'], borderwidth=0, tabmargins=(0, 0, 0, 0))
         root.title('Ask AI')
         try:
-            icon_path = Path(options.app_root) / 'standalone' / 'askai.png'
-            if icon_path.exists():
+            icon_file = Path(options.app_root) / 'standalone' / ('askai.ico' if os.name == 'nt' else 'askai.png')
+            if os.name == 'nt' and icon_file.exists():
+                root.iconbitmap(default=str(icon_file))
+            elif icon_file.exists():
                 # A local is enough to keep this alive: this function does not return until the window
                 # closes, so its locals (unlike a short-lived helper's) outlive the running mainloop.
-                icon_image = tk.PhotoImage(file=str(icon_path))
+                icon_image = tk.PhotoImage(file=str(icon_file))
                 root.iconphoto(True, icon_image)
         except Exception:
             pass  # keep the window manager's default icon

@@ -137,10 +137,17 @@ test('a blocked Windows window installs the shortcut through Python',{skip:proce
     ctx.sandbox=false;
     ctx.paths.app=path.join(__dirname,'..');
     ctx.shortcutFolders=[folder];
-    ctx.desktopBuild=()=>path.join(dir,'blocked.exe');
+    const blocked=path.join(dir,'blocked.exe');
+    ctx.desktopBuild=()=>blocked;
+    ctx.applicationControl=true;
+    write(blocked,'icon source');
     const text=desktop.install(ctx);
     assert.match(text,/shortcuts installed/);
-    assert.equal(fs.existsSync(path.join(folder,'Ask AI.lnk')),true);
+    const link=path.join(folder,'Ask AI.lnk');
+    assert.equal(fs.existsSync(link),true);
+    const icon=cp.spawnSync('powershell.exe',['-NoProfile','-Command',`$s=New-Object -ComObject WScript.Shell; $s.CreateShortcut(${JSON.stringify(link)}).IconLocation`],{encoding:'utf8',windowsHide:true});
+    assert.match(icon.stdout,/blocked\.exe,0/i);
+    assert.equal(ctx.calls.length,0);
     assert.equal(desktop.blockedStart({message:'spawn UNKNOWN'}),true);
     assert.equal(desktop.blockedStart({message:'compiler missing'}),false);
   }finally{rm(dir);}
@@ -149,7 +156,7 @@ test('desktop setup respects dry runs and isolated configuration homes',()=>{
   const dir=tmpHome();try{
     const ctx=makeCtx(dir);assert.match(desktop.install(ctx),/skipped|not needed/);assert.equal(ctx.calls.length,0);
     ctx.sandbox=false;ctx.dry=true;assert.match(desktop.install(ctx),/install|not needed/);assert.equal(ctx.calls.length,0);
-    ctx.dry=false;ctx.desktopBuild=()=>'/fake/AskAI.exe';desktop.install(ctx);if(process.platform==='win32'){assert.ok(ctx.calls.some(c=>c.includes('--install-shortcuts')));assert.ok(ctx.calls.every(c=>!c.includes('powershell')));}
+    ctx.dry=false;ctx.applicationControl=false;ctx.desktopBuild=()=>'/fake/AskAI.exe';desktop.install(ctx);if(process.platform==='win32'){assert.ok(ctx.calls.some(c=>c.includes('--install-shortcuts')));assert.ok(ctx.calls.every(c=>!c.includes('powershell')));}
   }finally{rm(dir);}
 });
 test('Windows desktop PowerShell sources parse without errors',{skip:process.platform!=='win32'?'Windows setup wrapper only':false},()=>{
