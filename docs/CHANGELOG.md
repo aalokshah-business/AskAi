@@ -4,6 +4,10 @@ AskAI follows semantic versioning from 1.0.0 (see [RELEASING.md](RELEASING.md)).
 
 ## Unreleased
 
+- Ask AI desktop: the Convert note is two smaller lines, including local extraction/OCR, and the line under the buttons is gone so the output and those buttons sit lower.
+
+- Ask AI desktop: Command, Environment, and the arguments stack down the left side. Action appears only when that command has more than one action. The output keeps the rest of the width and runs to the bottom of the command tab.
+
 - Ask AI desktop: a directory, path, or repo argument has Choose Folder, and a file argument has Choose File, so the path does not have to be pasted.
 
 - Ask AI desktop: the command tab is named Command and the help tab is named Help. The window fill is a very light peacock, in the same role as DLabs Work's very light orange. Text fields and output stay a lighter surface.

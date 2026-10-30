@@ -162,39 +162,38 @@ def main():
         ttk.Button(conversion, text='Browse...', command=lambda: browse_folder(folder)).grid(row=3, column=1, padx=(12, 0), pady=(4, 12))
         convert = ttk.Button(conversion, text='Convert', style='Primary.TButton', command=lambda: start({'kind': 'convert', 'source': source.get().strip(), 'folder': folder.get().strip()}))
         convert.grid(row=4, column=0, sticky='w')
-        ttk.Label(conversion, text='Local extraction / OCR. YouTube needs captions + network. Existing Markdown stays intact.\nLocal Folder converts every supported file directly inside it (not subfolders) into the output folder.').grid(row=5, column=0, columnspan=2, sticky='w', pady=(8, 0))
+        ttk.Label(conversion, text='Local extraction/OCR. A blank output folder uses the file\'s folder, or the project for a URL. Existing files stay.\nYouTube needs captions. A folder converts the files inside it only, not subfolders.', font=(theme['font'], 8)).grid(row=5, column=0, columnspan=2, sticky='w', pady=(8, 0))
         commands.rowconfigure(0, weight=1)
         commands.columnconfigure(0, weight=1)
         split = ttk.Panedwindow(commands, orient='horizontal')
         split.grid(row=0, column=0, sticky='nsew')
         left = ttk.Frame(split, padding=(0, 0, 8, 0))
         command_output = ttk.Frame(split)
-        split.add(left, weight=2)
+        split.add(left, weight=1)
         split.add(command_output, weight=3)
-        for column in range(3):
-            left.columnconfigure(column, weight=1, uniform='command-columns')
-        picker = ttk.Combobox(left, textvariable=command, values=grouped_values(catalog), state='readonly', width=22)
+        left.columnconfigure(1, weight=1)
+        picker = ttk.Combobox(left, textvariable=command, values=grouped_values(catalog), state='readonly', width=18)
         ttk.Label(left, text='Command', font=(theme['font'], theme['fontSize'], 'bold')).grid(row=0, column=0, sticky='w')
-        ttk.Label(left, text='Action', font=(theme['font'], theme['fontSize'], 'bold')).grid(row=0, column=1, sticky='w')
-        picker.grid(row=1, column=0, sticky='ew', padx=(0, 8))
+        picker.grid(row=0, column=1, sticky='ew', padx=(8, 0))
         action = tk.StringVar()
-        action_picker = ttk.Combobox(left, textvariable=action, state='readonly')
-        action_picker.grid(row=1, column=1, sticky='ew', padx=(0, 8))
+        action_label = ttk.Label(left, text='Action', font=(theme['font'], theme['fontSize'], 'bold'))
+        action_label.grid(row=1, column=0, sticky='w', pady=(6, 0))
+        action_picker = ttk.Combobox(left, textvariable=action, state='readonly', width=18)
+        action_picker.grid(row=1, column=1, sticky='ew', padx=(8, 0), pady=(6, 0))
         environment = tk.StringVar()
-        ttk.Label(left, text='Environment', font=(theme['font'], theme['fontSize'], 'bold')).grid(row=0, column=2, sticky='w')
-        environment_picker = ttk.Combobox(left, textvariable=environment, state='readonly')
-        environment_picker.grid(row=1, column=2, sticky='ew')
+        ttk.Label(left, text='Environment', font=(theme['font'], theme['fontSize'], 'bold')).grid(row=2, column=0, sticky='w', pady=(6, 0))
+        environment_picker = ttk.Combobox(left, textvariable=environment, state='readonly', width=18)
+        environment_picker.grid(row=2, column=1, sticky='ew', padx=(8, 0), pady=(6, 0))
         environment_values = {}
         field_widgets, option_rows, definitions = {}, [], []
-        summary = ttk.Label(left, textvariable=info, wraplength=440)
-        summary.grid(row=2, column=0, columnspan=3, sticky='ew', pady=(8, 0))
-        ttk.Label(left, text='Arguments', font=(theme['font'], theme['fontSize'], 'bold')).grid(row=3, column=0, columnspan=3, sticky='w', pady=(10, 2))
-        left.rowconfigure(3, weight=0)
-        left.rowconfigure(5, weight=1)
+        summary = ttk.Label(left, textvariable=info, wraplength=320)
+        summary.grid(row=3, column=0, columnspan=2, sticky='ew', pady=(8, 0))
+        ttk.Label(left, text='Arguments', font=(theme['font'], theme['fontSize'], 'bold')).grid(row=4, column=0, columnspan=2, sticky='w', pady=(10, 2))
+        left.rowconfigure(6, weight=1)
         form_canvas = tk.Canvas(left, highlightthickness=0, background=theme['background'])
-        form_canvas.grid(row=5, column=0, columnspan=3, sticky='nsew')
+        form_canvas.grid(row=6, column=0, columnspan=2, sticky='nsew')
         form_scroll = ttk.Scrollbar(left, orient='vertical', command=form_canvas.yview)
-        form_scroll.grid(row=5, column=3, sticky='ns')
+        form_scroll.grid(row=6, column=2, sticky='ns')
         form_canvas.configure(yscrollcommand=form_scroll.set)
         form_frame = ttk.Frame(form_canvas)
         form_window = form_canvas.create_window((0, 0), window=form_frame, anchor='nw')
@@ -297,12 +296,18 @@ def main():
             definitions[:] = entry['variants']
             action_picker.configure(values=[row['label'] for row in definitions])
             action.set(definitions[0]['label'])
+            if len(definitions) > 1:
+                action_label.grid()
+                action_picker.grid()
+            else:
+                action_label.grid_remove()
+                action_picker.grid_remove()
             refresh_form()
 
         picker.bind('<<ComboboxSelected>>', describe)
         action_picker.bind('<<ComboboxSelected>>', refresh_form)
         buttons = ttk.Frame(left)
-        buttons.grid(row=6, column=0, columnspan=3, sticky='w', pady=(4, 0))
+        buttons.grid(row=7, column=0, columnspan=2, sticky='w', pady=(4, 0))
         describe()
         def include_option(spec, widget):
             value = widget.get()
@@ -418,7 +423,11 @@ def main():
                 tabs.grid_configure(sticky='nsew')
                 root.rowconfigure(1, weight=1)
                 root.rowconfigure(3, weight=0)
-                tabs.configure(height=max(480, root.winfo_height() - 240))
+                tabs.configure(height=max(480, root.winfo_height() - 180))
+                try:
+                    split.sashpos(0, 340)
+                except tk.TclError:
+                    pass
             else:
                 output_label.grid()
                 frame.grid(row=3, column=0, sticky='nsew', padx=20)
@@ -441,7 +450,6 @@ def main():
                 show_help()
 
         tabs.bind('<<NotebookTabChanged>>', tab_changed)
-        ttk.Label(footer, text='No background AI or automatic analysis. Use Open terminal for interactive input.').grid(row=1, column=0, columnspan=5, sticky='w', pady=(12, 0))
 
         def start(request):
             if state['process']:
@@ -557,6 +565,12 @@ def main():
             command.set('start')
             describe()
             assert any(isinstance(widget, ttk.Button) and widget.cget('text') == 'Choose Folder' for widget in form_frame.winfo_children()), 'Repo argument has no folder picker'
+            command.set('status')
+            describe()
+            assert not action_picker.grid_info(), 'Single-action command still shows Action'
+            command.set('mcp')
+            describe()
+            assert action_picker.grid_info(), 'Multi-action command hides Action'
             command.set('ask')
             describe()
             assert len(field_widgets) == 1, 'Ask field missing'
